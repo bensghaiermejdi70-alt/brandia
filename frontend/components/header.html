@@ -1,0 +1,21 @@
+<header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
+  <nav class="container flex items-center justify-between px-4 py-3">
+    <a href="index.html" class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center"><i class="fas fa-store text-white text-sm"></i></div>
+      <span class="font-bold text-lg text-neutral-100">Brandia</span>
+    </a>
+    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
+      <a href="catalogue.html?filter=new">Nouveautés</a>
+      <a href="catalogue.html?tab=brands">Marques</a>
+      <a href="catalogue.html?filter=deals">Offres</a>
+      <a href="#about">À propos</a>
+      <a href="catalogue.html">Catégories</a>
+      <a href="login.html">Connexion</a>
+    </div>
+    <div class="flex items-center space-x-3 text-sm text-neutral-300">
+      <select id="countrySwitch" class="px-2 py-1 bg-neutral-800 rounded text-xs"><option value="FR">🇫🇷 EUR</option><option value="TN">🇹🇳 TND</option><option value="DE">🇩🇪 EUR</option></select>
+      <button id="themeToggle" class="px-2 py-1 bg-neutral-800 rounded text-xs"><i class="fas fa-moon"></i></button>
+      <a href="panier.html" class="relative"><i class="fas fa-shopping-bag"></i><span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span></a>
+    </div>
+  </nav>
+</header>

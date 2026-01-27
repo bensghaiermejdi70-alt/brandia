@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - Brandia</title>
+  <script src="https://cdn.tailwindcss.com "></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+  <style>
+    body { 
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    .input-field {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      transition: all 0.3s;
+    }
+    .input-field:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      outline: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      transition: all 0.3s;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+    }
+    .tab-active {
+      border-bottom: 2px solid #6366f1;
+      color: #6366f1;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .shake { animation: shake 0.5s; }
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center p-4 text-slate-200">
+
+<div class="w-full max-w-md fade-in">
+  <!-- Logo -->
+  <div class="text-center mb-8">
+    <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+      <i class="fas fa-store text-white text-2xl"></i>
+    </div>
+    <h1 class="text-3xl font-bold text-white">Brandia</h1>
+    <p class="text-slate-400 text-sm mt-2">Connectez-vous à votre compte</p>
+  </div>
+
+  <!-- ALREADY CONNECTED NOTIFICATION -->
+  <div id="already-connected" class="hidden glass rounded-2xl p-6 mb-6 border border-indigo-500/30 bg-indigo-500/10">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 bg-indigo-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-user-check text-indigo-400 text-xl"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-semibold text-white mb-1">Déjà connecté</h3>
+        <p class="text-sm text-slate-300 mb-3">Vous êtes connecté en tant que <span id="connected-user-name" class="font-medium text-indigo-400"></span></p>
+        <div class="flex gap-2">
+          <a href="#" id="btn-continue" class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm text-center text-white transition">
+            Continuer
+          </a>
+          <button onclick="logoutAndShowLogin()" class="px-4 py-2 border border-slate-600 hover:border-slate-500 rounded-lg text-sm text-slate-300 transition">
+            Changer de compte
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Form Card -->
+  <div id="login-card" class="glass rounded-2xl p-8 shadow-2xl">
+    <!-- Tabs Client / Fournisseur -->
+    <div class="flex mb-8 border-b border-slate-700">
+      <button onclick="switchTab('client')" id="tab-client" class="flex-1 pb-3 text-sm font-medium tab-active transition-colors flex items-center justify-center gap-2">
+        <i class="fas fa-user"></i>Client
+      </button>
+      <button onclick="switchTab('supplier')" id="tab-supplier" class="flex-1 pb-3 text-sm font-medium text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-2">
+        <i class="fas fa-store"></i>Fournisseur
+      </button>
+    </div>
+
+    <!-- Formulaire -->
+    <form id="login-form" class="space-y-5">
+      <input type="hidden" id="user-type" value="client">
+      
+      <!-- Email -->
+      <div>
+        <label class="block text-sm text-slate-400 mb-2 font-medium">Adresse email</label>
+        <div class="relative">
+          <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+          <input 
+            type="email" 
+            id="email" 
+            required
+            class="input-field w-full pl-10 pr-4 py-3 rounded-lg text-white placeholder-slate-500"
+            placeholder="vous@exemple.com"
+          >
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label class="block text-sm text-slate-400 mb-2 font-medium">Mot de passe</label>
+        <div class="relative">
+          <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+          <input 
+            type="password" 
+            id="password" 
+            required
+            class="input-field w-full pl-10 pr-12 py-3 rounded-lg text-white placeholder-slate-500"
+            placeholder="••••••••"
+          >
+          <button 
+            type="button" 
+            onclick="togglePassword()"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+          >
+            <i class="fas fa-eye" id="eye-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="flex items-center justify-between text-sm">
+        <label class="flex items-center text-slate-400 cursor-pointer hover:text-white transition-colors">
+          <input type="checkbox" id="remember-me" class="mr-2 rounded bg-slate-700 border-slate-600 text-indigo-600 focus:ring-indigo-500">
+          Se souvenir de moi
+        </label>
+        <a href="#" onclick="alert('Contactez le support pour réinitialiser votre mot de passe')" class="text-indigo-400 hover:text-indigo-300 transition-colors">
+          Mot de passe oublié ?
+        </a>
+      </div>
+
+      <!-- Bouton Submit -->
+      <button 
+        type="submit" 
+        id="submit-btn"
+        class="btn-primary w-full py-3 rounded-lg font-semibold text-white flex items-center justify-center gap-2"
+      >
+        <span>Se connecter</span>
+        <i class="fas fa-arrow-right"></i>
+      </button>
+    </form>
+
+    <!-- Lien Inscription -->
+    <div class="mt-6 pt-6 border-t border-slate-700 text-center">
+      <p class="text-slate-400 text-sm">
+        Pas encore de compte ? 
+        <a href="register.html" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">S'inscrire</a>
+      </p>
+    </div>
+
+    <!-- Messages d'erreur/succès -->
+    <div id="error-message" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center"></div>
+    <div id="success-message" class="hidden mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm text-center"></div>
+  </div>
+
+  <!-- Retour Accueil -->
+  <div class="text-center mt-6">
+    <a href="index.html" class="text-slate-500 hover:text-white text-sm transition-colors inline-flex items-center gap-2">
+      <i class="fas fa-arrow-left"></i>Retour à l'accueil
+    </a>
+  </div>
+
+  <!-- Comptes de Test -->
+  <div class="mt-8 p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+    <p class="text-xs text-slate-500 text-center mb-2">Comptes de test rapide</p>
+    <div class="grid grid-cols-2 gap-2 text-xs">
+      <button onclick="fillTestAccount('client')" class="p-2 bg-slate-700/50 hover:bg-indigo-600/20 hover:border-indigo-500/50 border border-transparent rounded text-slate-300 hover:text-indigo-300 transition-all">
+        <i class="fas fa-user mr-1"></i>Client Test
+      </button>
+      <button onclick="fillTestAccount('supplier')" class="p-2 bg-slate-700/50 hover:bg-purple-600/20 hover:border-purple-500/50 border border-transparent rounded text-slate-300 hover:text-purple-300 transition-all">
+        <i class="fas fa-store mr-1"></i>Fournisseur Test
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// CONFIGURATION
+// ==========================================
+const API_URL = 'http://localhost:4000';
+
+// Fallback API si api.js non chargé
+const BrandiaAPI = window.BrandiaAPI || {
+  Auth: {
+    isLoggedIn: () => !!localStorage.getItem('token'),
+    getUser: () => {
+      try { return JSON.parse(localStorage.getItem('user')); } 
+      catch(e) { return null; }
+    },
+    login: async (email, password) => {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      return await response.json();
+    }
+  }
+};
+
+// ==========================================
+// GESTION DES TABS
+// ==========================================
+function switchTab(type) {
+  document.getElementById('user-type').value = type;
+  
+  // Reset styles
+  ['client', 'supplier'].forEach(t => {
+    const tab = document.getElementById('tab-' + t);
+    tab.classList.remove('tab-active');
+    tab.classList.add('text-slate-400');
+  });
+  
+  // Active style
+  document.getElementById('tab-' + type).classList.add('tab-active');
+  document.getElementById('tab-' + type).classList.remove('text-slate-400');
+  
+  // Placeholder adaptatif
+  const emailInput = document.getElementById('email');
+  if (type === 'supplier') {
+    emailInput.placeholder = 'fournisseur@votremarque.com';
+  } else {
+    emailInput.placeholder = 'vous@exemple.com';
+  }
+}
+
+// ==========================================
+// COMPTES TEST
+// ==========================================
+function fillTestAccount(type) {
+  // Switch visuel du tab
+  switchTab(type);
+  
+  // Remplissage des identifiants selon le type
+  if (type === 'client') {
+    document.getElementById('email').value = 'test@brandia.com';
+    document.getElementById('password').value = 'Test1234!';
+  } else {
+    document.getElementById('email').value = 'supplier@brandia.com';
+    document.getElementById('password').value = 'Supplier123!';
+  }
+  
+  // Focus sur le bouton de connexion pour UX rapide
+  document.getElementById('submit-btn').focus();
+  hideMessages();
+}
+
+// ==========================================
+// VISIBILITÉ MOT DE PASSE
+// ==========================================
+function togglePassword() {
+  const input = document.getElementById('password');
+  const icon = document.getElementById('eye-icon');
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+// ==========================================
+// MESSAGES
+// ==========================================
+function showError(msg) {
+  const el = document.getElementById('error-message');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  document.getElementById('success-message').classList.add('hidden');
+  
+  // Animation shake
+  const card = document.getElementById('login-card');
+  card.classList.add('shake');
+  setTimeout(() => card.classList.remove('shake'), 500);
+}
+
+function showSuccess(msg) {
+  const el = document.getElementById('success-message');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  document.getElementById('error-message').classList.add('hidden');
+}
+
+function hideMessages() {
+  document.getElementById('error-message').classList.add('hidden');
+  document.getElementById('success-message').classList.add('hidden');
+}
+
+// ==========================================
+// GESTION DÉJÀ CONNECTÉ
+// ==========================================
+function checkAlreadyConnected() {
+  if (!BrandiaAPI.Auth.isLoggedIn()) return false;
+  
+  const user = BrandiaAPI.Auth.getUser();
+  if (!user) {
+    // Token présent mais user invalide, on nettoie
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return false;
+  }
+  
+  // Affiche la notification "Déjà connecté"
+  document.getElementById('already-connected').classList.remove('hidden');
+  document.getElementById('login-card').classList.add('hidden');
+  document.getElementById('connected-user-name').textContent = `${user.first_name || ''} ${user.last_name || ''} (${user.email})`.trim() || 'Utilisateur';
+  
+  // Configure le bouton Continuer selon le rôle
+  const continueBtn = document.getElementById('btn-continue');
+  if (user.role === 'supplier') {
+    continueBtn.href = 'supplier/dashboard.html';
+    continueBtn.textContent = 'Espace Fournisseur';
+  } else {
+    continueBtn.href = 'index.html';
+    continueBtn.textContent = 'Continuer mes achats';
+  }
+  
+  return true;
+}
+
+function logoutAndShowLogin() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('refreshToken');
+  document.getElementById('already-connected').classList.add('hidden');
+  document.getElementById('login-card').classList.remove('hidden');
+  document.getElementById('email').focus();
+  showSuccess('Déconnecté. Vous pouvez vous reconnecter.');
+}
+
+// ==========================================
+// LOGIN PRINCIPAL - CORRIGÉ
+// ==========================================
+async function handleLogin(e) {
+  e.preventDefault();
+  hideMessages();
+  
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const submitBtn = document.getElementById('submit-btn');
+  
+  if (!email || !password) {
+    showError('Veuillez remplir tous les champs');
+    return;
+  }
+  
+  // Loading state
+  submitBtn.disabled = true;
+  submitBtn.classList.add('loading');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Connexion...</span>';
+  
+  try {
+    console.log(`[Login] Tentative connexion: ${email}`);
+    const result = await BrandiaAPI.Auth.login(email, password);
+    console.log('[Login] Résultat:', result);
+    
+    if (result.success && result.data) {
+      const user = result.data.user;
+      const token = result.data.accessToken;
+      
+      if (!user || !token) {
+        throw new Error('Réponse invalide du serveur');
+      }
+      
+      // Stockage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      showSuccess('Connexion réussie ! Redirection...');
+      
+      // ==========================================
+      // REDIRECTION CORRIGÉE SELON LE RÔLE
+      // ==========================================
+      setTimeout(() => {
+        console.log(`[Login] Rôle détecté: ${user.role}`);
+        
+        if (user.role === 'supplier') {
+          console.log('[Login] → Redirection vers espace fournisseur');
+          window.location.href = 'supplier/dashboard.html';
+        } else if (user.role === 'client' || user.role === 'user' || !user.role) {
+          console.log('[Login] → Redirection vers accueil client');
+          window.location.href = 'index.html';
+        } else if (user.role === 'admin') {
+          window.location.href = 'admin/dashboard.html'; // Si vous avez un admin
+        } else {
+          // Fallback sécurisé
+          window.location.href = 'index.html';
+        }
+      }, 800);
+      
+    } else {
+      // Erreur serveur (401, etc.)
+      const msg = result.message || 'Email ou mot de passe incorrect';
+      showError(msg);
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+      submitBtn.innerHTML = originalText;
+    }
+    
+  } catch (error) {
+    console.error('[Login] Erreur:', error);
+    showError('Erreur de connexion. Vérifiez que le serveur est démarré (port 4000).');
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('loading');
+    submitBtn.innerHTML = originalText;
+  }
+}
+
+// ==========================================
+// INITIALISATION
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[Login] Page chargée');
+  
+  // 1. Vérifier si déjà connecté (affiche la bannière au lieu de rediriger forcément)
+  const isConnected = checkAlreadyConnected();
+  
+  if (!isConnected) {
+    // 2. Mode normal : formulaire visible
+    document.getElementById('login-card').classList.remove('hidden');
+    document.getElementById('already-connected').classList.add('hidden');
+    
+    // 3. Event listeners
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    
+    // 4. Auto-focus email si vide
+    if (!document.getElementById('email').value) {
+      document.getElementById('email').focus();
+    }
+  }
+});
+</script>
+
+</body>
+</html>
