@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paiement – Brandia</title>
+  <meta name="description" content="Finalisez votre commande sur Brandia">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stripe -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
+    .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
+    .step-indicator { transition: all 0.3s ease; }
+    .step-active { background-color: #6366f1; border-color: #6366f1; color: white; }
+    .step-completed { background-color: #10b981; border-color: #10b981; color: white; }
+    .form-input { transition: all 0.2s; }
+    .form-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+    .payment-method { transition: all 0.2s; cursor: pointer; }
+    .payment-method:hover { border-color: #6366f1; }
+    .payment-method.selected { border-color: #6366f1; background-color: rgba(99, 102, 241, 0.1); }
+    #card-element { padding: 12px; border: 1px solid #374151; border-radius: 0.5rem; background-color: #111827; }
+    #card-element.StripeElement--focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+    #card-element.StripeElement--invalid { border-color: #ef4444; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .skeleton { background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; }
+    @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
+  <nav class="container flex items-center justify-between px-4 py-3">
+    <a href="index.html" class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+        <i class="fas fa-store text-white text-sm"></i>
+      </div>
+      <span class="font-bold text-lg text-neutral-100">Brandia</span>
+    </a>
+    
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center gap-2 text-sm text-neutral-400">
+        <i class="fas fa-lock text-emerald-400"></i>
+        <span>Paiement sécurisé</span>
+      </div>
+      <a href="panier.html" class="text-sm text-neutral-300 hover:text-white">
+        <i class="fas fa-arrow-left mr-1"></i>Retour au panier
+      </a>
+    </div>
+  </nav>
+</header>
+
+<!-- Progress Steps -->
+<section class="border-b border-neutral-800 bg-neutral-900/30">
+  <div class="container px-4 py-6">
+    <div class="flex items-center justify-center max-w-2xl mx-auto">
+      <!-- Step 1 -->
+      <div class="flex items-center">
+        <div id="step-1-indicator" class="step-indicator step-active w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold text-sm">1</div>
+        <span class="ml-2 text-sm font-medium text-white hidden sm:block">Livraison</span>
+      </div>
+      <div class="flex-1 h-0.5 bg-neutral-700 mx-4" id="line-1-2"></div>
+      
+      <!-- Step 2 -->
+      <div class="flex items-center">
+        <div id="step-2-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-neutral-600 text-neutral-400 flex items-center justify-center font-semibold text-sm">2</div>
+        <span class="ml-2 text-sm font-medium text-neutral-400 hidden sm:block">Paiement</span>
+      </div>
+      <div class="flex-1 h-0.5 bg-neutral-700 mx-4" id="line-2-3"></div>
+      
+      <!-- Step 3 -->
+      <div class="flex items-center">
+        <div id="step-3-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-neutral-600 text-neutral-400 flex items-center justify-center font-semibold text-sm">3</div>
+        <span class="ml-2 text-sm font-medium text-neutral-400 hidden sm:block">Confirmation</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main Content -->
+<section class="py-8">
+  <div class="container px-4">
+    <div class="grid lg:grid-cols-3 gap-8">
+      
+      <!-- Left Column: Forms -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- STEP 1: Shipping Address -->
+        <div id="step-1" class="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+          <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-truck text-indigo-400"></i>
+            Adresse de livraison
+          </h2>
+          
+          <form id="shipping-form" class="space-y-4">
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-neutral-400 mb-1">Prénom *</label>
+                <input type="text" id="first-name" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+              <div>
+                <label class="block text-sm text-neutral-400 mb-1">Nom *</label>
+                <input type="text" id="last-name" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Email *</label>
+              <input type="email" id="email" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Téléphone *</label>
+              <input type="tel" id="phone" required placeholder="+33 6 12 34 56 78" class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Adresse *</label>
+              <input type="text" id="address" required placeholder="123 Rue de la Paix" class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm text-neutral-400 mb-1">Code postal *</label>
+                <input type="text" id="postal-code" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm text-neutral-400 mb-1">Ville *</label>
+                <input type="text" id="city" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Pays *</label>
+              <select id="country" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+                <option value="FR">France</option>
+                <option value="BE">Belgique</option>
+                <option value="DE">Allemagne</option>
+                <option value="IT">Italie</option>
+                <option value="ES">Espagne</option>
+                <option value="CH">Suisse</option>
+                <option value="TN">Tunisie</option>
+              </select>
+            </div>
+            
+            <div class="flex items-center gap-2 pt-2">
+              <input type="checkbox" id="save-address" class="w-4 h-4 rounded border-neutral-600 text-indigo-600 focus:ring-indigo-500 bg-neutral-900">
+              <label for="save-address" class="text-sm text-neutral-400">Sauvegarder cette adresse pour mes prochaines commandes</label>
+            </div>
+          </form>
+          
+          <button onclick="goToStep(2)" class="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2">
+            Continuer vers le paiement
+            <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- STEP 2: Payment -->
+        <div id="step-2" class="hidden bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+          <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-credit-card text-indigo-400"></i>
+            Paiement
+          </h2>
+          
+          <!-- Payment Methods -->
+          <div class="space-y-3 mb-6">
+            <div class="payment-method selected p-4 border border-neutral-700 rounded-lg flex items-center gap-3" onclick="selectPaymentMethod('card')">
+              <input type="radio" name="payment-method" value="card" checked class="w-4 h-4 text-indigo-600 bg-neutral-900 border-neutral-600">
+              <i class="fas fa-credit-card text-indigo-400 text-xl"></i>
+              <div class="flex-1">
+                <p class="font-medium text-white">Carte bancaire</p>
+                <p class="text-xs text-neutral-400">Visa, Mastercard, Amex</p>
+              </div>
+              <div class="flex gap-2 text-neutral-500">
+                <i class="fab fa-cc-visa text-2xl"></i>
+                <i class="fab fa-cc-mastercard text-2xl"></i>
+              </div>
+            </div>
+            
+            <div class="payment-method p-4 border border-neutral-700 rounded-lg flex items-center gap-3 opacity-50 cursor-not-allowed">
+              <input type="radio" name="payment-method" value="paypal" disabled class="w-4 h-4 text-indigo-600 bg-neutral-900 border-neutral-600">
+              <i class="fab fa-paypal text-blue-400 text-xl"></i>
+              <div class="flex-1">
+                <p class="font-medium text-white">PayPal</p>
+                <p class="text-xs text-neutral-400">Bientôt disponible</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Stripe Card Element -->
+          <div id="card-payment-form" class="space-y-4">
+            <div>
+              <label class="block text-sm text-neutral-400 mb-2">Numéro de carte</label>
+              <div id="card-element"></div>
+              <div id="card-errors" class="text-red-400 text-sm mt-2 hidden"></div>
+            </div>
+            
+            <div class="flex items-center gap-2 text-sm text-neutral-500">
+              <i class="fas fa-lock text-emerald-400"></i>
+              <span>Vos données bancaires sont sécurisées par Stripe. Nous ne les stockons pas.</span>
+            </div>
+          </div>
+          
+          <div class="flex gap-3 mt-6">
+            <button onclick="goToStep(1)" class="px-6 py-3 border border-neutral-600 text-neutral-300 rounded-lg hover:bg-neutral-700 transition">
+              Retour
+            </button>
+            <button onclick="processPayment()" id="btn-pay" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2">
+              <span>Payer</span>
+              <span id="pay-amount" class="font-bold">0,00 €</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: Confirmation -->
+        <div id="step-3" class="hidden text-center py-12">
+          <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-check text-3xl text-white"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-white mb-2">Commande confirmée !</h2>
+          <p class="text-neutral-400 mb-2">Merci pour votre achat</p>
+          <p class="text-indigo-400 font-semibold mb-6" id="order-number">Commande #---</p>
+          
+          <div class="bg-neutral-800 rounded-lg p-6 border border-neutral-700 max-w-md mx-auto mb-6 text-left">
+            <h3 class="font-semibold text-white mb-4">Récapitulatif de la commande</h3>
+            <div id="confirmation-items" class="space-y-2 mb-4 text-sm">
+              <!-- Items injectés ici -->
+            </div>
+            <div class="border-t border-neutral-700 pt-4 flex justify-between items-center">
+              <span class="text-neutral-400">Total payé</span>
+              <span id="confirmation-total" class="text-xl font-bold text-emerald-400">0,00 €</span>
+            </div>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="index.html" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+              Continuer mes achats
+            </a>
+            <a href="#" onclick="downloadInvoice()" class="px-6 py-3 border border-neutral-600 text-neutral-300 rounded-lg hover:bg-neutral-800 transition">
+              <i class="fas fa-download mr-2"></i>Télécharger la facture
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Order Summary -->
+      <div class="lg:col-span-1">
+        <div class="bg-neutral-800 rounded-lg p-6 border border-neutral-700 sticky top-24">
+          <h2 class="text-lg font-semibold text-white mb-4">Votre commande</h2>
+          
+          <!-- Items -->
+          <div id="order-items" class="space-y-3 mb-4 max-h-64 overflow-y-auto">
+            <!-- Items injectés ici -->
+          </div>
+          
+          <!-- Promo -->
+          <div class="flex gap-2 mb-4">
+            <input type="text" id="checkout-promo" placeholder="Code promo" 
+                   class="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-sm focus:border-indigo-500 outline-none uppercase">
+            <button onclick="applyCheckoutPromo()" class="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-sm text-white transition">
+              Appliquer
+            </button>
+          </div>
+          <p id="checkout-promo-message" class="text-xs mb-4 hidden"></p>
+          
+          <!-- Totals -->
+          <div class="space-y-2 text-sm border-t border-neutral-700 pt-4">
+            <div class="flex justify-between text-neutral-400">
+              <span>Sous-total</span>
+              <span id="checkout-subtotal" class="text-white">0,00 €</span>
+            </div>
+            <div class="flex justify-between text-neutral-400">
+              <span>Livraison</span>
+              <span id="checkout-shipping" class="text-emerald-400">Gratuit</span>
+            </div>
+            <div id="checkout-discount-row" class="flex justify-between text-emerald-400 hidden">
+              <span>Réduction</span>
+              <span id="checkout-discount">-0,00 €</span>
+            </div>
+            <div class="flex justify-between text-neutral-400">
+              <span>TVA</span>
+              <span id="checkout-tax" class="text-white">0,00 €</span>
+            </div>
+            <div class="border-t border-neutral-700 pt-2 flex justify-between items-center">
+              <span class="text-white font-semibold">Total</span>
+              <span id="checkout-total" class="text-2xl font-bold text-indigo-400">0,00 €</span>
+            </div>
+          </div>
+          
+          <!-- Security -->
+          <div class="mt-6 flex items-center justify-center gap-4 text-neutral-500 text-2xl">
+            <i class="fas fa-shield-alt" title="Sécurisé"></i>
+            <i class="fab fa-cc-visa" title="Visa"></i>
+            <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+            <i class="fab fa-stripe" title="Stripe"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-neutral-800 py-6 text-center text-xs text-neutral-500">
+  © 2026 Brandia – Marketplace officielle des marques
+</footer>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<!-- Scripts -->
+<script src="assets/js/api.js"></script>
+<script>
+// ==========================================
+// ÉTAT GLOBAL
+// ==========================================
+let currentStep = 1;
+let cart = { items: [], totals: {} };
+let stripe = null;
+let cardElement = null;
+let paymentIntentClientSecret = null;
+
+// ==========================================
+// INITIALISATION
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  loadCart();
+  initStripe();
+  prefillAddress();
+});
+
+// ==========================================
+// CHARGEMENT PANIER
+// ==========================================
+function loadCart() {
+  const savedCart = localStorage.getItem('brandia_checkout_cart');
+  
+  if (!savedCart) {
+    showToast('Votre panier est vide', 'error');
+    setTimeout(() => window.location.href = 'panier.html', 2000);
+    return;
+  }
+  
+  cart = JSON.parse(savedCart);
+  
+  if (!cart.items || cart.items.length === 0) {
+    showToast('Votre panier est vide', 'error');
+    setTimeout(() => window.location.href = 'panier.html', 2000);
+    return;
+  }
+  
+  renderOrderSummary();
+}
+
+function renderOrderSummary() {
+  const container = document.getElementById('order-items');
+  
+  container.innerHTML = cart.items.map(item => `
+    <div class="flex gap-3">
+      <img src="${item.image_url || 'https://via.placeholder.com/60'}" 
+           alt="${item.name}" 
+           class="w-12 h-12 object-cover rounded bg-neutral-700">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm text-white truncate">${item.name}</p>
+        <p class="text-xs text-neutral-500">Qté: ${item.quantity}</p>
+      </div>
+      <p class="text-sm font-medium text-white">${formatPrice(item.price * item.quantity)}</p>
+    </div>
+  `).join('');
+  
+  updateTotalsDisplay();
+}
+
+function updateTotalsDisplay() {
+  const t = cart.totals;
+  document.getElementById('checkout-subtotal').textContent = formatPrice(t.subtotal || 0);
+  document.getElementById('checkout-tax').textContent = formatPrice(t.tax || 0);
+  document.getElementById('checkout-total').textContent = formatPrice(t.total || 0);
+  document.getElementById('pay-amount').textContent = formatPrice(t.total || 0);
+  
+  // Livraison
+  const shippingEl = document.getElementById('checkout-shipping');
+  if (t.shipping === 0 || t.subtotal >= 50) {
+    shippingEl.textContent = 'Gratuit';
+    shippingEl.className = 'text-emerald-400';
+  } else {
+    shippingEl.textContent = formatPrice(t.shipping || 5.90);
+    shippingEl.className = 'text-white';
+  }
+  
+  // Remise
+  const discountRow = document.getElementById('checkout-discount-row');
+  if (t.discount > 0) {
+    discountRow.classList.remove('hidden');
+    document.getElementById('checkout-discount').textContent = '-' + formatPrice(t.discount);
+  } else {
+    discountRow.classList.add('hidden');
+  }
+}
+
+// ==========================================
+// STRIPE INITIALIZATION
+// ==========================================
+function initStripe() {
+  // Clé publique Stripe - à remplacer par votre vraie clé
+  const stripePublicKey = 'pk_test_YOUR_STRIPE_PUBLIC_KEY';
+  
+  stripe = Stripe(stripePublicKey);
+  const elements = stripe.elements({
+    appearance: {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#6366f1',
+        colorBackground: '#111827',
+        colorText: '#f3f4f6',
+        colorDanger: '#ef4444',
+        borderRadius: '0.5rem',
+      }
+    }
+  });
+  
+  cardElement = elements.create('card', {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#f3f4f6',
+        '::placeholder': { color: '#6b7280' }
+      }
+    }
+  });
+}
+
+// ==========================================
+// NAVIGATION ÉTAPES
+// ==========================================
+function goToStep(step) {
+  if (step === 2 && !validateShippingForm()) return;
+  
+  // Cacher toutes les étapes
+  document.getElementById('step-1').classList.add('hidden');
+  document.getElementById('step-2').classList.add('hidden');
+  document.getElementById('step-3').classList.add('hidden');
+  
+  // Afficher l'étape demandée
+  document.getElementById(`step-${step}`).classList.remove('hidden');
+  
+  // Mettre à jour les indicateurs
+  updateStepIndicators(step);
+  
+  // Si étape 2, monter l'élément Stripe
+  if (step === 2 && !cardElement._mounted) {
+    setTimeout(() => {
+      cardElement.mount('#card-element');
+      cardElement._mounted = true;
+    }, 100);
+  }
+  
+  currentStep = step;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateStepIndicators(activeStep) {
+  // Reset all
+  for (let i = 1; i <= 3; i++) {
+    const indicator = document.getElementById(`step-${i}-indicator`);
+    indicator.className = 'step-indicator w-10 h-10 rounded-full border-2 border-neutral-600 text-neutral-400 flex items-center justify-center font-semibold text-sm';
+  }
+  
+  // Completed steps
+  for (let i = 1; i < activeStep; i++) {
+    const indicator = document.getElementById(`step-${i}-indicator`);
+    indicator.className = 'step-indicator step-completed w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold text-sm';
+    indicator.innerHTML = '<i class="fas fa-check"></i>';
+  }
+  
+  // Active step
+  const activeIndicator = document.getElementById(`step-${activeStep}-indicator`);
+  activeIndicator.className = 'step-indicator step-active w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold text-sm';
+  activeIndicator.textContent = activeStep;
+  
+  // Update lines
+  document.getElementById('line-1-2').className = `flex-1 h-0.5 mx-4 ${activeStep >= 2 ? 'bg-emerald-500' : 'bg-neutral-700'}`;
+  document.getElementById('line-2-3').className = `flex-1 h-0.5 mx-4 ${activeStep >= 3 ? 'bg-emerald-500' : 'bg-neutral-700'}`;
+}
+
+function validateShippingForm() {
+  const required = ['first-name', 'last-name', 'email', 'phone', 'address', 'postal-code', 'city'];
+  let valid = true;
+  
+  required.forEach(id => {
+    const field = document.getElementById(id);
+    if (!field.value.trim()) {
+      field.classList.add('border-red-500');
+      valid = false;
+    } else {
+      field.classList.remove('border-red-500');
+    }
+  });
+  
+  // Email validation
+  const email = document.getElementById('email').value;
+  if (email && !email.includes('@')) {
+    document.getElementById('email').classList.add('border-red-500');
+    valid = false;
+  }
+  
+  if (!valid) {
+    showToast('Veuillez remplir tous les champs obligatoires', 'error');
+  }
+  
+  return valid;
+}
+
+function prefillAddress() {
+  // Si utilisateur connecté, pré-remplir avec son adresse sauvegardée
+  if (BrandiaAPI.Auth.isLoggedIn()) {
+    const user = BrandiaAPI.Auth.getUser();
+    document.getElementById('email').value = user.email || '';
+    // TODO: Charger l'adresse sauvegardée depuis l'API
+  }
+}
+
+// ==========================================
+// PAIEMENT
+// ==========================================
+async function processPayment() {
+  const btn = document.getElementById('btn-pay');
+  const originalText = btn.innerHTML;
+  
+  // Désactiver le bouton
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Traitement...</span>';
+  
+  try {
+    // 1. Créer la commande côté serveur pour obtenir le clientSecret
+    const orderData = {
+      items: cart.items,
+      shipping: {
+        first_name: document.getElementById('first-name').value,
+        last_name: document.getElementById('last-name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        postal_code: document.getElementById('postal-code').value,
+        city: document.getElementById('city').value,
+        country: document.getElementById('country').value
+      },
+      promo_code: cart.totals.promoCode?.code || null
+    };
+    
+    const response = await BrandiaAPI.Orders.create(orderData);
+    
+    if (!response.success) {
+      throw new Error(response.message || 'Erreur lors de la création de la commande');
+    }
+    
+    const { client_secret, order_id, order_number } = response.data;
+    paymentIntentClientSecret = client_secret;
+    
+    // 2. Confirmer le paiement avec Stripe
+    const { error, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: `${orderData.shipping.first_name} ${orderData.shipping.last_name}`,
+          email: orderData.shipping.email,
+          phone: orderData.shipping.phone,
+          address: {
+            line1: orderData.shipping.address,
+            postal_code: orderData.shipping.postal_code,
+            city: orderData.shipping.city,
+            country: orderData.shipping.country
+          }
+        }
+      }
+    });
+    
+    if (error) {
+      // Afficher l'erreur Stripe
+      const errorElement = document.getElementById('card-errors');
+      errorElement.textContent = error.message;
+      errorElement.classList.remove('hidden');
+      throw new Error(error.message);
+    }
+    
+    // 3. Paiement réussi !
+    if (paymentIntent.status === 'succeeded') {
+      // Vider le panier
+      localStorage.removeItem('brandia_cart');
+      localStorage.removeItem('brandia_checkout_cart');
+      
+      // Afficher confirmation
+      showConfirmation(order_number);
+      
+      // Sauvegarder l'adresse si demandé
+      if (document.getElementById('save-address').checked) {
+        // TODO: Sauvegarder via API
+      }
+    }
+    
+  } catch (error) {
+    console.error('Erreur paiement:', error);
+    showToast(error.message || 'Erreur lors du paiement', 'error');
+    
+    // Réactiver le bouton
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+function showConfirmation(orderNumber) {
+  document.getElementById('order-number').textContent = `Commande #${orderNumber}`;
+  
+  // Récapitulatif items
+  document.getElementById('confirmation-items').innerHTML = cart.items.map(item => `
+    <div class="flex justify-between">
+      <span class="text-neutral-400">${item.quantity}x ${item.name}</span>
+      <span class="text-white">${formatPrice(item.price * item.quantity)}</span>
+    </div>
+  `).join('');
+  
+  document.getElementById('confirmation-total').textContent = formatPrice(cart.totals.total);
+  
+  goToStep(3);
+}
+
+function selectPaymentMethod(method) {
+  document.querySelectorAll('.payment-method').forEach(el => {
+    el.classList.remove('selected');
+    el.querySelector('input').checked = false;
+  });
+  
+  const selected = document.querySelector(`[onclick="selectPaymentMethod('${method}')"]`);
+  selected.classList.add('selected');
+  selected.querySelector('input').checked = true;
+}
+
+// ==========================================
+// CODE PROMO (Checkout)
+// ==========================================
+async function applyCheckoutPromo() {
+  const input = document.getElementById('checkout-promo');
+  const code = input.value.trim().toUpperCase();
+  const message = document.getElementById('checkout-promo-message');
+  
+  if (!code) return;
+  
+  try {
+    const response = await BrandiaAPI.Promo.validate(code, cart.totals.subtotal);
+    
+    if (response.success && response.data.valid) {
+      // Recalculer les totaux
+      const discount = response.data.type === 'percentage' 
+        ? cart.totals.subtotal * (response.data.value / 100)
+        : response.data.value;
+      
+      cart.totals.discount = Math.min(discount, cart.totals.subtotal);
+      cart.totals.total = cart.totals.subtotal - cart.totals.discount + (cart.totals.shipping || 0);
+      cart.totals.promoCode = { code, ...response.data };
+      
+      updateTotalsDisplay();
+      
+      message.textContent = `Code "${code}" appliqué !`;
+      message.className = 'text-xs mb-4 text-emerald-400';
+      message.classList.remove('hidden');
+      
+      input.value = '';
+      showToast('Code promo appliqué !', 'success');
+    } else {
+      throw new Error(response.message || 'Code invalide');
+    }
+    
+  } catch (error) {
+    message.textContent = error.message;
+    message.className = 'text-xs mb-4 text-red-400';
+    message.classList.remove('hidden');
+  }
+}
+
+// ==========================================
+// UTILITAIRES
+// ==========================================
+function formatPrice(amount) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount);
+}
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  
+  const toast = document.createElement('div');
+  toast.className = `flex items-center gap-3 px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-all duration-300 ${
+    type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-indigo-500'
+  } text-white`;
+  
+  const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+  toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+  
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+  setTimeout(() => {
+    toast.classList.add('translate-x-full');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+function downloadInvoice() {
+  showToast('Téléchargement de la facture...', 'info');
+  // TODO: Implémenter le téléchargement
+}
+
+// Exposer fonctions globales
+window.goToStep = goToStep;
+window.processPayment = processPayment;
+window.selectPaymentMethod = selectPaymentMethod;
+window.applyCheckoutPromo = applyCheckoutPromo;
+window.downloadInvoice = downloadInvoice;
+</script>
+
+</body>
+</html>

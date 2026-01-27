@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marques Partenaires - Brandia</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
+    .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
+  </style>
+</head>
+<body>
+
+<header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
+  <nav class="container flex items-center justify-between px-4 py-3">
+    <a href="index.html" class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+        <i class="fas fa-store text-white text-sm"></i>
+      </div>
+      <span class="font-bold text-lg text-neutral-100">Brandia</span>
+    </a>
+    <div class="flex items-center space-x-4">
+      <a href="index.html" class="text-neutral-300 hover:text-white text-sm">← Retour à l'accueil</a>
+    </div>
+  </nav>
+</header>
+
+<section class="py-16">
+  <div class="container text-center">
+    <h1 class="text-4xl font-bold text-neutral-100 mb-4">Nos Marques Partenaires</h1>
+    <p class="text-neutral-400 text-lg mb-12">Découvrez les marques de confiance disponibles sur Brandia</p>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6" id="brands-grid">
+      <!-- Marques générées dynamiquement -->
+    </div>
+  </div>
+</section>
+
+<script src="assets/js/api.js"></script>
+<script>
+  const demoBrands = [
+    { name: 'Luxe Beauty', category: 'Cosmétiques', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=200&h=200&fit=crop' },
+    { name: 'Time Master', category: 'Montres', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=200&fit=crop' },
+    { name: 'Milano Leather', category: 'Mode', image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=200&h=200&fit=crop' },
+    { name: 'SoundMax', category: 'Tech', image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=200&h=200&fit=crop' },
+    { name: 'Aroma Home', category: 'Maison', image: 'https://images.unsplash.com/photo-1602825267689-1b0f7eb22c00?w=200&h=200&fit=crop' },
+    { name: 'Runner Pro', category: 'Sport', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop' },
+    { name: 'Nature Bio', category: 'Bio', image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200&h=200&fit=crop' },
+    { name: 'Pet Care', category: 'Animaux', image: 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=200&h=200&fit=crop' },
+    { name: 'Travel Plus', category: 'Voyage', image: 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=200&h=200&fit=crop' },
+    { name: 'Artisan Pro', category: 'Artisanat', image: 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=200&h=200&fit=crop' },
+    { name: 'Sport Elite', category: 'Fitness', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200&h=200&fit=crop' },
+    { name: 'Tech Future', category: 'High-Tech', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=200&h=200&fit=crop' }
+  ];
+
+  function loadBrands() {
+    const grid = document.getElementById('brands-grid');
+    
+    const html = demoBrands.map((brand, index) => `
+      <div class="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-indigo-500 transition-all duration-300 hover:transform hover:-translate-y-2">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden bg-neutral-700">
+          <img src="${brand.image}" alt="${brand.name}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/200'">
+        </div>
+        <h3 class="font-semibold text-neutral-100 mb-1">${brand.name}</h3>
+        <p class="text-xs text-indigo-400 mb-3">${brand.category}</p>
+        <a href="catalogue.html?brand=${encodeURIComponent(brand.name)}" class="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition">
+          Voir les produits
+        </a>
+      </div>
+    `).join('');
+    
+    grid.innerHTML = html;
+  }
+
+  document.addEventListener('DOMContentLoaded', loadBrands);
+</script>
+
+</body>
+</html>

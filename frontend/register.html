@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription – Brandia</title>
+  <meta name="description" content="Créez votre compte client ou devenez partenaire sur Brandia">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
+    .tab-btn { transition: all 0.3s ease; }
+    .tab-btn.active { background-color: #6366f1; color: white; }
+    .form-section { display: none; animation: fadeIn 0.3s ease; }
+    .form-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .input-field { transition: all 0.2s; }
+    .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
+  <nav class="container max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+    <a href="index.html" class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+        <i class="fas fa-store text-white text-sm"></i>
+      </div>
+      <span class="font-bold text-lg text-neutral-100">Brandia</span>
+    </a>
+    <a href="index.html" class="text-sm text-neutral-300 hover:text-indigo-400 flex items-center gap-2">
+      <i class="fas fa-arrow-left"></i> Retour à l'accueil
+    </a>
+  </nav>
+</header>
+
+<!-- Main Content -->
+<main class="flex-1 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg">
+    
+    <!-- Title -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-white mb-2">Créer un compte</h1>
+      <p class="text-neutral-400">Rejoignez la marketplace des marques</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex rounded-lg bg-neutral-800 p-1 mb-6 border border-neutral-700">
+      <button onclick="switchTab('client')" id="tab-client" class="tab-btn active flex-1 py-3 px-4 rounded-md text-sm font-medium text-center flex items-center justify-center gap-2">
+        <i class="fas fa-user"></i>
+        Client
+      </button>
+      <button onclick="switchTab('supplier')" id="tab-supplier" class="tab-btn flex-1 py-3 px-4 rounded-md text-sm font-medium text-center text-neutral-400 flex items-center justify-center gap-2">
+        <i class="fas fa-store"></i>
+        Partenaire / Marque
+      </button>
+    </div>
+
+    <!-- CLIENT FORM -->
+    <div id="form-client" class="form-section active bg-neutral-800 rounded-xl p-6 border border-neutral-700">
+      <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+        <i class="fas fa-user-plus text-indigo-400"></i>
+        Inscription client
+      </h2>
+      
+      <form id="client-form" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-neutral-400 mb-1">Prénom *</label>
+            <input type="text" id="client-firstname" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-400 mb-1">Nom *</label>
+            <input type="text" id="client-lastname" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Email *</label>
+          <input type="email" id="client-email" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+        </div>
+        
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Mot de passe *</label>
+          <div class="relative">
+            <input type="password" id="client-password" required minlength="8" class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none pr-10">
+            <button type="button" onclick="togglePassword('client-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <p class="text-xs text-neutral-500 mt-1">Minimum 8 caractères</p>
+        </div>
+        
+        <div class="flex items-start gap-2">
+          <input type="checkbox" id="client-newsletter" class="mt-1 w-4 h-4 rounded border-neutral-600 text-indigo-600 bg-neutral-900">
+          <label for="client-newsletter" class="text-sm text-neutral-400">
+            Je souhaite recevoir les offres et nouveautés par email
+          </label>
+        </div>
+        
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2">
+          <span>Créer mon compte client</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+      
+      <p class="text-center text-sm text-neutral-400 mt-4">
+        Déjà un compte ? 
+        <a href="login.html" class="text-indigo-400 hover:text-indigo-300 font-medium">Se connecter</a>
+      </p>
+    </div>
+
+    <!-- SUPPLIER FORM -->
+    <div id="form-supplier" class="form-section bg-neutral-800 rounded-xl p-6 border border-neutral-700">
+      <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+        <i class="fas fa-store text-emerald-400"></i>
+        Devenir partenaire
+      </h2>
+      
+      <form id="supplier-form" class="space-y-4">
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Nom de la marque / entreprise *</label>
+          <input type="text" id="supplier-brand" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-neutral-400 mb-1">Prénom *</label>
+            <input type="text" id="supplier-firstname" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-400 mb-1">Nom *</label>
+            <input type="text" id="supplier-lastname" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Email professionnel *</label>
+          <input type="email" id="supplier-email" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+        </div>
+        
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Téléphone *</label>
+          <input type="tel" id="supplier-phone" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-neutral-400 mb-1">SIRET *</label>
+            <input type="text" id="supplier-siret" required pattern="[0-9]{14}" placeholder="123 456 789 00012" class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-400 mb-1">Pays *</label>
+            <select id="supplier-country" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              <option value="">Sélectionner...</option>
+              <option value="FR">🇫🇷 France</option>
+              <option value="BE">🇧🇪 Belgique</option>
+              <option value="DE">🇩🇪 Allemagne</option>
+              <option value="IT">🇮🇹 Italie</option>
+              <option value="ES">🇪🇸 Espagne</option>
+              <option value="CH">🇨🇭 Suisse</option>
+              <option value="TN">🇹🇳 Tunisie</option>
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Site web (optionnel)</label>
+          <input type="url" id="supplier-website" placeholder="https://www.marque.com" class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+        </div>
+        
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Catégorie principale *</label>
+          <select id="supplier-category" required class="input-field w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+            <option value="">Sélectionner...</option>
+            <option value="beauty">Beauté & Soins</option>
+            <option value="fashion">Mode & Accessoires</option>
+            <option value="home">Maison & Déco</option>
+            <option value="tech">High-Tech</option>
+            <option value="food">Alimentation & Bio</option>
+            <option value="sport">Sport & Fitness</option>
+            <option value="other">Autre</option>
+          </select>
+        </div>
+        
+        <div class="flex items-start gap-2">
+          <input type="checkbox" id="supplier-terms" required class="mt-1 w-4 h-4 rounded border-neutral-600 text-indigo-600 bg-neutral-900">
+          <label for="supplier-terms" class="text-sm text-neutral-400">
+            J'accepte les <a href="#" class="text-indigo-400 hover:underline">conditions générales</a> et la commission de 15% sur les ventes *
+          </label>
+        </div>
+        
+        <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2">
+          <span>Envoyer ma demande</span>
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+      
+      <div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+        <p class="text-xs text-emerald-400 text-center">
+          <i class="fas fa-info-circle mr-1"></i>
+          Notre équipe étudiera votre demande sous 24-48h
+        </p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-neutral-800 py-4 text-center text-xs text-neutral-500">
+  © 2026 Brandia – Marketplace officielle des marques
+</footer>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+<!-- Scripts -->
+<script src="assets/js/api.js"></script>
+<script>
+// ==========================================
+// GESTION DES ONGlets
+// ==========================================
+function switchTab(type) {
+  // Update buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active', 'text-white');
+    btn.classList.add('text-neutral-400');
+  });
+  
+  document.getElementById(`tab-${type}`).classList.add('active', 'text-white');
+  document.getElementById(`tab-${type}`).classList.remove('text-neutral-400');
+  
+  // Update forms
+  document.querySelectorAll('.form-section').forEach(form => {
+    form.classList.remove('active');
+  });
+  
+  document.getElementById(`form-${type}`).classList.add('active');
+  
+  // Update URL param pour partage direct
+  const url = new URL(window.location);
+  url.searchParams.set('type', type);
+  window.history.replaceState({}, '', url);
+}
+
+// Check URL param on load
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get('type');
+  if (type === 'supplier') {
+    switchTab('supplier');
+  }
+});
+
+// ==========================================
+// TOGGLE PASSWORD
+// ==========================================
+function togglePassword(fieldId) {
+  const field = document.getElementById(fieldId);
+  const type = field.type === 'password' ? 'text' : 'password';
+  field.type = type;
+  
+  // Update icon
+  const btn = field.nextElementSibling;
+  btn.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+}
+
+// ==========================================
+// SOUMISSION FORMULAIRE CLIENT
+// ==========================================
+document.getElementById('client-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const data = {
+    first_name: document.getElementById('client-firstname').value,
+    last_name: document.getElementById('client-lastname').value,
+    email: document.getElementById('client-email').value,
+    password: document.getElementById('client-password').value,
+    newsletter: document.getElementById('client-newsletter').checked,
+    role: 'client'
+  };
+  
+  try {
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
+    btn.disabled = true;
+    
+    const response = await BrandiaAPI.Auth.register(data);
+    
+    if (response.success) {
+      showToast('Compte créé avec succès !', 'success');
+      setTimeout(() => {
+        window.location.href = 'login.html?registered=true';
+      }, 1500);
+    } else {
+      throw new Error(response.message);
+    }
+    
+  } catch (error) {
+    showToast(error.message || 'Erreur lors de l\'inscription', 'error');
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerHTML = '<span>Créer mon compte client</span><i class="fas fa-arrow-right"></i>';
+    btn.disabled = false;
+  }
+});
+
+// ==========================================
+// SOUMISSION FORMULAIRE FOURNISSEUR
+// ==========================================
+document.getElementById('supplier-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const data = {
+    company_name: document.getElementById('supplier-brand').value,
+    first_name: document.getElementById('supplier-firstname').value,
+    last_name: document.getElementById('supplier-lastname').value,
+    email: document.getElementById('supplier-email').value,
+    phone: document.getElementById('supplier-phone').value,
+    siret: document.getElementById('supplier-siret').value,
+    country: document.getElementById('supplier-country').value,
+    website: document.getElementById('supplier-website').value,
+    category: document.getElementById('supplier-category').value,
+    role: 'supplier'
+  };
+  
+  try {
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi...';
+    btn.disabled = true;
+    
+    const response = await BrandiaAPI.Auth.registerSupplier(data);
+    
+    if (response.success) {
+      showToast('Demande envoyée avec succès !', 'success');
+      setTimeout(() => {
+        window.location.href = 'index.html?supplier-request=success';
+      }, 2000);
+    } else {
+      throw new Error(response.message);
+    }
+    
+  } catch (error) {
+    showToast(error.message || 'Erreur lors de l\'envoi', 'error');
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerHTML = '<span>Envoyer ma demande</span><i class="fas fa-paper-plane"></i>';
+    btn.disabled = false;
+  }
+});
+
+// ==========================================
+// UTILITAIRES
+// ==========================================
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  
+  const toast = document.createElement('div');
+  toast.className = `flex items-center gap-3 px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-all duration-300 ${
+    type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-indigo-500'
+  } text-white`;
+  
+  const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+  toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+  
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+  setTimeout(() => {
+    toast.classList.add('translate-x-full');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Exposer fonctions globales
+window.switchTab = switchTab;
+window.togglePassword = togglePassword;
+</script>
+
+</body>
+</html>

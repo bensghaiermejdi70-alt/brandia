@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catégories – Brandia</title>
+  <meta name="description" content="Découvrez nos 21 catégories de produits sur Brandia">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
+    .container { max-width: 1400px; margin: auto; padding: 0 1rem; }
+    .fade-in { animation: fadeIn 0.5s ease forwards; opacity: 0; }
+    @keyframes fadeIn { to { opacity: 1; } }
+    
+    .dropdown-container { position: relative; }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 0;
+      padding-top: 10px;
+      z-index: 50;
+    }
+    .dropdown-container:hover .dropdown-menu,
+    .dropdown-menu:hover { display: block; }
+  </style>
+</head>
+<body>
+
+<header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
+  <nav class="container flex items-center justify-between px-4 py-3">
+    <a href="index.html" class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+        <i class="fas fa-store text-white text-sm"></i>
+      </div>
+      <span class="font-bold text-lg text-neutral-100">Brandia</span>
+    </a>
+    
+    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
+      <a href="nouveautes.html" class="hover:text-white transition">Nouveautés</a>
+      <a href="marques.html" class="hover:text-white transition">Marques</a>
+      
+      <div class="dropdown-container">
+        <div class="hover:text-white flex items-center space-x-1 py-2 cursor-pointer transition">
+          <span>Catégories</span>
+          <i class="fas fa-chevron-down text-xs"></i>
+        </div>
+        <div class="dropdown-menu w-80 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 py-2 max-h-[70vh] overflow-y-auto">
+          <div id="header-categories-list">
+            <div class="text-neutral-500 text-xs px-4 py-2">Chargement...</div>
+          </div>
+        </div>
+      </div>
+      
+      <a href="offres.html" class="hover:text-white transition">Offres</a>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
+        <option value="">🇫🇷 France</option>
+      </select>
+      <a href="panier.html" class="relative">
+        <i class="fas fa-shopping-bag text-neutral-300"></i>
+        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span>
+      </a>
+    </div>
+  </nav>
+</header>
+
+<section class="py-16 bg-gradient-to-b from-indigo-900/20 to-transparent">
+  <div class="container text-center px-4">
+    <h1 class="text-4xl md:text-5xl font-bold mb-4 text-neutral-100">
+      Nos <span class="text-indigo-400">21 catégories</span>
+    </h1>
+    <p class="text-neutral-400 text-lg max-w-2xl mx-auto">
+      Explorez notre sélection de produits authentiques par catégorie. 
+      Des marques officielles, livrées directement par les créateurs.
+    </p>
+  </div>
+</section>
+
+<section class="py-10">
+  <div class="container px-4">
+    <!-- Grille des 21 catégories avec images -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="categories-grid">
+      <div class="col-span-full text-center py-12 text-neutral-500">
+        <i class="fas fa-spinner fa-spin text-2xl mb-4"></i>
+        <p>Chargement des catégories...</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-16 border-t border-neutral-800">
+  <div class="container text-center px-4">
+    <h2 class="text-2xl font-bold text-neutral-100 mb-4">Vous ne trouvez pas ce que vous cherchez ?</h2>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="catalogue.html" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition font-medium">
+        Voir tout le catalogue
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-neutral-800 py-10 bg-neutral-900">
+  <div class="container text-center text-neutral-500 text-sm">
+    © 2026 Brandia – Marketplace officielle des marques
+  </div>
+</footer>
+
+<!-- Charger d'abord la config -->
+<script src="assets/js/categories-config.js"></script>
+
+<script>
+// Utiliser l'API Categories pour rendre la grille
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Page catégories - Chargement des 21 catégories avec images');
+  
+  // Vérifier que CategoriesAPI est disponible
+  if (typeof CategoriesAPI === 'undefined') {
+    console.error('CategoriesAPI non chargé - vérifiez categories-config.js');
+    document.getElementById('categories-grid').innerHTML = 
+      '<div class="col-span-full text-center text-red-400">Erreur de chargement des catégories</div>';
+    return;
+  }
+  
+  // Rendre la grille avec les images
+  CategoriesAPI.renderGridWithImages('categories-grid', {
+    lang: 'fr',
+    showDescription: true
+  });
+  
+  // Rendre le dropdown du header
+  CategoriesAPI.renderDropdown('header-categories-list', 'fr');
+  
+  // Mettre à jour le badge panier
+  updateCartBadge();
+});
+
+function updateCartBadge() {
+  try {
+    const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const badge = document.getElementById('cart-count');
+    if (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('hidden', count === 0);
+    }
+  } catch (e) {
+    console.error('Erreur badge panier:', e);
+  }
+}
+</script>
+
+</body>
+</html>

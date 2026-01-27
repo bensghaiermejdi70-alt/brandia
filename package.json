@@ -1,0 +1,14 @@
+{
+  "name": "brandia",
+  "version": "1.0.0",
+  "description": "Brandia Marketplace",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backendpro && npm start",
+    "client": "cd frontend && npx serve -p 3000",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

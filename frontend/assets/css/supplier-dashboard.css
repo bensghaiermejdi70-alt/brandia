@@ -1,0 +1,153 @@
+/* ============================================
+   DASHBOARD FOURNISSEUR - BRANDIA
+   ============================================ */
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Navigation active */
+.nav-link.active {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+/* Cards hover effect */
+.bg-gray-800 {
+  transition: all 0.2s ease;
+}
+
+.bg-gray-800:hover {
+  border-color: #4b5563;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-pending {
+  background: #f59e0b;
+  color: #000;
+}
+
+.status-active {
+  background: #10b981;
+  color: #fff;
+}
+
+.status-inactive {
+  background: #ef4444;
+  color: #fff;
+}
+
+.status-shipped {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.status-delivered {
+  background: #10b981;
+  color: #fff;
+}
+
+/* Chart bars */
+.chart-bar {
+  background: linear-gradient(to top, #6366f1, #8b5cf6);
+  border-radius: 4px 4px 0 0;
+  transition: all 0.3s ease;
+}
+
+.chart-bar:hover {
+  opacity: 0.8;
+}
+
+/* Product card */
+.product-card {
+  transition: all 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal animation */
+#product-modal {
+  transition: opacity 0.2s ease;
+}
+
+#product-modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#product-modal:not(.hidden) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Form inputs focus */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Loading spinner */
+.loading-spinner {
+  border: 2px solid #374151;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  aside {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  aside.open {
+    transform: translateX(0);
+  }
+  
+  main {
+    margin-left: 0;
+  }
+}
+
+/* Print styles */
+@media print {
+  aside, header {
+    display: none;
+  }
+  
+  main {
+    margin-left: 0;
+  }
+}
