@@ -1,13 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Brandia – La marketplace des marques</title>
   <meta name="description" content="Produits officiels, livraison par la marque.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg ' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-  <script src="https://cdn.tailwindcss.com "></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -132,7 +132,7 @@
 
       <a href="panier.html" class="relative">
         <i class="fas fa-shopping-bag text-neutral-300"></i>
-        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span>
+        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white hidden">0</span>
       </a>
     </div>
   </nav>
@@ -157,7 +157,7 @@
       </div>
     </div>
     <div class="relative">
-      <img src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&h=400&fit=crop&q=80 " alt="Produits" class="w-full h-64 md:h-80 object-cover rounded-xl shadow-2xl">
+      <img src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&h=400&fit=crop&q=80" alt="Produits" class="w-full h-64 md:h-80 object-cover rounded-xl shadow-2xl">
       <div class="absolute -bottom-4 -right-4 bg-neutral-800 p-4 rounded-lg border border-neutral-700 shadow-xl">
         <p class="text-2xl font-bold text-indigo-400">15%</p>
         <p class="text-xs text-neutral-400">Commission seulement</p>
@@ -253,7 +253,7 @@
         </div>
       </div>
       <div class="relative">
-        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=400&fit=crop&q=80 " alt="Brandia" class="w-full h-80 object-cover rounded-xl shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=400&fit=crop&q=80" alt="Brandia" class="w-full h-80 object-cover rounded-xl shadow-2xl">
       </div>
     </div>
   </div>
@@ -309,27 +309,27 @@
 // CONFIGURATION DES CATEGORIES (Fallback si categories-config.js non chargé)
 // ============================================
 const CATEGORY_IMAGES = {
-  'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80 ',
-  'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80 ',
-  'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80 ',
-  'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80 ',
-  'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80 ',
-  'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80 ',
-  'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80 ',
-  'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80 ',
-  'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80 ',
-  'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80 ',
-  'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80 ',
-  'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80 ',
-  'parfumerie-interieur': 'https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=400&h=400&fit=crop&q=80 ',
-  'produits-ecologiques': 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=400&fit=crop&q=80 ',
-  'bebe-maternite': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80 ',
-  'animaux-pets': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop&q=80 ',
-  'sante-hygiene': 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80 ',
-  'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80 ',
-  'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80 ',
-  'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80 ',
-  'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80 '
+  'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80',
+  'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80',
+  'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80',
+  'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80',
+  'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
+  'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80',
+  'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
+  'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80',
+  'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80',
+  'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80',
+  'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
+  'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80',
+  'parfumerie-interieur': 'https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=400&h=400&fit=crop&q=80',
+  'produits-ecologiques': 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=400&fit=crop&q=80',
+  'bebe-maternite': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80',
+  'animaux-pets': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop&q=80',
+  'sante-hygiene': 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80',
+  'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80',
+  'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80',
+  'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80',
+  'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80'
 };
 
 const BRANDIA_CATEGORIES = [
@@ -388,7 +388,66 @@ function getFlagEmoji(countryCode) {
 }
 
 // ============================================
-// FONCTIONS CORRIGÉES
+// PANIER - FONCTIONS (DÉFINIES AVANT UTILISATION)
+// ============================================
+
+function updateCartBadge() {
+  let count = 0;
+  try {
+    const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+    count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  } catch (e) {
+    count = 0;
+  }
+  
+  document.querySelectorAll('#cart-count').forEach(badge => {
+    if (badge) {
+      badge.textContent = count;
+      if (count === 0) {
+        badge.classList.add('hidden');
+      } else {
+        badge.classList.remove('hidden');
+      }
+    }
+  });
+}
+
+function addToCart(id, name, price, image, category_slug) {
+  let cart = [];
+  try {
+    cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+  } catch (e) {
+    cart = [];
+  }
+
+  let validImage = image && image !== 'undefined' && image !== 'null' 
+    ? image 
+    : (category_slug && CATEGORY_IMAGES[category_slug] 
+      ? CATEGORY_IMAGES[category_slug] 
+      : 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=400&fit=crop&q=80');
+
+  const existing = cart.find(item => item.product_id === id);
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({
+      product_id: id,
+      name: name,
+      price: price,
+      quantity: 1,
+      image_url: validImage,
+      category_slug: category_slug,
+      brand: 'Brandia'
+    });
+  }
+
+  localStorage.setItem('brandia_cart', JSON.stringify(cart));
+  updateCartBadge();
+  showToast('Produit ajouté au panier !');
+}
+
+// ============================================
+// FONCTIONS AFFICHAGE
 // ============================================
 
 function loadStats() {
@@ -412,15 +471,10 @@ function loadStats() {
   console.log('✅ Stats chargées:', stats);
 }
 
-// ============================================
-// GESTION DES PAYS - 28 PAYS CORRIGÉS
-// ============================================
-
 function initCountrySelector() {
   const selector = document.getElementById('countrySelector');
   if (!selector) return;
   
-  // Les 28+ pays complets par ordre alphabétique
   const countries = {
     'DZ': { name: 'Algérie', currency: 'DZD' },
     'DE': { name: 'Allemagne', currency: 'EUR' },
@@ -456,9 +510,7 @@ function initCountrySelector() {
     'GB': { name: 'Royaume-Uni', currency: 'GBP' }
   };
   
-  // Trier par nom
   const sortedCountries = Object.entries(countries).sort((a, b) => a[1].name.localeCompare(b[1].name));
-  
   const savedCountry = localStorage.getItem('country') || 'FR';
   selector.innerHTML = '';
   
@@ -476,24 +528,19 @@ function initCountrySelector() {
   });
 }
 
-// ============================================
-// CHARGEMENT CATÉGORIES
-// ============================================
-
 function loadCategories() {
   const grid = document.getElementById('categories-grid');
   const dropdown = document.getElementById('dropdown-categories-list');
   
   if (!grid) return;
   
-  // Grille principale - Afficher toutes les catégories
   grid.innerHTML = BRANDIA_CATEGORIES.map((cat, index) => `
     <a href="catalogue.html?category=${cat.slug}" 
        class="category-card group block relative overflow-hidden rounded-xl bg-neutral-800 border border-neutral-700 hover:border-indigo-500 transition-all duration-300 fade-in" 
        style="animation-delay: ${index * 0.03}s">
       <div class="relative h-32 overflow-hidden">
         <img src="${cat.image}" alt="${cat.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-             onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=300&fit=crop&q=80 '">
+             onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=300&fit=crop&q=80'">
         <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/60 to-transparent"></div>
         <div class="absolute top-3 left-3 w-10 h-10 ${cat.gradient} rounded-lg flex items-center justify-center shadow-lg">
           <i class="fas ${cat.icon} text-white text-lg"></i>
@@ -505,7 +552,6 @@ function loadCategories() {
     </a>
   `).join('');
   
-  // Dropdown - Liens cliquables
   if (dropdown) {
     dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
       <a href="catalogue.html?category=${cat.slug}" 
@@ -519,10 +565,6 @@ function loadCategories() {
   }
 }
 
-// ============================================
-// CHARGEMENT PRODUITS (DÉMO)
-// ============================================
-
 function loadProducts() {
   const grid = document.getElementById('products-grid');
   if (!grid) return;
@@ -531,12 +573,12 @@ function loadProducts() {
   const currency = 'EUR';
 
   const demoProducts = [
-    { id: 1, name: 'Sérum Hydratant Premium', supplier_name: 'Luxe Beauty', price: 45.90, compare_price: 59.90, category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80 ' },
-    { id: 2, name: 'Montre Élégance Or Rose', supplier_name: 'Time Master', price: 299.00, compare_price: null, category_slug: 'montres-bijoux', main_image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80 ' },
-    { id: 3, name: 'Sac Cuir Italien', supplier_name: 'Milano Leather', price: 189.50, compare_price: 220.00, category_slug: 'mode-accessoires', main_image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80 ' },
-    { id: 4, name: 'Enceinte Bluetooth Pro', supplier_name: 'SoundMax', price: 79.99, compare_price: null, category_slug: 'electronique-lifestyle', main_image_url: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80 ' },
-    { id: 5, name: 'Bougie Parfumée Luxe', supplier_name: 'Aroma Home', price: 34.90, compare_price: 42.00, category_slug: 'parfumerie-interieur', main_image_url: 'https://images.unsplash.com/photo-1602825267689-1b0f7eb22c00?w=400&q=80 ' },
-    { id: 6, name: 'Sneakers Sport Elite', supplier_name: 'Runner Pro', price: 129.00, compare_price: null, category_slug: 'sport-fitness', main_image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80 ' }
+    { id: 1, name: 'Sérum Hydratant Premium', supplier_name: 'Luxe Beauty', price: 45.90, compare_price: 59.90, category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80' },
+    { id: 2, name: 'Montre Élégance Or Rose', supplier_name: 'Time Master', price: 299.00, compare_price: null, category_slug: 'montres-bijoux', main_image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
+    { id: 3, name: 'Sac Cuir Italien', supplier_name: 'Milano Leather', price: 189.50, compare_price: 220.00, category_slug: 'mode-accessoires', main_image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80' },
+    { id: 4, name: 'Enceinte Bluetooth Pro', supplier_name: 'SoundMax', price: 79.99, compare_price: null, category_slug: 'electronique-lifestyle', main_image_url: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80' },
+    { id: 5, name: 'Bougie Parfumée Luxe', supplier_name: 'Aroma Home', price: 34.90, compare_price: 42.00, category_slug: 'parfumerie-interieur', main_image_url: 'https://images.unsplash.com/photo-1602825267689-1b0f7eb22c00?w=400&q=80' },
+    { id: 6, name: 'Sneakers Sport Elite', supplier_name: 'Runner Pro', price: 129.00, compare_price: null, category_slug: 'sport-fitness', main_image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' }
   ];
 
   grid.innerHTML = demoProducts.map((p, index) => {
@@ -546,7 +588,7 @@ function loadProducts() {
         <a href="product.html?id=${p.id}" class="block relative">
           <div class="relative">
             <img src="${p.main_image_url}" alt="${p.name}" class="w-full h-40 object-cover" 
-                 onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80 '">
+                 onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80'">
             ${discount > 0 ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-${discount}%</span>` : ''}
           </div>
         </a>
@@ -570,46 +612,6 @@ function loadProducts() {
 }
 
 // ============================================
-// PANIER CORRIGÉ - GESTION DES IMAGES
-// ============================================
-
-function addToCart(id, name, price, image, category_slug) {
-  let cart = [];
-  try {
-    cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-  } catch (e) {
-    cart = [];
-  }
-
-  // Correction : s'assurer que l'image est valide avec fallback
-  let validImage = image && image !== 'undefined' && image !== 'null' 
-    ? image 
-    : (category_slug && CATEGORY_IMAGES[category_slug] 
-      ? CATEGORY_IMAGES[category_slug] 
-      : 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=400&fit=crop&q=80 ');
-
-  const existing = cart.find(item => item.product_id === id);
-  if (existing) {
-    existing.quantity += 1;
-  } else {
-    cart.push({
-      product_id: id,
-      name: name,
-      price: price,
-      quantity: 1,
-      image_url: validImage,
-      category_slug: category_slug,
-      brand: 'Brandia'
-    });
-  }
-
-  localStorage.setItem('brandia_cart', JSON.stringify(cart));
-  updateCartBadge();
-  showToast('Produit ajouté au panier !');
-}
-
-
-// ============================================
 // AUTHENTIFICATION - CORRIGÉE
 // ============================================
 
@@ -628,7 +630,6 @@ function initAuth() {
   const userMenu = document.getElementById('user-menu');
   const userName = document.getElementById('user-name');
   
-  // SI PAS DE TOKEN OU PAS D'USER VALIDE → On force l'affichage des boutons Connexion/Inscription
   if (!token || !user) {
     console.log('Utilisateur non connecté, affichage des boutons Connexion/Inscription');
     if (authButtons) {
@@ -642,7 +643,6 @@ function initAuth() {
     return;
   }
   
-  // SI CONNECTÉ → On affiche le menu utilisateur
   console.log('Utilisateur connecté:', user.email);
   if (authButtons) {
     authButtons.classList.add('hidden');
@@ -654,6 +654,15 @@ function initAuth() {
     if (userName) userName.textContent = user.first_name || user.email;
   }
 }
+
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('refreshToken');
+  showToast('Déconnexion réussie');
+  setTimeout(() => window.location.reload(), 1000);
+}
+
 // ============================================
 // INITIALISATION
 // ============================================
@@ -668,7 +677,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuth();
   updateCartBadge();
   
-  // Langue
   const langSwitch = document.getElementById('langSwitch');
   if (langSwitch) {
     langSwitch.addEventListener('change', (e) => {
@@ -677,7 +685,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // Vérification API optionnelle (sans erreur si BrandiaAPI non défini)
   if (typeof BrandiaAPI !== 'undefined') {
     fetch('http://localhost:4000/api/health')
       .then(r => r.ok ? console.log('✅ API connectée') : console.warn('⚠️ API health check failed'))
@@ -686,9 +693,9 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('ℹ️ Mode démo activé - pas de connexion API requise');
   }
   
-  // Exposer fonctions globales
   window.logout = logout;
   window.addToCart = addToCart;
+  window.updateCartBadge = updateCartBadge;
 });
 </script>
 
