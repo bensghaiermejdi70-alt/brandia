@@ -1,8 +1,21 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend
+// BRANDIA API CLIENT - Frontend (CORRIGÉ POUR PROD)
 // ============================================
 
-const API_BASE_URL = 'http://localhost:4000/api';
+// Détection auto de l'environnement (Local vs Production)
+const isLocal = window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' ||
+                window.location.protocol === 'file:' ||
+                window.location.hostname.includes('github.io'); // Pour GitHub Pages en test
+
+const API_BASE = isLocal 
+  ? 'http://localhost:4000' 
+  : 'https://brandia-1.onrender.com';
+
+const API_BASE_URL = `${API_BASE}/api`;
+
+console.log(`[Brandia API] Environnement: ${isLocal ? 'LOCAL' : 'PRODUCTION'}`);
+console.log(`[Brandia API] URL Base: ${API_BASE_URL}`);
 
 // Stockage local
 const storage = {
@@ -358,6 +371,11 @@ window.BrandiaAPI = {
     Countries: CountriesAPI,
     Orders: OrdersAPI,
     Cart: CartAPI,
-    Supplier: SupplierAPI,  // NOUVEAU
-    storage: storage
+    Supplier: SupplierAPI,
+    storage: storage,
+    // Exposer aussi la config pour debug
+    config: {
+        baseURL: API_BASE,
+        isLocal: isLocal
+    }
 };
