@@ -5,6 +5,7 @@
 const OrderModel = require('./order.model');
 const ProductModel = require('../products/product.model');
 const logger = require('../../utils/logger');
+const { query } = require('../../config/db'); // centralisé pour requêtes raw SQL
 
 // Générer un slug à partir du nom
 const generateSlug = (name) => {
@@ -35,10 +36,7 @@ const OrderController = {
 
         } catch (error) {
             logger.error('❌ Erreur liste commandes:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            res.status(500).json({ success: false, message: 'Erreur serveur' });
         }
     },
 
@@ -51,31 +49,18 @@ const OrderController = {
             const order = await OrderModel.findById(id);
 
             if (!order) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Commande non trouvée'
-                });
+                return res.status(404).json({ success: false, message: 'Commande non trouvée' });
             }
 
-            // Vérifier que l'utilisateur est propriétaire de la commande
             if (order.user_id !== userId && req.user.role !== 'admin') {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Accès non autorisé'
-                });
+                return res.status(403).json({ success: false, message: 'Accès non autorisé' });
             }
 
-            res.json({
-                success: true,
-                data: { order }
-            });
+            res.json({ success: true, data: { order } });
 
         } catch (error) {
             logger.error('❌ Erreur détail commande:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            res.status(500).json({ success: false, message: 'Erreur serveur' });
         }
     },
 
@@ -99,15 +84,10 @@ const OrderController = {
                 customer_phone
             } = req.body;
 
-            // Validation
             if (!items || !Array.isArray(items) || items.length === 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Le panier est vide'
-                });
+                return res.status(400).json({ success: false, message: 'Le panier est vide' });
             }
 
-            // Récupérer les produits et calculer les totaux
             let subtotal = 0;
             let vatAmount = 0;
             const orderItems = [];
@@ -116,17 +96,11 @@ const OrderController = {
                 const product = await ProductModel.findById(item.product_id);
                 
                 if (!product) {
-                    return res.status(404).json({
-                        success: false,
-                        message: `Produit ${item.product_id} non trouvé`
-                    });
+                    return res.status(404).json({ success: false, message: `Produit ${item.product_id} non trouvé` });
                 }
 
                 if (product.stock_quantity < item.quantity) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Stock insuffisant pour ${product.name}`
-                    });
+                    return res.status(400).json({ success: false, message: `Stock insuffisant pour ${product.name}` });
                 }
 
                 const unitPrice = parseFloat(product.price);
@@ -134,8 +108,7 @@ const OrderController = {
                 const totalPrice = unitPrice * quantity;
                 const vatRate = parseFloat(product.vat_rate || 20);
                 const vatOnItem = totalPrice * (vatRate / 100);
-                
-                // Calcul split paiement (15% commission Brandia par défaut)
+
                 const commissionRate = 0.15;
                 const commissionAmount = totalPrice * commissionRate;
                 const supplierAmount = totalPrice - commissionAmount;
@@ -149,7 +122,7 @@ const OrderController = {
                     product_name: product.name,
                     product_sku: product.sku,
                     product_image_url: product.main_image_url,
-                    quantity: quantity,
+                    quantity,
                     unit_price: unitPrice,
                     vat_rate: vatRate,
                     total_price: totalPrice,
@@ -158,16 +131,10 @@ const OrderController = {
                 });
             }
 
-            // Frais de livraison (simplifié, à améliorer)
             const shippingCost = subtotal > 50 ? 0 : 5.90;
-            
-            // Total
             const totalAmount = subtotal + vatAmount + shippingCost;
-
-            // Générer numéro de commande
             const orderNumber = OrderModel.generateOrderNumber();
 
-            // Créer la commande
             const order = await OrderModel.create({
                 user_id: userId,
                 order_number: orderNumber,
@@ -198,78 +165,49 @@ const OrderController = {
             res.status(201).json({
                 success: true,
                 message: 'Commande créée',
-                data: {
-                    order: {
-                        id: order.id,
-                        order_number: order.order_number,
-                        total_amount: order.total_amount,
-                        status: order.status
-                    }
-                }
+                data: { order: { id: order.id, order_number: order.order_number, total_amount: order.total_amount, status: order.status } }
             });
 
         } catch (error) {
             logger.error('❌ Erreur création commande:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            res.status(500).json({ success: false, message: 'Erreur serveur' });
         }
     },
 
-    // Mettre à jour le statut (admin ou système)
+    // Mettre à jour le statut
     updateStatus: async (req, res) => {
         try {
             const { id } = req.params;
             const { status } = req.body;
 
             const validStatuses = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
-            
             if (!validStatuses.includes(status)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Statut invalide'
-                });
+                return res.status(400).json({ success: false, message: 'Statut invalide' });
             }
 
             const order = await OrderModel.updateStatus(id, status);
-
             logger.info(`✅ Statut commande mis à jour: ${id} → ${status}`);
 
-            res.json({
-                success: true,
-                message: 'Statut mis à jour',
-                data: { order }
-            });
+            res.json({ success: true, message: 'Statut mis à jour', data: { order } });
 
         } catch (error) {
             logger.error('❌ Erreur mise à jour statut:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            res.status(500).json({ success: false, message: 'Erreur serveur' });
         }
     },
 
-    // Commandes pour le dashboard fournisseur
+    // Commandes pour dashboard fournisseur
     getSupplierOrders: async (req, res) => {
         try {
             const userId = req.user.userId;
-            
-            // Trouver le supplier_id lié à cet user
-            const { query } = require('../../config/db');
             const supplierResult = await query('SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1', [userId]);
             
             if (supplierResult.rows.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Fournisseur non trouvé'
-                });
+                return res.status(404).json({ success: false, message: 'Fournisseur non trouvé' });
             }
-            
+
             const supplierId = supplierResult.rows[0].id;
-            
-            // Récupérer les commandes avec produits de ce fournisseur
+
             const ordersResult = await query(`
                 SELECT DISTINCT o.*, 
                        json_agg(json_build_object(
@@ -285,19 +223,12 @@ const OrderController = {
                 GROUP BY o.id
                 ORDER BY o.created_at DESC
             `, [supplierId]);
-            
-            res.json({
-                success: true,
-                count: ordersResult.rows.length,
-                data: { orders: ordersResult.rows }
-            });
+
+            res.json({ success: true, count: ordersResult.rows.length, data: { orders: ordersResult.rows } });
 
         } catch (error) {
             logger.error('❌ Erreur commandes fournisseur:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            res.status(500).json({ success: false, message: 'Erreur serveur' });
         }
     }
 };
