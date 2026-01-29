@@ -1,0 +1,41 @@
+# ============================================
+# Dockerfile - Backend Brandia pour Render
+# ============================================
+
+# Étape 1: Builder Node.js
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copier uniquement les fichiers nécessaires pour installer deps
+COPY package*.json ./
+
+# Installer uniquement les deps de prod
+RUN npm ci --production
+
+# Copier le reste des fichiers
+COPY . .
+
+# Optionnel si TypeScript
+# RUN npm run build
+
+# ============================================
+# Étape 2: Runtime léger
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+# Copier node_modules depuis builder
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copier le reste du code
+COPY --from=builder /app .
+
+# Définir le port par défaut si non fourni
+ENV PORT=4000
+
+# Exposer le port
+EXPOSE $PORT
+
+# Commande de démarrage
+CMD ["node", "src/server.js"]

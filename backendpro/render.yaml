@@ -1,0 +1,62 @@
+services:
+  - type: postgres
+    name: brandia-db
+    plan: starter
+    region: oregon
+
+  - type: web
+    name: brandia-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: $PORT
+      - key: API_URL
+        value: https://brandia-backend.onrender.com
+      - key: FRONTEND_URL
+        value: https://brandia-frontend.onrender.com
+      - key: DB_HOST
+        fromDatabase:
+          name: brandia-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: brandia-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: brandia-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: brandia-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: brandia-db
+          property: password
+      - key: DB_SSL
+        value: "false"
+      - key: JWT_SECRET
+        secret: brandia_jwt_secret
+      - key: JWT_REFRESH_SECRET
+        secret: brandia_jwt_refresh_secret
+      - key: STRIPE_SECRET_KEY
+        secret: stripe_secret_key
+      - key: STRIPE_PUBLISHABLE_KEY
+        secret: stripe_publishable_key
+      - key: STRIPE_WEBHOOK_SECRET
+        secret: stripe_webhook_secret
+      - key: SMTP_USER
+        secret: smtp_user
+      - key: SMTP_PASS
+        secret: smtp_pass
+    healthCheck:
+      path: /health
+      interval: 10s
+      timeout: 5s
+      retries: 5

@@ -1,5 +1,5 @@
 // ============================================
-// BRANDIA BACKEND – ENTRY POINT
+// BRANDIA BACKEND – ENTRY POINT (Render Ready)
 // ============================================
 
 const { validateEnv, env } = require('./config/env');
@@ -8,43 +8,42 @@ const app = require('./app');
 const logger = require('./utils/logger');
 
 // ============================================
-// VALIDATION & DÉMARRAGE
+// START SERVER
 // ============================================
 
 const startServer = async () => {
   try {
-    // Étape 1: Valider les variables d'environnement
+    // 1️⃣ Validate environment variables
     logger.info('🔍 Validating environment variables...');
     validateEnv();
 
-    // Étape 2: Tester la connexion à la base de données
+    // 2️⃣ Test database connection (CRITICAL IN PROD)
     logger.info('📦 Testing database connection...');
-    const dbConnected = await testConnection();
-    
-    if (!dbConnected) {
-      logger.error('❌ Cannot start server without database connection');
-      process.exit(1);
-    }
+    await testConnection();
+    logger.info('✅ Database connected');
 
-    // Étape 3: Démarrer le serveur HTTP
-    const server = app.listen(env.PORT, () => {
-      logger.info(`🚀 Brandia API running on ${env.API_URL}`);
-      logger.info(`📍 Environment: ${env.NODE_ENV}`);
-      logger.info(`🛢️  Database: ${env.DB.HOST}:${env.DB.PORT}/${env.DB.NAME}`);
-      logger.info(`👤 Supplier dashboard: ${env.API_URL}/api/supplier/dashboard`);
-      logger.info(`✅ CORS: Enabled for all origins (*)`);
+    // 3️⃣ Start HTTP server
+    const PORT = env.PORT || process.env.PORT || 4000;
+
+    const server = app.listen(PORT, () => {
+      logger.info(`🚀 Brandia API running on ${env.API_URL || `http://localhost:${PORT}`}`);
+      logger.info(`📍 Environment: ${env.NODE_ENV || 'development'}`);
+      logger.info(`🛢️  Database: ${env.DB?.HOST}:${env.DB?.PORT}/${env.DB?.NAME}`);
+      logger.info('✅ CORS: Enabled for all origins (*)');
     });
 
-    // Gestion gracieuse de l'arrêt
+    // ============================================
+    // Graceful shutdown
+    // ============================================
+
     const gracefulShutdown = (signal) => {
-      logger.info(`📴 Received ${signal}. Starting graceful shutdown...`);
-      
+      logger.info(`📴 Received ${signal}. Shutting down gracefully...`);
+
       server.close(() => {
         logger.info('🔌 HTTP server closed');
         process.exit(0);
       });
 
-      // Forcer l'arrêt après 30s si bloqué
       setTimeout(() => {
         logger.error('⏱️ Forced shutdown after timeout');
         process.exit(1);
@@ -55,10 +54,10 @@ const startServer = async () => {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
-    logger.error('❌ Failed to start server:', error.message);
-    process.exit(1);
+    logger.error('❌ Server startup failed:', error.message);
+    process.exit(1); // ⛔ STOP server if DB or ENV fails
   }
 };
 
-// Lancer le serveur
+// Launch
 startServer();

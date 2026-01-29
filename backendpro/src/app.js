@@ -6,7 +6,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const routes = require('./routes');
-const supplierRoutes = require('./modules/supplier/supplier.routes');
 const errorMiddleware = require('./middlewares/error.middleware');
 const logger = require('./utils/logger');
 
@@ -21,45 +20,35 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// ============================================
-// CORS CORRIGÉ - VERSION DÉVELOPPEMENT
+/// ============================================
+// CORS - Origines spécifiques (PROD + DEV)
 // ============================================
 
-// Option 1: Autoriser TOUTES les origines (développement uniquement)
+const allowedOrigins = [
+  'https://brandia-marketplace.netlify.app',
+  'https://bensghaiermejdi70-alt.github.io',
+  'http://localhost:3000',
+  'http://127.0.0.1:5500', // Live Server local
+  null // Pour les requêtes sans origin (Postman, mobile)
+];
+
 app.use(cors({
-  origin: '*',
+  origin: function (origin, callback) {
+    // Autoriser les requêtes sans origin (Postman) ou celles dans la liste
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS bloqué pour:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Option 2: Origines spécifiques (décommenter pour production)
-// const allowedOrigins = [
-//   'http://localhost:3000',
-//   'http://127.0.0.1:3000',
-//   'http://localhost:5500',
-//   'http://127.0.0.1:5500',
-//   'null' // Pour les fichiers locaux ouverts directement
-// ];
-// 
-// app.use(cors({
-//   origin: function(origin, callback) {
-//     // Autoriser les requêtes sans origine (Postman, mobile apps)
-//     if (!origin) return callback(null, true);
-//     
-//     if (allowedOrigins.indexOf(origin) === -1) {
-//       const msg = 'CORS policy: Origin not allowed';
-//       return callback(new Error(msg), false);
-//     }
-//     return callback(null, true);
-//   },
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-// }));
-
 // ============================================
-// WEBHOOK STRIPE (AVANT express.json())
+// WEBHOOK STRIPE (raw body)
 // ============================================
 
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
@@ -102,11 +91,7 @@ app.get('/api/health', (req, res) => {
 // ROUTES
 // ============================================
 
-// Routes principales (inclut auth, products, orders, payments, countries)
 app.use('/api', routes);
-
-// Routes supplier (dashboard fournisseur)
-app.use('/api/supplier', supplierRoutes);
 
 // ============================================
 // GESTION ERREURS
