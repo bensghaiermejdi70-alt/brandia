@@ -339,6 +339,9 @@ function getFlagEmoji(countryCode) {
   return flags[countryCode] || '🏳️';
 }
 
+// ==========================================
+// CORRECTION : Fonction loadProducts corrigée
+// ==========================================
 async function loadProducts() {
   const grid = document.getElementById('products-grid');
   if (!grid) return;
@@ -346,10 +349,28 @@ async function loadProducts() {
   grid.innerHTML = '<div class="col-span-full text-center py-8"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl"></i><p class="text-neutral-500 mt-2">Chargement...</p></div>';
 
   try {
+    // Vérifier que BrandiaAPI existe
+    if (typeof BrandiaAPI === 'undefined') {
+      throw new Error('API non chargée');
+    }
+
     const data = await BrandiaAPI.Products.getFeatured();
-    let products = data.success ? data.products : [];
+    console.log('API Response:', data); // Debug
     
-    if (products.length === 0) {
+    // CORRECTION : Vérification robuste de la réponse
+    let products = [];
+    if (data && data.success && Array.isArray(data.products)) {
+      products = data.products;
+    } else if (data && Array.isArray(data)) {
+      // Si l'API retourne directement un tableau
+      products = data;
+    } else {
+      console.warn('Format de réponse inattendu:', data);
+    }
+    
+    // Fallback si aucun produit
+    if (!products || products.length === 0) {
+      console.log('Utilisation des produits de démo');
       products = [
         { id: 1, name: 'Sérum Hydratant Premium', supplier_name: 'Luxe Beauty', price: 45.90, compare_at_price: 59.90, category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80' },
         { id: 2, name: 'Montre Élégance Or Rose', supplier_name: 'Time Master', price: 299.00, category_slug: 'montres-bijoux', main_image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
@@ -358,6 +379,12 @@ async function loadProducts() {
     }
 
     const currency = 'EUR';
+    
+    // CORRECTION : Vérification que products est un tableau avant map
+    if (!Array.isArray(products)) {
+      throw new Error('Les produits ne sont pas un tableau');
+    }
+
     grid.innerHTML = products.map((p, index) => {
       const discount = p.compare_at_price ? Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100) : 0;
       const image = p.main_image_url || CATEGORY_IMAGES[p.category_slug] || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
@@ -378,7 +405,7 @@ async function loadProducts() {
                 <p class="font-bold text-indigo-400">${formatPrice(p.price, currency)}</p>
                 ${p.compare_at_price ? `<p class="text-xs text-neutral-500 line-through">${formatPrice(p.compare_at_price, currency)}</p>` : ''}
               </div>
-              <button onclick="BrandiaAPI.Cart.add({id: ${p.id}, name: '${p.name.replace(/'/g, "\\'")}', price: ${p.price}, main_image_url: '${image}'})" class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center transition">
+              <button onclick="addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price}, '${image}', '${p.category_slug}')" class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center transition">
                 <i class="fas fa-plus text-white text-xs"></i>
               </button>
             </div>
@@ -386,9 +413,19 @@ async function loadProducts() {
         </div>
       `;
     }).join('');
+    
   } catch (error) {
     console.error('Erreur chargement produits:', error);
-    grid.innerHTML = '<div class="col-span-full text-center text-red-400">Erreur de connexion</div>';
+    grid.innerHTML = '<div class="col-span-full text-center text-red-400">Erreur de connexion: ' + error.message + '</div>';
+  }
+}
+
+function addToCart(id, name, price, image, category_slug) {
+  if (typeof BrandiaAPI !== 'undefined') {
+    BrandiaAPI.Cart.add({id: id, name: name, price: price, main_image_url: image});
+    showToast('Produit ajouté au panier');
+  } else {
+    console.error('BrandiaAPI non disponible');
   }
 }
 
@@ -453,6 +490,8 @@ function initCountrySelector() {
 }
 
 function initAuth() {
+  if (typeof BrandiaAPI === 'undefined') return;
+  
   const user = BrandiaAPI.Auth.getUser();
   const authButtons = document.getElementById('auth-buttons');
   const userMenu = document.getElementById('user-menu');
@@ -460,6 +499,7 @@ function initAuth() {
   
   if (user && user.email) {
     authButtons?.classList.add('hidden');
+    authButtons?.classList.remove('flex');
     userMenu?.classList.remove('hidden');
     userMenu?.classList.add('flex');
     if (userName) userName.textContent = user.first_name || user.email;
@@ -477,7 +517,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCategories();
   loadProducts();
   initAuth();
-  BrandiaAPI.Cart.updateBadge();
+  if (typeof BrandiaAPI !== 'undefined') {
+    BrandiaAPI.Cart.updateBadge();
+  }
 });
 </script>
 </body>
