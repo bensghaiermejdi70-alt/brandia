@@ -2,48 +2,45 @@
 const { query } = require('../../config/db');
 
 const ProductModel = {
-    findAll: async (options = {}) => {
-        const { category, search, limit = 20, offset = 0 } = options;
-        
-        let sql = `
-            SELECT 
-                p.*, 
-                u.first_name as supplier_name,
-                s.company_name as supplier_company
-            FROM products p
-            LEFT JOIN users u ON p.supplier_id = u.id
-            LEFT JOIN suppliers s ON u.id = s.user_id
-            WHERE p.is_active = true OR p.is_active IS NULL
-        `;
-        const params = [];
-        let paramCount = 0;
+   findAll: async (options = {}) => {
+    const { category, search, limit = 20, offset = 0 } = options;
+    
+    let sql = `
+        SELECT 
+            p.*, 
+            u.first_name as supplier_name,
+            s.company_name as supplier_company
+        FROM products p
+        LEFT JOIN users u ON p.supplier_id = u.id
+        LEFT JOIN suppliers s ON u.id = s.user_id
+        WHERE p.is_active = true OR p.is_active IS NULL
+    `;
+    const params = [];
+    let paramCount = 0;
 
-        if (category) {
-            paramCount++;
-            sql += ` AND p.category_slug = $${paramCount}`;
-            params.push(category);
-        }
-
-        if (search) {
-            paramCount++;
-            sql += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount})`;
-            params.push(`%${search}%`);
-        }
-
+    if (category) {
         paramCount++;
-        sql += ` ORDER BY p.is_featured DESC, p.created_at DESC LIMIT $${paramCount}`;
-        params.push(limit);
+        sql += ` AND p.category_slug = $${paramCount}`;
+        params.push(category);
+        console.log(`[DB] Filtre category ajouté: ${category}`); // LOG
+    }
 
-        if (offset > 0) {
-            paramCount++;
-            sql += ` OFFSET $${paramCount}`;
-            params.push(offset);
-        }
+    if (search) {
+        paramCount++;
+        sql += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount})`;
+        params.push(`%${search}%`);
+    }
 
-        const result = await query(sql, params);
-        return result.rows;
-    },
+    paramCount++;
+    sql += ` ORDER BY p.is_featured DESC, p.created_at DESC LIMIT $${paramCount}`;
+    params.push(limit);
 
+    console.log('[DB] SQL final:', sql); // LOG
+    console.log('[DB] Params:', params); // LOG
+
+    const result = await query(sql, params);
+    return result.rows;
+},
     findById: async (id) => {
         const sql = `
             SELECT 
