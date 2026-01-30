@@ -186,7 +186,7 @@
 
 <script>
 // ==========================================
-// LES 21 CATÉGORIES COMPLÈTES (Identiques à index.html)
+// LES 21 CATÉGORIES (inchangé)
 // ==========================================
 const BRANDIA_CATEGORIES = [
   { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
@@ -248,7 +248,13 @@ const COUNTRIES = {
 
 const state = {
   products: [],
-  filters: { search: '', category: null, minPrice: null, maxPrice: null, sort: 'newest' }
+  filters: { 
+    search: '', 
+    category: null, 
+    minPrice: null, 
+    maxPrice: null, 
+    sort: 'newest' 
+  }
 };
 
 function getFlagEmoji(countryCode) {
@@ -267,6 +273,7 @@ function getFlagEmoji(countryCode) {
 
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
+  if (!toast) return;
   toast.textContent = message;
   toast.className = `toast ${type} show`;
   setTimeout(() => toast.classList.remove('show'), 3000);
@@ -322,11 +329,11 @@ function initFilters() {
   
   updatePageTitle();
 
-  // Injecter les 21 catégories dans le filtre
+  // Injecter les 21 catégories dans le filtre latéral
   const container = document.getElementById('filter-categories');
   if (container) {
     container.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-      <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-1 rounded transition">
+      <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-2 rounded transition ${state.filters.category === cat.slug ? 'bg-neutral-700/30' : ''}">
         <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom" ${state.filters.category === cat.slug ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
         <span class="text-sm text-neutral-300">${cat.name}</span>
       </label>
@@ -350,36 +357,67 @@ function initFilters() {
 function updateCategory(slug) {
   state.filters.category = slug;
   updatePageTitle();
+  
+  // Mettre à jour visuellement le radio sélectionné
+  document.querySelectorAll('#filter-categories label').forEach((label, idx) => {
+    if (BRANDIA_CATEGORIES[idx].slug === slug) {
+      label.classList.add('bg-neutral-700/30');
+    } else {
+      label.classList.remove('bg-neutral-700/30');
+    }
+  });
+  
   loadProducts();
   window.history.replaceState({}, '', `?category=${slug}`);
 }
 
+// ==========================================
+// FONCTION CRITIQUE : Chargement des produits avec filtre
+// ==========================================
 async function loadProducts() {
   const container = document.getElementById('products-container');
   if (!container) return;
   
-  container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement...</p></div>';
+  container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement des produits...</p></div>';
 
   try {
     if (typeof BrandiaAPI === 'undefined') {
-      throw new Error('API non chargée. Vérifiez votre connexion.');
+      throw new Error('API non chargée');
     }
 
+    // CONSTRUCTION DES PARAMÈTRES pour l'API
     const params = {};
-    if (state.filters.category) params.category = state.filters.category;
-    if (state.filters.search) params.search = state.filters.search;
     
+    // Si une catégorie est sélectionnée, on envoie le slug à l'API
+    if (state.filters.category) {
+      params.category = state.filters.category;
+    }
+    
+    // Recherche textuelle
+    if (state.filters.search) {
+      params.search = state.filters.search;
+    }
+    
+    console.log('[Catalogue] Envoi requête avec params:', params);
+    
+    // Appel API avec les filtres
     const data = await BrandiaAPI.Products.getAll(params);
-    console.log('Catalogue API:', data);
+    console.log('[Catalogue] Réponse API:', data);
     
     let products = [];
+    
+    // Extraction des produits selon format de réponse
     if (data && data.data && Array.isArray(data.data.products)) {
       products = data.data.products;
     } else if (data && Array.isArray(data.products)) {
       products = data.products;
+    } else if (data && Array.isArray(data)) {
+      products = data;
     }
     
-    // Filtre prix côté client
+    console.log(`[Catalogue] ${products.length} produits reçus pour la catégorie:`, state.filters.category || 'Toutes');
+    
+    // FILTRAGE PRIX côté client (si l'API ne le fait pas)
     if (state.filters.minPrice) {
       products = products.filter(p => parseFloat(p.price) >= state.filters.minPrice);
     }
@@ -399,56 +437,95 @@ async function loadProducts() {
     renderProducts(products);
     
   } catch (error) {
-    console.error('Erreur:', error);
-    container.innerHTML = `<div class="col-span-full text-center text-red-400 py-8">
-      <i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>
-      ${error.message || 'Erreur de connexion au serveur'}
-    </div>`;
+    console.error('[Catalogue] Erreur:', error);
+    container.innerHTML = `
+      <div class="col-span-full text-center text-red-400 py-12">
+        <i class="fas fa-exclamation-circle text-3xl mb-4"></i>
+        <p>Erreur de connexion au serveur</p>
+        <button onclick="loadProducts()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500">
+          Réessayer
+        </button>
+      </div>
+    `;
   }
 }
 
 function renderProducts(products) {
   const container = document.getElementById('products-container');
   const resultsCount = document.getElementById('results-count');
+  const emptyState = document.getElementById('empty-state');
   
-  if (resultsCount) resultsCount.textContent = `${products.length} produit(s) trouvé(s)`;
+  // Mise à jour du compteur
+  if (resultsCount) {
+    const catName = state.filters.category 
+      ? (BRANDIA_CATEGORIES.find(c => c.slug === state.filters.category)?.name || state.filters.category)
+      : 'toutes les catégories';
+    resultsCount.textContent = `${products.length} produit(s) dans ${catName}`;
+  }
   
+  // CAS 1 : Aucun produit trouvé pour cette catégorie
   if (products.length === 0) {
     container.innerHTML = '';
-    document.getElementById('empty-state')?.classList.remove('hidden');
+    if (emptyState) {
+      emptyState.classList.remove('hidden');
+      
+      // Message personnalisé si on est dans une catégorie vide
+      if (state.filters.category) {
+        const catName = BRANDIA_CATEGORIES.find(c => c.slug === state.filters.category)?.name || state.filters.category;
+        emptyState.innerHTML = `
+          <div class="text-center py-16">
+            <div class="w-24 h-24 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <i class="fas fa-box-open text-neutral-600 text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-2">Catégorie en cours de lancement</h3>
+            <p class="text-neutral-400 mb-4 max-w-md mx-auto">
+              La catégorie <strong>${catName}</strong> n'a pas encore de produits. 
+              Devenez le premier vendeur !
+            </p>
+            <div class="flex gap-3 justify-center">
+              <a href="register.html?type=supplier" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+                Devenir vendeur
+              </a>
+              <button onclick="resetAll()" class="px-6 py-3 border border-neutral-600 text-neutral-300 hover:text-white rounded-lg transition">
+                Voir toutes les catégories
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
     return;
   }
   
-  document.getElementById('empty-state')?.classList.add('hidden');
+  // CAS 2 : Affichage des produits trouvés
+  if (emptyState) emptyState.classList.add('hidden');
   
   container.innerHTML = products.map((p, index) => {
     const price = parseFloat(p.price) || 0;
     const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
     const discount = comparePrice && comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
+    const image = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
+    const supplier = p.supplier_company || p.supplier_name || 'Marque';
     
     return `
       <div class="product-card group bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition-all duration-300 fade-in" style="animation-delay: ${index * 0.05}s">
         <a href="product.html?id=${p.id}" class="block relative">
           <div class="aspect-square overflow-hidden bg-neutral-900">
-            <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" 
-                 alt="${p.name}" 
-                 class="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
-                 loading="lazy" 
-                 onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
+            <img src="${image}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80'">
           </div>
           ${discount > 0 ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">-${discount}%</span>` : ''}
           ${p.is_new ? `<span class="absolute top-2 right-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">Nouveau</span>` : ''}
         </a>
         <div class="p-4">
           <h3 class="text-sm font-medium text-white mb-1 line-clamp-2 hover:text-indigo-400 transition cursor-pointer" onclick="window.location.href='product.html?id=${p.id}'">${p.name}</h3>
-          <p class="text-xs text-neutral-500 mb-2">${p.supplier_company || p.supplier_name || 'Marque officielle'}</p>
+          <p class="text-xs text-neutral-500 mb-2">${supplier}</p>
           <div class="flex items-center justify-between">
             <div>
               <span class="text-lg font-bold text-white">${price.toFixed(2)} €</span>
               ${comparePrice ? `<span class="text-xs text-neutral-500 line-through ml-1 block">${comparePrice.toFixed(2)} €</span>` : ''}
             </div>
-            <button onclick="event.preventDefault(); addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${price}, '${p.main_image_url || ''}')" 
-                    class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg transition transform hover:scale-110">
+            <button onclick="event.preventDefault(); addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${price}, '${image}')" 
+                    class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg transition transform hover:scale-110 active:scale-95">
               <i class="fas fa-plus"></i>
             </button>
           </div>
@@ -459,22 +536,23 @@ function renderProducts(products) {
 }
 
 function addToCart(id, name, price, image) {
+  const item = { id, name, price, main_image_url: image, quantity: 1 };
+  
   if (typeof BrandiaAPI !== 'undefined' && BrandiaAPI.Cart) {
-    BrandiaAPI.Cart.add({id: id, name: name, price: price, main_image_url: image});
-    showToast('Produit ajouté au panier');
+    BrandiaAPI.Cart.add(item);
   } else {
-    // Fallback si API non dispo
     let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-    const existing = cart.find(item => item.id === id);
+    const existing = cart.find(x => x.id === id);
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity = (existing.quantity || 0) + 1;
     } else {
-      cart.push({id: id, name: name, price: price, main_image_url: image, quantity: 1});
+      cart.push(item);
     }
     localStorage.setItem('brandia_cart', JSON.stringify(cart));
-    showToast('Produit ajouté au panier');
-    updateCartBadge();
   }
+  
+  showToast('Produit ajouté au panier');
+  updateCartBadge();
 }
 
 function updateCartBadge() {
@@ -487,7 +565,7 @@ function updateCartBadge() {
       badge.classList.toggle('hidden', count === 0);
     }
   } catch (e) {
-    console.error('Erreur badge panier:', e);
+    console.error('Erreur badge:', e);
   }
 }
 
@@ -508,9 +586,16 @@ function resetPrice() {
 function resetAll() {
   state.filters = { search: '', category: null, minPrice: null, maxPrice: null, sort: 'newest' };
   document.getElementById('search-input').value = '';
-  document.getElementById('mobile-search').value = '';
+  if (document.getElementById('mobile-search')) {
+    document.getElementById('mobile-search').value = '';
+  }
+  
+  // Décocher les radios
   document.querySelectorAll('input[name="category"]').forEach(cb => cb.checked = false);
+  
+  // Réinitialiser l'URL
   window.history.replaceState({}, '', window.location.pathname);
+  
   updatePageTitle();
   loadProducts();
 }
@@ -525,11 +610,11 @@ function initSearch() {
     timeout = setTimeout(() => {
       state.filters.search = e.target.value;
       loadProducts();
-    }, 300);
+    }, 400);
   };
   
-  searchInput?.addEventListener('input', handleSearch);
-  mobileSearch?.addEventListener('input', handleSearch);
+  if (searchInput) searchInput.addEventListener('input', handleSearch);
+  if (mobileSearch) mobileSearch.addEventListener('input', handleSearch);
 }
 
 function initAuth() {
@@ -537,18 +622,18 @@ function initAuth() {
   const user = BrandiaAPI.Auth.getUser();
   const authButtons = document.getElementById('auth-buttons');
   const userMenu = document.getElementById('user-menu');
-  const userName = document.getElementById('user-name');
   
   if (user && user.email) {
     authButtons?.classList.add('hidden');
     userMenu?.classList.remove('hidden');
     userMenu?.classList.add('flex');
+    const userName = document.getElementById('user-name');
     if (userName) userName.textContent = user.first_name || user.email;
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ Catalogue chargé - 21 catégories');
+  console.log('[Catalogue] Initialisation avec 21 catégories');
   initCountrySelector();
   initFilters();
   initSearch();
