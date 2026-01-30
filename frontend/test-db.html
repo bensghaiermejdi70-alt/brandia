@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: monospace; padding: 20px;">
+<h2>Diagnostic Base de données</h2>
+<pre id="result">Chargement...</pre>
+
+<script>
+fetch('https://brandia-1.onrender.com/api/products')
+  .then(r => r.json())
+  .then(data => {
+    const products = data.data.products;
+    let html = 'ID | NOM | CATEGORY_SLUG\n';
+    html += '---|----------------|---------------\n';
+    products.forEach(p => {
+      html += `${p.id} | ${p.name.substring(0,15)}... | ${p.category_slug}\n`;
+    });
+    document.getElementById('result').textContent = html;
+  });
+</script>
+</body>
+</html>
