@@ -296,7 +296,14 @@ const CATEGORY_IMAGES = {
   'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80',
   'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80',
   'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80',
-  'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80'
+  'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80',
+  'alimentaire-boissons': 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=400&h=400&fit=crop&q=80',
+  'jardin-terrasse': 'https://images.unsplash.com/photo-1558293842-c0fd3db86157?w=400&h=400&fit=crop&q=80',
+  'literie-repos': 'https://images.unsplash.com/photo-1522771753035-a0a1f66cd459?w=400&h=400&fit=crop&q=80',
+  'optique-lunetterie': 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop&q=80',
+  'instrument-musique': 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop&q=80',
+  'jeux-jouets': 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=400&h=400&fit=crop&q=80',
+  'auto-moto': 'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=400&h=400&fit=crop&q=80'
 };
 
 const BRANDIA_CATEGORIES = [
@@ -304,23 +311,23 @@ const BRANDIA_CATEGORIES = [
   { slug: 'parfums-fragrances', name: 'Parfums & fragrances', icon: 'fa-spray-can', gradient: 'bg-gradient-to-br from-purple-500 to-indigo-600' },
   { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'bg-gradient-to-br from-red-500 to-pink-600' },
   { slug: 'soins-capillaires', name: 'Soins capillaires', icon: 'fa-cut', gradient: 'bg-gradient-to-br from-amber-500 to-orange-600' },
-  { slug: 'complements-bien-etre', name: 'Compléments bien-être & beauté', icon: 'fa-heart', gradient: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
+  { slug: 'complements-bien-etre', name: 'Compléments bien-être', icon: 'fa-heart', gradient: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
   { slug: 'mode-accessoires', name: 'Mode & accessoires', icon: 'fa-tshirt', gradient: 'bg-gradient-to-br from-blue-500 to-cyan-600' },
   { slug: 'montres-bijoux', name: 'Montres & bijoux', icon: 'fa-gem', gradient: 'bg-gradient-to-br from-yellow-500 to-amber-600' },
-  { slug: 'sport-fitness', name: 'Articles de sport & fitness', icon: 'fa-dumbbell', gradient: 'bg-gradient-to-br from-orange-500 to-red-600' },
+  { slug: 'sport-fitness', name: 'Articles de sport', icon: 'fa-dumbbell', gradient: 'bg-gradient-to-br from-orange-500 to-red-600' },
   { slug: 'nutrition-sportive', name: 'Nutrition sportive', icon: 'fa-apple-alt', gradient: 'bg-gradient-to-br from-green-500 to-emerald-600' },
-  { slug: 'high-tech-mobile', name: 'High-tech & accessoires mobiles', icon: 'fa-mobile-alt', gradient: 'bg-gradient-to-br from-indigo-500 to-blue-600' },
-  { slug: 'electronique-lifestyle', name: 'Électronique lifestyle', icon: 'fa-headphones', gradient: 'bg-gradient-to-br from-violet-500 to-purple-600' },
+  { slug: 'high-tech-mobile', name: 'High-tech & mobile', icon: 'fa-mobile-alt', gradient: 'bg-gradient-to-br from-indigo-500 to-blue-600' },
+  { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', gradient: 'bg-gradient-to-br from-violet-500 to-purple-600' },
   { slug: 'maison-decoration', name: 'Maison & décoration', icon: 'fa-home', gradient: 'bg-gradient-to-br from-orange-500 to-red-500' },
-  { slug: 'parfumerie-interieur', name: 'Parfumerie d\'intérieur', icon: 'fa-fire', gradient: 'bg-gradient-to-br from-rose-400 to-pink-500' },
-  { slug: 'produits-ecologiques', name: 'Produits écologiques & durables', icon: 'fa-leaf', gradient: 'bg-gradient-to-br from-green-400 to-emerald-500' },
+  { slug: 'parfumerie-interieur', name: 'Parfumerie intérieur', icon: 'fa-fire', gradient: 'bg-gradient-to-br from-rose-400 to-pink-500' },
+  { slug: 'produits-ecologiques', name: 'Produits écologiques', icon: 'fa-leaf', gradient: 'bg-gradient-to-br from-green-400 to-emerald-500' },
   { slug: 'bebe-maternite', name: 'Bébé & maternité', icon: 'fa-baby', gradient: 'bg-gradient-to-br from-sky-400 to-blue-500' },
-  { slug: 'animaux-pets', name: 'Animaux & accessoires pets', icon: 'fa-paw', gradient: 'bg-gradient-to-br from-amber-600 to-yellow-600' },
-  { slug: 'sante-hygiene', name: 'Santé & hygiène personnelle', icon: 'fa-heartbeat', gradient: 'bg-gradient-to-br from-red-400 to-rose-500' },
-  { slug: 'bagagerie-voyage', name: 'Bagagerie & accessoires de voyage', icon: 'fa-suitcase', gradient: 'bg-gradient-to-br from-violet-500 to-purple-600' },
-  { slug: 'papeterie-lifestyle', name: 'Papeterie premium & lifestyle', icon: 'fa-pen-fancy', gradient: 'bg-gradient-to-br from-teal-400 to-cyan-500' },
-  { slug: 'artisanat-local', name: 'Produits artisanaux & marques locales', icon: 'fa-hands', gradient: 'bg-gradient-to-br from-orange-400 to-amber-500' },
-  { slug: 'sport-loisirs', name: 'Sport et loisirs', icon: 'fa-bicycle', gradient: 'bg-gradient-to-br from-cyan-500 to-blue-600' }
+  { slug: 'animaux-pets', name: 'Animaux', icon: 'fa-paw', gradient: 'bg-gradient-to-br from-amber-600 to-yellow-600' },
+  { slug: 'sante-hygiene', name: 'Santé & hygiène', icon: 'fa-heartbeat', gradient: 'bg-gradient-to-br from-red-400 to-rose-500' },
+  { slug: 'bagagerie-voyage', name: 'Bagagerie & voyage', icon: 'fa-suitcase', gradient: 'bg-gradient-to-br from-violet-500 to-purple-600' },
+  { slug: 'papeterie-lifestyle', name: 'Papeterie', icon: 'fa-pen-fancy', gradient: 'bg-gradient-to-br from-teal-400 to-cyan-500' },
+  { slug: 'artisanat-local', name: 'Artisanat local', icon: 'fa-hands', gradient: 'bg-gradient-to-br from-orange-400 to-amber-500' },
+  { slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle', gradient: 'bg-gradient-to-br from-cyan-500 to-blue-600' }
 ];
 
 function showToast(message, type = 'success') {
@@ -335,7 +342,16 @@ function formatPrice(price, currency = 'EUR') {
 }
 
 function getFlagEmoji(countryCode) {
-  const flags = { 'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'BE': '🇧🇪', 'PT': '🇵🇹', 'AT': '🇦🇹', 'IE': '🇮🇪', 'FI': '🇫🇮', 'GB': '🇬🇧', 'CH': '🇨🇭', 'US': '🇺🇸', 'CA': '🇨🇦', 'BR': '🇧🇷', 'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'SG': '🇸🇬', 'AU': '🇦🇺', 'TN': '🇹🇳', 'DZ': '🇩🇿', 'MA': '🇲🇦', 'EG': '🇪🇬', 'AE': '🇦🇪', 'SA': '🇸🇦', 'QA': '🇶🇦', 'KW': '🇰🇼' };
+  const flags = { 
+    'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'BE': '🇧🇪', 'PT': '🇵🇹', 
+    'AT': '🇦🇹', 'IE': '🇮🇪', 'FI': '🇫🇮', 'SE': '🇸🇪', 'DK': '🇩🇰', 'NO': '🇳🇴', 'PL': '🇵🇱',
+    'CZ': '🇨🇿', 'HU': '🇭🇺', 'RO': '🇷🇴', 'BG': '🇧🇬', 'HR': '🇭🇷', 'SI': '🇸🇮', 'SK': '🇸🇰',
+    'GB': '🇬🇧', 'CH': '🇨🇭', 'US': '🇺🇸', 'CA': '🇨🇦', 'BR': '🇧🇷', 'MX': '🇲🇽', 'AR': '🇦🇷',
+    'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'SG': '🇸🇬', 'AU': '🇦🇺', 'NZ': '🇳🇿', 'IN': '🇮🇳',
+    'TN': '🇹🇳', 'DZ': '🇩🇿', 'MA': '🇲🇦', 'EG': '🇪🇬', 'ZA': '🇿🇦', 'NG': '🇳🇬', 'KE': '🇰🇪',
+    'AE': '🇦🇪', 'SA': '🇸🇦', 'QA': '🇶🇦', 'KW': '🇰🇼', 'IL': '🇮🇱', 'TR': '🇹🇷', 'RU': '🇷🇺',
+    'UA': '🇺🇦', 'ID': '🇮🇩', 'MY': '🇲🇾', 'TH': '🇹🇭', 'VN': '🇻🇳', 'PH': '🇵🇭'
+  };
   return flags[countryCode] || '🏳️';
 }
 
@@ -346,38 +362,30 @@ async function loadProducts() {
   grid.innerHTML = '<div class="col-span-full text-center py-8"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl"></i><p class="text-neutral-500 mt-2">Chargement...</p></div>';
 
   try {
-    if (typeof BrandiaAPI === 'undefined') {
-      throw new Error('BrandiaAPI non chargé');
-    }
+    if (typeof BrandiaAPI === 'undefined') throw new Error('API non chargée');
 
     const data = await BrandiaAPI.Products.getFeatured();
-    console.log('Réponse API:', data);
+    console.log('API Response:', data);
     
-    // CORRECTION : Format exact {success: true, data: {products: [...]}}
     let products = [];
-    
-    if (data && data.success && data.data && Array.isArray(data.data.products)) {
+    if (data && data.data && Array.isArray(data.data.products)) {
       products = data.data.products;
-      console.log('Produits chargés:', products.length);
-    } else {
-      console.warn('Format inattendu:', data);
-      throw new Error('Format de réponse API invalide');
     }
     
     if (products.length === 0) {
-      grid.innerHTML = '<div class="col-span-full text-center text-neutral-500">Aucun produit en vedette</div>';
-      return;
+      products = [
+        { id: 1, name: 'Sérum Anti-Âge Premium', supplier_company: 'Luxe Beauty', price: '89.90', compare_price: '120.00', category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80' },
+        { id: 2, name: 'Crème Hydratante Bio', supplier_company: 'BioNature', price: '45.50', category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&q=80' }
+      ];
     }
 
     const currency = 'EUR';
     
     grid.innerHTML = products.map((p, index) => {
-      // CORRECTION : Les prix sont des strings dans la DB, on convertit
       const price = parseFloat(p.price) || 0;
       const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
       const discount = comparePrice && comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
       const image = p.main_image_url || CATEGORY_IMAGES[p.category_slug] || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
-      // CORRECTION : Utilisation de supplier_name ou supplier_company
       const supplier = p.supplier_company || p.supplier_name || 'Marque';
       
       return `
@@ -407,44 +415,14 @@ async function loadProducts() {
     
   } catch (error) {
     console.error('Erreur:', error);
-    // Fallback démo si API échoue
-    const fallbackProducts = [
-      { id: 1, name: 'Sérum Anti-Âge Premium', supplier_company: 'Luxe Beauty', price: '89.90', compare_price: '120.00', category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80' },
-      { id: 2, name: 'Crème Hydratante', supplier_company: 'BioNature', price: '45.00', category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&q=80' }
-    ];
-    
-    grid.innerHTML = fallbackProducts.map((p, index) => {
-      const price = parseFloat(p.price);
-      const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
-      const discount = comparePrice ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
-      
-      return `
-        <div class="product-card bg-neutral-800 rounded-lg overflow-hidden ring-1 ring-neutral-700 transition duration-300 fade-in" style="animation-delay: ${index * 0.1}s">
-          <div class="relative">
-            <img src="${p.main_image_url}" class="w-full h-40 object-cover">
-            ${discount > 0 ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">-${discount}%</span>` : ''}
-          </div>
-          <div class="p-3">
-            <p class="text-sm text-neutral-100 truncate font-medium">${p.name}</p>
-            <p class="text-xs text-neutral-400 mb-2">${p.supplier_company}</p>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-bold text-indigo-400">${formatPrice(price, 'EUR')}</p>
-                ${comparePrice ? `<p class="text-xs text-neutral-500 line-through">${formatPrice(comparePrice, 'EUR')}</p>` : ''}
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+    grid.innerHTML = '<div class="col-span-full text-center text-red-400">Erreur: ' + error.message + '</div>';
   }
 }
+
 function addToCart(id, name, price, image, category_slug) {
   if (typeof BrandiaAPI !== 'undefined') {
     BrandiaAPI.Cart.add({id: id, name: name, price: price, main_image_url: image});
     showToast('Produit ajouté au panier');
-  } else {
-    console.error('BrandiaAPI non disponible');
   }
 }
 
@@ -485,11 +463,37 @@ function initCountrySelector() {
   const selector = document.getElementById('countrySelector');
   if (!selector) return;
   
+  // 28 pays complets
   const countries = {
-    'DZ': { name: 'Algérie', currency: 'DZD' }, 'DE': { name: 'Allemagne', currency: 'EUR' }, 'US': { name: 'États-Unis', currency: 'USD' },
-    'BE': { name: 'Belgique', currency: 'EUR' }, 'CA': { name: 'Canada', currency: 'CAD' }, 'FR': { name: 'France', currency: 'EUR' },
-    'IT': { name: 'Italie', currency: 'EUR' }, 'ES': { name: 'Espagne', currency: 'EUR' }, 'TN': { name: 'Tunisie', currency: 'TND' }
-  };
+  'DZ': { name: 'Algérie', currency: 'DZD' },
+  'DE': { name: 'Allemagne', currency: 'EUR' },
+  'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
+  'AU': { name: 'Australie', currency: 'AUD' },
+  'AT': { name: 'Autriche', currency: 'EUR' },
+  'BE': { name: 'Belgique', currency: 'EUR' },
+  'BR': { name: 'Brésil', currency: 'BRL' },
+  'CA': { name: 'Canada', currency: 'CAD' },
+  'CN': { name: 'Chine', currency: 'CNY' },
+  'KR': { name: 'Corée du Sud', currency: 'KRW' },
+  'EG': { name: 'Égypte', currency: 'EGP' },
+  'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
+  'ES': { name: 'Espagne', currency: 'EUR' },
+  'US': { name: 'États-Unis', currency: 'USD' },
+  'FI': { name: 'Finlande', currency: 'EUR' },
+  'FR': { name: 'France', currency: 'EUR' },
+  'IE': { name: 'Irlande', currency: 'EUR' },
+  'IT': { name: 'Italie', currency: 'EUR' },
+  'JP': { name: 'Japon', currency: 'JPY' },
+  'KW': { name: 'Koweït', currency: 'KWD' },
+  'MA': { name: 'Maroc', currency: 'MAD' },
+  'NL': { name: 'Pays-Bas', currency: 'EUR' },
+  'PT': { name: 'Portugal', currency: 'EUR' },
+  'QA': { name: 'Qatar', currency: 'QAR' },
+  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+  'SG': { name: 'Singapour', currency: 'SGD' },
+  'CH': { name: 'Suisse', currency: 'CHF' },
+  'TN': { name: 'Tunisie', currency: 'TND' }
+};
   
   const savedCountry = localStorage.getItem('country') || 'FR';
   selector.innerHTML = '';
@@ -510,7 +514,6 @@ function initCountrySelector() {
 
 function initAuth() {
   if (typeof BrandiaAPI === 'undefined') return;
-  
   const user = BrandiaAPI.Auth.getUser();
   const authButtons = document.getElementById('auth-buttons');
   const userMenu = document.getElementById('user-menu');
@@ -536,9 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCategories();
   loadProducts();
   initAuth();
-  if (typeof BrandiaAPI !== 'undefined') {
-    BrandiaAPI.Cart.updateBadge();
-  }
+  if (typeof BrandiaAPI !== 'undefined') BrandiaAPI.Cart.updateBadge();
 });
 </script>
 </body>

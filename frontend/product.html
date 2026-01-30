@@ -242,18 +242,30 @@ async function loadProduct() {
   }
 
   try {
+    showLoading(true);
     const data = await BrandiaAPI.Products.getById(productId);
+    console.log('Product API Response:', data);
     
-    if (!data.success || !data.product) {
-      showError();
-      return;
+    // CORRECTION : Gestion du format data.data.product
+    let product = null;
+    if (data && data.data && data.data.product) {
+      product = data.data.product;
+    } else if (data && data.product) {
+      product = data.product;
+    } else if (Array.isArray(data) && data.length > 0) {
+      product = data[0];
     }
-
-    currentProduct = data.product;
-    renderProduct(currentProduct);
     
-  } catch (error) {
-    console.error('Erreur:', error);
+    if (!product) {
+      throw new Error('Produit non trouvé');
+    }
+    
+    currentProduct = product;
+    renderProduct(currentProduct);
+    showLoading(false);
+    
+  } catch (err) {
+    console.error('Erreur:', err);
     showError();
   }
 }
@@ -267,45 +279,44 @@ function renderProduct(p) {
   document.getElementById('product-category').textContent = p.category_name || p.category_slug || 'Catégorie';
   document.getElementById('breadcrumb-category').textContent = p.category_name || p.category_slug || 'Produit';
   document.getElementById('product-sku').textContent = `REF: ${p.sku || `BRD-${p.id}`}`;
-  document.getElementById('product-price').textContent = `${p.price.toFixed(2)} €`;
-  document.getElementById('product-short-desc').textContent = p.short_description || p.description?.substring(0, 150) + '...' || 'Aucune description disponible.';
+  
+  // CORRECTION : Conversion string en float
+  const price = parseFloat(p.price) || 0;
+  const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
+  
+  document.getElementById('product-price').textContent = price.toFixed(2) + ' €';
+  
+  if (comparePrice && comparePrice > price) {
+    document.getElementById('product-old-price').textContent = comparePrice.toFixed(2) + ' €';
+    document.getElementById('product-old-price').classList.remove('hidden');
+    const discount = Math.round(((comparePrice - price) / comparePrice) * 100);
+    document.getElementById('product-discount').textContent = `-${discount}%`;
+    document.getElementById('product-discount').classList.remove('hidden');
+  }
+  
+  document.getElementById('product-short-desc').textContent = p.short_description || p.description?.substring(0, 200) + '...' || 'Aucune description';
   document.getElementById('product-description').innerHTML = p.description || '<p>Aucune description détaillée.</p>';
   
   const mainImage = document.getElementById('main-image');
   mainImage.src = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&q=80';
   
-  if (p.compare_at_price && p.compare_at_price > p.price) {
-    document.getElementById('product-old-price').textContent = `${p.compare_at_price.toFixed(2)} €`;
-    document.getElementById('product-old-price').classList.remove('hidden');
-    const discount = Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100);
-    document.getElementById('product-discount').textContent = `-${discount}%`;
-    document.getElementById('product-discount').classList.remove('hidden');
-  }
-  
   const stockEl = document.getElementById('stock-status');
   if (p.stock_quantity > 0) {
     stockEl.innerHTML = `<i class="fas fa-check-circle text-emerald-400"></i><span class="text-emerald-400">En stock (${p.stock_quantity} disponibles)</span>`;
     document.getElementById('btn-add-cart').disabled = false;
+    document.getElementById('btn-add-cart').classList.remove('opacity-50', 'cursor-not-allowed');
   } else {
     stockEl.innerHTML = `<i class="fas fa-times-circle text-red-400"></i><span class="text-red-400">Rupture de stock</span>`;
     document.getElementById('btn-add-cart').disabled = true;
     document.getElementById('btn-add-cart').classList.add('opacity-50', 'cursor-not-allowed');
   }
   
-  const rating = p.rating || 4;
+  const rating = parseFloat(p.rating) || 4.5;
   const stars = Array(5).fill(0).map((_, i) => 
     `<i class="${i < Math.floor(rating) ? 'fas' : 'far'} fa-star review-star"></i>`
   ).join('');
   document.getElementById('product-rating').innerHTML = stars;
   document.getElementById('review-count').textContent = `${p.reviews_count || 0} avis`;
-  
-  if (p.images && p.images.length > 1) {
-    const thumbs = document.getElementById('gallery-thumbs');
-    thumbs.innerHTML = p.images.map((img, idx) => `
-      <img src="${img.url}" class="gallery-thumb w-20 h-20 object-cover rounded-lg ${idx === 0 ? 'active' : ''}" 
-           onclick="changeImage('${img.url}', this)" onerror="this.style.display='none'">
-    `).join('');
-  }
 }
 
 function changeImage(url, thumb) {
