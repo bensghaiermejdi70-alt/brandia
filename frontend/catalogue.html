@@ -13,7 +13,6 @@
     body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .product-card:hover { transform: translateY(-4px); }
-    .filter-sidebar { max-height: calc(100vh - 200px); overflow-y: auto; }
     .range-slider { -webkit-appearance: none; width: 100%; height: 6px; background: #374151; outline: none; border-radius: 3px; }
     .range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #6366f1; cursor: pointer; border-radius: 50%; }
     .checkbox-custom { appearance: none; width: 16px; height: 16px; border: 2px solid #4b5563; border-radius: 4px; background: #1f2937; cursor: pointer; position: relative; }
@@ -42,8 +41,8 @@
     </a>
     
     <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="nouveautes.html" class="hover:text-white">Nouveautés</a>
-      <a href="marques.html" class="hover:text-white">Marques</a>
+      <a href="index.html" class="hover:text-white">Accueil</a>
+      <a href="catalogue.html" class="text-white font-medium">Catalogue</a>
       
       <div class="dropdown-container">
         <div class="hover:text-white flex items-center space-x-1 py-2 cursor-pointer">
@@ -54,8 +53,6 @@
           <div id="dropdown-categories-list"></div>
         </div>
       </div>
-      
-      <a href="offres.html" class="hover:text-white">Offres</a>
     </div>
 
     <div class="flex items-center space-x-3">
@@ -86,7 +83,8 @@
     <div class="flex items-center text-sm text-neutral-400 mb-2">
       <a href="index.html" class="hover:text-white">Accueil</a>
       <i class="fas fa-chevron-right text-xs mx-2"></i>
-      <span class="text-white" id="page-title">Catalogue</span>
+      <!-- CORRECTION : Titre dynamique ici -->
+      <span class="text-white font-medium" id="page-title">Catalogue</span>
     </div>
     <p class="text-neutral-400 text-sm mt-1" id="results-count">Chargement...</p>
   </div>
@@ -121,13 +119,11 @@
 
         <div class="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
           <h3 class="font-semibold text-white mb-3">Catégories</h3>
-          <div class="space-y-2 max-h-64 overflow-y-auto" id="filter-categories">
-            <div class="text-neutral-500 text-sm">Chargement...</div>
-          </div>
+          <div class="space-y-2 max-h-64 overflow-y-auto" id="filter-categories"></div>
         </div>
 
         <button onclick="resetAll()" class="w-full py-2 border border-neutral-600 text-neutral-300 rounded-lg hover:bg-neutral-800 transition text-sm">
-          <i class="fas fa-undo mr-2"></i>Réinitialiser
+          <i class="fas fa-undo mr-2"></i>Réinitialiser les filtres
         </button>
       </div>
     </aside>
@@ -242,6 +238,24 @@ function showToast(message, type = 'success') {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
+// CORRECTION : Fonction pour mettre à jour le titre et breadcrumb
+function updatePageTitle() {
+  const pageTitle = document.getElementById('page-title');
+  
+  if (state.filters.category) {
+    const category = BRANDIA_CATEGORIES.find(c => c.slug === state.filters.category);
+    if (category) {
+      pageTitle.textContent = category.name;
+      document.title = `${category.name} - Brandia`;
+    } else {
+      pageTitle.textContent = state.filters.category;
+    }
+  } else {
+    pageTitle.textContent = 'Catalogue';
+    document.title = 'Catalogue - Brandia';
+  }
+}
+
 function initCountrySelector() {
   const selector = document.getElementById('countrySelector');
   if (!selector) return;
@@ -249,7 +263,6 @@ function initCountrySelector() {
   const savedCountry = localStorage.getItem('country') || 'FR';
   selector.innerHTML = '';
   
-  // Tri par nom de pays (déjà fait dans l'objet COUNTRIES mais on recalcule pour être sûr)
   const sortedCountries = Object.entries(COUNTRIES).sort((a, b) => a[1].name.localeCompare(b[1].name));
   
   sortedCountries.forEach(([code, country]) => {
@@ -271,9 +284,8 @@ function initFilters() {
   const urlParams = new URLSearchParams(window.location.search);
   state.filters.category = urlParams.get('category');
   
-  if (state.filters.category) {
-    document.getElementById('page-title').textContent = BRANDIA_CATEGORIES.find(c => c.slug === state.filters.category)?.name || 'Catalogue';
-  }
+  // CORRECTION : Met à jour le titre immédiatement
+  updatePageTitle();
 
   const container = document.getElementById('filter-categories');
   container.innerHTML = BRANDIA_CATEGORIES.map(cat => `
@@ -295,6 +307,7 @@ function initFilters() {
 
 function updateCategory(slug) {
   state.filters.category = slug;
+  updatePageTitle(); // Met à jour le titre
   loadProducts();
   window.history.replaceState({}, '', `?category=${slug}`);
 }
@@ -361,7 +374,6 @@ function renderProducts(products) {
     const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
     const discount = comparePrice && comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
     
-    // CORRECTION : Lien vers product.html (pas catalogue.html)
     return `
       <div class="product-card group bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition-all">
         <a href="product.html?id=${p.id}" class="block relative">
@@ -387,6 +399,7 @@ function renderProducts(products) {
     `;
   }).join('');
 }
+
 function applyPrice() {
   state.filters.minPrice = parseFloat(document.getElementById('price-min').value) || null;
   state.filters.maxPrice = parseFloat(document.getElementById('price-max').value) || null;
@@ -408,7 +421,7 @@ function resetAll() {
   document.querySelectorAll('input[name="category"]').forEach(cb => cb.checked = false);
   resetPrice();
   window.history.replaceState({}, '', window.location.pathname);
-  document.getElementById('page-title').textContent = 'Catalogue';
+  updatePageTitle(); // Réinitialise le titre
   loadProducts();
 }
 
