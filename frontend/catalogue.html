@@ -60,9 +60,7 @@
 
     <div class="flex items-center space-x-3">
       <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
-        <option value="FR">🇫🇷 France</option>
-        <option value="BE">🇧🇪 Belgique</option>
-        <option value="CA">🇨🇦 Canada</option>
+        <option value="">Chargement...</option>
       </select>
 
       <div id="auth-buttons" class="flex items-center space-x-2">
@@ -191,11 +189,82 @@ const BRANDIA_CATEGORIES = [
   { slug: 'bebe-maternite', name: 'Bébé' }
 ];
 
+// 28 Pays en ordre alphabétique
+const COUNTRIES = {
+  'DZ': { name: 'Algérie', currency: 'DZD' },
+  'DE': { name: 'Allemagne', currency: 'EUR' },
+  'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
+  'AU': { name: 'Australie', currency: 'AUD' },
+  'AT': { name: 'Autriche', currency: 'EUR' },
+  'BE': { name: 'Belgique', currency: 'EUR' },
+  'BR': { name: 'Brésil', currency: 'BRL' },
+  'CA': { name: 'Canada', currency: 'CAD' },
+  'CN': { name: 'Chine', currency: 'CNY' },
+  'KR': { name: 'Corée du Sud', currency: 'KRW' },
+  'EG': { name: 'Égypte', currency: 'EGP' },
+  'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
+  'ES': { name: 'Espagne', currency: 'EUR' },
+  'US': { name: 'États-Unis', currency: 'USD' },
+  'FI': { name: 'Finlande', currency: 'EUR' },
+  'FR': { name: 'France', currency: 'EUR' },
+  'IE': { name: 'Irlande', currency: 'EUR' },
+  'IT': { name: 'Italie', currency: 'EUR' },
+  'JP': { name: 'Japon', currency: 'JPY' },
+  'KW': { name: 'Koweït', currency: 'KWD' },
+  'MA': { name: 'Maroc', currency: 'MAD' },
+  'NL': { name: 'Pays-Bas', currency: 'EUR' },
+  'PT': { name: 'Portugal', currency: 'EUR' },
+  'QA': { name: 'Qatar', currency: 'QAR' },
+  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+  'SG': { name: 'Singapour', currency: 'SGD' },
+  'CH': { name: 'Suisse', currency: 'CHF' },
+  'TN': { name: 'Tunisie', currency: 'TND' }
+};
+
+function getFlagEmoji(countryCode) {
+  const flags = { 
+    'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'BE': '🇧🇪', 'PT': '🇵🇹', 
+    'AT': '🇦🇹', 'IE': '🇮🇪', 'FI': '🇫🇮', 'SE': '🇸🇪', 'DK': '🇩🇰', 'NO': '🇳🇴', 'PL': '🇵🇱',
+    'CZ': '🇨🇿', 'HU': '🇭🇺', 'RO': '🇷🇴', 'BG': '🇧🇬', 'HR': '🇭🇷', 'SI': '🇸🇮', 'SK': '🇸🇰',
+    'GB': '🇬🇧', 'CH': '🇨🇭', 'US': '🇺🇸', 'CA': '🇨🇦', 'BR': '🇧🇷', 'MX': '🇲🇽', 'AR': '🇦🇷',
+    'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'SG': '🇸🇬', 'AU': '🇦🇺', 'NZ': '🇳🇿', 'IN': '🇮🇳',
+    'TN': '🇹🇳', 'DZ': '🇩🇿', 'MA': '🇲🇦', 'EG': '🇪🇬', 'ZA': '🇿🇦', 'NG': '🇳🇬', 'KE': '🇰🇪',
+    'AE': '🇦🇪', 'SA': '🇸🇦', 'QA': '🇶🇦', 'KW': '🇰🇼', 'IL': '🇮🇱', 'TR': '🇹🇷', 'RU': '🇷🇺',
+    'UA': '🇺🇦', 'ID': '🇮🇩', 'MY': '🇲🇾', 'TH': '🇹🇭', 'VN': '🇻🇳', 'PH': '🇵🇭'
+  };
+  return flags[countryCode] || '🏳️';
+}
+
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
   toast.textContent = message;
   toast.className = `toast ${type} show`;
   setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function initCountrySelector() {
+  const selector = document.getElementById('countrySelector');
+  if (!selector) return;
+  
+  const savedCountry = localStorage.getItem('country') || 'FR';
+  selector.innerHTML = '';
+  
+  // Tri par nom de pays (déjà fait dans l'objet COUNTRIES mais on recalcule pour être sûr)
+  const sortedCountries = Object.entries(COUNTRIES).sort((a, b) => a[1].name.localeCompare(b[1].name));
+  
+  sortedCountries.forEach(([code, country]) => {
+    const option = document.createElement('option');
+    option.value = code;
+    option.textContent = `${getFlagEmoji(code)} ${country.name}`;
+    if (code === savedCountry) option.selected = true;
+    selector.appendChild(option);
+  });
+  
+  selector.addEventListener('change', (e) => {
+    localStorage.setItem('country', e.target.value);
+    localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
+    loadProducts();
+  });
 }
 
 function initFilters() {
@@ -240,14 +309,30 @@ async function loadProducts() {
     if (state.filters.search) params.search = state.filters.search;
     
     const data = await BrandiaAPI.Products.getAll(params);
-    let products = data.success ? data.products : [];
     
-    if (state.filters.minPrice) products = products.filter(p => p.price >= state.filters.minPrice);
-    if (state.filters.maxPrice) products = products.filter(p => p.price <= state.filters.maxPrice);
+    // CORRECTION : Gestion du format data.data.products
+    let products = [];
+    if (data && data.data && Array.isArray(data.data.products)) {
+      products = data.data.products;
+    } else if (data && Array.isArray(data.products)) {
+      products = data.products;
+    }
     
+    // Filtre prix
+    if (state.filters.minPrice) {
+      products = products.filter(p => parseFloat(p.price) >= state.filters.minPrice);
+    }
+    if (state.filters.maxPrice) {
+      products = products.filter(p => parseFloat(p.price) <= state.filters.maxPrice);
+    }
+    
+    // Tri
     const sort = document.getElementById('sort-select').value;
-    if (sort === 'price_asc') products.sort((a, b) => a.price - b.price);
-    if (sort === 'price_desc') products.sort((a, b) => b.price - a.price);
+    if (sort === 'price_asc') {
+      products.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+    } else if (sort === 'price_desc') {
+      products.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+    }
 
     state.products = products;
     renderProducts(products);
@@ -271,7 +356,11 @@ function renderProducts(products) {
   document.getElementById('empty-state').classList.add('hidden');
   
   container.innerHTML = products.map(p => {
-    const discount = p.compare_at_price ? Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100) : 0;
+    // CORRECTION : Conversion des prix (strings) en nombres
+    const price = parseFloat(p.price) || 0;
+    const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
+    const discount = comparePrice && comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
+    
     return `
       <div class="product-card group bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition-all">
         <a href="product.html?id=${p.id}" class="block relative">
@@ -282,13 +371,13 @@ function renderProducts(products) {
         </a>
         <div class="p-4">
           <h3 class="text-sm font-medium text-white mb-1 line-clamp-2 hover:text-indigo-400 transition cursor-pointer" onclick="window.location.href='product.html?id=${p.id}'">${p.name}</h3>
-          <p class="text-xs text-neutral-500 mb-2">${p.supplier_name || 'Marque'}</p>
+          <p class="text-xs text-neutral-500 mb-2">${p.supplier_company || p.supplier_name || 'Marque'}</p>
           <div class="flex items-center justify-between">
             <div>
-              <span class="text-lg font-bold text-white">${p.price.toFixed(2)} €</span>
-              ${p.compare_at_price ? `<span class="text-xs text-neutral-500 line-through ml-1 block">${p.compare_at_price.toFixed(2)} €</span>` : ''}
+              <span class="text-lg font-bold text-white">${price.toFixed(2)} €</span>
+              ${comparePrice ? `<span class="text-xs text-neutral-500 line-through ml-1 block">${comparePrice.toFixed(2)} €</span>` : ''}
             </div>
-            <button onclick="event.preventDefault(); BrandiaAPI.Cart.add({id: ${p.id}, name: '${p.name.replace(/'/g, "\\'")}', price: ${p.price}, main_image_url: '${p.main_image_url}'})" class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg">
+            <button onclick="event.preventDefault(); BrandiaAPI.Cart.add({id: ${p.id}, name: '${p.name.replace(/'/g, "\\'")}', price: ${price}, main_image_url: '${p.main_image_url}'})" class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg">
               <i class="fas fa-plus"></i>
             </button>
           </div>
@@ -299,8 +388,8 @@ function renderProducts(products) {
 }
 
 function applyPrice() {
-  state.filters.minPrice = document.getElementById('price-min').value || null;
-  state.filters.maxPrice = document.getElementById('price-max').value || null;
+  state.filters.minPrice = parseFloat(document.getElementById('price-min').value) || null;
+  state.filters.maxPrice = parseFloat(document.getElementById('price-max').value) || null;
   loadProducts();
 }
 
@@ -319,6 +408,7 @@ function resetAll() {
   document.querySelectorAll('input[name="category"]').forEach(cb => cb.checked = false);
   resetPrice();
   window.history.replaceState({}, '', window.location.pathname);
+  document.getElementById('page-title').textContent = 'Catalogue';
   loadProducts();
 }
 
@@ -354,6 +444,7 @@ function initAuth() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initCountrySelector();
   initFilters();
   initSearch();
   loadProducts();
