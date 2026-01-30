@@ -1,18 +1,20 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend (CORRIGÉ POUR PROD)
+// BRANDIA API CLIENT - Frontend (CORRIGÉ)
 // ============================================
 
-// Détection auto de l'environnement (Local vs Production)
+// Détection auto de l'environnement
 const isLocal = window.location.hostname === 'localhost' || 
                 window.location.hostname === '127.0.0.1' ||
                 window.location.protocol === 'file:' ||
-                window.location.hostname.includes('github.io'); // Pour GitHub Pages en test
+                window.location.hostname.includes('github.io');
 
+// CORRECTION : Suppression de l'espace à la fin de l'URL
 const API_BASE = isLocal 
   ? 'http://localhost:4000' 
   : 'https://brandia-1.onrender.com';
 
 const API_BASE_URL = `${API_BASE}/api`;
+const REQUEST_TIMEOUT = 10000; // 10 secondes
 
 console.log(`[Brandia API] Environnement: ${isLocal ? 'LOCAL' : 'PRODUCTION'}`);
 console.log(`[Brandia API] URL Base: ${API_BASE_URL}`);
@@ -22,11 +24,21 @@ const storage = {
     getToken: () => localStorage.getItem('brandia_token'),
     setToken: (token) => localStorage.setItem('brandia_token', token),
     removeToken: () => localStorage.removeItem('brandia_token'),
-    getUser: () => JSON.parse(localStorage.getItem('brandia_user') || '{}'),
-    setUser: (user) => localStorage.setItem('brandia_user', JSON.stringify(user))
+    getUser: () => {
+        try {
+            return JSON.parse(localStorage.getItem('brandia_user') || 'null');
+        } catch {
+            return null;
+        }
+    },
+    setUser: (user) => localStorage.setItem('brandia_user', JSON.stringify(user)),
+    clear: () => {
+        localStorage.removeItem('brandia_token');
+        localStorage.removeItem('brandia_user');
+    }
 };
 
-// Fonction fetch avec auth
+// Fonction fetch avec auth et timeout
 async function apiFetch(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     
@@ -40,22 +52,61 @@ async function apiFetch(endpoint, options = {}) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // Gestion du timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
     try {
         const response = await fetch(url, {
             ...options,
-            headers
+            headers,
+            signal: controller.signal
         });
 
-        const data = await response.json();
+        clearTimeout(timeoutId);
 
+        // Gestion des erreurs HTTP
         if (!response.ok) {
-            throw new Error(data.message || 'Erreur API');
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch {
+                errorData = { message: `Erreur HTTP ${response.status}` };
+            }
+            
+            // Si 401, supprimer le token (session expirée)
+            if (response.status === 401) {
+                storage.clear();
+                // Rediriger vers login si pas déjà sur login
+                if (!window.location.pathname.includes('login')) {
+                    window.location.href = 'login.html?expired=1';
+                    return;
+                }
+            }
+            
+            throw new Error(errorData.message || `Erreur ${response.status}`);
         }
 
-        return data;
+        // Si la réponse est vide (204 No Content par exemple)
+        if (response.status === 204) {
+            return { success: true };
+        }
+
+        return await response.json();
 
     } catch (error) {
-        console.error('API Error:', error);
+        clearTimeout(timeoutId);
+        
+        // Gestion spécifique des erreurs
+        if (error.name === 'AbortError') {
+            throw new Error('La connexion a pris trop de temps. Vérifiez votre connexion internet.');
+        }
+        
+        if (error.message === 'Failed to fetch') {
+            throw new Error('Impossible de joindre le serveur. Vérifiez votre connexion ou réessayez plus tard.');
+        }
+        
+        console.error('[API Error]', error);
         throw error;
     }
 }
@@ -66,38 +117,51 @@ async function apiFetch(endpoint, options = {}) {
 
 const AuthAPI = {
     register: async (userData) => {
-        const data = await apiFetch('/auth/register', {
-            method: 'POST',
-            body: JSON.stringify(userData)
-        });
-        if (data.success) {
-            storage.setToken(data.data.accessToken);
-            storage.setUser(data.data.user);
+        try {
+            const data = await apiFetch('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify(userData)
+            });
+            if (data.success && data.data) {
+                storage.setToken(data.data.accessToken);
+                storage.setUser(data.data.user);
+            }
+            return data;
+        } catch (error) {
+            return { success: false, message: error.message };
         }
-        return data;
     },
 
     login: async (email, password) => {
-        const data = await apiFetch('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-        if (data.success) {
-            storage.setToken(data.data.accessToken);
-            storage.setUser(data.data.user);
+        try {
+            const data = await apiFetch('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            if (data.success && data.data) {
+                storage.setToken(data.data.accessToken);
+                storage.setUser(data.data.user);
+            }
+            return data;
+        } catch (error) {
+            return { success: false, message: error.message };
         }
-        return data;
     },
 
     logout: () => {
-        storage.removeToken();
-        localStorage.removeItem('brandia_user');
+        storage.clear();
         window.location.href = 'index.html';
     },
 
     isLoggedIn: () => !!storage.getToken(),
 
-    getUser: () => storage.getUser()
+    getUser: () => storage.getUser(),
+    
+    // Récupérer le rôle de l'utilisateur
+    getRole: () => {
+        const user = storage.getUser();
+        return user?.role || null;
+    }
 };
 
 // ============================================
@@ -107,7 +171,7 @@ const AuthAPI = {
 const ProductsAPI = {
     getAll: async (params = {}) => {
         const queryString = new URLSearchParams(params).toString();
-        return await apiFetch(`/products?${queryString}`);
+        return await apiFetch(`/products${queryString ? '?' + queryString : ''}`);
     },
 
     getFeatured: async () => {
@@ -124,16 +188,26 @@ const ProductsAPI = {
 };
 
 // ============================================
-// COUNTRIES & CATEGORIES API
+// CATEGORIES API (Ajouté - manquant dans l'original)
+// ============================================
+
+const CategoriesAPI = {
+    getAll: async () => {
+        // Si l'API backend n'a pas encore de endpoint /categories, on utilise les données locales
+        if (typeof BRANDIA_CATEGORIES !== 'undefined') {
+            return { success: true, data: BRANDIA_CATEGORIES };
+        }
+        return await apiFetch('/categories');
+    }
+};
+
+// ============================================
+// COUNTRIES API
 // ============================================
 
 const CountriesAPI = {
     getAll: async () => {
         return await apiFetch('/countries');
-    },
-    
-    getCategories: async () => {
-        return await apiFetch('/countries/categories');
     }
 };
 
@@ -159,21 +233,19 @@ const OrdersAPI = {
 };
 
 // ============================================
-// SUPPLIER API (NOUVEAU - Pour le dashboard)
+// SUPPLIER API
 // ============================================
 
 const SupplierAPI = {
-    // Vérifier l'authentification et le rôle
     init: () => {
-        const token = storage.getToken();
         const user = storage.getUser();
         
-        if (!token) {
+        if (!storage.getToken()) {
             window.location.href = '../login.html?redirect=supplier/dashboard';
             return false;
         }
         
-        if (user.role !== 'supplier') {
+        if (user?.role !== 'supplier') {
             alert('Accès réservé aux fournisseurs');
             window.location.href = '../index.html';
             return false;
@@ -182,31 +254,25 @@ const SupplierAPI = {
         return true;
     },
 
-    logout: () => {
-        AuthAPI.logout();
-    },
+    logout: () => AuthAPI.logout(),
 
-    // Récupérer les statistiques du dashboard
     getStats: async () => {
         try {
             return await apiFetch('/supplier/dashboard');
         } catch (error) {
             console.error('Erreur stats:', error);
-            return { success: false, data: null };
+            return { success: false, data: null, message: error.message };
         }
     },
 
-    // Récupérer les produits du fournisseur
     getProducts: async () => {
         try {
             return await apiFetch('/supplier/products');
         } catch (error) {
-            console.error('Erreur produits:', error);
-            return { success: false, data: { products: [] } };
+            return { success: false, data: { products: [] }, message: error.message };
         }
     },
 
-    // Créer un nouveau produit
     createProduct: async (productData) => {
         try {
             return await apiFetch('/supplier/products', {
@@ -218,7 +284,6 @@ const SupplierAPI = {
         }
     },
 
-    // Modifier un produit
     updateProduct: async (id, productData) => {
         try {
             return await apiFetch(`/supplier/products/${id}`, {
@@ -230,7 +295,6 @@ const SupplierAPI = {
         }
     },
 
-    // Supprimer un produit
     deleteProduct: async (id) => {
         try {
             return await apiFetch(`/supplier/products/${id}`, {
@@ -241,18 +305,15 @@ const SupplierAPI = {
         }
     },
 
-    // Récupérer les commandes du fournisseur
     getOrders: async (status = null) => {
         try {
             const query = status ? `?status=${status}` : '';
             return await apiFetch(`/supplier/orders${query}`);
         } catch (error) {
-            console.error('Erreur commandes:', error);
-            return { success: false, data: { orders: [] } };
+            return { success: false, data: { orders: [] }, message: error.message };
         }
     },
 
-    // Mettre à jour le statut d'une commande
     updateOrderStatus: async (orderId, status) => {
         try {
             return await apiFetch(`/supplier/orders/${orderId}/status`, {
@@ -264,17 +325,14 @@ const SupplierAPI = {
         }
     },
 
-    // Récupérer les informations de paiement
     getPayments: async () => {
         try {
             return await apiFetch('/supplier/payments');
         } catch (error) {
-            console.error('Erreur paiements:', error);
-            return { success: false, data: null };
+            return { success: false, data: null, message: error.message };
         }
     },
 
-    // Demander un virement
     requestPayout: async (amount) => {
         try {
             return await apiFetch('/supplier/payouts', {
@@ -286,16 +344,14 @@ const SupplierAPI = {
         }
     },
 
-    // Récupérer le profil fournisseur
     getProfile: async () => {
         try {
             return await apiFetch('/supplier/profile');
         } catch (error) {
-            return { success: false, data: null };
+            return { success: false, data: null, message: error.message };
         }
     },
 
-    // Mettre à jour le profil
     updateProfile: async (profileData) => {
         try {
             return await apiFetch('/supplier/profile', {
@@ -309,15 +365,24 @@ const SupplierAPI = {
 };
 
 // ============================================
-// CART (LocalStorage)
+// CART API
 // ============================================
 
 const CartAPI = {
     get: () => {
-        return JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+        try {
+            return JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+        } catch {
+            return [];
+        }
     },
 
     add: (product, quantity = 1) => {
+        if (!product || !product.id) {
+            console.error('Produit invalide pour le panier');
+            return;
+        }
+        
         const cart = CartAPI.get();
         const existing = cart.find(item => item.product_id === product.id);
         
@@ -327,14 +392,19 @@ const CartAPI = {
             cart.push({
                 product_id: product.id,
                 name: product.name,
-                price: product.price,
-                image: product.main_image_url,
+                price: parseFloat(product.price) || 0,
+                image: product.main_image_url || product.image || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400',
                 quantity: quantity
             });
         }
         
         localStorage.setItem('brandia_cart', JSON.stringify(cart));
         CartAPI.updateBadge();
+        
+        // Notification visuelle si fonction disponible
+        if (typeof showToast === 'function') {
+            showToast('Produit ajouté au panier');
+        }
     },
 
     remove: (productId) => {
@@ -344,38 +414,71 @@ const CartAPI = {
         CartAPI.updateBadge();
     },
 
+    updateQuantity: (productId, quantity) => {
+        if (quantity < 1) {
+            CartAPI.remove(productId);
+            return;
+        }
+        
+        const cart = CartAPI.get();
+        const item = cart.find(i => i.product_id === productId);
+        if (item) {
+            item.quantity = quantity;
+            localStorage.setItem('brandia_cart', JSON.stringify(cart));
+            CartAPI.updateBadge();
+        }
+    },
+
     clear: () => {
         localStorage.removeItem('brandia_cart');
         CartAPI.updateBadge();
     },
 
     getCount: () => {
-        return CartAPI.get().reduce((sum, item) => sum + item.quantity, 0);
+        return CartAPI.get().reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+    },
+
+    getTotal: () => {
+        return CartAPI.get().reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0);
     },
 
     updateBadge: () => {
-        const badge = document.getElementById('cart-count');
-        if (badge) {
-            badge.textContent = CartAPI.getCount();
-        }
+        const badges = document.querySelectorAll('#cart-count');
+        const count = CartAPI.getCount();
+        
+        badges.forEach(badge => {
+            if (badge) {
+                badge.textContent = count;
+                if (count === 0) {
+                    badge.classList.add('hidden');
+                } else {
+                    badge.classList.remove('hidden');
+                }
+            }
+        });
     }
 };
 
 // ============================================
-// EXPORT
+// EXPORT GLOBAL
 // ============================================
 
 window.BrandiaAPI = {
     Auth: AuthAPI,
     Products: ProductsAPI,
+    Categories: CategoriesAPI,  // Ajouté
     Countries: CountriesAPI,
     Orders: OrdersAPI,
     Cart: CartAPI,
     Supplier: SupplierAPI,
     storage: storage,
-    // Exposer aussi la config pour debug
     config: {
         baseURL: API_BASE,
         isLocal: isLocal
     }
 };
+
+// Initialisation auto du badge panier au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    CartAPI.updateBadge();
+});
