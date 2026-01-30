@@ -374,8 +374,7 @@ async function loadProducts() {
     
     if (products.length === 0) {
       products = [
-        { id: 1, name: 'Sérum Anti-Âge Premium', supplier_company: 'Luxe Beauty', price: '89.90', compare_price: '120.00', category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80' },
-        { id: 2, name: 'Crème Hydratante Bio', supplier_company: 'BioNature', price: '45.50', category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&q=80' }
+        { id: 1, name: 'Sérum Anti-Âge Premium', supplier_company: 'Luxe Beauty', price: '89.90', compare_price: '120.00', category_slug: 'cosmetiques-soins-peau', main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80' }
       ];
     }
 
@@ -385,9 +384,10 @@ async function loadProducts() {
       const price = parseFloat(p.price) || 0;
       const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
       const discount = comparePrice && comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
-      const image = p.main_image_url || CATEGORY_IMAGES[p.category_slug] || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
+      const image = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
       const supplier = p.supplier_company || p.supplier_name || 'Marque';
       
+      // CORRECTION : Lien direct vers product.html avec ID
       return `
         <div class="product-card bg-neutral-800 rounded-lg overflow-hidden ring-1 ring-neutral-700 hover:ring-indigo-500 transition duration-300 fade-in" style="animation-delay: ${index * 0.1}s">
           <a href="product.html?id=${p.id}" class="block relative">
@@ -418,7 +418,6 @@ async function loadProducts() {
     grid.innerHTML = '<div class="col-span-full text-center text-red-400">Erreur: ' + error.message + '</div>';
   }
 }
-
 function addToCart(id, name, price, image, category_slug) {
   if (typeof BrandiaAPI !== 'undefined') {
     BrandiaAPI.Cart.add({id: id, name: name, price: price, main_image_url: image});
