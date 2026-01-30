@@ -11,7 +11,7 @@ const productRoutes = require('../modules/products/product.routes');
 const paymentRoutes = require('../modules/payments/payment.routes');
 const orderRoutes = require('../modules/orders/order.routes');
 const countryRoutes = require('../modules/countries/country.routes');
-const supplierRoutes = require('../modules/supplier/supplier.routes'); // Chemin corrigé
+const supplierRoutes = require('../modules/supplier/supplier.routes');
 
 // ============================================
 // HEALTH CHECK
@@ -29,6 +29,28 @@ router.get('/health', (req, res) => {
 });
 
 // ============================================
+// DEBUG - TEST DB (TEMPORAIRE)
+// ============================================
+
+router.get('/test-db', async (req, res) => {
+    try {
+        const { query } = require('../config/db');
+        const result = await query('SELECT COUNT(*) as count FROM products');
+        res.json({ 
+            success: true, 
+            count: result.rows[0].count,
+            message: 'DB OK' 
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            success: false, 
+            error: err.message,
+            stack: err.stack 
+        });
+    }
+});
+
+// ============================================
 // ROUTES API
 // ============================================
 
@@ -37,7 +59,7 @@ router.use('/products', productRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/countries', countryRoutes);
-router.use('/supplier', supplierRoutes); // Toutes les routes supplier sous /api/supplier/*
+router.use('/supplier', supplierRoutes);
 
 // ============================================
 // DOCUMENTATION API
@@ -58,79 +80,40 @@ router.get('/', (req, res) => {
                 path: '/api/health',
                 description: 'Vérification état du serveur'
             },
+            test: {
+                method: 'GET',
+                path: '/api/test-db',
+                description: 'Test connexion DB (debug)'
+            },
             authentication: {
                 base: '/api/auth',
                 routes: [
                     { method: 'POST', path: '/register', description: 'Inscription client/fournisseur' },
                     { method: 'POST', path: '/login', description: 'Connexion' },
                     { method: 'POST', path: '/refresh', description: 'Rafraîchir token JWT' },
-                    { method: 'GET', path: '/me', auth: true, description: 'Profil utilisateur connecté' },
-                    { method: 'POST', path: '/forgot-password', description: 'Demande réinitialisation mot de passe' },
-                    { method: 'POST', path: '/reset-password', description: 'Réinitialisation mot de passe' }
+                    { method: 'GET', path: '/me', auth: true, description: 'Profil utilisateur connecté' }
                 ]
             },
             products: {
                 base: '/api/products',
                 routes: [
-                    { method: 'GET', path: '/', description: 'Liste des produits (avec filtres)' },
+                    { method: 'GET', path: '/', description: 'Liste des produits' },
                     { method: 'GET', path: '/featured', description: 'Produits en vedette' },
-                    { method: 'GET', path: '/:id', description: 'Détail produit par ID' },
-                    { method: 'GET', path: '/slug/:slug', description: 'Détail produit par slug' }
-                ]
-            },
-            payments: {
-                base: '/api/payments',
-                routes: [
-                    { method: 'POST', path: '/connect/account', auth: true, role: 'supplier', description: 'Créer compte Stripe Connect' },
-                    { method: 'POST', path: '/connect/onboarding', auth: true, role: 'supplier', description: 'Lien onboarding Stripe' },
-                    { method: 'POST', path: '/create-intent', auth: true, description: 'Créer intention de paiement' },
-                    { method: 'GET', path: '/status/:id', auth: true, description: 'Statut paiement' },
-                    { method: 'POST', path: '/webhook', description: 'Webhook Stripe (raw body)' }
-                ]
-            },
-            orders: {
-                base: '/api/orders',
-                routes: [
-                    { method: 'GET', path: '/', auth: true, description: 'Mes commandes (client)' },
-                    { method: 'POST', path: '/', auth: true, role: 'client', description: 'Créer commande' },
-                    { method: 'GET', path: '/:id', auth: true, description: 'Détail commande' }
+                    { method: 'GET', path: '/:id', description: 'Détail produit' }
                 ]
             },
             countries: {
                 base: '/api/countries',
                 routes: [
-                    { method: 'GET', path: '/', description: 'Liste des pays' },
-                    { method: 'GET', path: '/categories', description: 'Liste des catégories' }
+                    { method: 'GET', path: '/', description: 'Liste des pays' }
                 ]
             },
             supplier: {
                 base: '/api/supplier',
-                description: 'Espace fournisseur (authentification requise + rôle supplier)',
+                description: 'Espace fournisseur',
                 routes: [
-                    // Dashboard
-                    { method: 'GET', path: '/dashboard', description: 'Statistiques tableau de bord' },
-                    
-                    // Produits
-                    { method: 'GET', path: '/products', description: 'Mes produits (avec pagination/filtres)' },
-                    { method: 'POST', path: '/products', description: 'Créer un produit' },
-                    { method: 'PUT', path: '/products/:id', description: 'Modifier un produit' },
-                    { method: 'DELETE', path: '/products/:id', description: 'Supprimer un produit' },
-                    
-                    // Commandes
-                    { method: 'GET', path: '/orders', description: 'Commandes clients (avec filtres)' },
-                    { method: 'PUT', path: '/orders/:id/status', description: 'Mettre à jour statut commande' },
-                    
-                    // Paiements
-                    { method: 'GET', path: '/payments', description: 'Solde et historique paiements' },
-                    { method: 'POST', path: '/payouts', description: 'Demander un virement' },
-                    
-                    // Profil
-                    { method: 'GET', path: '/profile', description: 'Mon profil fournisseur' },
-                    { method: 'PUT', path: '/profile', description: 'Modifier profil' },
-                    
-                    // Promotions
-                    { method: 'GET', path: '/promotions', description: 'Mes promotions' },
-                    { method: 'POST', path: '/promotions', description: 'Créer une promotion' }
+                    { method: 'GET', path: '/dashboard', description: 'Statistiques' },
+                    { method: 'GET', path: '/products', description: 'Mes produits' }
                 ]
             }
         },
@@ -151,8 +134,7 @@ router.use((req, res) => {
         success: false,
         message: 'Endpoint non trouvé',
         path: req.path,
-        method: req.method,
-        suggestion: 'Consultez la documentation à GET /api'
+        method: req.method
     });
 });
 
