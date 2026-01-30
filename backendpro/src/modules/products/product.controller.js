@@ -19,12 +19,19 @@ const ProductController = {
         try {
             const { category, search, limit, offset } = req.query;
             
+            // LOG DEBUG CRITIQUE
+            console.log('[CONTROLLER] Query params reçus:', req.query);
+            console.log('[CONTROLLER] Category reçue:', category);
+            console.log('[CONTROLLER] Category type:', typeof category);
+            
             const products = await ProductModel.findAll({
                 category,
                 search,
                 limit: parseInt(limit) || 20,
                 offset: parseInt(offset) || 0
             });
+
+            console.log('[CONTROLLER] Nombre produits retournés:', products.length);
 
             res.json({
                 success: true,
