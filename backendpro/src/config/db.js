@@ -3,24 +3,36 @@
 // ============================================
 
 const { Pool } = require('pg');
-const { env } = require('./env');
 
+// Utilisation directe de process.env (évite les problèmes d'import env.js)
 const pool = new Pool({
-  host: env.DB.HOST,
-  port: env.DB.PORT || 5432,
-  database: env.DB.NAME,
-  user: env.DB.USER,
-  password: env.DB.PASSWORD,
-  ssl: env.DB.SSL === 'true' ? { rejectUnauthorized: false } : false,
-  max: 20,           // max connections
-  idleTimeoutMillis: 30000, // close idle clients after 30s
-  connectionTimeoutMillis: 2000, // fail after 2s if cannot connect
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
+
+// Fonction query pour les requêtes
+const query = async (text, params) => {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(text, params);
+    return result;
+  } finally {
+    client.release();
+  }
+};
 
 // Fonction de test de connexion
 const testConnection = async () => {
   try {
     const client = await pool.connect();
+    await client.query('SELECT NOW()');
     client.release();
     return true;
   } catch (err) {
@@ -31,5 +43,6 @@ const testConnection = async () => {
 
 module.exports = {
   pool,
+  query,
   testConnection
 };
