@@ -12,7 +12,7 @@
   <style>
     body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .product-card:hover { transform: translateY(-4px); }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.3); }
     .range-slider { -webkit-appearance: none; width: 100%; height: 6px; background: #374151; outline: none; border-radius: 3px; }
     .range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #6366f1; cursor: pointer; border-radius: 50%; }
     .checkbox-custom { appearance: none; width: 16px; height: 16px; border: 2px solid #4b5563; border-radius: 4px; background: #1f2937; cursor: pointer; position: relative; }
@@ -20,6 +20,8 @@
     .checkbox-custom:checked::after { content: '✓'; position: absolute; color: white; font-size: 10px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
     .skeleton { background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; }
     @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .dropdown-container { position: relative; }
     .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 0; padding-top: 10px; z-index: 50; }
     .dropdown-container:hover .dropdown-menu, .dropdown-menu:hover { display: block; }
@@ -41,18 +43,22 @@
     </a>
     
     <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="index.html" class="hover:text-white">Accueil</a>
+      <a href="index.html" class="hover:text-white transition">Accueil</a>
       <a href="catalogue.html" class="text-white font-medium">Catalogue</a>
       
       <div class="dropdown-container">
-        <div class="hover:text-white flex items-center space-x-1 py-2 cursor-pointer">
+        <div class="dropdown-trigger hover:text-white flex items-center space-x-1 transition cursor-pointer py-2">
           <span>Catégories</span>
           <i class="fas fa-chevron-down text-xs"></i>
         </div>
-        <div class="dropdown-menu w-72 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 py-2 max-h-96 overflow-y-auto">
-          <div id="dropdown-categories-list"></div>
+        <div class="dropdown-menu w-80 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 py-2 max-h-[70vh] overflow-y-auto">
+          <div id="dropdown-categories-list">
+            <div class="text-neutral-500 text-xs px-4 py-2">Chargement...</div>
+          </div>
         </div>
       </div>
+      
+      <a href="marques.html" class="hover:text-white transition">Marques</a>
     </div>
 
     <div class="flex items-center space-x-3">
@@ -60,9 +66,14 @@
         <option value="">Chargement...</option>
       </select>
 
+      <select id="langSwitch" class="hidden px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none">
+        <option value="fr">🇫🇷 FR</option>
+        <option value="en">🇬🇧 EN</option>
+      </select>
+
       <div id="auth-buttons" class="flex items-center space-x-2">
-        <a href="login.html" class="text-sm text-neutral-300 hover:text-white">Connexion</a>
-        <a href="register.html" class="px-3 py-1 bg-indigo-500 hover:bg-indigo-400 text-white text-sm rounded transition">S'inscrire</a>
+        <a href="login.html" class="text-sm text-neutral-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-neutral-800 transition">Connexion</a>
+        <a href="register.html" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition">S'inscrire</a>
       </div>
       
       <div id="user-menu" class="hidden items-center space-x-3">
@@ -81,12 +92,11 @@
 <section class="border-b border-neutral-800 bg-neutral-900/50">
   <div class="container max-w-7xl mx-auto px-4 py-4">
     <div class="flex items-center text-sm text-neutral-400 mb-2">
-      <a href="index.html" class="hover:text-white">Accueil</a>
+      <a href="index.html" class="hover:text-white transition">Accueil</a>
       <i class="fas fa-chevron-right text-xs mx-2"></i>
-      <!-- CORRECTION : Titre dynamique ici -->
       <span class="text-white font-medium" id="page-title">Catalogue</span>
     </div>
-    <p class="text-neutral-400 text-sm mt-1" id="results-count">Chargement...</p>
+    <p class="text-neutral-400 text-sm mt-1" id="results-count">Chargement des produits...</p>
   </div>
 </section>
 
@@ -110,20 +120,25 @@
           </h3>
           <div class="space-y-3">
             <div class="flex gap-2">
-              <input type="number" id="price-min" placeholder="Min" class="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm focus:border-indigo-500 outline-none">
-              <input type="number" id="price-max" placeholder="Max" class="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm focus:border-indigo-500 outline-none">
+              <input type="number" id="price-min" placeholder="Min €" class="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm focus:border-indigo-500 outline-none">
+              <input type="number" id="price-max" placeholder="Max €" class="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm focus:border-indigo-500 outline-none">
             </div>
             <button onclick="applyPrice()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded text-sm text-white transition">Appliquer</button>
           </div>
         </div>
 
         <div class="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
-          <h3 class="font-semibold text-white mb-3">Catégories</h3>
-          <div class="space-y-2 max-h-64 overflow-y-auto" id="filter-categories"></div>
+          <h3 class="font-semibold text-white mb-3 flex justify-between items-center">
+            <span>Catégories</span>
+            <span class="text-xs text-neutral-500" id="cat-count">21</span>
+          </h3>
+          <div class="space-y-2 max-h-64 overflow-y-auto" id="filter-categories">
+            <!-- Les 21 catégories seront injectées ici -->
+          </div>
         </div>
 
         <button onclick="resetAll()" class="w-full py-2 border border-neutral-600 text-neutral-300 rounded-lg hover:bg-neutral-800 transition text-sm">
-          <i class="fas fa-undo mr-2"></i>Réinitialiser les filtres
+          <i class="fas fa-undo mr-2"></i>Réinitialiser filtres
         </button>
       </div>
     </aside>
@@ -147,13 +162,16 @@
       </div>
 
       <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <div class="col-span-full text-center py-12 text-neutral-500">Chargement des produits...</div>
+        <div class="col-span-full text-center py-12">
+          <i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-4"></i>
+          <p class="text-neutral-500">Chargement des produits...</p>
+        </div>
       </div>
 
       <div id="empty-state" class="hidden text-center py-16">
         <i class="fas fa-search text-6xl text-neutral-600 mb-4"></i>
         <h3 class="text-xl font-semibold text-white mb-2">Aucun produit trouvé</h3>
-        <p class="text-neutral-400 mb-4">Essayez de modifier vos filtres</p>
+        <p class="text-neutral-400 mb-4">Essayez de modifier vos filtres ou votre recherche</p>
         <button onclick="resetAll()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">Réinitialiser</button>
       </div>
     </main>
@@ -167,25 +185,36 @@
 <div id="toast" class="toast"></div>
 
 <script>
-const state = {
-  products: [],
-  filters: { search: '', category: null, minPrice: null, maxPrice: null, sort: 'newest' }
-};
-
+// ==========================================
+// LES 21 CATÉGORIES COMPLÈTES (Identiques à index.html)
+// ==========================================
 const BRANDIA_CATEGORIES = [
-  { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins' },
-  { slug: 'parfums-fragrances', name: 'Parfums' },
-  { slug: 'maquillage', name: 'Maquillage' },
-  { slug: 'soins-capillaires', name: 'Soins capillaires' },
-  { slug: 'mode-accessoires', name: 'Mode & accessoires' },
-  { slug: 'montres-bijoux', name: 'Montres & bijoux' },
-  { slug: 'sport-fitness', name: 'Sport & fitness' },
-  { slug: 'high-tech-mobile', name: 'High-tech' },
-  { slug: 'maison-decoration', name: 'Maison & déco' },
-  { slug: 'bebe-maternite', name: 'Bébé' }
+  { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
+  { slug: 'parfums-fragrances', name: 'Parfums & fragrances', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
+  { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'from-red-500 to-pink-600' },
+  { slug: 'soins-capillaires', name: 'Soins capillaires', icon: 'fa-cut', gradient: 'from-amber-500 to-orange-600' },
+  { slug: 'complements-bien-etre', name: 'Compléments bien-être', icon: 'fa-heart', gradient: 'from-emerald-500 to-teal-600' },
+  { slug: 'mode-accessoires', name: 'Mode & accessoires', icon: 'fa-tshirt', gradient: 'from-blue-500 to-cyan-600' },
+  { slug: 'montres-bijoux', name: 'Montres & bijoux', icon: 'fa-gem', gradient: 'from-yellow-500 to-amber-600' },
+  { slug: 'sport-fitness', name: 'Articles de sport', icon: 'fa-dumbbell', gradient: 'from-orange-500 to-red-600' },
+  { slug: 'nutrition-sportive', name: 'Nutrition sportive', icon: 'fa-apple-alt', gradient: 'from-green-500 to-emerald-600' },
+  { slug: 'high-tech-mobile', name: 'High-tech & mobile', icon: 'fa-mobile-alt', gradient: 'from-indigo-500 to-blue-600' },
+  { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', gradient: 'from-violet-500 to-purple-600' },
+  { slug: 'maison-decoration', name: 'Maison & décoration', icon: 'fa-home', gradient: 'from-orange-500 to-red-500' },
+  { slug: 'parfumerie-interieur', name: 'Parfumerie intérieur', icon: 'fa-fire', gradient: 'from-rose-400 to-pink-500' },
+  { slug: 'produits-ecologiques', name: 'Produits écologiques', icon: 'fa-leaf', gradient: 'from-green-400 to-emerald-500' },
+  { slug: 'bebe-maternite', name: 'Bébé & maternité', icon: 'fa-baby', gradient: 'from-sky-400 to-blue-500' },
+  { slug: 'animaux-pets', name: 'Animaux', icon: 'fa-paw', gradient: 'from-amber-600 to-yellow-600' },
+  { slug: 'sante-hygiene', name: 'Santé & hygiène', icon: 'fa-heartbeat', gradient: 'from-red-400 to-rose-500' },
+  { slug: 'bagagerie-voyage', name: 'Bagagerie & voyage', icon: 'fa-suitcase', gradient: 'from-violet-500 to-purple-600' },
+  { slug: 'papeterie-lifestyle', name: 'Papeterie premium', icon: 'fa-pen-fancy', gradient: 'from-teal-400 to-cyan-500' },
+  { slug: 'artisanat-local', name: 'Artisanat local', icon: 'fa-hands', gradient: 'from-orange-400 to-amber-500' },
+  { slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle', gradient: 'from-cyan-500 to-blue-600' }
 ];
 
-// 28 Pays en ordre alphabétique
+// ==========================================
+// CONFIGURATION PAYS (28 pays)
+// ==========================================
 const COUNTRIES = {
   'DZ': { name: 'Algérie', currency: 'DZD' },
   'DE': { name: 'Allemagne', currency: 'EUR' },
@@ -217,6 +246,11 @@ const COUNTRIES = {
   'TN': { name: 'Tunisie', currency: 'TND' }
 };
 
+const state = {
+  products: [],
+  filters: { search: '', category: null, minPrice: null, maxPrice: null, sort: 'newest' }
+};
+
 function getFlagEmoji(countryCode) {
   const flags = { 
     'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'BE': '🇧🇪', 'PT': '🇵🇹', 
@@ -238,9 +272,9 @@ function showToast(message, type = 'success') {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// CORRECTION : Fonction pour mettre à jour le titre et breadcrumb
 function updatePageTitle() {
   const pageTitle = document.getElementById('page-title');
+  const catCount = document.getElementById('cat-count');
   
   if (state.filters.category) {
     const category = BRANDIA_CATEGORIES.find(c => c.slug === state.filters.category);
@@ -254,6 +288,8 @@ function updatePageTitle() {
     pageTitle.textContent = 'Catalogue';
     document.title = 'Catalogue - Brandia';
   }
+  
+  if (catCount) catCount.textContent = BRANDIA_CATEGORIES.length;
 }
 
 function initCountrySelector() {
@@ -284,22 +320,28 @@ function initFilters() {
   const urlParams = new URLSearchParams(window.location.search);
   state.filters.category = urlParams.get('category');
   
-  // CORRECTION : Met à jour le titre immédiatement
   updatePageTitle();
 
+  // Injecter les 21 catégories dans le filtre
   const container = document.getElementById('filter-categories');
-  container.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-    <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-1 rounded transition">
-      <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom" ${state.filters.category === cat.slug ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
-      <span class="text-sm text-neutral-300">${cat.name}</span>
-    </label>
-  `).join('');
+  if (container) {
+    container.innerHTML = BRANDIA_CATEGORIES.map(cat => `
+      <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-1 rounded transition">
+        <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom" ${state.filters.category === cat.slug ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
+        <span class="text-sm text-neutral-300">${cat.name}</span>
+      </label>
+    `).join('');
+  }
 
+  // Dropdown header avec les 21 catégories
   const dropdown = document.getElementById('dropdown-categories-list');
   if (dropdown) {
     dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-      <a href="catalogue.html?category=${cat.slug}" class="block px-4 py-2 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
-        ${cat.name}
+      <a href="catalogue.html?category=${cat.slug}" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
+        <div class="w-8 h-8 bg-gradient-to-br ${cat.gradient} rounded-lg flex items-center justify-center flex-shrink-0">
+          <i class="fas ${cat.icon} text-white text-xs"></i>
+        </div>
+        <span class="font-medium truncate">${cat.name}</span>
       </a>
     `).join('');
   }
@@ -307,16 +349,22 @@ function initFilters() {
 
 function updateCategory(slug) {
   state.filters.category = slug;
-  updatePageTitle(); // Met à jour le titre
+  updatePageTitle();
   loadProducts();
   window.history.replaceState({}, '', `?category=${slug}`);
 }
 
 async function loadProducts() {
   const container = document.getElementById('products-container');
-  container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl"></i></div>';
+  if (!container) return;
+  
+  container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement...</p></div>';
 
   try {
+    if (typeof BrandiaAPI === 'undefined') {
+      throw new Error('API non chargée. Vérifiez votre connexion.');
+    }
+
     const params = {};
     if (state.filters.category) params.category = state.filters.category;
     if (state.filters.search) params.search = state.filters.search;
@@ -324,7 +372,6 @@ async function loadProducts() {
     const data = await BrandiaAPI.Products.getAll(params);
     console.log('Catalogue API:', data);
     
-    // CORRECTION : Gestion format data.data.products
     let products = [];
     if (data && data.data && Array.isArray(data.data.products)) {
       products = data.data.products;
@@ -332,7 +379,7 @@ async function loadProducts() {
       products = data.products;
     }
     
-    // Filtre prix
+    // Filtre prix côté client
     if (state.filters.minPrice) {
       products = products.filter(p => parseFloat(p.price) >= state.filters.minPrice);
     }
@@ -341,7 +388,7 @@ async function loadProducts() {
     }
     
     // Tri
-    const sort = document.getElementById('sort-select').value;
+    const sort = document.getElementById('sort-select')?.value || 'newest';
     if (sort === 'price_asc') {
       products.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
     } else if (sort === 'price_desc') {
@@ -353,44 +400,55 @@ async function loadProducts() {
     
   } catch (error) {
     console.error('Erreur:', error);
-    container.innerHTML = '<div class="col-span-full text-center text-red-400">Erreur de connexion</div>';
+    container.innerHTML = `<div class="col-span-full text-center text-red-400 py-8">
+      <i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>
+      ${error.message || 'Erreur de connexion au serveur'}
+    </div>`;
   }
 }
 
 function renderProducts(products) {
   const container = document.getElementById('products-container');
-  document.getElementById('results-count').textContent = `${products.length} produit(s) trouvé(s)`;
+  const resultsCount = document.getElementById('results-count');
+  
+  if (resultsCount) resultsCount.textContent = `${products.length} produit(s) trouvé(s)`;
   
   if (products.length === 0) {
     container.innerHTML = '';
-    document.getElementById('empty-state').classList.remove('hidden');
+    document.getElementById('empty-state')?.classList.remove('hidden');
     return;
   }
   
-  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('empty-state')?.classList.add('hidden');
   
-  container.innerHTML = products.map(p => {
+  container.innerHTML = products.map((p, index) => {
     const price = parseFloat(p.price) || 0;
     const comparePrice = p.compare_price ? parseFloat(p.compare_price) : null;
     const discount = comparePrice && comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
     
     return `
-      <div class="product-card group bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition-all">
+      <div class="product-card group bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition-all duration-300 fade-in" style="animation-delay: ${index * 0.05}s">
         <a href="product.html?id=${p.id}" class="block relative">
           <div class="aspect-square overflow-hidden bg-neutral-900">
-            <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
+            <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" 
+                 alt="${p.name}" 
+                 class="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                 loading="lazy" 
+                 onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
           </div>
           ${discount > 0 ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">-${discount}%</span>` : ''}
+          ${p.is_new ? `<span class="absolute top-2 right-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">Nouveau</span>` : ''}
         </a>
         <div class="p-4">
           <h3 class="text-sm font-medium text-white mb-1 line-clamp-2 hover:text-indigo-400 transition cursor-pointer" onclick="window.location.href='product.html?id=${p.id}'">${p.name}</h3>
-          <p class="text-xs text-neutral-500 mb-2">${p.supplier_company || p.supplier_name || 'Marque'}</p>
+          <p class="text-xs text-neutral-500 mb-2">${p.supplier_company || p.supplier_name || 'Marque officielle'}</p>
           <div class="flex items-center justify-between">
             <div>
               <span class="text-lg font-bold text-white">${price.toFixed(2)} €</span>
               ${comparePrice ? `<span class="text-xs text-neutral-500 line-through ml-1 block">${comparePrice.toFixed(2)} €</span>` : ''}
             </div>
-            <button onclick="event.preventDefault(); BrandiaAPI.Cart.add({id: ${p.id}, name: '${p.name.replace(/'/g, "\\'")}', price: ${price}, main_image_url: '${p.main_image_url}'})" class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg">
+            <button onclick="event.preventDefault(); addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${price}, '${p.main_image_url || ''}')" 
+                    class="w-8 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg transition transform hover:scale-110">
               <i class="fas fa-plus"></i>
             </button>
           </div>
@@ -398,6 +456,39 @@ function renderProducts(products) {
       </div>
     `;
   }).join('');
+}
+
+function addToCart(id, name, price, image) {
+  if (typeof BrandiaAPI !== 'undefined' && BrandiaAPI.Cart) {
+    BrandiaAPI.Cart.add({id: id, name: name, price: price, main_image_url: image});
+    showToast('Produit ajouté au panier');
+  } else {
+    // Fallback si API non dispo
+    let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+    const existing = cart.find(item => item.id === id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({id: id, name: name, price: price, main_image_url: image, quantity: 1});
+    }
+    localStorage.setItem('brandia_cart', JSON.stringify(cart));
+    showToast('Produit ajouté au panier');
+    updateCartBadge();
+  }
+}
+
+function updateCartBadge() {
+  try {
+    const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const badge = document.getElementById('cart-count');
+    if (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('hidden', count === 0);
+    }
+  } catch (e) {
+    console.error('Erreur badge panier:', e);
+  }
 }
 
 function applyPrice() {
@@ -419,9 +510,8 @@ function resetAll() {
   document.getElementById('search-input').value = '';
   document.getElementById('mobile-search').value = '';
   document.querySelectorAll('input[name="category"]').forEach(cb => cb.checked = false);
-  resetPrice();
   window.history.replaceState({}, '', window.location.pathname);
-  updatePageTitle(); // Réinitialise le titre
+  updatePageTitle();
   loadProducts();
 }
 
@@ -443,6 +533,7 @@ function initSearch() {
 }
 
 function initAuth() {
+  if (typeof BrandiaAPI === 'undefined') return;
   const user = BrandiaAPI.Auth.getUser();
   const authButtons = document.getElementById('auth-buttons');
   const userMenu = document.getElementById('user-menu');
@@ -457,12 +548,13 @@ function initAuth() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ Catalogue chargé - 21 catégories');
   initCountrySelector();
   initFilters();
   initSearch();
-  loadProducts();
   initAuth();
-  BrandiaAPI.Cart.updateBadge();
+  loadProducts();
+  updateCartBadge();
 });
 </script>
 </body>
