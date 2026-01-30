@@ -202,7 +202,9 @@
 // ==========================================
 // CONFIGURATION
 // ==========================================
-const API_URL = 'http://localhost:4000';
+const API_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:4000' 
+  : 'https://brandia-1.onrender.com';
 
 // Fallback API si api.js non chargé
 const BrandiaAPI = window.BrandiaAPI || {

@@ -407,8 +407,8 @@ function updateTotalsDisplay() {
 // STRIPE INITIALIZATION
 // ==========================================
 function initStripe() {
-  // Clé publique Stripe - à remplacer par votre vraie clé
-  const stripePublicKey = 'pk_test_YOUR_STRIPE_PUBLIC_KEY';
+  // Clé publique Stripe 
+  const stripePublicKey = 'pk_live_51SWLnJCwS8UwOtxyp78DzDFaYPS0fvWS46p9ZVT9C0qF0O4OlJH9UMSzok3zvH79Oiaww8Ml8OtFjlhEPfn2BdRF00WhzE3sxE';
   
   stripe = Stripe(stripePublicKey);
   const elements = stripe.elements({
