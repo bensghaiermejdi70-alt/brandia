@@ -7,17 +7,18 @@ const ProductModel = {
         const params = [];
         
         if (category) {
-            sql += ' AND category_slug = $1';
             params.push(category);
+            sql += ` AND category_slug = $${params.length}`;
         }
         
         if (search) {
-            sql += ` AND (name ILIKE $${params.length + 1} OR description ILIKE $${params.length + 1})`;
             params.push(`%${search}%`);
+            sql += ` AND (name ILIKE $${params.length} OR description ILIKE $${params.length})`;
         }
         
-        sql += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        // Ajout LIMIT et OFFSET avec bons indices
         params.push(limit, offset);
+        sql += ` ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
         
         const result = await query(sql, params);
         return result.rows;
@@ -29,7 +30,7 @@ const ProductModel = {
     },
     
     findFeatured: async (limit = 8) => {
-        const result = await query('SELECT * FROM products WHERE is_featured = true AND is_active = true LIMIT $1', [limit]);
+        const result = await query('SELECT * FROM products WHERE is_featured = true AND is_active = true ORDER BY created_at DESC LIMIT $1', [limit]);
         return result.rows;
     }
 };
