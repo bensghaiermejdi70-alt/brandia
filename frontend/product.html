@@ -236,6 +236,8 @@ async function loadProduct() {
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
   
+  console.log('Product ID from URL:', productId);
+  
   if (!productId) {
     showError();
     return;
@@ -244,20 +246,18 @@ async function loadProduct() {
   try {
     showLoading(true);
     const data = await BrandiaAPI.Products.getById(productId);
-    console.log('Product API Response:', data);
+    console.log('Product Detail API:', data);
     
-    // CORRECTION : Gestion du format data.data.product
+    // CORRECTION : Extraction du produit dans data.data.product
     let product = null;
     if (data && data.data && data.data.product) {
       product = data.data.product;
     } else if (data && data.product) {
       product = data.product;
-    } else if (Array.isArray(data) && data.length > 0) {
-      product = data[0];
     }
     
     if (!product) {
-      throw new Error('Produit non trouvé');
+      throw new Error('Produit non trouvé dans la réponse API');
     }
     
     currentProduct = product;
@@ -265,11 +265,10 @@ async function loadProduct() {
     showLoading(false);
     
   } catch (err) {
-    console.error('Erreur:', err);
+    console.error('Erreur chargement:', err);
     showError();
   }
 }
-
 function renderProduct(p) {
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('product-content').classList.remove('hidden');
