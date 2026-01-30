@@ -13,7 +13,7 @@ const ProductModel = {
         FROM products p
         LEFT JOIN users u ON p.supplier_id = u.id
         LEFT JOIN suppliers s ON u.id = s.user_id
-        WHERE p.is_active = true OR p.is_active IS NULL
+        WHERE (p.is_active = true OR p.is_active IS NULL)
     `;
     const params = [];
     let paramCount = 0;
