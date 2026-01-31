@@ -29,6 +29,24 @@ router.get('/health', (req, res) => {
 });
 
 // ============================================
+// CORRECTION IMAGE DIFFUSEUR (TEMPORAIRE)
+// ============================================
+
+router.get('/fix-diffuseur', async (req, res) => {
+    try {
+        const { query } = require('../config/db');
+        await query(`
+            UPDATE products 
+            SET main_image_url = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800' 
+            WHERE id = 11
+        `);
+        res.send('✅ Image du diffuseur corrigée ! Rafraîchissez la page produit.');
+    } catch (err) {
+        res.status(500).send('Erreur: ' + err.message);
+    }
+});
+
+// ============================================
 // DEBUG - TEST DB (TEMPORAIRE)
 // ============================================
 
@@ -137,15 +155,5 @@ router.use((req, res) => {
         method: req.method
     });
 });
-// Correction temporaire image diffuseur
-router.get('/fix-diffuseur', async (req, res) => {
-    const db = require('../config/db');
-    await db.query(`
-        UPDATE products 
-        SET main_image_url = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800' 
-        WHERE id = 11
-    `);
-    res.send('✅ Image du diffuseur corrigée ! Rafraîchissez la page produit.');
-    });
 
 module.exports = router;
