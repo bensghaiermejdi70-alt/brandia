@@ -20,7 +20,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-/// ============================================
+// ============================================
 // CORS - Origines spécifiques (PROD + DEV)
 // ============================================
 
@@ -28,13 +28,12 @@ const allowedOrigins = [
   'https://brandia-marketplace.netlify.app',
   'https://bensghaiermejdi70-alt.github.io',
   'http://localhost:3000',
-  'http://127.0.0.1:5500', // Live Server local
-  null // Pour les requêtes sans origin (Postman, mobile)
+  'http://127.0.0.1:5500',
+  null
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Autoriser les requêtes sans origin (Postman) ou celles dans la liste
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -90,15 +89,13 @@ app.get('/api/health', (req, res) => {
 // ============================================
 // ROUTES
 // ============================================
-app.use('/api', routes);                    // tes autres routes
-app.use('/api/test-email', require('./routes/testEmail'));
 
+app.use('/api', routes);
 
 // ============================================
 // GESTION ERREURS
 // ============================================
 
-// 404
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -108,7 +105,6 @@ app.use((req, res) => {
   });
 });
 
-// Erreurs globales
 app.use(errorMiddleware);
 
 module.exports = app;
