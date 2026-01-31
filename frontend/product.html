@@ -278,7 +278,7 @@ function renderProduct(p) {
     document.getElementById('product-discount').classList.remove('hidden');
   }
   
-  const imgUrl = (p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&q=80').trim();
+  const imgUrl = (p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600').trim();
   document.getElementById('main-image').src = imgUrl;
   document.getElementById('main-image').alt = p.name;
   
