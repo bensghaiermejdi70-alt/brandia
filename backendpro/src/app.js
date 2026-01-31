@@ -89,7 +89,9 @@ app.get('/api/health', (req, res) => {
 // ============================================
 // ROUTES
 // ============================================
-
+// Test email temporaire
+const testEmailRouter = require('./routes/testEmail');
+app.use('/api/test', testEmailRouter);
 app.use('/api', routes);
 
 // ============================================
