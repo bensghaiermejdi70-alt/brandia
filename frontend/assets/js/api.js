@@ -1,5 +1,5 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend (CORRIGÉ)
+// BRANDIA API CLIENT - Frontend (CORRIGÉ PROD)
 // ============================================
 
 // Détection auto de l'environnement
@@ -8,38 +8,46 @@ const isLocal = window.location.hostname === 'localhost' ||
                 window.location.protocol === 'file:' ||
                 window.location.hostname.includes('github.io');
 
-// CORRECTION : Suppression de l'espace à la fin de l'URL
+// ✅ CORRECTION : Suppression de l'espace fatal à la fin
 const API_BASE = isLocal 
   ? 'http://localhost:4000' 
   : 'https://brandia-1.onrender.com';
 
 const API_BASE_URL = `${API_BASE}/api`;
-const REQUEST_TIMEOUT = 10000; // 10 secondes
+const REQUEST_TIMEOUT = 15000; // 15 secondes pour Render (cold start)
 
-console.log(`[Brandia API] Environnement: ${isLocal ? 'LOCAL' : 'PRODUCTION'}`);
-console.log(`[Brandia API] URL Base: ${API_BASE_URL}`);
+console.log(`[Brandia API] Mode: ${isLocal ? 'LOCAL' : 'PRODUCTION'}`);
+console.log(`[Brandia API] Endpoint: ${API_BASE_URL}`);
 
-// Stockage local
+// ============================================
+// STOCKAGE (Cohérent avec login.html existant)
+// ============================================
 const storage = {
-    getToken: () => localStorage.getItem('brandia_token'),
-    setToken: (token) => localStorage.setItem('brandia_token', token),
-    removeToken: () => localStorage.removeItem('brandia_token'),
+    // ✅ Uniformisé : utilise 'token' partout (pas 'brandia_token')
+    getToken: () => localStorage.getItem('token'),
+    setToken: (token) => localStorage.setItem('token', token),
+    removeToken: () => localStorage.removeItem('token'),
+    
     getUser: () => {
         try {
-            return JSON.parse(localStorage.getItem('brandia_user') || 'null');
+            return JSON.parse(localStorage.getItem('user') || 'null');
         } catch {
             return null;
         }
     },
-    setUser: (user) => localStorage.setItem('brandia_user', JSON.stringify(user)),
+    setUser: (user) => localStorage.setItem('user', JSON.stringify(user)),
+    
     clear: () => {
-        localStorage.removeItem('brandia_token');
-        localStorage.removeItem('brandia_user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
     }
 };
 
-// Fonction fetch avec auth et timeout
-async function apiFetch(endpoint, options = {}) {
+// ============================================
+// FETCH AVANCÉ (avec retry et gestion erreurs)
+// ============================================
+async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
     const headers = {
@@ -52,11 +60,11 @@ async function apiFetch(endpoint, options = {}) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // Gestion du timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
     try {
+        console.log(`[API] ${options.method || 'GET'} ${url}`);
         const response = await fetch(url, {
             ...options,
             headers,
@@ -65,29 +73,32 @@ async function apiFetch(endpoint, options = {}) {
 
         clearTimeout(timeoutId);
 
-        // Gestion des erreurs HTTP
+        // Gestion 401 - Token expiré
+        if (response.status === 401) {
+            storage.clear();
+            if (!window.location.pathname.includes('login')) {
+                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
+                return { success: false, message: 'Session expirée' };
+            }
+        }
+
+        // Gestion 404
+        if (response.status === 404) {
+            throw new Error('Ressource non trouvée');
+        }
+
+        // Gestion erreurs HTTP
         if (!response.ok) {
             let errorData;
             try {
                 errorData = await response.json();
             } catch {
-                errorData = { message: `Erreur HTTP ${response.status}` };
+                errorData = { message: `Erreur serveur (${response.status})` };
             }
-            
-            // Si 401, supprimer le token (session expirée)
-            if (response.status === 401) {
-                storage.clear();
-                // Rediriger vers login si pas déjà sur login
-                if (!window.location.pathname.includes('login')) {
-                    window.location.href = 'login.html?expired=1';
-                    return;
-                }
-            }
-            
             throw new Error(errorData.message || `Erreur ${response.status}`);
         }
 
-        // Si la réponse est vide (204 No Content par exemple)
+        // Réponse vide (204)
         if (response.status === 204) {
             return { success: true };
         }
@@ -97,24 +108,29 @@ async function apiFetch(endpoint, options = {}) {
     } catch (error) {
         clearTimeout(timeoutId);
         
-        // Gestion spécifique des erreurs
-        if (error.name === 'AbortError') {
-            throw new Error('La connexion a pris trop de temps. Vérifiez votre connexion internet.');
+        // Retry sur erreur réseau (1 retry max)
+        if (retryCount === 0 && (error.name === 'TypeError' || error.name === 'AbortError')) {
+            console.warn(`[API] Retry ${url}...`);
+            await new Promise(r => setTimeout(r, 1000));
+            return apiFetch(endpoint, options, retryCount + 1);
         }
-        
-        if (error.message === 'Failed to fetch') {
-            throw new Error('Impossible de joindre le serveur. Vérifiez votre connexion ou réessayez plus tard.');
+
+        // Messages utilisateur friendly
+        let userMessage = error.message;
+        if (error.name === 'AbortError') {
+            userMessage = 'Le serveur met trop de temps à répondre. Réessayez.';
+        } else if (error.message === 'Failed to fetch') {
+            userMessage = 'Connexion impossible. Vérifiez votre internet ou réessayez dans 30s (cold start Render).';
         }
         
         console.error('[API Error]', error);
-        throw error;
+        throw new Error(userMessage);
     }
 }
 
 // ============================================
 // AUTH API
 // ============================================
-
 const AuthAPI = {
     register: async (userData) => {
         try {
@@ -140,7 +156,13 @@ const AuthAPI = {
             });
             if (data.success && data.data) {
                 storage.setToken(data.data.accessToken);
+                if (data.data.refreshToken) {
+                    localStorage.setItem('refreshToken', data.data.refreshToken);
+                }
                 storage.setUser(data.data.user);
+                
+                // Synchroniser le panier guest si existe
+                CartAPI.syncWithServer();
             }
             return data;
         } catch (error) {
@@ -149,6 +171,8 @@ const AuthAPI = {
     },
 
     logout: () => {
+        // Appel API pour invalider le token côté serveur (optionnel mais propre)
+        apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
         storage.clear();
         window.location.href = 'index.html';
     },
@@ -157,17 +181,25 @@ const AuthAPI = {
 
     getUser: () => storage.getUser(),
     
-    // Récupérer le rôle de l'utilisateur
     getRole: () => {
         const user = storage.getUser();
         return user?.role || null;
+    },
+
+    // Vérifier si token encore valide (appel /api/auth/me)
+    checkAuth: async () => {
+        try {
+            const data = await apiFetch('/auth/me');
+            return data.success;
+        } catch {
+            return false;
+        }
     }
 };
 
 // ============================================
 // PRODUCTS API
 // ============================================
-
 const ProductsAPI = {
     getAll: async (params = {}) => {
         const queryString = new URLSearchParams(params).toString();
@@ -184,37 +216,47 @@ const ProductsAPI = {
 
     getBySlug: async (slug) => {
         return await apiFetch(`/products/slug/${slug}`);
+    },
+    
+    // Recherche
+    search: async (query) => {
+        return await apiFetch(`/products?search=${encodeURIComponent(query)}`);
     }
 };
 
 // ============================================
-// CATEGORIES API (Ajouté - manquant dans l'original)
+// CATEGORIES API
 // ============================================
-
 const CategoriesAPI = {
     getAll: async () => {
-        // Si l'API backend n'a pas encore de endpoint /categories, on utilise les données locales
-        if (typeof BRANDIA_CATEGORIES !== 'undefined') {
-            return { success: true, data: BRANDIA_CATEGORIES };
+        try {
+            return await apiFetch('/categories');
+        } catch {
+            // Fallback local si API down
+            if (typeof BRANDIA_CATEGORIES !== 'undefined') {
+                return { success: true, data: BRANDIA_CATEGORIES };
+            }
+            throw new Error('Catégories non disponibles');
         }
-        return await apiFetch('/categories');
     }
 };
 
 // ============================================
 // COUNTRIES API
 // ============================================
-
 const CountriesAPI = {
     getAll: async () => {
         return await apiFetch('/countries');
+    },
+    
+    getCurrent: () => {
+        return localStorage.getItem('country') || 'FR';
     }
 };
 
 // ============================================
 // ORDERS API
 // ============================================
-
 const OrdersAPI = {
     create: async (orderData) => {
         return await apiFetch('/orders', {
@@ -233,9 +275,8 @@ const OrdersAPI = {
 };
 
 // ============================================
-// SUPPLIER API
+// SUPPLIER API (Dashboard Fournisseur)
 // ============================================
-
 const SupplierAPI = {
     init: () => {
         const user = storage.getUser();
@@ -261,7 +302,15 @@ const SupplierAPI = {
             return await apiFetch('/supplier/dashboard');
         } catch (error) {
             console.error('Erreur stats:', error);
-            return { success: false, data: null, message: error.message };
+            // Données mockées si API down (pour démo)
+            return { 
+                success: true, 
+                data: {
+                    stats: { totalSales: 0, totalOrders: 0, productsCount: 0, balance: 0 },
+                    recentOrders: [],
+                    salesChart: []
+                }
+            };
         }
     },
 
@@ -274,100 +323,63 @@ const SupplierAPI = {
     },
 
     createProduct: async (productData) => {
-        try {
-            return await apiFetch('/supplier/products', {
-                method: 'POST',
-                body: JSON.stringify(productData)
-            });
-        } catch (error) {
-            return { success: false, message: error.message };
-        }
+        return await apiFetch('/supplier/products', {
+            method: 'POST',
+            body: JSON.stringify(productData)
+        });
     },
 
     updateProduct: async (id, productData) => {
-        try {
-            return await apiFetch(`/supplier/products/${id}`, {
-                method: 'PUT',
-                body: JSON.stringify(productData)
-            });
-        } catch (error) {
-            return { success: false, message: error.message };
-        }
+        return await apiFetch(`/supplier/products/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(productData)
+        });
     },
 
     deleteProduct: async (id) => {
-        try {
-            return await apiFetch(`/supplier/products/${id}`, {
-                method: 'DELETE'
-            });
-        } catch (error) {
-            return { success: false, message: error.message };
-        }
+        return await apiFetch(`/supplier/products/${id}`, {
+            method: 'DELETE'
+        });
     },
 
     getOrders: async (status = null) => {
-        try {
-            const query = status ? `?status=${status}` : '';
-            return await apiFetch(`/supplier/orders${query}`);
-        } catch (error) {
-            return { success: false, data: { orders: [] }, message: error.message };
-        }
+        const query = status ? `?status=${status}` : '';
+        return await apiFetch(`/supplier/orders${query}`);
     },
 
     updateOrderStatus: async (orderId, status) => {
-        try {
-            return await apiFetch(`/supplier/orders/${orderId}/status`, {
-                method: 'PUT',
-                body: JSON.stringify({ status })
-            });
-        } catch (error) {
-            return { success: false, message: error.message };
-        }
+        return await apiFetch(`/supplier/orders/${orderId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ status })
+        });
     },
 
     getPayments: async () => {
-        try {
-            return await apiFetch('/supplier/payments');
-        } catch (error) {
-            return { success: false, data: null, message: error.message };
-        }
+        return await apiFetch('/supplier/payments');
     },
 
     requestPayout: async (amount) => {
-        try {
-            return await apiFetch('/supplier/payouts', {
-                method: 'POST',
-                body: JSON.stringify({ amount })
-            });
-        } catch (error) {
-            return { success: false, message: error.message };
-        }
+        return await apiFetch('/supplier/payouts', {
+            method: 'POST',
+            body: JSON.stringify({ amount })
+        });
     },
 
     getProfile: async () => {
-        try {
-            return await apiFetch('/supplier/profile');
-        } catch (error) {
-            return { success: false, data: null, message: error.message };
-        }
+        return await apiFetch('/supplier/profile');
     },
 
     updateProfile: async (profileData) => {
-        try {
-            return await apiFetch('/supplier/profile', {
-                method: 'PUT',
-                body: JSON.stringify(profileData)
-            });
-        } catch (error) {
-            return { success: false, message: error.message };
-        }
+        return await apiFetch('/supplier/profile', {
+            method: 'PUT',
+            body: JSON.stringify(profileData)
+        });
     }
 };
 
 // ============================================
-// CART API
+// CART API (LocalStorage + Sync serveur)
 // ============================================
-
 const CartAPI = {
     get: () => {
         try {
@@ -378,22 +390,23 @@ const CartAPI = {
     },
 
     add: (product, quantity = 1) => {
-        if (!product || !product.id) {
+        if (!product || (!product.id && !product.product_id)) {
             console.error('Produit invalide pour le panier');
             return;
         }
         
         const cart = CartAPI.get();
-        const existing = cart.find(item => item.product_id === product.id);
+        const productId = product.id || product.product_id;
+        const existing = cart.find(item => (item.product_id || item.id) == productId);
         
         if (existing) {
-            existing.quantity += quantity;
+            existing.quantity = (parseInt(existing.quantity) || 0) + quantity;
         } else {
             cart.push({
-                product_id: product.id,
+                product_id: productId,
                 name: product.name,
                 price: parseFloat(product.price) || 0,
-                image: product.main_image_url || product.image || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400',
+                image: product.main_image_url || product.image || product.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400',
                 quantity: quantity
             });
         }
@@ -401,7 +414,7 @@ const CartAPI = {
         localStorage.setItem('brandia_cart', JSON.stringify(cart));
         CartAPI.updateBadge();
         
-        // Notification visuelle si fonction disponible
+        // Toast si disponible
         if (typeof showToast === 'function') {
             showToast('Produit ajouté au panier');
         }
@@ -409,7 +422,7 @@ const CartAPI = {
 
     remove: (productId) => {
         let cart = CartAPI.get();
-        cart = cart.filter(item => item.product_id !== productId);
+        cart = cart.filter(item => (item.product_id || item.id) != productId);
         localStorage.setItem('brandia_cart', JSON.stringify(cart));
         CartAPI.updateBadge();
     },
@@ -421,9 +434,9 @@ const CartAPI = {
         }
         
         const cart = CartAPI.get();
-        const item = cart.find(i => i.product_id === productId);
+        const item = cart.find(i => (i.product_id || i.id) == productId);
         if (item) {
-            item.quantity = quantity;
+            item.quantity = parseInt(quantity);
             localStorage.setItem('brandia_cart', JSON.stringify(cart));
             CartAPI.updateBadge();
         }
@@ -439,7 +452,11 @@ const CartAPI = {
     },
 
     getTotal: () => {
-        return CartAPI.get().reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0);
+        return CartAPI.get().reduce((sum, item) => {
+            const price = parseFloat(item.price) || 0;
+            const qty = parseInt(item.quantity) || 0;
+            return sum + (price * qty);
+        }, 0);
     },
 
     updateBadge: () => {
@@ -449,24 +466,57 @@ const CartAPI = {
         badges.forEach(badge => {
             if (badge) {
                 badge.textContent = count;
-                if (count === 0) {
-                    badge.classList.add('hidden');
-                } else {
-                    badge.classList.remove('hidden');
-                }
+                badge.classList.toggle('hidden', count === 0);
             }
         });
+    },
+
+    // Sync avec serveur si connecté (pour panier persistant)
+    syncWithServer: async () => {
+        if (!AuthAPI.isLoggedIn()) return;
+        // TODO: Implémenter sync panier serveur quand endpoint prêt
+    },
+
+    // Préparer pour checkout (transfert vers checkout.html)
+    prepareCheckout: () => {
+        const cart = CartAPI.get();
+        if (cart.length === 0) return false;
+        
+        const subtotal = CartAPI.getTotal();
+        const shipping = subtotal >= 50 ? 0 : 5.90;
+        
+        localStorage.setItem('brandia_checkout_cart', JSON.stringify({
+            items: cart,
+            totals: {
+                subtotal: subtotal,
+                shipping: shipping,
+                total: subtotal + shipping
+            },
+            timestamp: Date.now()
+        }));
+        
+        return true;
     }
 };
 
 // ============================================
+// GESTION ERREURS GLOBALES
+// ============================================
+window.addEventListener('unhandledrejection', function(event) {
+    if (event.reason && event.reason.message && 
+        (event.reason.message.includes('Failed to fetch') || event.reason.message.includes('NetworkError'))) {
+        console.warn('[Brandia] Connexion API perdue - Mode dégradé');
+        // Tu peux afficher une bannière "Mode offline" ici
+    }
+});
+
+// ============================================
 // EXPORT GLOBAL
 // ============================================
-
 window.BrandiaAPI = {
     Auth: AuthAPI,
     Products: ProductsAPI,
-    Categories: CategoriesAPI,  // Ajouté
+    Categories: CategoriesAPI,
     Countries: CountriesAPI,
     Orders: OrdersAPI,
     Cart: CartAPI,
@@ -474,11 +524,19 @@ window.BrandiaAPI = {
     storage: storage,
     config: {
         baseURL: API_BASE,
-        isLocal: isLocal
+        isLocal: isLocal,
+        apiURL: API_BASE_URL
     }
 };
 
-// Initialisation auto du badge panier au chargement
+// Initialisation auto
 document.addEventListener('DOMContentLoaded', () => {
     CartAPI.updateBadge();
+    
+    // Si URL contient ?expired=1, afficher message
+    if (window.location.search.includes('expired=1')) {
+        if (typeof showToast === 'function') {
+            showToast('Votre session a expiré. Veuillez vous reconnecter.', 'error');
+        }
+    }
 });
