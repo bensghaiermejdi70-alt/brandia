@@ -73,25 +73,14 @@ app.use((req, res, next) => {
 });
 
 // ============================================
-// HEALTH CHECK
-// ============================================
-
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Brandia API is running',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    cors: 'enabled'
-  });
-});
-
-// ============================================
 // ROUTES
 // ============================================
+
 // Test email temporaire
 const testEmailRouter = require('./routes/testEmail');
 app.use('/api/test', testEmailRouter);
+
+// Routes principales API
 app.use('/api', routes);
 
 // ============================================
