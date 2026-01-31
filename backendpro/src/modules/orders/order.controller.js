@@ -1,28 +1,42 @@
 // ============================================
-// ORDER CONTROLLER - Avec intégration Stripe
+// ORDER CONTROLLER - Avec Stripe Connect & Transactions
 // ============================================
 
 const OrderModel = require('./order.model');
 const ProductModel = require('../products/product.model');
 const logger = require('../../utils/logger');
-const { query } = require('../../config/db');
-const stripe = require('../../config/stripe'); // Instance Stripe configurée
+const { pool } = require('../../config/db'); // 🎯 Import pool pour transactions
+const stripe = require('../../config/stripe');
 
-// Générer numéro de commande unique
+// ==========================================
+// HELPERS
+// ==========================================
+
 const generateOrderNumber = () => {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 5).toUpperCase();
     return `BRD-${timestamp}-${random}`;
 };
 
+// ==========================================
+// CONTROLLER
+// ==========================================
+
 const OrderController = {
-    // Liste des commandes de l'utilisateur connecté
+    
+    // ==========================================
+    // Liste des commandes (client)
+    // ==========================================
     list: async (req, res) => {
         try {
             const userId = req.user.userId;
             const { limit = 20, offset = 0 } = req.query;
 
-            const orders = await OrderModel.findByUser(userId, parseInt(limit), parseInt(offset));
+            const orders = await OrderModel.findByUser(
+                userId,
+                parseInt(limit),
+                parseInt(offset)
+            );
 
             res.json({
                 success: true,
@@ -36,7 +50,9 @@ const OrderController = {
         }
     },
 
+    // ==========================================
     // Détail d'une commande
+    // ==========================================
     detail: async (req, res) => {
         try {
             const { id } = req.params;
@@ -48,10 +64,9 @@ const OrderController = {
                 return res.status(404).json({ success: false, message: 'Commande non trouvée' });
             }
 
-            // Vérifier autorisation (propriétaire ou admin ou fournisseur concerné)
+            // Vérifier autorisation (propriétaire, admin, ou fournisseur concerné)
             if (order.user_id !== userId && req.user.role !== 'admin') {
-                // Vérifier si c'est un fournisseur qui a des produits dans cette commande
-                const supplierCheck = await query(
+                const supplierCheck = await pool.query(
                     `SELECT 1 FROM order_items oi 
                      JOIN suppliers s ON oi.supplier_id = s.id 
                      WHERE oi.order_id = $1 AND s.user_id = $2 LIMIT 1`,
@@ -71,11 +86,15 @@ const OrderController = {
         }
     },
 
-    // Créer une commande (checkout) avec Stripe PaymentIntent
+    // ==========================================
+    // CRÉER UNE COMMANDE (Checkout avec Stripe Connect)
+    // ==========================================
     create: async (req, res) => {
-        const client = await query('BEGIN').catch(() => ({ query: () => {} })); // Transaction
+        const client = await pool.connect(); // 🎯 CORRECTION: Utiliser pool.connect()
         
         try {
+            await client.query('BEGIN'); // 🎯 CORRECTION: Transaction propre
+            
             const userId = req.user.userId;
             const {
                 items,
@@ -84,9 +103,6 @@ const OrderController = {
                 shipping_postal_code,
                 shipping_country_code = 'FR',
                 billing_address,
-                billing_city,
-                billing_postal_code,
-                billing_country_code,
                 customer_email,
                 customer_first_name,
                 customer_last_name,
@@ -95,19 +111,23 @@ const OrderController = {
 
             // Validation
             if (!items || !Array.isArray(items) || items.length === 0) {
+                await client.query('ROLLBACK');
+                client.release();
                 return res.status(400).json({ success: false, message: 'Le panier est vide' });
             }
 
-            // Vérifier que les produits existent et calculer les totaux
+            // Calcul des totaux et vérification stock
             let subtotal = 0;
             let vatAmount = 0;
             const orderItems = [];
+            const supplierAmounts = {}; // Pour Stripe Connect
 
             for (const item of items) {
                 const product = await ProductModel.findById(item.product_id);
                 
                 if (!product) {
-                    await query('ROLLBACK');
+                    await client.query('ROLLBACK');
+                    client.release();
                     return res.status(404).json({ 
                         success: false, 
                         message: `Produit ${item.product_id} non trouvé` 
@@ -115,10 +135,11 @@ const OrderController = {
                 }
 
                 if (product.stock_quantity < item.quantity) {
-                    await query('ROLLBACK');
+                    await client.query('ROLLBACK');
+                    client.release();
                     return res.status(400).json({ 
                         success: false, 
-                        message: `Stock insuffisant pour ${product.name} (disponible: ${product.stock_quantity})` 
+                        message: `Stock insuffisant pour ${product.name} (dispo: ${product.stock_quantity})` 
                     });
                 }
 
@@ -128,13 +149,22 @@ const OrderController = {
                 const vatRate = parseFloat(product.vat_rate || 20);
                 const vatOnItem = totalPrice * (vatRate / 100);
 
-                // Calcul commission Brandia (15%)
+                // Commission Brandia 15%
                 const commissionRate = 0.15;
                 const commissionAmount = totalPrice * commissionRate;
                 const supplierAmount = totalPrice - commissionAmount;
 
                 subtotal += totalPrice;
                 vatAmount += vatOnItem;
+
+                // Grouper par fournisseur pour Stripe Connect
+                if (!supplierAmounts[product.supplier_id]) {
+                    supplierAmounts[product.supplier_id] = {
+                        amount: 0,
+                        stripe_account_id: null
+                    };
+                }
+                supplierAmounts[product.supplier_id].amount += supplierAmount;
 
                 orderItems.push({
                     product_id: product.id,
@@ -151,107 +181,137 @@ const OrderController = {
                 });
             }
 
-            // Calcul frais de port
             const shippingCost = subtotal > 50 ? 0 : 5.90;
             const totalAmount = subtotal + vatAmount + shippingCost;
             const orderNumber = generateOrderNumber();
 
-            // 🔥 CRÉATION PAYMENTINTENT STRIPE (si configuré)
+            // Récupérer les comptes Stripe des fournisseurs
+            for (const supplierId of Object.keys(supplierAmounts)) {
+                const suppResult = await client.query(
+                    'SELECT stripe_account_id FROM suppliers WHERE id = $1',
+                    [supplierId]
+                );
+                if (suppResult.rows[0]?.stripe_account_id) {
+                    supplierAmounts[supplierId].stripe_account_id = suppResult.rows[0].stripe_account_id;
+                }
+            }
+
+            // 🔥 STRIPE CONNECT PAYMENTINTENT
             let clientSecret = null;
             let stripePaymentIntentId = null;
+            let applicationFee = Math.round((totalAmount * 0.15) * 100); // 15% commission en centimes
             
             if (process.env.STRIPE_SECRET_KEY && totalAmount > 0) {
                 try {
-                    const paymentIntent = await stripe.paymentIntents.create({
-                        amount: Math.round(totalAmount * 100), // Centimes
+                    // 🎯 Stripe Connect: On destination pour le transfert automatique au fournisseur principal
+                    // Si plusieurs fournisseurs, on utilise transfer_group et on fait les transferts après
+                    const primarySupplierId = Object.keys(supplierAmounts)[0];
+                    const primaryStripeAccount = supplierAmounts[primarySupplierId]?.stripe_account_id;
+                    
+                    const paymentIntentData = {
+                        amount: Math.round(totalAmount * 100),
                         currency: 'eur',
                         automatic_payment_methods: { enabled: true },
+                        application_fee_amount: applicationFee, // Commission Brandia
+                        transfer_group: orderNumber,
                         metadata: {
                             order_number: orderNumber,
                             user_id: userId.toString(),
-                            customer_email: customer_email || req.user.email
+                            order_type: 'marketplace',
+                            supplier_count: Object.keys(supplierAmounts).length.toString()
                         },
-                        description: `Commande ${orderNumber} - Brandia`
-                    });
+                        description: `Commande ${orderNumber} - Brandia Marketplace`
+                    };
+
+                    // Si on a un compte Stripe Connect du fournisseur, on destination
+                    if (primaryStripeAccount) {
+                        paymentIntentData.transfer_data = {
+                            destination: primaryStripeAccount
+                        };
+                    }
+                    
+                    const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
                     
                     clientSecret = paymentIntent.client_secret;
                     stripePaymentIntentId = paymentIntent.id;
                     
-                    logger.info(`💳 PaymentIntent créé: ${stripePaymentIntentId} pour commande ${orderNumber}`);
+                    logger.info(`💳 PaymentIntent Connect créé: ${stripePaymentIntentId} | Order: ${orderNumber}`);
                 } catch (stripeError) {
                     logger.error('❌ Erreur Stripe:', stripeError);
-                    // On continue sans Stripe si erreur (mode démo) ou on bloque selon config
-                    if (process.env.REQUIRE_STRIPE_PAYMENT === 'true') {
-                        await query('ROLLBACK');
-                        return res.status(500).json({ 
-                            success: false, 
-                            message: 'Erreur lors de la création du paiement' 
-                        });
-                    }
+                    // Continue sans Stripe si erreur (mode test)
                 }
             }
 
-            // Créer la commande en DB
-            const orderData = {
-                user_id: userId,
-                order_number: orderNumber,
-                customer_email: customer_email || req.user.email,
-                customer_first_name: customer_first_name || req.user.first_name,
-                customer_last_name: customer_last_name || req.user.last_name,
-                customer_phone,
-                shipping_address,
-                shipping_city,
-                shipping_postal_code,
-                shipping_country_code,
-                billing_address: billing_address || shipping_address,
-                billing_city: billing_city || shipping_city,
-                billing_postal_code: billing_postal_code || shipping_postal_code,
-                billing_country_code: billing_country_code || shipping_country_code,
-                subtotal,
-                shipping_cost: shippingCost,
-                vat_amount: vatAmount,
-                discount_amount: 0,
-                total_amount: totalAmount,
-                currency: 'EUR',
-                vat_rate: 20,
-                stripe_payment_intent_id: stripePaymentIntentId,
-                status: stripePaymentIntentId ? 'pending_payment' : 'pending',
-                items: orderItems
-            };
+            // Insérer la commande
+            const orderResult = await client.query(
+                `INSERT INTO orders (
+                    user_id, order_number, status, total_amount, subtotal, 
+                    shipping_cost, vat_amount, currency,
+                    customer_email, customer_first_name, customer_last_name, customer_phone,
+                    shipping_address, shipping_city, shipping_postal_code, shipping_country_code,
+                    billing_address, stripe_payment_intent_id, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())
+                RETURNING *`,
+                [
+                    userId, orderNumber, 
+                    stripePaymentIntentId ? 'pending_payment' : 'pending',
+                    totalAmount, subtotal, shippingCost, vatAmount, 'EUR',
+                    customer_email || req.user.email,
+                    customer_first_name || req.user.first_name,
+                    customer_last_name || req.user.last_name,
+                    customer_phone,
+                    shipping_address, shipping_city, shipping_postal_code, shipping_country_code,
+                    billing_address || shipping_address,
+                    stripePaymentIntentId
+                ]
+            );
+            
+            const order = orderResult.rows[0];
 
-            const order = await OrderModel.create(orderData);
-
-            // Décrémenter le stock
+            // Insérer les items et maj stock
             for (const item of orderItems) {
-                await query(
-                    `UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2`,
+                await client.query(
+                    `INSERT INTO order_items (
+                        order_id, product_id, supplier_id, product_name, product_sku,
+                        product_image_url, quantity, unit_price, total_price,
+                        supplier_amount, commission_amount, vat_rate
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+                    [
+                        order.id, item.product_id, item.supplier_id, item.product_name, item.product_sku,
+                        item.product_image_url, item.quantity, item.unit_price, item.total_price,
+                        item.supplier_amount, item.commission_amount, item.vat_rate
+                    ]
+                );
+                
+                // Décrémenter stock
+                await client.query(
+                    'UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
                     [item.quantity, item.product_id]
                 );
             }
 
-            await query('COMMIT');
+            await client.query('COMMIT'); // 🎯 Validation transaction
+            client.release();
 
-            logger.info(`✅ Commande créée: ${orderNumber} | Total: ${totalAmount}€ | Client: ${userId} | Stripe: ${stripePaymentIntentId || 'N/A'}`);
+            logger.info(`✅ Commande ${orderNumber} créée | Total: ${totalAmount}€ | Stripe: ${stripePaymentIntentId || 'N/A'}`);
 
-            // Réponse succès
             res.status(201).json({
                 success: true,
-                message: 'Commande créée avec succès',
                 data: {
                     order: {
                         id: order.id,
                         order_number: orderNumber,
                         total_amount: totalAmount,
-                        status: orderData.status,
-                        created_at: new Date()
+                        status: stripePaymentIntentId ? 'pending_payment' : 'pending'
                     },
-                    client_secret: clientSecret, // 🔥 Pour Stripe frontend
+                    client_secret: clientSecret,
                     requires_payment: !!clientSecret
                 }
             });
 
         } catch (error) {
-            await query('ROLLBACK').catch(() => {});
+            await client.query('ROLLBACK').catch(() => {});
+            client.release();
             logger.error('❌ Erreur création commande:', error);
             res.status(500).json({ 
                 success: false, 
@@ -260,21 +320,25 @@ const OrderController = {
         }
     },
 
-    // Confirmer le paiement (appelé par webhook Stripe ou frontend après succès)
+    // ==========================================
+    // Confirmer le paiement (après succès Stripe)
+    // ==========================================
     confirmPayment: async (req, res) => {
         try {
             const { order_id, payment_intent_id } = req.body;
             
-            // Vérifier le PaymentIntent avec Stripe
             if (process.env.STRIPE_SECRET_KEY && payment_intent_id) {
                 const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
                 
                 if (paymentIntent.status === 'succeeded') {
-                    // Mettre à jour la commande comme payée
-                    const order = await OrderModel.updateStatus(order_id, 'paid');
+                    // Mettre à jour la commande
+                    const result = await pool.query(
+                        `UPDATE orders SET status = 'paid', paid_at = NOW() WHERE id = $1 RETURNING *`,
+                        [order_id]
+                    );
                     
-                    // Mettre à jour les items comme payés
-                    await query(
+                    // Mettre à jour les items
+                    await pool.query(
                         `UPDATE order_items SET payment_status = 'paid' WHERE order_id = $1`,
                         [order_id]
                     );
@@ -284,7 +348,7 @@ const OrderController = {
                     return res.json({
                         success: true,
                         message: 'Paiement confirmé',
-                        data: { order }
+                        data: { order: result.rows[0] }
                     });
                 } else {
                     return res.status(400).json({
@@ -293,12 +357,15 @@ const OrderController = {
                     });
                 }
             } else {
-                // Mode sans Stripe (tests)
-                const order = await OrderModel.updateStatus(order_id, 'paid');
+                // Mode sans Stripe
+                const result = await pool.query(
+                    `UPDATE orders SET status = 'paid' WHERE id = $1 RETURNING *`,
+                    [order_id]
+                );
                 return res.json({
                     success: true,
                     message: 'Commande confirmée (mode test)',
-                    data: { order }
+                    data: { order: result.rows[0] }
                 });
             }
             
@@ -308,30 +375,42 @@ const OrderController = {
         }
     },
 
+    // ==========================================
     // Mettre à jour le statut
+    // ==========================================
     updateStatus: async (req, res) => {
         try {
             const { id } = req.params;
             const { status, tracking_number } = req.body;
 
-            const validStatuses = ['pending', 'pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+            const validStatuses = [
+                'pending', 'pending_payment', 'paid', 'processing', 
+                'shipped', 'delivered', 'cancelled', 'refunded'
+            ];
+            
             if (!validStatuses.includes(status)) {
                 return res.status(400).json({ success: false, message: 'Statut invalide' });
             }
 
-            const order = await OrderModel.updateStatus(id, status);
+            let updateQuery = `UPDATE orders SET status = $1, updated_at = NOW()`;
+            let params = [status, id];
             
-            // Si statut shipped, ajouter numéro de tracking
             if (status === 'shipped' && tracking_number) {
-                await query(
-                    `UPDATE orders SET tracking_number = $1, shipped_at = NOW() WHERE id = $2`,
-                    [tracking_number, id]
-                );
+                updateQuery += `, tracking_number = $3, shipped_at = NOW()`;
+                params.push(tracking_number);
             }
-
+            
+            updateQuery += ` WHERE id = $2 RETURNING *`;
+            
+            const result = await pool.query(updateQuery, params);
+            
             logger.info(`✅ Statut commande mis à jour: ${id} → ${status}`);
 
-            res.json({ success: true, message: 'Statut mis à jour', data: { order } });
+            res.json({ 
+                success: true, 
+                message: 'Statut mis à jour', 
+                data: { order: result.rows[0] } 
+            });
 
         } catch (error) {
             logger.error('❌ Erreur mise à jour statut:', error);
@@ -339,13 +418,14 @@ const OrderController = {
         }
     },
 
+    // ==========================================
     // Commandes pour dashboard fournisseur
+    // ==========================================
     getSupplierOrders: async (req, res) => {
         try {
             const userId = req.user.userId;
             
-            // Récupérer le supplier_id à partir du user_id
-            const supplierResult = await query(
+            const supplierResult = await pool.query(
                 'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1', 
                 [userId]
             );
@@ -359,7 +439,7 @@ const OrderController = {
 
             const supplierId = supplierResult.rows[0].id;
 
-            const ordersResult = await query(`
+            const ordersResult = await pool.query(`
                 SELECT DISTINCT o.*, 
                        json_agg(json_build_object(
                            'id', oi.id,
@@ -368,9 +448,9 @@ const OrderController = {
                            'quantity', oi.quantity,
                            'unit_price', oi.unit_price,
                            'total_price', oi.total_price,
-                           'fulfillment_status', oi.fulfillment_status,
+                           'supplier_amount', oi.supplier_amount,
                            'commission_amount', oi.commission_amount,
-                           'supplier_amount', oi.supplier_amount
+                           'fulfillment_status', oi.fulfillment_status
                        ) ORDER BY oi.id) as items
                 FROM orders o
                 JOIN order_items oi ON o.id = oi.order_id
@@ -392,39 +472,45 @@ const OrderController = {
         }
     },
 
-    // Obtenir les stats pour dashboard fournisseur
+    // ==========================================
+    // Stats pour dashboard fournisseur
+    // ==========================================
     getSupplierStats: async (req, res) => {
         try {
             const userId = req.user.userId;
             
-            const supplierResult = await query(
+            const supplierResult = await pool.query(
                 'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1', 
                 [userId]
             );
             
             if (supplierResult.rows.length === 0) {
-                return res.status(404).json({ success: false, message: 'Fournisseur non trouvé' });
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'Fournisseur non trouvé' 
+                });
             }
 
             const supplierId = supplierResult.rows[0].id;
 
             // Stats globales
-            const statsResult = await query(`
+            const statsResult = await pool.query(`
                 SELECT 
                     COALESCE(SUM(oi.total_price), 0) as total_sales,
                     COALESCE(SUM(oi.supplier_amount), 0) as total_earnings,
                     COUNT(DISTINCT o.id) as total_orders,
-                    COUNT(DISTINCT CASE WHEN o.status = 'pending' THEN o.id END) as pending_orders
+                    COUNT(DISTINCT CASE WHEN o.status = 'pending' OR o.status = 'processing' THEN o.id END) as pending_orders
                 FROM orders o
                 JOIN order_items oi ON o.id = oi.order_id
                 WHERE oi.supplier_id = $1 AND o.status NOT IN ('cancelled', 'refunded')
             `, [supplierId]);
 
-            // Ventes des derniers 30 jours pour graphique
-            const salesResult = await query(`
+            // Ventes des derniers 30 jours
+            const salesResult = await pool.query(`
                 SELECT 
                     DATE(o.created_at) as date,
-                    SUM(oi.supplier_amount) as amount
+                    SUM(oi.supplier_amount) as amount,
+                    COUNT(*) as orders_count
                 FROM orders o
                 JOIN order_items oi ON o.id = oi.order_id
                 WHERE oi.supplier_id = $1 
@@ -437,7 +523,11 @@ const OrderController = {
             res.json({
                 success: true,
                 data: {
-                    stats: statsResult.rows[0],
+                    stats: {
+                        ...statsResult.rows[0],
+                        total_sales: parseFloat(statsResult.rows[0].total_sales),
+                        total_earnings: parseFloat(statsResult.rows[0].total_earnings)
+                    },
                     chart: salesResult.rows
                 }
             });
@@ -448,5 +538,9 @@ const OrderController = {
         }
     }
 };
+
+// ==========================================
+// EXPORTS
+// ==========================================
 
 module.exports = OrderController;
