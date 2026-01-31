@@ -1,42 +1,56 @@
-// backendpro/src/routes/testEmail.js
 const express = require('express');
 const router = express.Router();
 
 router.get('/test-email', async (req, res) => {
   try {
+    // Vérifier que les vars existent
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      return res.status(500).json({
+        success: false,
+        error: 'Variables SMTP_USER ou SMTP_PASS manquantes sur Render'
+      });
+    }
+
     const nodemailer = require('nodemailer');
     
     const transporter = nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
-      port: 465,        // Port SSL obligatoire sur Render
-      secure: true,     // true pour 465, false pour 587
+      port: 465,
+      secure: true,
       auth: {
-        user: process.env.SMTP_USER,  // xsmtpsib-...
-        pass: process.env.SMTP_PASS   // xsmtpsib-... (identique)
-      }
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      },
+      debug: true, // Logs détaillés dans la console Render
+      logger: true
     });
 
+    console.log('Tentative connexion Brevo...');
     await transporter.verify();
+    console.log('Connexion OK');
+    
+    const fromEmail = process.env.EMAIL_FROM || process.env.SMTP_USER;
     
     const info = await transporter.sendMail({
-      from: `"Brandia" <${process.env.EMAIL_FROM}>`,
-      to: process.env.SMTP_USER, // S'envoyer à soi-même
-      subject: '✅ Test Brandia - Email OK',
-      html: '<h2>Configuration réussie ! 🎉</h2><p>Les emails fonctionnent sur Render.</p>'
+      from: `"Brandia" <${fromEmail}>`,
+      to: process.env.SMTP_USER,
+      subject: 'Test Brandia',
+      html: '<h2>Email OK</h2>'
     });
 
     res.json({ 
       success: true, 
       message: 'Email envoyé',
-      messageId: info.messageId 
+      to: process.env.SMTP_USER
     });
 
   } catch (error) {
-    console.error(error);
+    console.error('ERREUR SMTP:', error);
     res.status(500).json({
       success: false,
       error: error.message,
-      hint: 'Vérifiez SMTP_USER et SMTP_PASS identiques (clé xsmtpsib-...)'
+      code: error.code,
+      solution: 'Si ECONNREFUSED: Brevo bloque peut-être Render. Essayez SendGrid ou Mailgun.'
     });
   }
 });
