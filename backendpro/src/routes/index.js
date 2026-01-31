@@ -147,6 +147,5 @@ router.get('/fix-diffuseur', async (req, res) => {
     `);
     res.send('✅ Image du diffuseur corrigée ! Rafraîchissez la page produit.');
     });
-});
 
 module.exports = router;
