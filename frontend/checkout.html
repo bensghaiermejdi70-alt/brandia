@@ -456,7 +456,10 @@ async function processPayment() {
       }
       
       if (result.paymentIntent.status === 'succeeded') {
-        completeOrder(order_number);
+        // Par :
+      completeOrder(response.data.order.order_number);
+    // ou si c'est directement dans data :
+    // completeOrder(response.data.order_number);
       }
     } else {
       // Mode simulation (si Stripe pas config côté backend)
@@ -478,16 +481,22 @@ function completeOrder(orderNumber) {
   localStorage.removeItem('brandia_cart');
   localStorage.removeItem('brandia_checkout_cart');
   
-  // Afficher confirmation
-  document.getElementById('order-number').textContent = `Commande #${orderNumber}`;
+  // ✅ CORRECTION : Gestion du numéro de commande
+  const displayNumber = orderNumber || 'BRD-' + Date.now().toString(36).toUpperCase();
+  document.getElementById('order-number').textContent = `Commande #${displayNumber}`;
+  
+  // Récapitulatif
   document.getElementById('confirmation-items').innerHTML = cart.items.map(i => `
-    <div class="flex justify-between text-sm"><span class="text-neutral-400">${i.quantity}x ${i.name}</span><span class="text-white">${formatPrice(i.price * i.quantity)}</span></div>
+    <div class="flex justify-between text-sm mb-2">
+      <span class="text-neutral-400">${i.quantity}x ${i.name}</span>
+      <span class="text-white">${formatPrice(i.price * i.quantity)}</span>
+    </div>
   `).join('');
+  
   document.getElementById('confirmation-total').textContent = formatPrice(cart.totals.total);
   
   goToStep(3);
 }
-
 function formatPrice(amount) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }
