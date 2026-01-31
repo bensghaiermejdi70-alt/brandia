@@ -1,34 +1,43 @@
-const express = require('express');
-const nodemailer = require('nodemailer');
-
+/const express = require("express");
 const router = express.Router();
+const nodemailer = require("nodemailer");
 
-router.get('/test-email', async (req, res) => {
+// ===============================
+// Config SMTP Brevo
+// ===============================
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,      // ex: "smtp-relay.brevo.com"
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,                     // true si SSL, false pour TLS
+  auth: {
+    user: process.env.SMTP_USER,     // ton login SMTP Brevo
+    pass: process.env.SMTP_PASS      // ton mot de passe SMTP Brevo
+  }
+});
+
+// ===============================
+// Endpoint test
+// GET /api/test-email
+// ===============================
+router.get("/", async (req, res) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
+    // Message test (optionnel, juste pour vérifier SMTP)
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || "noreply@brandia.company",
+      to: process.env.SMTP_USER,   // envoie à toi-même pour tester
+      subject: "Test email Brandia",
+      text: "✅ Ceci est un email de test depuis l'endpoint /api/test-email",
     });
 
-    await transporter.sendMail({
-      from: `"Brandia" <${process.env.EMAIL_FROM}>`,
-      to: process.env.SMTP_USER, // tu t’envoies à toi-même
-      subject: '✅ Test email Brandia',
-      html: `<h2>Email OK 🎉</h2><p>Brevo fonctionne correctement.</p>`
+    res.json({
+      success: true,
+      message: "Endpoint test-email fonctionne et email envoyé !",
+      info: info.response || "Email simulé"
     });
-
-    res.json({ success: true, message: 'Email envoyé avec succès' });
-
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Erreur envoi email',
+      message: "Erreur lors de l'envoi de l'email",
       error: error.message
     });
   }

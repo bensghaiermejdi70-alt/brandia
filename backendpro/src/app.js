@@ -90,9 +90,9 @@ app.get('/api/health', (req, res) => {
 // ============================================
 // ROUTES
 // ============================================
+app.use('/api', routes);                    // tes autres routes
+app.use('/api/test-email', require('./routes/testEmail'));
 
-app.use('/api', routes);
-app.use('/api', require('./routes/testEmail'));
 
 // ============================================
 // GESTION ERREURS
