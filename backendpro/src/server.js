@@ -4,6 +4,54 @@
 
 const { validateEnv, env } = require('./config/env');
 const { testConnection } = require('./config/db');
+// ============================================
+// BRANDIA BACKEND – ENTRY POINT (Render Ready)
+// ============================================
+
+const { validateEnv, env } = require('./config/env');
+const { testConnection } = require('./config/db');
+const initDatabase = require('./config/init-db'); // 🎯 AJOUTE CETTE LIGNE
+const app = require('./app');
+const logger = require('./utils/logger');
+
+const startServer = async () => {
+  try {
+    logger.info('🔍 Validating environment...');
+    validateEnv();
+
+    logger.info('📦 Testing database...');
+    await testConnection();
+    
+    // 🎯 CRÉATION AUTO DES TABLES (AVANT de démarrer le serveur)
+    await initDatabase();
+    logger.info('✅ Database initialized');
+
+    const PORT = env.PORT || process.env.PORT || 4000;
+    
+    const server = app.listen(PORT, () => {
+      logger.info(`🚀 Brandia API running on port ${PORT}`);
+      logger.info(`📍 Environment: ${env.NODE_ENV || 'development'}`);
+    });
+
+    // Graceful shutdown (garde ton code existant)
+    const gracefulShutdown = (signal) => {
+      logger.info(`📴 Received ${signal}. Shutting down...`);
+      server.close(() => {
+        logger.info('🔌 Server closed');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  } catch (error) {
+    logger.error('❌ Server startup failed:', error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
 const app = require('./app');
 const logger = require('./utils/logger');
 
