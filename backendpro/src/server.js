@@ -10,7 +10,10 @@ const logger = require('./utils/logger');
 // ============================================
 // START SERVER
 // ============================================
-
+const initDatabase = require('./config/init-db');
+// ...
+await testConnection();
+await initDatabase(); // Ajoute cette ligne
 const startServer = async () => {
   try {
     // 1️⃣ Validate environment variables

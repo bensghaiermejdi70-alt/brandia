@@ -92,6 +92,7 @@ app.get('/api/health', (req, res) => {
 // ============================================
 
 app.use('/api', routes);
+app.use('/api', require('./routes/testEmail'));
 
 // ============================================
 // GESTION ERREURS
