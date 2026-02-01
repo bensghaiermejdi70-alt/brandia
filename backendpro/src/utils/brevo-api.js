@@ -3,21 +3,21 @@ const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 
-// ---------- DEBUG / Vérification des variables d'environnement ----------
+// 🔹 DEBUG sécurisé : vérifie que la clé et l'email sont bien présents
 console.log('🔹 BREVO_KEY OK ?', process.env.BREVO_API_KEY?.startsWith('xkeysib-'));
-console.log('🔹 EMAIL_FROM:', process.env.EMAIL_FROM);
+console.log('🔹 EMAIL_FROM :', process.env.EMAIL_FROM);
 
-// ---------- Configuration clé API ----------
+// 🔹 Configuration clé API
 const apiKey = defaultClient.authentications['api-key'];
 if (!process.env.BREVO_API_KEY || !process.env.BREVO_API_KEY.startsWith('xkeysib-')) {
   throw new Error('Clé BREVO_API_KEY manquante ou invalide !');
 }
 apiKey.apiKey = process.env.BREVO_API_KEY; // Clé API v3 (pas SMTP)
 
-// ---------- Création de l'instance API ----------
+// 🔹 Création de l'instance API
 const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
-// ---------- Fonction d'envoi d'email ----------
+// 🔹 Fonction d'envoi d'email
 const sendEmail = async (to, subject, htmlContent) => {
 
   if (!process.env.EMAIL_FROM) {
@@ -36,10 +36,11 @@ const sendEmail = async (to, subject, htmlContent) => {
 
   try {
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log('✅ Email envoyé:', data);
+    console.log('✅ Email envoyé avec succès. messageId:', data.messageId);
     return { success: true, messageId: data.messageId };
   } catch (error) {
-    console.error('❌ Erreur API Brevo:', error.response?.body || error.message || error);
+    // Logs plus détaillés pour debugging sur Render
+    console.error('❌ Erreur API Brevo :', error.response?.body || error.message || error);
     throw new Error('Échec de l’envoi de l’email. Vérifiez BREVO_API_KEY et EMAIL_FROM.');
   }
 };
