@@ -1,12 +1,13 @@
 // ============================================
-// ORDER CONTROLLER - Avec Stripe Connect & Transactions
+// ORDER CONTROLLER - Avec Stripe Connect, Transactions & Emails
 // ============================================
 
 const OrderModel = require('./order.model');
 const ProductModel = require('../products/product.model');
 const logger = require('../../utils/logger');
-const { pool } = require('../../config/db'); // 🎯 Import pool pour transactions
+const { pool } = require('../../config/db');
 const stripe = require('../../config/stripe');
+const EmailService = require('../../services/email.service'); // 🎯 AJOUT: Service Email
 
 // ==========================================
 // HELPERS
@@ -87,13 +88,13 @@ const OrderController = {
     },
 
     // ==========================================
-    // CRÉER UNE COMMANDE (Checkout avec Stripe Connect)
+    // CRÉER UNE COMMANDE (Checkout avec Stripe Connect + Emails)
     // ==========================================
     create: async (req, res) => {
-        const client = await pool.connect(); // 🎯 CORRECTION: Utiliser pool.connect()
+        const client = await pool.connect();
         
         try {
-            await client.query('BEGIN'); // 🎯 CORRECTION: Transaction propre
+            await client.query('BEGIN');
             
             const userId = req.user.userId;
             const {
@@ -120,7 +121,8 @@ const OrderController = {
             let subtotal = 0;
             let vatAmount = 0;
             const orderItems = [];
-            const supplierAmounts = {}; // Pour Stripe Connect
+            const supplierAmounts = {};
+            let primarySupplierId = null;
 
             for (const item of items) {
                 const product = await ProductModel.findById(item.product_id);
@@ -157,14 +159,17 @@ const OrderController = {
                 subtotal += totalPrice;
                 vatAmount += vatOnItem;
 
-                // Grouper par fournisseur pour Stripe Connect
+                // Grouper par fournisseur
                 if (!supplierAmounts[product.supplier_id]) {
                     supplierAmounts[product.supplier_id] = {
                         amount: 0,
-                        stripe_account_id: null
+                        stripe_account_id: null,
+                        company_name: null,
+                        email: null
                     };
                 }
                 supplierAmounts[product.supplier_id].amount += supplierAmount;
+                if (!primarySupplierId) primarySupplierId = product.supplier_id;
 
                 orderItems.push({
                     product_id: product.id,
@@ -185,34 +190,36 @@ const OrderController = {
             const totalAmount = subtotal + vatAmount + shippingCost;
             const orderNumber = generateOrderNumber();
 
-            // Récupérer les comptes Stripe des fournisseurs
+            // Récupérer les infos des fournisseurs (pour Stripe et Email)
             for (const supplierId of Object.keys(supplierAmounts)) {
                 const suppResult = await client.query(
-                    'SELECT stripe_account_id FROM suppliers WHERE id = $1',
+                    `SELECT s.id, s.stripe_account_id, s.company_name, u.email 
+                     FROM suppliers s 
+                     JOIN users u ON s.user_id = u.id 
+                     WHERE s.id = $1`,
                     [supplierId]
                 );
-                if (suppResult.rows[0]?.stripe_account_id) {
+                if (suppResult.rows[0]) {
                     supplierAmounts[supplierId].stripe_account_id = suppResult.rows[0].stripe_account_id;
+                    supplierAmounts[supplierId].company_name = suppResult.rows[0].company_name;
+                    supplierAmounts[supplierId].email = suppResult.rows[0].email;
                 }
             }
 
             // 🔥 STRIPE CONNECT PAYMENTINTENT
             let clientSecret = null;
             let stripePaymentIntentId = null;
-            let applicationFee = Math.round((totalAmount * 0.15) * 100); // 15% commission en centimes
+            let applicationFee = Math.round((totalAmount * 0.15) * 100);
             
             if (process.env.STRIPE_SECRET_KEY && totalAmount > 0) {
                 try {
-                    // 🎯 Stripe Connect: On destination pour le transfert automatique au fournisseur principal
-                    // Si plusieurs fournisseurs, on utilise transfer_group et on fait les transferts après
-                    const primarySupplierId = Object.keys(supplierAmounts)[0];
                     const primaryStripeAccount = supplierAmounts[primarySupplierId]?.stripe_account_id;
                     
                     const paymentIntentData = {
                         amount: Math.round(totalAmount * 100),
                         currency: 'eur',
                         automatic_payment_methods: { enabled: true },
-                        application_fee_amount: applicationFee, // Commission Brandia
+                        application_fee_amount: applicationFee,
                         transfer_group: orderNumber,
                         metadata: {
                             order_number: orderNumber,
@@ -223,7 +230,6 @@ const OrderController = {
                         description: `Commande ${orderNumber} - Brandia Marketplace`
                     };
 
-                    // Si on a un compte Stripe Connect du fournisseur, on destination
                     if (primaryStripeAccount) {
                         paymentIntentData.transfer_data = {
                             destination: primaryStripeAccount
@@ -238,7 +244,6 @@ const OrderController = {
                     logger.info(`💳 PaymentIntent Connect créé: ${stripePaymentIntentId} | Order: ${orderNumber}`);
                 } catch (stripeError) {
                     logger.error('❌ Erreur Stripe:', stripeError);
-                    // Continue sans Stripe si erreur (mode test)
                 }
             }
 
@@ -290,7 +295,61 @@ const OrderController = {
                 );
             }
 
-            await client.query('COMMIT'); // 🎯 Validation transaction
+            await client.query('COMMIT');
+
+            // 🎯 ENVOI DES EMAILS (Fire and forget - ne bloque pas la réponse)
+            try {
+                const primarySupplier = supplierAmounts[primarySupplierId];
+                
+                const orderData = {
+                    id: order.id,
+                    orderNumber: orderNumber,
+                    customerName: `${customer_first_name || req.user.first_name} ${customer_last_name || req.user.last_name}`,
+                    total: totalAmount,
+                    date: order.created_at,
+                    items: orderItems.map(item => ({
+                        name: item.product_name,
+                        quantity: item.quantity,
+                        price: item.unit_price,
+                        image: item.product_image_url || 'https://via.placeholder.com/60',
+                        supplierName: supplierAmounts[item.supplier_id]?.company_name || 'Marque'
+                    })),
+                    supplierName: primarySupplier?.company_name || 'Marque'
+                };
+
+                // Email Client (Confirmation commande créée)
+                const customerMail = customer_email || req.user.email;
+                EmailService.sendOrderConfirmation(customerMail, orderData)
+                    .then(result => {
+                        if (result.success) {
+                            logger.info(`✅ Email confirmation envoyé à ${customerMail} pour commande ${orderNumber}`);
+                        } else {
+                            logger.error(`⚠️ Échec email confirmation: ${result.error}`);
+                        }
+                    })
+                    .catch(err => logger.error(`Exception email client: ${err.message}`));
+
+                // Email Fournisseur (Nouvelle commande)
+                if (primarySupplier?.email) {
+                    EmailService.sendNewOrderNotification(primarySupplier.email, orderData, {
+                        companyName: primarySupplier.company_name,
+                        email: primarySupplier.email
+                    })
+                        .then(result => {
+                            if (result.success) {
+                                logger.info(`✅ Email fournisseur envoyé à ${primarySupplier.email} pour commande ${orderNumber}`);
+                            } else {
+                                logger.error(`⚠️ Échec email fournisseur: ${result.error}`);
+                            }
+                        })
+                        .catch(err => logger.error(`Exception email fournisseur: ${err.message}`));
+                }
+
+            } catch (emailError) {
+                // On logue mais on ne fait pas échouer la commande
+                logger.error('⚠️ Erreur envoi emails:', emailError);
+            }
+
             client.release();
 
             logger.info(`✅ Commande ${orderNumber} créée | Total: ${totalAmount}€ | Stripe: ${stripePaymentIntentId || 'N/A'}`);
@@ -321,18 +380,20 @@ const OrderController = {
     },
 
     // ==========================================
-    // Confirmer le paiement (après succès Stripe)
+    // Confirmer le paiement (avec Email confirmation)
     // ==========================================
     confirmPayment: async (req, res) => {
         try {
             const { order_id, payment_intent_id } = req.body;
+            
+            let orderResult;
             
             if (process.env.STRIPE_SECRET_KEY && payment_intent_id) {
                 const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
                 
                 if (paymentIntent.status === 'succeeded') {
                     // Mettre à jour la commande
-                    const result = await pool.query(
+                    orderResult = await pool.query(
                         `UPDATE orders SET status = 'paid', paid_at = NOW() WHERE id = $1 RETURNING *`,
                         [order_id]
                     );
@@ -345,11 +406,6 @@ const OrderController = {
                     
                     logger.info(`💰 Paiement confirmé: Commande ${order_id} | PI: ${payment_intent_id}`);
                     
-                    return res.json({
-                        success: true,
-                        message: 'Paiement confirmé',
-                        data: { order: result.rows[0] }
-                    });
                 } else {
                     return res.status(400).json({
                         success: false,
@@ -358,16 +414,26 @@ const OrderController = {
                 }
             } else {
                 // Mode sans Stripe
-                const result = await pool.query(
+                orderResult = await pool.query(
                     `UPDATE orders SET status = 'paid' WHERE id = $1 RETURNING *`,
                     [order_id]
                 );
-                return res.json({
-                    success: true,
-                    message: 'Commande confirmée (mode test)',
-                    data: { order: result.rows[0] }
-                });
             }
+
+            // 🎯 Email de confirmation de paiement (optionnel, peut être redondant avec la création)
+            // Décommenter si vous voulez un email spécifique "Paiement confirmé"
+            /*
+            if (orderResult.rows[0]) {
+                const order = orderResult.rows[0];
+                // Envoi email paiement confirmé...
+            }
+            */
+
+            res.json({
+                success: true,
+                message: 'Paiement confirmé',
+                data: { order: orderResult.rows[0] }
+            });
             
         } catch (error) {
             logger.error('❌ Erreur confirmation paiement:', error);
@@ -376,7 +442,7 @@ const OrderController = {
     },
 
     // ==========================================
-    // Mettre à jour le statut
+    // Mettre à jour le statut (avec Email expédition)
     // ==========================================
     updateStatus: async (req, res) => {
         try {
@@ -404,12 +470,58 @@ const OrderController = {
             
             const result = await pool.query(updateQuery, params);
             
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Commande non trouvée' });
+            }
+
+            const order = result.rows[0];
+
+            // 🎯 Email d'expédition si statut = shipped
+            if (status === 'shipped') {
+                try {
+                    // Récupérer les infos pour l'email
+                    const userResult = await pool.query(
+                        'SELECT email, first_name, last_name FROM users WHERE id = $1',
+                        [order.user_id]
+                    );
+                    
+                    if (userResult.rows.length > 0) {
+                        const user = userResult.rows[0];
+                        
+                        // Ici vous pourriez récupérer le transporteur depuis la DB ou utiliser un défaut
+                        const trackingInfo = {
+                            carrier: 'Transporteur', // À remplacer par vraie donnée
+                            number: tracking_number || 'N/A',
+                            url: `https://tracking.example.com/${tracking_number || ''}`,
+                            estimatedDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+                        };
+
+                        const orderData = {
+                            orderNumber: order.order_number,
+                            customerName: `${user.first_name} ${user.last_name}`
+                        };
+
+                        EmailService.sendShippingConfirmation(user.email, orderData, trackingInfo)
+                            .then(result => {
+                                if (result.success) {
+                                    logger.info(`✅ Email expédition envoyé à ${user.email} pour commande ${order.order_number}`);
+                                } else {
+                                    logger.error(`⚠️ Échec email expédition: ${result.error}`);
+                                }
+                            })
+                            .catch(err => logger.error(`Exception email expédition: ${err.message}`));
+                    }
+                } catch (emailErr) {
+                    logger.error('⚠️ Erreur préparation email expédition:', emailErr);
+                }
+            }
+            
             logger.info(`✅ Statut commande mis à jour: ${id} → ${status}`);
 
             res.json({ 
                 success: true, 
                 message: 'Statut mis à jour', 
-                data: { order: result.rows[0] } 
+                data: { order } 
             });
 
         } catch (error) {
