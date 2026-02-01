@@ -1,56 +1,36 @@
 const express = require('express');
 const router = express.Router();
+const BrevoAPI = require('../utils/brevo-api');
 
 router.get('/test-email', async (req, res) => {
   try {
-    // Vérifier que les vars existent
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    // Vérifier la clé API
+    if (!process.env.BREVO_API_KEY) {
       return res.status(500).json({
         success: false,
-        error: 'Variables SMTP_USER ou SMTP_PASS manquantes sur Render'
+        error: 'BREVO_API_KEY manquante dans les variables d\'environnement'
       });
     }
 
-    const nodemailer = require('nodemailer');
-    
-    const transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      },
-      debug: true, // Logs détaillés dans la console Render
-      logger: true
-    });
+    // Test envoi simple
+    const result = await BrevoAPI.sendEmail(
+      process.env.EMAIL_FROM || 'test@brandia.company', // S'envoyer à soi-même
+      'Test Brandia - API Brevo',
+      '<h2>Ça marche ! 🎉</h2><p>L\'API Brevo fonctionne sur Render.</p>'
+    );
 
-    console.log('Tentative connexion Brevo...');
-    await transporter.verify();
-    console.log('Connexion OK');
-    
-    const fromEmail = process.env.EMAIL_FROM || process.env.SMTP_USER;
-    
-    const info = await transporter.sendMail({
-      from: `"Brandia" <${fromEmail}>`,
-      to: process.env.SMTP_USER,
-      subject: 'Test Brandia',
-      html: '<h2>Email OK</h2>'
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Email envoyé',
-      to: process.env.SMTP_USER
+    res.json({
+      success: true,
+      message: 'Email envoyé via API Brevo',
+      messageId: result.messageId
     });
 
   } catch (error) {
-    console.error('ERREUR SMTP:', error);
+    console.error('Erreur:', error);
     res.status(500).json({
       success: false,
       error: error.message,
-      code: error.code,
-      solution: 'Si ECONNREFUSED: Brevo bloque peut-être Render. Essayez SendGrid ou Mailgun.'
+      hint: 'Vérifiez BREVO_API_KEY (commence par xkeysib-...)'
     });
   }
 });
