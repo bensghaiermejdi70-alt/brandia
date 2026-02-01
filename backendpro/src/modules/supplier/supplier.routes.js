@@ -1,22 +1,33 @@
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../../middlewares/auth.middleware');
 const supplierController = require('./supplier.controller');
-const authMiddleware = require('../../middlewares/auth.middleware');
 
-router.use(authMiddleware);
+// Protection JWT sur toutes les routes
+router.use(authenticate);
 
-router.get('/dashboard', supplierController.getDashboardStats);
+// Dashboard & Stats
+router.get('/stats', supplierController.getStats);
+router.get('/profile', supplierController.getProfile);
+
+// Produits
 router.get('/products', supplierController.getProducts);
 router.post('/products', supplierController.createProduct);
 router.put('/products/:id', supplierController.updateProduct);
 router.delete('/products/:id', supplierController.deleteProduct);
+
+// Commandes
 router.get('/orders', supplierController.getOrders);
+router.get('/orders/:id', supplierController.getOrderById);
 router.put('/orders/:id/status', supplierController.updateOrderStatus);
+
+// Paiements
 router.get('/payments', supplierController.getPayments);
 router.post('/payouts', supplierController.requestPayout);
-router.get('/profile', supplierController.getProfile);
-router.put('/profile', supplierController.updateProfile);
-router.get('/promotions', supplierController.getPromotions);
-router.post('/promotions', supplierController.createPromotion);
+
+// Publicité
+router.get('/campaigns', supplierController.getCampaigns);
+router.post('/campaigns', supplierController.createCampaign);
+router.get('/campaigns/active', supplierController.getActiveCampaignForProduct);
 
 module.exports = router;
