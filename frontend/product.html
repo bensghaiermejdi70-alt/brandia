@@ -22,11 +22,139 @@
     .toast.success { background: #10b981; }
     .toast.error { background: #ef4444; }
     .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    
+    /* Brand Ad Overlay Styles - Respecting the 40% rule */
+    .brand-ad-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: flex-end; /* Align to bottom for 40% coverage */
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+    }
+    
+    .brand-ad-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .brand-ad-container {
+      width: 100%;
+      max-width: 600px;
+      height: 40vh; /* Exactly 40% of viewport */
+      max-height: 400px;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      border-radius: 24px 24px 0 0;
+      position: relative;
+      overflow: hidden;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 -10px 40px -10px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-bottom: 0;
+    }
+    
+    .brand-ad-overlay.active .brand-ad-container {
+      transform: translateY(0);
+    }
+    
+    .brand-ad-media {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.3;
+    }
+    
+    .brand-ad-content {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    .brand-ad-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 20;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .brand-ad-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+    
+    .brand-ad-badge {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      white-space: nowrap;
+    }
+    
+    .brand-ad-timer {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 12px;
+      color: white;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    @media (max-width: 640px) {
+      .brand-ad-container {
+        height: 50vh; /* Slightly more on mobile for readability */
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+      }
+    }
+    
+    /* Animation for CTA */
+    @keyframes pulse-soft {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    .brand-ad-cta {
+      animation: pulse-soft 2s infinite;
+    }
+    
+    .brand-ad-cta:hover {
+      animation: none;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
 
-<header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
+<header class="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
   <nav class="container flex items-center justify-between px-4 py-3">
     <a href="index.html" class="flex items-center space-x-3">
       <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
@@ -107,6 +235,7 @@
       <div>
         <div class="flex items-center gap-3 mb-3">
           <span id="product-category" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider rounded-full">Catégorie</span>
+          <span id="product-brand" class="px-3 py-1 bg-slate-700 text-slate-300 text-xs font-bold rounded-full cursor-pointer hover:bg-slate-600 transition"></span>
         </div>
         <h1 id="product-name" class="text-3xl md:text-4xl font-bold text-white mb-3">Nom du produit</h1>
         <div class="flex items-center gap-4 mb-4 flex-wrap">
@@ -119,7 +248,7 @@
 
       <div class="flex items-baseline gap-4 flex-wrap">
         <span id="product-price" class="text-4xl font-bold text-white">-- €</span>
-        <span id="product-old-price" class="hidden text-2xl text-neutral-500 line-through">-- €</span>
+        <span id="product-old-price" class="hidden        <span id="product-old-price" class="hidden text-2xl text-neutral-500 line-through">-- €</span>
         <span id="product-discount" class="hidden px-3 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded-full border border-red-500/30">-0%</span>
       </div>
 
@@ -146,6 +275,50 @@
         <i class="fas fa-check-circle"></i>
         <span>En stock - Livraison 2-4 jours</span>
       </div>
+
+      <!-- Trust Badges -->
+      <div class="grid grid-cols-3 gap-4 pt-6 border-t border-neutral-800">
+        <div class="text-center">
+          <i class="fas fa-truck text-indigo-400 text-2xl mb-2"></i>
+          <p class="text-xs text-neutral-400">Livraison gratuite dès 50€</p>
+        </div>
+        <div class="text-center">
+          <i class="fas fa-shield-alt text-indigo-400 text-2xl mb-2"></i>
+          <p class="text-xs text-neutral-400">Paiement sécurisé</p>
+        </div>
+        <div class="text-center">
+          <i class="fas fa-undo text-indigo-400 text-2xl mb-2"></i>
+          <p class="text-xs text-neutral-400">Retour sous 14 jours</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supplier Info Section -->
+  <div class="mt-12 pt-8 border-t border-neutral-800">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white">Vendu par <span id="supplier-name">...</span></h3>
+      <a href="#" id="supplier-link" class="text-indigo-400 hover:text-indigo-300 text-sm">Voir la boutique <i class="fas fa-arrow-right ml-1"></i></a>
+    </div>
+    <div class="bg-neutral-900 rounded-xl p-6 border border-neutral-800">
+      <div class="flex items-start gap-4">
+        <img id="supplier-logo" src="" class="w-16 h-16 rounded-lg object-cover bg-neutral-800 hidden" />
+        <div id="supplier-initial" class="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white">
+          B
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <h4 class="font-semibold text-lg" id="supplier-name-full">Brand Name</h4>
+            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">Vérifié</span>
+          </div>
+          <p class="text-neutral-400 text-sm mb-3" id="supplier-description">Description du vendeur...</p>
+          <div class="flex items-center gap-4 text-sm text-neutral-500">
+            <span><i class="fas fa-star text-yellow-400 mr-1"></i> <span id="supplier-rating">4.8</span> (120 avis)</span>
+            <span><i class="fas fa-box text-indigo-400 mr-1"></i> <span id="supplier-products">45</span> produits</span>
+            <span><i class="fas fa-map-marker-alt text-red-400 mr-1"></i> <span id="supplier-location">France</span></span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -156,7 +329,52 @@
   </div>
 </footer>
 
+<!-- Toast Notification -->
 <div id="toast" class="toast"></div>
+
+<!-- BRAND AD OVERLAY - Contextual Advertising -->
+<!-- Règle d'or: 40% écran, 15s max, fermeture immédiate, son off, 1x/session -->
+<div id="brand-ad-overlay" class="brand-ad-overlay">
+  <div class="brand-ad-container" onclick="event.stopPropagation()">
+    <!-- Timer for video (hidden for images) -->
+    <div id="ad-timer" class="brand-ad-timer hidden">15</div>
+    
+    <!-- Close Button (always accessible) -->
+    <button onclick="closeBrandAd()" class="brand-ad-close" aria-label="Fermer la publicité">
+      <i class="fas fa-times text-white"></i>
+    </button>
+    
+    <!-- Media Background -->
+    <img id="ad-media-image" src="" alt="" class="brand-ad-media hidden" />
+    <video id="ad-media-video" src="" class="brand-ad-media hidden" muted playsinline loop></video>
+    
+    <!-- Content Overlay -->
+    <div class="brand-ad-content">
+      <div class="max-w-xs">
+        <h3 id="ad-headline" class="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight drop-shadow-lg">
+          Offre spéciale de la marque
+        </h3>
+        <p id="ad-description" class="text-white/90 text-sm md:text-base mb-6 line-clamp-2 drop-shadow-md">
+          Découvrez nos nouveautés et profitez de promotions exclusives
+        </p>
+        <button id="ad-cta" onclick="handleAdClick()" class="brand-ad-cta px-8 py-3 bg-white text-indigo-900 rounded-full font-bold text-sm md:text-base shadow-2xl hover:bg-indigo-50 transition-all transform">
+          Voir l'offre
+        </button>
+      </div>
+    </div>
+    
+    <!-- Transparency Label -->
+    <div class="brand-ad-badge">
+      <i class="fas fa-info-circle mr-1"></i>
+      Contenu proposé par la marque que vous consultez
+    </div>
+    
+    <!-- Progress Bar for Auto-close -->
+    <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+      <div id="ad-progress" class="h-full bg-white/60 w-full origin-left transition-transform duration-[15000ms] ease-linear"></div>
+    </div>
+  </div>
+</div>
 
 <script>
 const COUNTRIES = {
@@ -190,13 +408,11 @@ const COUNTRIES = {
   'TN': { name: 'Tunisie', currency: 'TND' }
 };
 
-function getFlagEmoji(code) {
-  const flags = {'FR':'🇫🇷','DE':'🇩🇪','IT':'🇮🇹','ES':'🇪🇸','NL':'🇳🇱','BE':'🇧🇪','PT':'🇵🇹','AT':'🇦🇹','IE':'🇮🇪','FI':'🇫🇮','GB':'🇬🇧','CH':'🇨🇭','US':'🇺🇸','CA':'🇨🇦','BR':'🇧🇷','JP':'🇯🇵','KR':'🇰🇷','CN':'🇨🇳','SG':'🇸🇬','AU':'🇦🇺','TN':'🇹🇳','DZ':'🇩🇿','MA':'🇲🇦','EG':'🇪🇬','AE':'🇦🇪','SA':'🇸🇦','QA':'🇶🇦','KW':'🇰🇼'};
-  return flags[code] || '🏳️';
-}
-
 let currentProduct = null;
 let currentQty = 1;
+let currentSupplierId = null;
+let adTimer = null;
+let adShown = false;
 
 function showToast(msg, type='success') {
   const t = document.getElementById('toast');
@@ -208,6 +424,10 @@ function showToast(msg, type='success') {
 function updateQty(delta) {
   const newQty = currentQty + delta;
   if (newQty < 1) return;
+  if (currentProduct && newQty > currentProduct.stock_quantity) {
+    showToast('Stock maximum atteint', 'warning');
+    return;
+  }
   currentQty = newQty;
   document.getElementById('quantity').textContent = currentQty;
 }
@@ -216,11 +436,8 @@ async function loadProduct() {
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
   
-  console.log('[Product] ID:', productId);
-  
   if (!productId) {
-    document.getElementById('loading-state').classList.add('hidden');
-    document.getElementById('error-state').classList.remove('hidden');
+    showError();
     return;
   }
 
@@ -230,9 +447,8 @@ async function loadProduct() {
     }
     
     const data = await BrandiaAPI.Products.getById(productId);
-    console.log('[Product] Data:', data);
-    
     let product = null;
+    
     if (data && data.data && data.data.product) {
       product = data.data.product;
     } else if (data && data.data) {
@@ -247,48 +463,82 @@ async function loadProduct() {
       throw new Error('Produit non trouvé');
     }
     
+    currentProduct = product;
+    currentSupplierId = product.supplier_id || product.user_id;
+    
     renderProduct(product);
+    
+    // Check for brand ad after product is loaded
+    setTimeout(() => checkAndShowBrandAd(product), 2000); // Delay 2s for UX
     
   } catch (err) {
     console.error('[Product] Error:', err);
-    document.getElementById('loading-state').classList.add('hidden');
-    document.getElementById('error-state').classList.remove('hidden');
+    showError();
   }
+}
+
+function showError() {
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('error-state').classList.remove('hidden');
 }
 
 function renderProduct(p) {
   currentProduct = p;
-  document.title = p.name + ' - Brandia';
+  document.title = `${p.name} - Brandia`;
   
+  // Basic Info
   document.getElementById('breadcrumb-product').textContent = p.name || 'Produit';
   document.getElementById('product-name').textContent = p.name || 'Sans nom';
   document.getElementById('product-category').textContent = p.category_name || p.category_slug || 'Catégorie';
   document.getElementById('product-description').textContent = p.description || p.short_description || 'Aucune description';
   document.getElementById('product-sku').textContent = 'REF: ' + (p.sku || p.id);
   
+  // Brand tag
+  const brandEl = document.getElementById('product-brand');
+  if (p.brand_name || p.supplier_name) {
+    brandEl.textContent = p.brand_name || p.supplier_name;
+    brandEl.classList.remove('hidden');
+  } else {
+    brandEl.classList.add('hidden');
+  }
+  
+  // Pricing
   const price = parseFloat(p.price) || 0;
-  document.getElementById('product-price').textContent = price.toFixed(2) + ' €';
+  document.getElementById('product-price').textContent = formatPrice(price);
   
   if (p.compare_price && parseFloat(p.compare_price) > price) {
     const oldPrice = parseFloat(p.compare_price);
-    document.getElementById('product-old-price').textContent = oldPrice.toFixed(2) + ' €';
+    document.getElementById('product-old-price').textContent = formatPrice(oldPrice);
     document.getElementById('product-old-price').classList.remove('hidden');
     const pct = Math.round(((oldPrice - price) / oldPrice) * 100);
-    document.getElementById('product-discount').textContent = '-' + pct + '%';
-    document.getElementById('product-discount').classList.remove('hidden');
+    const discountEl = document.getElementById('product-discount');
+    discountEl.textContent = `-${pct}%`;
+    discountEl.classList.remove('hidden');
   }
   
-  const imgUrl = (p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600').trim();
+  // Images
+  const imgUrl = (p.main_image_url || p.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600').trim();
   document.getElementById('main-image').src = imgUrl;
   document.getElementById('main-image').alt = p.name;
   
+  // Gallery
+  const thumbs = document.getElementById('gallery-thumbs');
+  if (p.images && p.images.length > 1) {
+    thumbs.innerHTML = p.images.map((img, idx) => 
+      `<img src="${img.url || img}" class="gallery-thumb w-20 h-20 object-cover rounded-lg ${idx===0?'active':''}" onclick="changeImage(this)" data-url="${img.url || img}">`
+    ).join('');
+  } else {
+    thumbs.innerHTML = `<img src="${imgUrl}" class="gallery-thumb w-20 h-20 object-cover rounded-lg active" onclick="changeImage(this)">`;
+  }
+  
+  // Stock
   const stock = parseInt(p.stock_quantity) || 0;
   const badge = document.getElementById('stock-badge');
   const btn = document.getElementById('btn-add-cart');
   const info = document.getElementById('stock-info');
   
   if (stock > 0) {
-    badge.textContent = stock > 10 ? 'En stock' : 'Stock limité (' + stock + ')';
+    badge.textContent = stock > 10 ? 'En stock' : `Stock limité (${stock})`;
     badge.className = stock > 10 
       ? 'absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
       : 'absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30';
@@ -302,74 +552,284 @@ function renderProduct(p) {
     info.className = 'flex items-center gap-2 text-sm text-red-400';
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-times"></i><span>Indisponible</span>';
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
   }
   
-  const stars = Array(5).fill(0).map((_,i) => 
-    '<i class="' + (i < Math.floor(p.rating||0) ? 'fas' : 'far') + ' fa-star text-yellow-400"></i>'
+  // Rating
+  const rating = parseFloat(p.rating) || 0;
+  const stars = Array(5).fill(0).map((_, i) => 
+    `<i class="${i < Math.floor(rating) ? 'fas' : 'far'} fa-star text-yellow-400 text-sm"></i>`
   ).join('');
   document.getElementById('product-rating').innerHTML = stars;
-  document.getElementById('review-count').textContent = (p.reviews_count||0) + ' avis';
+  document.getElementById('review-count').textContent = `${p.reviews_count || 0} avis`;
   
-  const thumbs = document.getElementById('gallery-thumbs');
-  if (p.images && p.images.length > 0) {
-    thumbs.innerHTML = p.images.map((img,idx) => 
-      '<img src="' + (img.url||img) + '" class="gallery-thumb w-20 h-20 object-cover rounded-lg ' + (idx===0?'active border-indigo-500 opacity-100':'') + '" onclick="changeImage(this)">'
-    ).join('');
-  } else {
-    thumbs.innerHTML = '<img src="' + imgUrl + '" class="gallery-thumb w-20 h-20 object-cover rounded-lg active border-indigo-500 opacity-100">';
+  // Supplier Info
+  if (p.supplier || p.brand) {
+    const supplier = p.supplier || p.brand;
+    document.getElementById('supplier-name').textContent = supplier.name || supplier.company_name || 'Marque';
+    document.getElementById('supplier-name-full').textContent = supplier.name || supplier.company_name || 'Marque';
+    document.getElementById('supplier-description').textContent = supplier.description || 'Vendeur professionnel sur Brandia';
+    document.getElementById('supplier-rating').textContent = supplier.rating || '4.5';
+    document.getElementById('supplier-products').textContent = supplier.products_count || '0';
+    document.getElementById('supplier-location').textContent = supplier.country || 'France';
+    
+    if (supplier.logo_url) {
+      document.getElementById('supplier-logo').src = supplier.logo_url;
+      document.getElementById('supplier-logo').classList.remove('hidden');
+      document.getElementById('supplier-initial').classList.add('hidden');
+    } else {
+      document.getElementById('supplier-initial').textContent = (supplier.name || supplier.company_name || 'B').charAt(0).toUpperCase();
+    }
+    
+    document.getElementById('supplier-link').href = `brand.html?id=${supplier.id}`;
   }
   
+  // Show content
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('product-content').classList.remove('hidden');
 }
 
 function changeImage(thumb) {
-  const src = thumb.src;
-  document.getElementById('main-image').src = src;
-  document.querySelectorAll('.gallery-thumb').forEach(t => {
-    t.classList.remove('active', 'border-indigo-500', 'opacity-100');
-    t.classList.add('opacity-60');
-  });
-  thumb.classList.add('active', 'border-indigo-500', 'opacity-100');
-  thumb.classList.remove('opacity-60');
+  const url = thumb.dataset.url || thumb.src;
+  document.getElementById('main-image').src = url;
+  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+  thumb.classList.add('active');
 }
 
 function addToCart() {
   if (!currentProduct || currentProduct.stock_quantity <= 0) return;
   
-  if (typeof BrandiaAPI !== 'undefined' && BrandiaAPI.Cart) {
-    for(let i=0; i<currentQty; i++) BrandiaAPI.Cart.add(currentProduct);
+  // Add to cart logic
+  const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+  const existing = cart.find(x => x.id === currentProduct.id);
+  
+  if (existing) {
+    existing.quantity = (existing.quantity || 0) + currentQty;
   } else {
-    let cart = JSON.parse(localStorage.getItem('brandia_cart')||'[]');
-    const existing = cart.find(x => x.id === currentProduct.id);
-    if (existing) {
-      existing.quantity = (existing.quantity || 0) + currentQty;
-    } else {
-      cart.push({
-        id: currentProduct.id,
-        name: currentProduct.name,
-        price: parseFloat(currentProduct.price),
-        main_image_url: currentProduct.main_image_url,
-        quantity: currentQty
-      });
-    }
-    localStorage.setItem('brandia_cart', JSON.stringify(cart));
+    cart.push({
+      id: currentProduct.id,
+      name: currentProduct.name,
+      price: parseFloat(currentProduct.price),
+      main_image_url: currentProduct.main_image_url,
+      quantity: currentQty,
+      supplier_id: currentSupplierId
+    });
   }
   
-  showToast(currentQty + ' × ' + currentProduct.name + ' ajouté(s)');
+  localStorage.setItem('brandia_cart', JSON.stringify(cart));
+  showToast(`${currentQty} × ${currentProduct.name} ajouté(s) au panier`);
   updateCartBadge();
   currentQty = 1;
   document.getElementById('quantity').textContent = '1';
 }
 
 function updateCartBadge() {
-  const cart = JSON.parse(localStorage.getItem('brandia_cart')||'[]');
-  const count = cart.reduce((a,b) => a+(b.quantity||0), 0);
+  const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+  const count = cart.reduce((a, b) => a + (b.quantity || 0), 0);
   const badge = document.getElementById('cart-count');
-  if (badge) {
-    badge.textContent = count;
-    badge.classList.toggle('hidden', count === 0);
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
   }
+}
+
+// ==========================================
+// CONTEXTUAL ADVERTISING SYSTEM
+// ==========================================
+
+async function checkAndShowBrandAd(product) {
+  // Règle 1: Vérifier si déjà vu dans cette session pour cette marque
+  const sessionKey = `ad_seen_${product.supplier_id || product.user_id}`;
+  if (sessionStorage.getItem(sessionKey)) {
+    console.log('[BrandAd] Already seen for this supplier in this session');
+    return;
+  }
+  
+  // Règle 2: Vérifier si l'utilisateur a fermé explicitement (respect)
+  const closedKey = `ad_closed_${product.supplier_id}`;
+  if (sessionStorage.getItem(closedKey)) {
+    return;
+  }
+  
+  try {
+    // Fetch active campaign for this supplier
+    const response = await fetch(`${BrandiaAPI.baseUrl}/supplier/campaigns/active?supplier_id=${product.supplier_id || product.user_id}&product_id=${product.id}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (!response.ok) throw new Error('No campaign');
+    
+    const data = await response.json();
+    if (!data.success || !data.data) return;
+    
+    const campaign = data.data;
+    
+    // Vérifier si produit est dans le ciblage
+    if (campaign.target_products && 
+        !campaign.target_products.includes(parseInt(product.id))) {
+      return;
+    }
+    
+    // Afficher la pub après délai
+    setTimeout(() => showBrandAd(campaign, sessionKey), 1000);
+    
+  } catch (e) {
+    console.log('[BrandAd] No active campaign or error:', e);
+  }
+}
+
+function showBrandAd(campaign, sessionKey) {
+  if (adShown) return;
+  adShown = true;
+  
+  const overlay = document.getElementById('brand-ad-overlay');
+  const headline = document.getElementById('ad-headline');
+  const desc = document.getElementById('ad-description');
+  const cta = document.getElementById('ad-cta');
+  const imgEl = document.getElementById('ad-media-image');
+  const vidEl = document.getElementById('ad-media-video');
+  const timerEl = document.getElementById('ad-timer');
+  const progressEl = document.getElementById('ad-progress');
+  
+  // Set content
+  headline.textContent = campaign.headline || 'Offre spéciale';
+  desc.textContent = campaign.description || '';
+  cta.textContent = campaign.cta_text || 'Voir l\'offre';
+  cta.dataset.link = campaign.cta_link || '#';
+  cta.dataset.campaignId = campaign.id;
+  
+  // Media handling
+  if (campaign.media_type === 'video' && campaign.media_url) {
+    vidEl.src = campaign.media_url;
+    vidEl.classList.remove('hidden');
+    imgEl.classList.add('hidden');
+    timerEl.classList.remove('hidden');
+    
+    // Play video muted (respect rule)
+    vidEl.play().catch(e => console.log('Autoplay prevented:', e));
+    
+    // 15s countdown
+    let timeLeft = 15;
+    timerEl.textContent = timeLeft;
+    
+    const countdown = setInterval(() => {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        closeBrandAd();
+      }
+    }, 1000);
+    
+    adTimer = countdown;
+    
+    // Auto-close video after 15s via CSS animation
+    progressEl.style.transform = 'scaleX(0)';
+    
+  } else {
+    // Image
+    imgEl.src = campaign.media_url || campaign.image_url;
+    imgEl.classList.remove('hidden');
+    vidEl.classList.add('hidden');
+    timerEl.classList.add('hidden');
+    progressEl.style.transition = 'none';
+    
+    // Auto-close image after 8s (user can close earlier)
+    setTimeout(() => closeBrandAd(), 8000);
+  }
+  
+  // Mark as seen for this session
+  sessionStorage.setItem(sessionKey, 'true');
+  
+  // Show overlay
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  
+  // Track impression
+  trackAdEvent(campaign.id, 'impression');
+}
+
+function closeBrandAd() {
+  const overlay = document.getElementById('brand-ad-overlay');
+  const vidEl = document.getElementById('ad-media-video');
+  
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  
+  if (adTimer) {
+    clearInterval(adTimer);
+    adTimer = null;
+  }
+  
+  vidEl.pause();
+  vidEl.src = '';
+  
+  // Respect: mark as closed so it won't show again this session
+  if (currentProduct) {
+    sessionStorage.setItem(`ad_closed_${currentProduct.supplier_id}`, 'true');
+  }
+}
+
+function handleAdClick() {
+  const cta = document.getElementById('ad-cta');
+  const link = cta.dataset.link;
+  const campaignId = cta.dataset.campaignId;
+  
+  // Track click
+  trackAdEvent(campaignId, 'click');
+  
+  // Navigate
+  if (link && link !== '#') {
+    if (link.startsWith('http')) {
+      window.open(link, '_blank');
+    } else {
+      window.location.href = link;
+    }
+  }
+  
+  closeBrandAd();
+}
+
+async function trackAdEvent(campaignId, type) {
+  try {
+    await fetch(`${BrandiaAPI.baseUrl}/campaigns/${campaignId}/track`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ type, timestamp: new Date().toISOString() })
+    });
+  } catch (e) {
+    console.error('Failed to track ad:', e);
+  }
+}
+
+// Close on backdrop click (but not on container)
+document.getElementById('brand-ad-overlay').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeBrandAd();
+  }
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeBrandAd();
+  }
+});
+
+// ==========================================
+// UTILS
+// ==========================================
+
+function formatPrice(amount) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount);
 }
 
 function initCountries() {
@@ -377,14 +837,19 @@ function initCountries() {
   const saved = localStorage.getItem('country') || 'FR';
   
   sel.innerHTML = Object.entries(COUNTRIES)
-    .sort((a,b) => a[1].name.localeCompare(b[1].name))
-    .map(([code, c]) => '<option value="' + code + '" ' + (code===saved?'selected':'') + '>' + getFlagEmoji(code) + ' ' + c.name + '</option>')
+    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .map(([code, c]) => `<option value="${code}" ${code===saved?'selected':''}>${getFlagEmoji(code)} ${c.name}</option>`)
     .join('');
   
   sel.onchange = (e) => {
     localStorage.setItem('country', e.target.value);
     localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
   };
+}
+
+function getFlagEmoji(code) {
+  const flags = {'FR':'🇫🇷','DE':'🇩🇪','IT':'🇮🇹','ES':'🇪🇸','NL':'🇳🇱','BE':'🇧🇪','PT':'🇵🇹','AT':'🇦🇹','IE':'🇮🇪','FI':'🇫🇮','GB':'🇬🇧','CH':'🇨🇭','US':'🇺🇸','CA':'🇨🇦','BR':'🇧🇷','JP':'🇯🇵','KR':'🇰🇷','CN':'🇨🇳','SG':'🇸🇬','AU':'🇦🇺','TN':'🇹🇳','DZ':'🇩🇿','MA':'🇲🇦','EG':'🇪🇬','AE':'🇦🇪','SA':'🇸🇦','QA':'🇶🇦','KW':'🇰🇼'};
+  return flags[code] || '🏳️';
 }
 
 function initAuth() {
@@ -403,6 +868,7 @@ function logout() {
   window.location.reload();
 }
 
+// Init
 document.addEventListener('DOMContentLoaded', () => {
   initCountries();
   initAuth();
