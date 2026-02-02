@@ -1041,6 +1041,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+<!-- AVANT la fermeture </body> -->
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/supplier-products.js"></script>
+<script src="../assets/js/supplier-promotions.js"></script>
+<script src="../assets/js/supplier-orders.js"></script>
+<script src="../assets/js/supplier-campaigns.js"></script>
+<script src="../assets/js/supplier-payments.js"></script>
+<script src="../assets/js/supplier-dashboard.js"></script>
 
+<script>
+// Configuration globale
+const CONFIG = {
+  COMMISSION_RATE: 0.15
+};
+
+// Initialisation au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  // Vérifier session
+  const user = BrandiaAPI.Auth.getUser();
+  if (user?.role === 'supplier') {
+    sessionStorage.setItem('brandia_supplier_session', 'true');
+    document.getElementById('user-name').textContent = user?.company_name || user?.first_name || user?.email;
+  }
+});
+</script>
 </body>
 </html>

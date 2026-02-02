@@ -70,44 +70,40 @@ const DashboardApp = {
   },
 
   loadSectionData: async (section) => {
-    DashboardApp.showLoading(true);
-    try {
-      switch(section) {
-        case 'overview':
-          await DashboardApp.loadOverview();
-          break;
-        case 'products':
-          await DashboardApp.loadCategories();
-          await DashboardApp.loadProducts();
-          break;
-        case 'orders':
-          await DashboardApp.loadOrders();
-          break;
-        case 'payments':
-          await DashboardApp.loadPayments();
-          break;
-        case 'analytics':
-          await DashboardApp.loadAnalytics();
-          break;
-        case 'profile':
-          await DashboardApp.loadProfile();
-          break;
-        case 'promotions':
-          await DashboardApp.loadPromotions();
-          break;
-        case 'advertising':
-          await DashboardApp.loadCampaigns();
-          await DashboardApp.loadCampaignStats();
-          break;
-      }
-    } catch (error) {
-      console.error(`Erreur chargement section ${section}:`, error);
-      DashboardApp.showToast('Erreur de chargement des données', 'error');
-    } finally {
-      DashboardApp.showLoading(false);
+  DashboardApp.showLoading(true);
+  try {
+    switch(section) {
+      case 'overview':
+        await DashboardApp.loadOverview();
+        break;
+      case 'products':
+        await SupplierProducts.init(); // Nouveau
+        break;
+      case 'orders':
+        await SupplierOrders.init(); // Nouveau
+        break;
+      case 'payments':
+        await SupplierPayments.init(); // Nouveau
+        break;
+      case 'promotions':
+        await SupplierPromotions.init(); // Nouveau
+        break;
+      case 'advertising':
+        await SupplierCampaigns.init(); // Nouveau
+        break;
+      case 'analytics':
+        await DashboardApp.loadAnalytics();
+        break;
+      case 'profile':
+        await DashboardApp.loadProfile();
+        break;
     }
-  },
-
+  } catch (error) {
+    console.error(`Erreur chargement section ${section}:`, error);
+  } finally {
+    DashboardApp.showLoading(false);
+  }
+},
   // ============================================
   // OVERVIEW
   // ============================================
