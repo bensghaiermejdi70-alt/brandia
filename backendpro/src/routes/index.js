@@ -77,7 +77,7 @@ router.use('/products', productRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/countries', countryRoutes);
-router.use('/supplier', supplierRoutes);
+router.use('/supplier', supplierRoutes); // ✅ DÉJÀ PRÉSENT
 
 // ============================================
 // DOCUMENTATION API
@@ -128,10 +128,12 @@ router.get('/', (req, res) => {
             },
             supplier: {
                 base: '/api/supplier',
-                description: 'Espace fournisseur',
+                description: 'Espace fournisseur - REQUIÈRE AUTH JWT',
                 routes: [
-                    { method: 'GET', path: '/dashboard', description: 'Statistiques' },
-                    { method: 'GET', path: '/products', description: 'Mes produits' }
+                    { method: 'GET', path: '/stats', auth: true, description: 'Statistiques dashboard' },
+                    { method: 'GET', path: '/products', auth: true, description: 'Mes produits' },
+                    { method: 'GET', path: '/orders', auth: true, description: 'Mes commandes' },
+                    { method: 'GET', path: '/payments', auth: true, description: 'Paiements et soldes' }
                 ]
             }
         },

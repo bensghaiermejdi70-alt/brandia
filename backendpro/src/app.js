@@ -7,37 +7,35 @@ const cors = require('cors');
 const helmet = require('helmet');
 const routes = require('./routes');
 const errorMiddleware = require('./middlewares/error.middleware');
-const logger = require('./utils/logger');
 
 const app = express();
 
-// ============================================
-// MIDDLEWARE DE SÉCURITÉ
-// ============================================
-
+// Sécurité
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginEmbedderPolicy: false
 }));
 
 // ============================================
-// CORS - Origines spécifiques (PROD + DEV)
+// CORS - ✅ ESPACES SUPPRIMÉS + DOMAIN AJOUTÉ
 // ============================================
 
 const allowedOrigins = [
-  'https://brandia-marketplace.netlify.app',
+  'https://brandia-marketplace.netlify.app',     // ← Espace supprimé
   'https://bensghaiermejdi70-alt.github.io',
+  'https://brandia.company',                      // ← Ton nouveau domaine
   'http://localhost:3000',
-  'http://127.0.0.1:5500',
-  null
+  'http://127.0.0.1:5500',                       // ← Espace supprimé
+  null // Pour les requêtes sans origine (mobile, curl)
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
+    console.log('CORS check - Origin:', origin);
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log('CORS bloqué pour:', origin);
+      console.log('❌ CORS bloqué pour:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -46,29 +44,16 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// ============================================
-// WEBHOOK STRIPE (raw body)
-// ============================================
-
+// Webhook Stripe (raw body)
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
-// ============================================
-// PARSING JSON
-// ============================================
-
+// Parsing JSON
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ============================================
-// LOGGER
-// ============================================
-
+// Logger simple
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`, {
-    ip: req.ip,
-    origin: req.headers.origin || 'no-origin',
-    userAgent: req.get('user-agent')
-  });
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin || 'no-origin'}`);
   next();
 });
 
@@ -76,26 +61,23 @@ app.use((req, res, next) => {
 // ROUTES
 // ============================================
 
-// Test email temporaire
+// Test email (à retirer en prod)
 const testEmailRouter = require('./routes/testEmail');
 app.use('/api/test', testEmailRouter);
 
-// Routes principales API
+// Routes principales
 app.use('/api', routes);
 
-// ============================================
-// GESTION ERREURS
-// ============================================
-
+// 404
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: 'Route non trouvée',
-    path: req.path,
-    method: req.method
+    path: req.path
   });
 });
 
+// Gestion erreurs
 app.use(errorMiddleware);
 
 module.exports = app;
