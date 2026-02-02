@@ -11,7 +11,7 @@ const isLocal = window.location.hostname === 'localhost' ||
 // ✅ CORRECTION : Suppression des espaces fatals à la fin
 const API_BASE = isLocal 
   ? 'http://localhost:4000' 
-  : 'https://brandia-1.onrender.com'; // ← PAS D'ESPACE ICI
+  : 'https://brandia-1.onrender.com';
 
 const API_BASE_URL = `${API_BASE}/api`;
 const REQUEST_TIMEOUT = 15000;
@@ -68,7 +68,6 @@ async function apiFetch(endpoint, options = {}, retryCount = 0) {
 
         clearTimeout(timeoutId);
 
-        // Gestion 401
         if (response.status === 401) {
             storage.clear();
             if (!window.location.pathname.includes('login')) {
@@ -96,7 +95,6 @@ async function apiFetch(endpoint, options = {}, retryCount = 0) {
     } catch (error) {
         clearTimeout(timeoutId);
         
-        // Retry sur erreur réseau
         if (retryCount === 0 && (error.name === 'TypeError' || error.name === 'AbortError')) {
             console.warn(`[API] Retry ${url}...`);
             await new Promise(r => setTimeout(r, 1500));
@@ -105,7 +103,7 @@ async function apiFetch(endpoint, options = {}, retryCount = 0) {
 
         let userMessage = error.message;
         if (error.name === 'AbortError') {
-            userMessage = 'Le serveur met trop de temps à répondre (cold start Render).';
+            userMessage = 'Le serveur met trop de temps à répondre.';
         } else if (error.message === 'Failed to fetch') {
             userMessage = 'Connexion impossible. Vérifiez votre internet.';
         }
@@ -115,7 +113,9 @@ async function apiFetch(endpoint, options = {}, retryCount = 0) {
     }
 }
 
-// Auth API
+// ============================================
+// AUTH API
+// ============================================
 const AuthAPI = {
     login: async (email, password) => {
         try {
@@ -147,7 +147,85 @@ const AuthAPI = {
     getRole: () => storage.getUser()?.role || null,
 };
 
-// Supplier API (Dashboard) - ✅ ROUTES CORRIGÉES
+// ============================================
+// PRODUCTS API - MANQUANT !
+// ============================================
+const ProductsAPI = {
+    getAll: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return await apiFetch(`/products${queryString ? '?' + queryString : ''}`);
+    },
+
+    getFeatured: async () => {
+        return await apiFetch('/products/featured');
+    },
+
+    getById: async (id) => {
+        return await apiFetch(`/products/${id}`);
+    },
+
+    getBySlug: async (slug) => {
+        return await apiFetch(`/products/slug/${slug}`);
+    },
+    
+    search: async (query) => {
+        return await apiFetch(`/products?search=${encodeURIComponent(query)}`);
+    }
+};
+
+// ============================================
+// CATEGORIES API - MANQUANT !
+// ============================================
+const CategoriesAPI = {
+    getAll: async () => {
+        try {
+            return await apiFetch('/categories');
+        } catch {
+            // Fallback local si API down
+            if (typeof BRANDIA_CATEGORIES !== 'undefined') {
+                return { success: true, data: BRANDIA_CATEGORIES };
+            }
+            throw new Error('Catégories non disponibles');
+        }
+    }
+};
+
+// ============================================
+// COUNTRIES API - MANQUANT !
+// ============================================
+const CountriesAPI = {
+    getAll: async () => {
+        return await apiFetch('/countries');
+    },
+    
+    getCurrent: () => {
+        return localStorage.getItem('country') || 'FR';
+    }
+};
+
+// ============================================
+// ORDERS API - MANQUANT !
+// ============================================
+const OrdersAPI = {
+    create: async (orderData) => {
+        return await apiFetch('/orders', {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+        });
+    },
+
+    getMyOrders: async () => {
+        return await apiFetch('/orders');
+    },
+
+    getById: async (id) => {
+        return await apiFetch(`/orders/${id}`);
+    }
+};
+
+// ============================================
+// SUPPLIER API (Dashboard)
+// ============================================
 const SupplierAPI = {
     init: () => {
         const user = storage.getUser();
@@ -166,7 +244,6 @@ const SupplierAPI = {
         return true;
     },
 
-    // ✅ CORRECTION : Route changée de /dashboard à /stats
     getStats: async () => {
         try {
             return await apiFetch('/supplier/stats');
@@ -175,10 +252,12 @@ const SupplierAPI = {
             return { 
                 success: true, 
                 data: {
-                    totalSales: 0, 
-                    totalOrders: 0, 
-                    productsCount: 0, 
-                    balance: 0,
+                    stats: {
+                        totalSales: 0, 
+                        totalOrders: 0, 
+                        productsCount: 0, 
+                        balance: 0
+                    },
                     recentOrders: []
                 }
             };
@@ -189,7 +268,7 @@ const SupplierAPI = {
         try {
             return await apiFetch('/supplier/products');
         } catch (error) {
-            return { success: false, data: [], message: error.message };
+            return { success: false, data: { products: [] }, message: error.message };
         }
     },
 
@@ -248,7 +327,9 @@ const SupplierAPI = {
     }
 };
 
-// Cart API
+// ============================================
+// CART API
+// ============================================
 const CartAPI = {
     get: () => {
         try {
@@ -279,6 +360,10 @@ const CartAPI = {
         
         localStorage.setItem('brandia_cart', JSON.stringify(cart));
         CartAPI.updateBadge();
+        
+        if (typeof showToast === 'function') {
+            showToast('Produit ajouté au panier');
+        }
     },
 
     remove: (productId) => {
@@ -322,12 +407,23 @@ const CartAPI = {
     }
 };
 
-// Export global
+// ============================================
+// EXPORT GLOBAL - COMPLET
+// ============================================
 window.BrandiaAPI = {
     Auth: AuthAPI,
-    Supplier: SupplierAPI,
+    Products: ProductsAPI,
+    Categories: CategoriesAPI,
+    Countries: CountriesAPI,
+    Orders: OrdersAPI,
     Cart: CartAPI,
-    apiFetch
+    Supplier: SupplierAPI,
+    storage: storage,
+    config: {
+        baseURL: API_BASE,
+        isLocal: isLocal,
+        apiURL: API_BASE_URL
+    }
 };
 
 // Init
