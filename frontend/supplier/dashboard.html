@@ -173,7 +173,6 @@
       border: 2px solid #334155;
     }
 
-    /* Campaign Preview Mockup */
     .campaign-preview {
       position: relative;
       overflow: hidden;
@@ -219,7 +218,6 @@
       <span>Promotions</span>
     </button>
 
-    <!-- NEW: Advertising Section -->
     <button onclick="navigate('advertising')" id="nav-advertising" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 relative">
       <i class="fas fa-bullhorn w-5 text-center"></i>
       <span>Publicité</span>
@@ -513,7 +511,7 @@
       </div>
     </section>
 
-    <!-- NEW: ADVERTISING SECTION -->
+    <!-- ADVERTISING SECTION -->
     <section id="advertising" class="section space-y-6">
       <div class="flex justify-between items-start">
         <div>
@@ -526,7 +524,6 @@
         </button>
       </div>
 
-      <!-- Info Banner -->
       <div class="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 rounded-xl p-6">
         <div class="flex items-start gap-4">
           <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -552,7 +549,6 @@
         </div>
       </div>
 
-      <!-- Campaign Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="card rounded-xl p-6 text-center">
           <div class="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -584,7 +580,6 @@
         </div>
       </div>
 
-      <!-- Active Campaigns -->
       <div class="card rounded-xl overflow-hidden">
         <div class="p-6 border-b border-slate-800 flex justify-between items-center">
           <h3 class="font-semibold text-lg">Campagnes actives</h3>
@@ -598,7 +593,6 @@
         </div>
       </div>
 
-      <!-- Campaign Performance Chart -->
       <div class="card rounded-xl p-6">
         <h3 class="font-semibold text-lg mb-6">Performance des campagnes (30 derniers jours)</h3>
         <div class="chart-container">
@@ -793,6 +787,17 @@
         <h2 class="text-2xl font-bold text-white">Support & Aide</h2>
         <p class="text-slate-400 text-sm mt-1">Nous sommes là pour vous aider</p>
       </div>
+      
+      <div class="card rounded-xl p-8 text-center">
+        <div class="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-headset text-indigo-400 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold mb-2">Centre d'aide</h3>
+        <p class="text-slate-400 mb-6">Une question ? Contactez notre équipe support.</p>
+        <a href="mailto:support@brandia.company" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
+          Contacter le support
+        </a>
+      </div>
     </section>
 
     <!-- SETTINGS SECTION -->
@@ -800,6 +805,26 @@
       <div>
         <h2 class="text-2xl font-bold text-white">Paramètres</h2>
         <p class="text-slate-400 text-sm mt-1">Gérez vos préférences et sécurité</p>
+      </div>
+      
+      <div class="card rounded-xl p-6 space-y-6">
+        <div class="flex items-center justify-between pb-6 border-b border-slate-800">
+          <div>
+            <h3 class="font-medium text-white">Notifications email</h3>
+            <p class="text-sm text-slate-400">Recevoir les alertes commandes par email</p>
+          </div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="font-medium text-white">Double authentification</h3>
+            <p class="text-sm text-slate-400">Sécuriser votre compte avec 2FA</p>
+          </div>
+          <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors">
+            Configurer
+          </button>
+        </div>
       </div>
     </section>
 
@@ -819,12 +844,35 @@
       </button>
     </div>
     <div class="flex-1 overflow-y-auto p-6">
-      <!-- Product form content -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Nom du produit *</label>
+          <input type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="Ex: Sérum hydratant">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Prix (€) *</label>
+          <input type="number" step="0.01" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="29.99">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Catégorie</label>
+          <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
+            <option>Choisir...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Stock</label>
+          <input type="number" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="10">
+        </div>
+      </div>
+    </div>
+    <div class="p-6 border-t border-slate-800 flex justify-end gap-3">
+      <button onclick="closeModal('product-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">Annuler</button>
+      <button onclick="closeModal('product-modal')" class="btn-primary px-6 py-2.5 rounded-lg font-medium">Enregistrer</button>
     </div>
   </div>
 </div>
 
-<!-- Campaign Modal (New) -->
+<!-- Campaign Modal -->
 <div id="campaign-modal" class="fixed inset-0 z-50 hidden">
   <div class="modal-backdrop absolute inset-0" onclick="closeModal('campaign-modal')"></div>
   <div class="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
@@ -839,9 +887,6 @@
     </div>
 
     <form id="campaign-form" class="space-y-6">
-      <input type="hidden" id="campaign-id" name="id">
-      
-      <!-- Basic Info -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-slate-400 mb-2">Nom de la campagne *</label>
@@ -869,7 +914,6 @@
         </div>
       </div>
 
-      <!-- Media Upload -->
       <div>
         <label class="block text-sm text-slate-400 mb-2">Visuel de la campagne *</label>
         <div class="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-indigo-500/50 transition-colors cursor-pointer relative" onclick="document.getElementById('campaign-media').click()" id="campaign-dropzone">
@@ -879,12 +923,10 @@
             <p class="text-slate-600 text-xs mt-1">Format recommandé: 1200x800px, max 5MB</p>
           </div>
           <img id="campaign-media-preview" class="max-h-48 mx-auto rounded-lg hidden" />
-          <video id="campaign-video-preview" class="max-h-48 mx-auto rounded-lg hidden" controls muted></video>
         </div>
         <input type="file" id="campaign-media" accept="image/*,video/mp4" class="hidden" onchange="handleCampaignMedia(event)">
       </div>
 
-      <!-- Content -->
       <div class="space-y-4">
         <div>
           <label class="block text-sm text-slate-400 mb-2">Titre principal *</label>
@@ -908,39 +950,27 @@
           </div>
           <div>
             <label class="block text-sm text-slate-400 mb-2">Lien de destination *</label>
-            <select name="cta_link_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none mb-2" onchange="handleCtaType(this.value)">
+            <select name="cta_link_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" onchange="handleCtaType(this.value)">
               <option value="product">Produit spécifique</option>
               <option value="category">Catégorie</option>
-              <option value="external">Lien externe (non recommandé)</option>
+              <option value="external">Lien externe</option>
             </select>
-            <select id="cta-product-select" name="cta_product_id" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-              <option value="">Choisir un produit...</option>
-            </select>
-            <input type="url" id="cta-external-url" name="cta_external_url" placeholder="https://..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none hidden">
           </div>
         </div>
       </div>
 
-      <!-- Targeting -->
-      <div class="bg-slate-800/50 rounded-xl p-4 space-y-4">
-        <h4 class="font-semibold text-sm text-white flex items-center gap-2">
+      <div class="bg-slate-800/50 rounded-xl p-4">
+        <h4 class="font-semibold text-sm text-white mb-4 flex items-center gap-2">
           <i class="fas fa-crosshairs text-indigo-400"></i>
-          Ciblage (obligatoire)
+          Ciblage
         </h4>
-        <p class="text-xs text-slate-400">La publicité ne s'affichera que sur les pages des produits sélectionnés</p>
-        
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Produits concernés *</label>
-          <div id="target-products-list" class="max-h-40 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg p-2 space-y-1">
-            <div class="text-center py-4 text-slate-500 text-sm">
-              <i class="fas fa-spinner fa-spin mr-2"></i>Chargement des produits...
-            </div>
+        <div id="target-products-list" class="max-h-40 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg p-2 space-y-1">
+          <div class="text-center py-4 text-slate-500 text-sm">
+            Chargement des produits...
           </div>
-          <p class="text-xs text-slate-500 mt-1">Sélectionnez au moins un produit</p>
         </div>
       </div>
 
-      <!-- Duration -->
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-slate-400 mb-2">Date de début *</label>
@@ -953,44 +983,14 @@
                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
         </div>
       </div>
-
-      <!-- Preview Section -->
-      <div>
-        <label class="block text-sm text-slate-400 mb-2">Aperçu mobile (simulation)</label>
-        <div class="bg-slate-800 rounded-xl p-4">
-          <div class="max-w-sm mx-auto bg-slate-900 rounded-lg border-2 border-slate-700 overflow-hidden">
-            <!-- Mock Product Page Background -->
-            <div class="h-32 bg-slate-800 p-4 opacity-50">
-              <div class="h-4 w-3/4 bg-slate-700 rounded mb-2"></div>
-              <div class="h-20 bg-slate-700 rounded"></div>
-            </div>
-            <!-- Ad Overlay (40% height) -->
-            <div class="relative h-48 bg-gradient-to-br from-indigo-900/90 to-purple-900/90 backdrop-blur p-4 flex flex-col items-center justify-center text-center border-t-2 border-indigo-500/30" id="ad-preview-container">
-              <img id="ad-preview-image" src="" class="absolute inset-0 w-full h-full object-cover opacity-40 hidden" />
-              <div class="relative z-10">
-                <h4 class="font-bold text-white mb-1" id="ad-preview-headline">Votre titre ici</h4>
-                <p class="text-xs text-slate-300 mb-3" id="ad-preview-desc">Description de votre offre</p>
-                <button class="px-4 py-2 bg-white text-indigo-900 rounded-full text-xs font-bold" id="ad-preview-cta">Voir l'offre</button>
-              </div>
-              <div class="absolute top-2 right-2 text-white/60 text-xs">
-                <i class="fas fa-times"></i>
-              </div>
-              <div class="absolute bottom-1 left-0 right-0 text-center">
-                <p class="text-[10px] text-white/40">Contenu proposé par la marque consultée</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </form>
 
     <div class="mt-6 pt-6 border-t border-slate-800 flex justify-end gap-3">
       <button type="button" onclick="closeModal('campaign-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">
         Annuler
       </button>
-      <button type="button" onclick="saveCampaign()" id="btn-save-campaign" class="btn-primary px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500">
-        <i class="fas fa-spinner fa-spin hidden" id="save-campaign-spinner"></i>
-        <span>Créer la campagne</span>
+      <button type="button" onclick="saveCampaign()" class="btn-primary px-6 py-2.5 rounded-lg font-medium bg-gradient-to-r from-pink-500 to-rose-500">
+        Créer la campagne
       </button>
     </div>
   </div>
@@ -1022,600 +1022,15 @@
   </div>
 </div>
 
+<!-- SCRIPTS CORRIGÉS -->
 <script src="../assets/js/api.js"></script>
+<script src="../assets/js/supplier-dashboard.js"></script>
 <script>
-// Configuration
+// Configuration locale minimale
 const CONFIG = {
-  API_BASE_URL: 'http://localhost:4000/api',
-  ITEMS_PER_PAGE: 12,
   COMMISSION_RATE: 0.15
 };
-
-let currentState = {
-  products: [],
-  orders: [],
-  promotions: [],
-  campaigns: [],
-  categories: [],
-  currentProductPage: 1,
-  currentOrderFilter: 'all',
-  currentAnalyticsPeriod: 7,
-  charts: {}
-};
-
-// Navigation
-function navigate(section) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  const target = document.getElementById(section);
-  if (target) target.classList.add('active');
-  
-  document.querySelectorAll('.nav-link').forEach(l => {
-    l.classList.remove('active');
-    l.classList.add('text-slate-400');
-  });
-  
-  const activeNav = document.getElementById('nav-' + section);
-  if (activeNav) {
-    activeNav.classList.add('active');
-    activeNav.classList.remove('text-slate-400');
-  }
-  
-  updateHeader(section);
-  loadSectionData(section);
-  window.scrollTo(0, 0);
-}
-
-function updateHeader(section) {
-  const titles = {
-    overview: { title: 'Tableau de bord', subtitle: 'Vue d\'ensemble de votre activité' },
-    products: { title: 'Mes produits', subtitle: 'Gérez votre catalogue produits' },
-    promotions: { title: 'Promotions', subtitle: 'Créez des offres pour booster vos ventes' },
-    advertising: { title: 'Publicité Contextuelle', subtitle: 'Promouvez vos produits au bon moment' },
-    orders: { title: 'Commandes', subtitle: 'Suivez et gérez vos commandes clients' },
-    payments: { title: 'Paiements & Revenus', subtitle: 'Suivez vos revenus et demandez des virements' },
-    analytics: { title: 'Statistiques', subtitle: 'Analysez votre performance commerciale' },
-    profile: { title: 'Profil de la marque', subtitle: 'Gérez votre identité publique' },
-    support: { title: 'Support & Aide', subtitle: 'Nous sommes là pour vous aider' },
-    settings: { title: 'Paramètres', subtitle: 'Gérez vos préférences et sécurité' }
-  };
-  
-  const t = titles[section];
-  if (t) {
-    document.getElementById('page-title').textContent = t.title;
-    document.getElementById('page-subtitle').textContent = t.subtitle;
-  }
-}
-
-// Data Loading
-async function loadSectionData(section) {
-  showLoading(true);
-  try {
-    switch(section) {
-      case 'overview':
-        await loadOverview();
-        break;
-      case 'products':
-        await loadCategories();
-        await loadProducts();
-        break;
-      case 'orders':
-        await loadOrders();
-        break;
-      case 'payments':
-        await loadPayments();
-        break;
-      case 'analytics':
-        await loadAnalytics();
-        break;
-      case 'profile':
-        await loadProfile();
-        break;
-      case 'promotions':
-        await loadPromotions();
-        break;
-      case 'advertising':
-        await loadCampaigns();
-        await loadCampaignStats();
-        break;
-    }
-  } catch (error) {
-    console.error(`Erreur chargement section ${section}:`, error);
-    showToast('Erreur de chargement des données', 'error');
-  } finally {
-    showLoading(false);
-  }
-}
-
-// Campaign Functions (New)
-async function loadCampaigns() {
-  try {
-    const response = await BrandiaAPI.Supplier.getCampaigns();
-    const campaigns = response.data || [];
-    currentState.campaigns = campaigns;
-    
-    const container = document.getElementById('campaigns-list');
-    
-    if (campaigns.length === 0) {
-      container.innerHTML = `
-        <div class="p-8 text-center text-slate-500">
-          <i class="fas fa-bullhorn text-4xl mb-4 opacity-50"></i>
-          <p class="text-lg mb-2">Aucune campagne active</p>
-          <p class="text-sm mb-4">Créez votre première publicité contextuelle</p>
-          <button onclick="openCampaignModal()" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium bg-gradient-to-r from-pink-500 to-rose-500">
-            <i class="fas fa-plus mr-2"></i>Créer une campagne
-          </button>
-        </div>
-      `;
-      return;
-    }
-    
-    container.innerHTML = campaigns.map(c => `
-      <div class="p-6 flex items-center gap-4 hover:bg-slate-800/30 transition-colors">
-        <div class="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
-          ${c.media_type === 'video' 
-            ? `<video src="${c.media_url}" class="w-full h-full object-cover" muted></video>
-               <div class="absolute inset-0 flex items-center justify-center bg-black/50">
-                 <i class="fas fa-play-circle text-white text-2xl"></i>
-               </div>`
-            : `<img src="${c.media_url}" class="w-full h-full object-cover" alt="${c.name}">`
-          }
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            <h4 class="font-semibold text-white truncate">${c.name}</h4>
-            <span class="badge badge-${c.status} text-xs capitalize">${c.status}</span>
-          </div>
-          <p class="text-sm text-slate-400 mb-2">${c.headline}</p>
-          <div class="flex items-center gap-4 text-xs text-slate-500">
-            <span><i class="fas fa-crosshairs mr-1"></i>${c.target_products?.length || 0} produits ciblés</span>
-            <span><i class="fas fa-calendar mr-1"></i>${formatDate(c.start_date)} - ${formatDate(c.end_date)}</span>
-          </div>
-        </div>
-        <div class="text-right">
-          <div class="flex items-center gap-4 mb-2">
-            <div class="text-center">
-              <p class="text-lg font-bold text-white">${c.views_count || 0}</p>
-              <p class="text-xs text-slate-500">Vues</p>
-            </div>
-            <div class="text-center">
-              <p class="text-lg font-bold text-indigo-400">${c.clicks_count || 0}</p>
-              <p class="text-xs text-slate-500">Clics</p>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="toggleCampaignStatus(${c.id}, '${c.status === 'active' ? 'paused' : 'active'}')" 
-                    class="px-3 py-1.5 rounded-lg text-xs font-medium ${c.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'} transition-colors">
-              ${c.status === 'active' ? '<i class="fas fa-pause mr-1"></i>Pause' : '<i class="fas fa-play mr-1"></i>Activer'}
-            </button>
-            <button onclick="deleteCampaign(${c.id})" class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    `).join('');
-    
-  } catch (error) {
-    console.error('Erreur chargement campagnes:', error);
-  }
-}
-
-async function loadCampaignStats() {
-  try {
-    const response = await BrandiaAPI.Supplier.getCampaignStats();
-    const stats = response.data || {};
-    
-    document.getElementById('ad-views').textContent = stats.total_views || 0;
-    document.getElementById('ad-clicks').textContent = stats.total_clicks || 0;
-    document.getElementById('ad-ctr').textContent = (stats.ctr || 0) + '%';
-    document.getElementById('ad-conversions').textContent = stats.conversions || 0;
-    
-    // Render chart if data exists
-    if (stats.chart_data) {
-      renderCampaignChart(stats.chart_data);
-    }
-  } catch (error) {
-    console.error('Erreur stats campagnes:', error);
-  }
-}
-
-function renderCampaignChart(data) {
-  const ctx = document.getElementById('campaignChart');
-  if (!ctx) return;
-  
-  if (currentState.charts.campaign) {
-    currentState.charts.campaign.destroy();
-  }
-  
-  currentState.charts.campaign = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels || [],
-      datasets: [
-        {
-          label: 'Vues',
-          data: data.views || [],
-          borderColor: '#ec4899',
-          backgroundColor: 'rgba(236, 72, 153, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
-        },
-        {
-          label: 'Clics',
-          data: data.clicks || [],
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { 
-          labels: { color: '#94a3b8' }
-        }
-      },
-      scales: {
-        y: {
-          grid: { color: 'rgba(148, 163, 184, 0.1)' },
-          ticks: { color: '#94a3b8' }
-        },
-        x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
-        }
-      }
-    }
-  });
-}
-
-async function openCampaignModal(campaignId = null) {
-  const modal = document.getElementById('campaign-modal');
-  const form = document.getElementById('campaign-form');
-  form.reset();
-  
-  // Reset previews
-  document.getElementById('campaign-media-preview').classList.add('hidden');
-  document.getElementById('campaign-video-preview').classList.add('hidden');
-  document.getElementById('campaign-media-placeholder').classList.remove('hidden');
-  
-  // Load products for targeting
-  await loadTargetProducts();
-  
-  if (campaignId) {
-    // Load campaign data for edit
-    const campaign = currentState.campaigns.find(c => c.id === campaignId);
-    if (campaign) {
-      document.getElementById('campaign-id').value = campaign.id;
-      form.name.value = campaign.name;
-      form.headline.value = campaign.headline;
-      form.description.value = campaign.description || '';
-      form.cta_text.value = campaign.cta_text;
-      // ... populate other fields
-      
-      if (campaign.media_url) {
-        if (campaign.media_type === 'video') {
-          document.getElementById('campaign-video-preview').src = campaign.media_url;
-          document.getElementById('campaign-video-preview').classList.remove('hidden');
-        } else {
-          document.getElementById('campaign-media-preview').src = campaign.media_url;
-          document.getElementById('campaign-media-preview').classList.remove('hidden');
-        }
-        document.getElementById('campaign-media-placeholder').classList.add('hidden');
-      }
-    }
-  } else {
-    document.getElementById('campaign-id').value = '';
-    // Default dates
-    const today = new Date().toISOString().split('T')[0];
-    const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    form.start_date.value = today;
-    form.end_date.value = nextMonth;
-  }
-  
-  openModal('campaign-modal');
-}
-
-async function loadTargetProducts() {
-  try {
-    const response = await BrandiaAPI.Supplier.getProducts({ limit: 100 });
-    const products = response.data?.products || [];
-    const container = document.getElementById('target-products-list');
-    const select = document.getElementById('cta-product-select');
-    
-    // Update checkboxes
-    container.innerHTML = products.map(p => `
-      <label class="flex items-center gap-3 p-2 hover:bg-slate-700/50 rounded cursor-pointer transition-colors">
-        <input type="checkbox" name="target_products[]" value="${p.id}" class="w-4 h-4 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-700">
-        <img src="${p.main_image_url || '/assets/images/placeholder.png'}" class="w-10 h-10 rounded object-cover bg-slate-700">
-        <div class="flex-1 min-w-0">
-          <p class="text-sm text-white truncate">${p.name}</p>
-          <p class="text-xs text-slate-400">${formatPrice(p.price)}</p>
-        </div>
-      </label>
-    `).join('');
-    
-    // Update select
-    select.innerHTML = '<option value="">Choisir un produit...</option>' + 
-      products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-      
-  } catch (error) {
-    console.error('Erreur chargement produits cibles:', error);
-  }
-}
-
-function handleCampaignMedia(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('Le fichier ne doit pas dépasser 5MB', 'error');
-    return;
-  }
-  
-  const isVideo = file.type.startsWith('video/');
-  const imgPreview = document.getElementById('campaign-media-preview');
-  const vidPreview = document.getElementById('campaign-video-preview');
-  const placeholder = document.getElementById('campaign-media-placeholder');
-  
-  placeholder.classList.add('hidden');
-  
-  const url = URL.createObjectURL(file);
-  
-  if (isVideo) {
-    vidPreview.src = url;
-    vidPreview.classList.remove('hidden');
-    imgPreview.classList.add('hidden');
-    
-    // Check duration
-    vidPreview.onloadedmetadata = () => {
-      if (vidPreview.duration > 15) {
-        showToast('La vidéo doit faire maximum 15 secondes', 'error');
-        // Reset
-        event.target.value = '';
-        vidPreview.src = '';
-        vidPreview.classList.add('hidden');
-        placeholder.classList.remove('hidden');
-      }
-    };
-  } else {
-    imgPreview.src = url;
-    imgPreview.classList.remove('hidden');
-    vidPreview.classList.add('hidden');
-  }
-  
-  // Update preview in mockup
-  updateAdPreview();
-}
-
-function updateAdPreview() {
-  const headline = document.querySelector('[name="headline"]').value || 'Votre titre ici';
-  const desc = document.querySelector('[name="description"]').value || 'Description de votre offre';
-  const cta = document.querySelector('[name="cta_text"]').value || 'Voir l\'offre';
-  const imgPreview = document.getElementById('campaign-media-preview');
-  
-  document.getElementById('ad-preview-headline').textContent = headline;
-  document.getElementById('ad-preview-desc').textContent = desc;
-  document.getElementById('ad-preview-cta').textContent = cta;
-  
-  if (!imgPreview.classList.contains('hidden')) {
-    const container = document.getElementById('ad-preview-container');
-    container.style.backgroundImage = `url(${imgPreview.src})`;
-    container.style.backgroundSize = 'cover';
-    document.getElementById('ad-preview-image').src = imgPreview.src;
-  }
-}
-
-function handleCtaType(type) {
-  const productSelect = document.getElementById('cta-product-select');
-  const externalUrl = document.getElementById('cta-external-url');
-  
-  if (type === 'external') {
-    productSelect.classList.add('hidden');
-    externalUrl.classList.remove('hidden');
-  } else {
-    productSelect.classList.remove('hidden');
-    externalUrl.classList.add('hidden');
-  }
-}
-
-function toggleMediaType(type) {
-  const input = document.getElementById('campaign-media');
-  input.accept = type === 'video' ? 'video/mp4' : 'image/*';
-}
-
-async function saveCampaign() {
-  const form = document.getElementById('campaign-form');
-  const formData = new FormData(form);
-  const campaignId = document.getElementById('campaign-id').value;
-  
-  // Validation
-  const targetProducts = Array.from(form.querySelectorAll('input[name="target_products[]"]:checked')).map(cb => parseInt(cb.value));
-  if (targetProducts.length === 0) {
-    showToast('Veuillez sélectionner au moins un produit cible', 'error');
-    return;
-  }
-  
-  // Build data
-  const data = {
-    name: formData.get('name'),
-    media_type: formData.get('media_type'),
-    headline: formData.get('headline'),
-    description: formData.get('description'),
-    cta_text: formData.get('cta_text'),
-    start_date: formData.get('start_date'),
-    end_date: formData.get('end_date'),
-    target_products: targetProducts,
-    media_file: formData.get('media')
-  };
-  
-  // Handle CTA link
-  const ctaType = formData.get('cta_link_type');
-  if (ctaType === 'external') {
-    data.cta_link = formData.get('cta_external_url');
-  } else if (ctaType === 'product') {
-    const productId = formData.get('cta_product_id');
-    if (productId) data.cta_link = `/product.html?id=${productId}`;
-  }
-  
-  try {
-    setLoading('btn-save-campaign', true);
-    
-    let response;
-    if (campaignId) {
-      response = await BrandiaAPI.Supplier.updateCampaign(campaignId, data);
-    } else {
-      response = await BrandiaAPI.Supplier.createCampaign(data);
-    }
-    
-    if (response.success) {
-      showToast(campaignId ? 'Campagne mise à jour !' : 'Campagne créée avec succès !', 'success');
-      closeModal('campaign-modal');
-      navigate('advertising');
-    } else {
-      throw new Error(response.message);
-    }
-  } catch (error) {
-    showToast(error.message || 'Erreur lors de l\'enregistrement', 'error');
-  } finally {
-    setLoading('btn-save-campaign', false);
-  }
-}
-
-async function toggleCampaignStatus(campaignId, newStatus) {
-  try {
-    const response = await BrandiaAPI.Supplier.updateCampaignStatus(campaignId, { status: newStatus });
-    if (response.success) {
-      showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
-      loadCampaigns();
-    }
-  } catch (error) {
-    showToast('Erreur lors de la mise à jour', 'error');
-  }
-}
-
-async function deleteCampaign(campaignId) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
-  
-  try {
-    const response = await BrandiaAPI.Supplier.deleteCampaign(campaignId);
-    if (response.success) {
-      showToast('Campagne supprimée', 'success');
-      loadCampaigns();
-    }
-  } catch (error) {
-    showToast('Erreur lors de la suppression', 'error');
-  }
-}
-
-// Mock API functions (placeholders - implement in api.js)
-BrandiaAPI.Supplier = {
-  ...BrandiaAPI.Supplier,
-  getCampaigns: async () => {
-    // Mock: return { success: true, data: [] };
-    return fetch(`${CONFIG.API_BASE_URL}/supplier/campaigns`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    }).then(r => r.json());
-  },
-  createCampaign: async (data) => {
-    return fetch(`${CONFIG.API_BASE_URL}/supplier/campaigns`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify(data)
-    }).then(r => r.json());
-  },
-  // ... other methods
-};
-
-// Preview updates on input
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('campaign-form');
-  if (form) {
-    form.addEventListener('input', updateAdPreview);
-  }
-});
-
-// Utilities (keep existing functions)
-function formatPrice(amount) {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount);
-}
-
-function formatDate(dateString) {
-  if (!dateString) return '--';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function openModal(id) {
-  document.getElementById(id).classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function showLoading(show) {
-  const overlay = document.getElementById('loading-overlay');
-  if (show) overlay.classList.remove('hidden');
-  else overlay.classList.add('hidden');
-}
-
-function setLoading(btnId, loading) {
-  const btn = document.getElementById(btnId);
-  const spinner = btn.querySelector('.fa-spinner');
-  if (loading) {
-    btn.disabled = true;
-    spinner.classList.remove('hidden');
-  } else {
-    btn.disabled = false;
-    spinner.classList.add('hidden');
-  }
-}
-
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = `flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg transform translate-x-full transition-all duration-300 ${
-    type === 'success' ? 'bg-emerald-500' :
-    type === 'error' ? 'bg-red-500' :
-    type === 'warning' ? 'bg-amber-500' :
-    'bg-indigo-500'
-  } text-white`;
-  
-  const icon = type === 'success' ? 'fa-check-circle' :
-               type === 'error' ? 'fa-exclamation-circle' :
-               type === 'warning' ? 'fa-exclamation-triangle' :
-               'fa-info-circle';
-  
-  toast.innerHTML = `<i class="fas ${icon}"></i><span class="font-medium">${message}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => toast.classList.remove('translate-x-full'), 100);
-  setTimeout(() => {
-    toast.classList.add('translate-x-full');
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-  const user = BrandiaAPI.Auth.getUser();
-  if (!user || user.role !== 'supplier') {
-    window.location.href = '../login.html';
-    return;
-  }
-  document.getElementById('user-name').textContent = user.first_name || user.email;
-  navigate('overview');
-});
 </script>
+
 </body>
 </html>
