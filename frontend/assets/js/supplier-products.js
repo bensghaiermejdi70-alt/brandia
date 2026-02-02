@@ -12,7 +12,8 @@ window.SupplierProducts = {
       search: '',
       status: '',
       category: ''
-    }
+    },
+    importInProgress: false
   },
 
   init: async () => {
@@ -25,14 +26,12 @@ window.SupplierProducts = {
       const response = await BrandiaAPI.Categories.getAll();
       SupplierProducts.state.categories = response.data || [];
       
-      // Remplir le select du filtre
       const select = document.getElementById('product-category-filter');
       if (select) {
         select.innerHTML = '<option value="">Toutes les catégories</option>' +
           SupplierProducts.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
       }
       
-      // Remplir le select du modal
       const modalSelect = document.getElementById('product-category-select');
       if (modalSelect) {
         modalSelect.innerHTML = '<option value="">Choisir une catégorie...</option>' +
@@ -128,7 +127,6 @@ window.SupplierProducts = {
       </div>
     `).join('');
 
-    // Mettre à jour le compteur dans la sidebar
     const count = SupplierProducts.state.products.length;
     const badge = document.getElementById('product-count');
     if (badge) {
@@ -253,13 +251,162 @@ window.SupplierProducts = {
     }
   },
 
+  // ==========================================
+  // IMPORT CSV - FONCTION COMPLÈTE
+  // ==========================================
   import: () => {
-    DashboardApp.showToast('Import CSV en cours de développement', 'info');
+    // Créer input file caché
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.style.display = 'none';
+    
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      if (file.size > 2 * 1024 * 1024) {
+        DashboardApp.showToast('Fichier trop volumineux (max 2MB)', 'error');
+        return;
+      }
+      
+      SupplierProducts.processCSV(file);
+    };
+    
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
+  },
+
+  processCSV: (file) => {
+    if (SupplierProducts.state.importInProgress) {
+      DashboardApp.showToast('Import déjà en cours...', 'warning');
+      return;
+    }
+
+    SupplierProducts.state.importInProgress = true;
+    DashboardApp.showLoading(true);
+    
+    const reader = new FileReader();
+    
+    reader.onload = async (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(l => l.trim());
+        
+        if (lines.length < 2) {
+          throw new Error('Fichier CSV vide ou invalide');
+        }
+
+        // Parser header
+        const headers = lines[0].split(';').map(h => h.trim().toLowerCase());
+        const required = ['name', 'price'];
+        const missing = required.filter(r => !headers.includes(r));
+        
+        if (missing.length > 0) {
+          throw new Error(`Colonnes manquantes: ${missing.join(', ')}`);
+        }
+
+        const products = [];
+        const errors = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(';');
+          const product = {};
+          
+          headers.forEach((h, idx) => {
+            product[h] = values[idx]?.trim() || '';
+          });
+
+          // Validation
+          if (!product.name) {
+            errors.push(`Ligne ${i + 1}: nom manquant`);
+            continue;
+          }
+          
+          const price = parseFloat(product.price);
+          if (isNaN(price) || price <= 0) {
+            errors.push(`Ligne ${i + 1}: prix invalide`);
+            continue;
+          }
+
+          products.push({
+            name: product.name,
+            price: price,
+            stock_quantity: parseInt(product.stock_quantity) || 0,
+            category_id: product.category_id || null,
+            description: product.description || ''
+          });
+        }
+
+        if (products.length === 0) {
+          throw new Error('Aucun produit valide trouvé dans le CSV');
+        }
+
+        // Confirmation
+        const confirmMsg = `Importer ${products.length} produits ?${errors.length > 0 ? `\n(${errors.length} erreurs ignorées)` : ''}`;
+        if (!confirm(confirmMsg)) {
+          SupplierProducts.state.importInProgress = false;
+          DashboardApp.showLoading(false);
+          return;
+        }
+
+        // Import un par un
+        let success = 0;
+        let failed = 0;
+
+        for (const product of products) {
+          try {
+            await BrandiaAPI.Supplier.createProduct(product);
+            success++;
+          } catch (err) {
+            console.error('Import error:', err);
+            failed++;
+          }
+        }
+
+        DashboardApp.showToast(`${success} produits importés${failed > 0 ? `, ${failed} échoués` : ''}`, success > 0 ? 'success' : 'error');
+        
+        if (success > 0) {
+          SupplierProducts.loadProducts();
+        }
+
+        if (errors.length > 0) {
+          console.warn('Erreurs CSV:', errors);
+        }
+
+      } catch (error) {
+        DashboardApp.showToast(error.message, 'error');
+      } finally {
+        SupplierProducts.state.importInProgress = false;
+        DashboardApp.showLoading(false);
+      }
+    };
+
+    reader.onerror = () => {
+      DashboardApp.showToast('Erreur lecture fichier', 'error');
+      SupplierProducts.state.importInProgress = false;
+      DashboardApp.showLoading(false);
+    };
+
+    reader.readAsText(file);
+  },
+
+  // Télécharger template CSV
+  downloadTemplate: () => {
+    const csv = 'name;price;stock_quantity;category_id;description\nProduit exemple;29.99;10;1;Description du produit\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'template_produits_brandia.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
   }
 };
 
-// Raccourcis globaux pour les onclick inline
+// Raccourcis globaux
 window.openProductModal = (id) => SupplierProducts.openModal(id);
 window.importProducts = () => SupplierProducts.import();
 window.filterProducts = () => SupplierProducts.filter();
 window.changeProductPage = (delta) => SupplierProducts.changePage(delta);
+window.downloadImportTemplate = () => SupplierProducts.downloadTemplate();
