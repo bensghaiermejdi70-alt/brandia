@@ -1,5 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend (CORRIGÉ)
+// BRANDIA API CLIENT - Frontend (v2.3 CORS FIX)
+// Espaces fatals supprimés - Production Ready
 // ============================================
 
 (function() {
@@ -11,15 +12,16 @@
     return;
   }
 
+  // Détection environnement
   const isLocal = window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1' ||
                   window.location.protocol === 'file:' ||
                   window.location.hostname.includes('github.io');
 
-  // ✅ CORRECTION CRITIQUE : Suppression de l'espace fatal à la fin
+  // ✅ CORRECTION CRITIQUE : URL sans espaces
   const API_BASE = isLocal 
     ? 'http://localhost:4000' 
-    : 'https://brandia-1.onrender.com';  // ← PAS d'espace ici !
+    : 'https://brandia-1.onrender.com';  // ← PAS d'espace !
 
   const API_BASE_URL = `${API_BASE}/api`;
   const REQUEST_TIMEOUT = 15000;
@@ -27,6 +29,7 @@
   console.log(`[Brandia API] Mode: ${isLocal ? 'LOCAL' : 'PRODUCTION'}`);
   console.log(`[Brandia API] URL: ${API_BASE_URL}`);
 
+  // Stockage
   const storage = {
     getToken: () => localStorage.getItem('token'),
     setToken: (token) => localStorage.setItem('token', token),
@@ -48,6 +51,7 @@
     }
   };
 
+  // Fetch avec retry
   async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
@@ -65,6 +69,7 @@
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
     try {
+      console.log(`[API] ${options.method || 'GET'} ${url}`);
       const response = await fetch(url, {
         ...options,
         headers,
@@ -101,7 +106,7 @@
       clearTimeout(timeoutId);
       
       if (retryCount === 0 && (error.name === 'TypeError' || error.name === 'AbortError')) {
-        console.warn(`[Brandia API] Retry ${url}...`);
+        console.warn(`[API] Retry ${url}...`);
         await new Promise(r => setTimeout(r, 1500));
         return apiFetch(endpoint, options, retryCount + 1);
       }
@@ -113,7 +118,7 @@
         userMessage = 'Connexion impossible. Vérifiez votre internet.';
       }
       
-      console.error('[Brandia API Error]', error);
+      console.error('[API Error]', error);
       throw new Error(userMessage);
     }
   }
@@ -122,7 +127,6 @@
   const AuthAPI = {
     login: async (email, password) => {
       try {
-        console.log(`[Brandia API] Login attempt: ${email}`);
         const data = await apiFetch('/auth/login', {
           method: 'POST',
           body: JSON.stringify({ email, password })
@@ -133,17 +137,14 @@
             localStorage.setItem('refreshToken', data.data.refreshToken);
           }
           storage.setUser(data.data.user);
-          console.log('[Brandia API] Login successful');
         }
         return data;
       } catch (error) {
-        console.error('[Brandia API] Login failed:', error.message);
         return { success: false, message: error.message };
       }
     },
 
     logout: () => {
-      console.log('[Brandia API] Logout');
       apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
       storage.clear();
       window.location.href = 'index.html';
@@ -209,28 +210,23 @@
       const user = storage.getUser();
       
       if (!storage.getToken()) {
-        console.log('[Brandia API] Redirect to login: no token');
         window.location.href = '../login.html?redirect=supplier/dashboard';
         return false;
       }
       
       if (user?.role !== 'supplier') {
-        console.log('[Brandia API] Access denied: not a supplier');
         alert('Accès réservé aux fournisseurs');
         window.location.href = '../index.html';
         return false;
       }
       
-      console.log('[Brandia API] Supplier access granted');
       return true;
     },
 
     getStats: async () => {
       try {
-        console.log('[Brandia API] Fetching supplier stats...');
         return await apiFetch('/supplier/stats');
       } catch (error) {
-        console.error('[Brandia API] Stats error:', error);
         return { 
           success: true, 
           data: {
@@ -247,7 +243,6 @@
         const queryString = new URLSearchParams(params).toString();
         return await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`);
       } catch (error) {
-        console.error('[Brandia API] Products error:', error);
         return { success: false, data: { products: [] }, message: error.message };
       }
     },
@@ -277,6 +272,10 @@
       return await apiFetch(`/supplier/orders${query}`);
     },
 
+    getOrderById: async (id) => {
+      return await apiFetch(`/supplier/orders/${id}`);
+    },
+
     updateOrderStatus: async (orderId, status) => {
       return await apiFetch(`/supplier/orders/${orderId}/status`, {
         method: 'PUT',
@@ -304,6 +303,18 @@
         method: 'POST',
         body: JSON.stringify(campaignData)
       });
+    },
+
+    getPublicCampaign: async (supplierId, productId) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/public/campaigns?supplier=${supplierId}&product=${productId}`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        return await response.json();
+      } catch (error) {
+        return { success: false, data: null };
+      }
     }
   };
 
@@ -331,7 +342,7 @@
           product_id: productId,
           name: product.name,
           price: parseFloat(product.price) || 0,
-          image: product.main_image_url || product.image || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400 ',
+          image: product.main_image_url || product.image || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400',
           quantity: quantity
         });
       }
@@ -397,5 +408,5 @@
     }
   };
 
-  console.log('[Brandia API] ✅ Loaded successfully v2.1');
+  console.log('[Brandia API] ✅ Loaded v2.3 - CORS Ready');
 })();

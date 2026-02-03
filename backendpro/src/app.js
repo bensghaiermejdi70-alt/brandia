@@ -17,31 +17,41 @@ app.use(helmet({
 }));
 
 // ============================================
-// CORS - ✅ ESPACES SUPPRIMÉS + DOMAIN AJOUTÉ
+// CORS - ✅ ESPACES SUPPRIMÉS + LOGGING
 // ============================================
 
 const allowedOrigins = [
-  'https://brandia-marketplace.netlify.app',     // ← Espace supprimé
-  'https://bensghaiermejdi70-alt.github.io',
-  'https://brandia.company',                      // ← Ton nouveau domaine
+  'https://brandia-marketplace.netlify.app',      // ← Espace supprimé
+  'https://bensghaiermejdi70-alt.github.io',      // ← Espace supprimé
+  'https://brandia.company',                       // ← Ton nouveau domaine
   'http://localhost:3000',
-  'http://127.0.0.1:5500',                       // ← Espace supprimé
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',                         // ← Espace supprimé
   null // Pour les requêtes sans origine (mobile, curl)
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    console.log('CORS check - Origin:', origin);
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    console.log(`[CORS] Origin: ${origin || 'no-origin'}`);
+    
+    // Autoriser explicitement null/undefined (requêtes sans origine)
+    if (!origin) {
+      console.log('[CORS] ✓ Allowed (no origin)');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`[CORS] ✓ Allowed: ${origin}`);
       callback(null, true);
     } else {
-      console.log('❌ CORS bloqué pour:', origin);
+      console.log(`[CORS] ❌ Blocked: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Pour compatibilité IE
 }));
 
 // Webhook Stripe (raw body)

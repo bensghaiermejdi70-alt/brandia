@@ -1,35 +1,27 @@
 const express = require('express');
 const router = express.Router();
-
-// Import middleware et controller
-const authMiddleware = require('../../middlewares/auth.middleware');
 const supplierController = require('./supplier.controller');
+const authMiddleware = require('../../middlewares/auth.middleware');
 
-// Vérification import
-console.log('[Supplier Routes] Auth middleware type:', typeof authMiddleware);
-console.log('[Supplier Routes] Controller methods:', Object.keys(supplierController || {}));
+console.log('[Supplier Routes] Loading...');
 
-// Récupération fonction d'authentification
-const authenticate = authMiddleware.authenticate || authMiddleware;
+// ==========================================
+// ROUTES PUBLIQUES (pas d'authentification)
+// ==========================================
 
-if (typeof authenticate !== 'function') {
-    throw new Error('Middleware d\'authentification invalide dans supplier.routes.js');
-}
+// Route pour récupérer une campagne active (utilisée par le frontend produit)
+router.get('/campaigns/active/:supplierId/:productId', supplierController.getActiveCampaignForProduct);
 
-// Protection JWT sur toutes les routes supplier
-router.use((req, res, next) => {
-    console.log(`[Supplier Route] ${req.method} ${req.path} - Auth check...`);
-    authenticate(req, res, next);
-});
+// Tracking des clics (pas besoin d'auth pour tracker)
+router.post('/campaigns/track/click', supplierController.trackCampaignClick);
 
-// Dashboard & Stats
-router.get('/stats', (req, res, next) => {
-    console.log('[Supplier] Appel getStats par user:', req.user?.id);
-    supplierController.getStats(req, res, next);
-});
+// ==========================================
+// ROUTES PROTÉGÉES (nécessitent JWT)
+// ==========================================
+router.use(authMiddleware);
 
-// Profil
-router.get('/profile', supplierController.getProfile);
+// Stats et dashboard
+router.get('/stats', supplierController.getStats);
 
 // Produits
 router.get('/products', supplierController.getProducts);
@@ -46,9 +38,15 @@ router.put('/orders/:id/status', supplierController.updateOrderStatus);
 router.get('/payments', supplierController.getPayments);
 router.post('/payouts', supplierController.requestPayout);
 
-// Campagnes publicitaires
+// Campagnes (CRUD fournisseur)
 router.get('/campaigns', supplierController.getCampaigns);
 router.post('/campaigns', supplierController.createCampaign);
-router.get('/campaigns/active', supplierController.getActiveCampaignForProduct);
+router.put('/campaigns/:id', supplierController.updateCampaign);
+router.put('/campaigns/:id/status', supplierController.updateCampaignStatus);
+router.delete('/campaigns/:id', supplierController.deleteCampaign);
 
+// Tracking views (protégé car appelé depuis le dashboard)
+router.post('/campaigns/track/view', supplierController.trackCampaignView);
+
+console.log('[Supplier Routes] Loaded successfully');
 module.exports = router;

@@ -13,7 +13,6 @@ const orderRoutes = require('../modules/orders/order.routes');
 const countryRoutes = require('../modules/countries/country.routes');
 const supplierRoutes = require('../modules/supplier/supplier.routes');
 
-
 // ============================================
 // HEALTH CHECK
 // ============================================
@@ -27,6 +26,71 @@ router.get('/health', (req, res) => {
         version: '1.0.0',
         environment: process.env.NODE_ENV || 'development'
     });
+});
+
+/// ============================================
+// ROUTES PUBLIQUES - CAMPAGNES PUBLICITAIRES
+// ============================================
+
+router.get('/public/campaigns', async (req, res) => {
+    try {
+        const { supplier, product } = req.query;
+        
+        console.log(`[Public Campaigns] Request: supplier=${supplier}, product=${product}`);
+
+        if (!supplier || !product) {
+            return res.status(400).json({
+                success: false,
+                message: 'Les paramètres supplier et product sont requis'
+            });
+        }
+
+        const { query } = require('../config/db');
+        
+        const result = await query(`
+            SELECT 
+                c.id,
+                c.name,
+                c.media_url,
+                c.media_type,
+                c.headline,
+                c.description,
+                c.cta_text,
+                c.cta_link,
+                c.start_date,
+                c.end_date
+            FROM supplier_campaigns c
+            WHERE c.supplier_id = $1
+                AND $2 = ANY(c.target_products)
+                AND c.status = 'active'
+                AND c.start_date <= NOW()
+                AND c.end_date >= NOW()
+            ORDER BY c.created_at DESC
+            LIMIT 1
+        `, [supplier, product]);
+
+        console.log(`[Public Campaigns] Found: ${result.rows.length} campaign(s)`);
+
+        if (result.rows.length === 0) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'Aucune campagne active trouvée'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('[Public Campaigns] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur lors de la récupération de la campagne'
+        });
+    }
 });
 
 // ============================================
@@ -70,7 +134,7 @@ router.get('/test-db', async (req, res) => {
 });
 
 // ============================================
-// ROUTES API
+// ROUTES API (protégées ou spécifiques)
 // ============================================
 
 router.use('/auth', authRoutes);
@@ -78,10 +142,10 @@ router.use('/products', productRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/countries', countryRoutes);
-router.use('/supplier', supplierRoutes); // ✅ DÉJÀ PRÉSENT
+router.use('/supplier', supplierRoutes);
 
 // ============================================
-// DOCUMENTATION API
+// DOCUMENTATION API (Route racine)
 // ============================================
 
 router.get('/', (req, res) => {
@@ -98,6 +162,11 @@ router.get('/', (req, res) => {
                 method: 'GET',
                 path: '/api/health',
                 description: 'Vérification état du serveur'
+            },
+            public: {
+                method: 'GET',
+                path: '/api/public/campaigns?supplier=X&product=Y',
+                description: 'Campagnes publicitaires (public)'
             },
             test: {
                 method: 'GET',
@@ -134,7 +203,9 @@ router.get('/', (req, res) => {
                     { method: 'GET', path: '/stats', auth: true, description: 'Statistiques dashboard' },
                     { method: 'GET', path: '/products', auth: true, description: 'Mes produits' },
                     { method: 'GET', path: '/orders', auth: true, description: 'Mes commandes' },
-                    { method: 'GET', path: '/payments', auth: true, description: 'Paiements et soldes' }
+                    { method: 'GET', path: '/payments', auth: true, description: 'Paiements et soldes' },
+                    { method: 'GET', path: '/campaigns', auth: true, description: 'Mes campagnes pub' },
+                    { method: 'POST', path: '/campaigns', auth: true, description: 'Créer campagne' }
                 ]
             }
         },
@@ -147,7 +218,7 @@ router.get('/', (req, res) => {
 });
 
 // ============================================
-// GESTION ERREURS 404
+// GESTION ERREURS 404 - DOIT ÊTRE DERNIER
 // ============================================
 
 router.use((req, res) => {
@@ -158,62 +229,5 @@ router.use((req, res) => {
         method: req.method
     });
 });
-// ============================================
-// ROUTES PUBLIQUES - CAMPAGNES PUBLICITAIRES
-// ============================================
 
-// Route publique pour récupérer les campagnes actives (pas d'auth requise)
-router.get('/public/campaigns', async (req, res) => {
-    try {
-        const { supplier, product } = req.query;
-        
-        if (!supplier || !product) {
-            return res.status(400).json({
-                success: false,
-                message: 'supplier et product sont requis'
-            });
-        }
-
-        const { pool } = require('../config/db');
-        
-        // Vérifier si une campagne active existe
-        const result = await pool.query(`
-            SELECT 
-                c.id,
-                c.name,
-                c.media_url,
-                c.media_type,
-                c.headline,
-                c.description,
-                c.cta_text,
-                c.cta_link
-            FROM supplier_campaigns c
-            WHERE c.supplier_id = $1
-            AND $2 = ANY(c.target_products)
-            AND c.status = 'active'
-            AND c.start_date <= NOW()
-            AND c.end_date >= NOW()
-            LIMIT 1
-        `, [supplier, product]);
-
-        if (result.rows.length === 0) {
-            return res.json({
-                success: true,
-                data: null
-            });
-        }
-
-        res.json({
-            success: true,
-            data: result.rows[0]
-        });
-
-    } catch (error) {
-        console.error('❌ Erreur campagne:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur'
-        });
-    }
-});
 module.exports = router;
