@@ -2,16 +2,13 @@
 // PRODUCT MODEL - Requêtes SQL Produits
 // ============================================
 
-// ✅ CORRECTION CRITIQUE : Utiliser pool.query
-const { pool } = require('../../config/db');
+// backendpro/src/modules/products/product.model.js
+const { query } = require('../../config/db');
 const logger = require('../../utils/logger');
 
 const ProductModel = {
-    // Liste tous les produits (avec filtres)
-    findAll: async (options = {}) => {
-        try {
-            const { category, search, limit = 20, offset = 0 } = options;
-            
+   findAll: async (options = {}) => {
+    const { category, search, limit = 20, offset = 0 } = options;
             // ✅ COLONNES EXPLICITES pour éviter les erreurs SQL
             let sql = `
                 SELECT 
