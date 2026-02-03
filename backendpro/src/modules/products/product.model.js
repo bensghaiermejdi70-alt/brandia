@@ -10,7 +10,6 @@ const ProductModel = {
     try {
         const { category, search, limit = 20, offset = 0 } = options;
         
-        // ✅ REQUÊTE SIMPLIFIÉE avec seulement les colonnes qui existent sûrement
         let sql = `
             SELECT 
                 p.id,
@@ -19,7 +18,6 @@ const ProductModel = {
                 p.price,
                 p.stock_quantity,
                 p.main_image_url,
-                p.image,
                 p.supplier_id,
                 p.is_active,
                 p.created_at,
@@ -69,19 +67,19 @@ const ProductModel = {
     }
 },
 
-    // Produits en vedette - VERSION SIMPLIFIÉE
     findFeatured: async (limit = 8) => {
         try {
-            // ✅ SANS colonnes qui n'existent peut-être pas
             const sql = `
                 SELECT 
                     p.id,
                     p.name,
                     p.description,
                     p.price,
+                    p.stock_quantity,
                     p.main_image_url,
-                    p.image,
                     p.supplier_id,
+                    p.is_active,
+                    p.created_at,
                     u.first_name as supplier_name,
                     s.company_name as supplier_company
                 FROM products p
@@ -105,14 +103,22 @@ const ProductModel = {
         }
     },
 
-    // Détail par ID - VERSION SIMPLIFIÉE
     findById: async (id) => {
         try {
             const sql = `
                 SELECT 
-                    p.*,
+                    p.id,
+                    p.name,
+                    p.description,
+                    p.price,
+                    p.stock_quantity,
+                    p.main_image_url,
+                    p.supplier_id,
+                    p.is_active,
+                    p.created_at,
                     u.first_name as supplier_name,
-                    s.company_name as supplier_company
+                    s.company_name as supplier_company,
+                    s.description as supplier_description
                 FROM products p
                 LEFT JOIN users u ON p.supplier_id = u.id
                 LEFT JOIN suppliers s ON u.id = s.user_id
@@ -129,24 +135,30 @@ const ProductModel = {
         }
     },
 
-    // Détail par slug - VERSION SIMPLIFIÉE
     findBySlug: async (slug) => {
         try {
-            // Si slug n'existe pas en DB, chercher par id ou name
             const sql = `
                 SELECT 
-                    p.*,
+                    p.id,
+                    p.name,
+                    p.description,
+                    p.price,
+                    p.stock_quantity,
+                    p.main_image_url,
+                    p.supplier_id,
+                    p.is_active,
+                    p.created_at,
                     u.first_name as supplier_name,
                     s.company_name as supplier_company
                 FROM products p
                 LEFT JOIN users u ON p.supplier_id = u.id
                 LEFT JOIN suppliers s ON u.id = s.user_id
-                WHERE (p.slug = $1 OR p.id::text = $1 OR p.name ILIKE $1)
+                WHERE (p.name ILIKE $1 OR p.id::text = $1)
                 AND (p.is_active = true OR p.is_active IS NULL)
                 LIMIT 1
             `;
             
-            const result = await query(sql, [slug]);
+            const result = await query(sql, [`%${slug}%`]);
             return result.rows[0] || null;
 
         } catch (error) {
@@ -155,7 +167,6 @@ const ProductModel = {
         }
     },
 
-    // Créer un produit - VERSION SIMPLIFIÉE
     create: async (productData) => {
         try {
             const { supplier_id, name, description, price, stock_quantity, main_image_url } = productData;
@@ -164,7 +175,7 @@ const ProductModel = {
                 INSERT INTO products 
                 (supplier_id, name, description, price, stock_quantity, main_image_url, is_active, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
-                RETURNING *
+                RETURNING id, name, description, price, stock_quantity, main_image_url, supplier_id, is_active, created_at
             `;
             
             const result = await query(sql, [supplier_id, name, description, price, stock_quantity, main_image_url]);
@@ -177,7 +188,6 @@ const ProductModel = {
         }
     },
     
-    // Mettre à jour - VERSION SIMPLIFIÉE
     update: async (id, updates) => {
         try {
             const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active'];
@@ -207,7 +217,6 @@ const ProductModel = {
         }
     },
     
-    // Supprimer
     delete: async (id) => {
         try {
             const result = await query('DELETE FROM products WHERE id = $1 RETURNING id, name', [id]);
