@@ -1,13 +1,20 @@
 const db = require('../../config/db');
 
-// Email optionnel - ne bloque pas le chargement
+// ==========================================
+// EMAIL OPTIONNEL - Ne bloque pas l'application
+// ==========================================
 let sendEmail = null;
 try {
   const emailModule = require('../../utils/email');
   sendEmail = emailModule.sendEmail;
+  console.log('[SupplierController] Email module loaded');
 } catch (e) {
-  console.log('[SupplierController] Email module not available');
-  sendEmail = async () => console.log('[Email] Would send email (module not loaded)');
+  console.log('[SupplierController] Email module not available - emails disabled');
+  // Fonction factice qui ne fait rien
+  sendEmail = async (options) => {
+    console.log('[Email Mock] Would send:', options.subject, 'to', options.to);
+    return { success: true, mock: true };
+  };
 }
 
 class SupplierController {
@@ -296,9 +303,13 @@ class SupplierController {
       const { id } = req.params;
       const { status } = req.body;
 
-      // Envoyer email si expédié (optionnel)
+      // Email optionnel (ne bloque pas si pas configuré)
       if (status === 'shipped') {
-        await this.sendShippingEmail(id);
+        try {
+          await this.sendShippingEmail(id);
+        } catch (emailError) {
+          console.log('[Email] Failed but continuing:', emailError.message);
+        }
       }
 
       await db.query(
@@ -610,11 +621,15 @@ class SupplierController {
   }
 
   // ==========================================
-  // EMAILS (optionnel)
+  // EMAILS (optionnel - ne bloque pas)
   // ==========================================
   async sendShippingEmail(orderId) {
     try {
-      if (!sendEmail) return; // Skip si email non configuré
+      // Vérifier si email est configuré
+      if (!sendEmail) {
+        console.log('[Email] Module not loaded, skipping email');
+        return;
+      }
       
       const orderData = await db.query(`
         SELECT o.*, u.email, u.first_name
@@ -632,7 +647,8 @@ class SupplierController {
         });
       }
     } catch (error) {
-      console.error('Erreur envoi email:', error);
+      // Ne pas bloquer l'application si l'email échoue
+      console.error('[Email] Error (non-blocking):', error.message);
     }
   }
 }
