@@ -16,7 +16,6 @@ const supplierRoutes = require('../modules/supplier/supplier.routes');
 // ============================================
 // HEALTH CHECK
 // ============================================
-
 router.get('/health', (req, res) => {
     res.json({
         success: true,
@@ -28,10 +27,12 @@ router.get('/health', (req, res) => {
     });
 });
 
-/// ============================================
+// ============================================
 // ROUTES PUBLIQUES - CAMPAGNES PUBLICITAIRES
 // ============================================
+// ⚠️ AVANT les routes protégées et AVANT le 404
 
+// Route publique pour récupérer une campagne active
 router.get('/public/campaigns', async (req, res) => {
     try {
         const { supplier, product } = req.query;
@@ -45,9 +46,9 @@ router.get('/public/campaigns', async (req, res) => {
             });
         }
 
-        const { query } = require('../config/db');
+        const db = require('../config/db');
         
-        const result = await query(`
+        const result = await db.query(`
             SELECT 
                 c.id,
                 c.name,
@@ -94,31 +95,26 @@ router.get('/public/campaigns', async (req, res) => {
 });
 
 // ============================================
-// CORRECTION IMAGE DIFFUSEUR (TEMPORAIRE)
+// DEBUG ROUTES (TEMPORAIRES)
 // ============================================
-
 router.get('/fix-diffuseur', async (req, res) => {
     try {
-        const { query } = require('../config/db');
-        await query(`
+        const db = require('../config/db');
+        await db.query(`
             UPDATE products 
             SET main_image_url = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800' 
             WHERE id = 11
         `);
-        res.send('✅ Image du diffuseur corrigée ! Rafraîchissez la page produit.');
+        res.send('✅ Image du diffuseur corrigée !');
     } catch (err) {
         res.status(500).send('Erreur: ' + err.message);
     }
 });
 
-// ============================================
-// DEBUG - TEST DB (TEMPORAIRE)
-// ============================================
-
 router.get('/test-db', async (req, res) => {
     try {
-        const { query } = require('../config/db');
-        const result = await query('SELECT COUNT(*) as count FROM products');
+        const db = require('../config/db');
+        const result = await db.query('SELECT COUNT(*) as count FROM products');
         res.json({ 
             success: true, 
             count: result.rows[0].count,
@@ -127,8 +123,7 @@ router.get('/test-db', async (req, res) => {
     } catch (err) {
         res.status(500).json({ 
             success: false, 
-            error: err.message,
-            stack: err.stack 
+            error: err.message 
         });
     }
 });
@@ -136,7 +131,6 @@ router.get('/test-db', async (req, res) => {
 // ============================================
 // ROUTES API (protégées ou spécifiques)
 // ============================================
-
 router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
 router.use('/payments', paymentRoutes);
@@ -145,88 +139,29 @@ router.use('/countries', countryRoutes);
 router.use('/supplier', supplierRoutes);
 
 // ============================================
-// DOCUMENTATION API (Route racine)
+// DOCUMENTATION API
 // ============================================
-
 router.get('/', (req, res) => {
     res.json({
         success: true,
         service: 'Brandia API',
         version: '1.0.0',
-        documentation: {
-            description: 'Marketplace B2B pour marques et fournisseurs',
-            base_url: `${req.protocol}://${req.get('host')}/api`
-        },
         endpoints: {
-            health: {
-                method: 'GET',
-                path: '/api/health',
-                description: 'Vérification état du serveur'
-            },
-            public: {
-                method: 'GET',
-                path: '/api/public/campaigns?supplier=X&product=Y',
-                description: 'Campagnes publicitaires (public)'
-            },
-            test: {
-                method: 'GET',
-                path: '/api/test-db',
-                description: 'Test connexion DB (debug)'
-            },
-            authentication: {
-                base: '/api/auth',
-                routes: [
-                    { method: 'POST', path: '/register', description: 'Inscription client/fournisseur' },
-                    { method: 'POST', path: '/login', description: 'Connexion' },
-                    { method: 'POST', path: '/refresh', description: 'Rafraîchir token JWT' },
-                    { method: 'GET', path: '/me', auth: true, description: 'Profil utilisateur connecté' }
-                ]
-            },
-            products: {
-                base: '/api/products',
-                routes: [
-                    { method: 'GET', path: '/', description: 'Liste des produits' },
-                    { method: 'GET', path: '/featured', description: 'Produits en vedette' },
-                    { method: 'GET', path: '/:id', description: 'Détail produit' }
-                ]
-            },
-            countries: {
-                base: '/api/countries',
-                routes: [
-                    { method: 'GET', path: '/', description: 'Liste des pays' }
-                ]
-            },
-            supplier: {
-                base: '/api/supplier',
-                description: 'Espace fournisseur - REQUIÈRE AUTH JWT',
-                routes: [
-                    { method: 'GET', path: '/stats', auth: true, description: 'Statistiques dashboard' },
-                    { method: 'GET', path: '/products', auth: true, description: 'Mes produits' },
-                    { method: 'GET', path: '/orders', auth: true, description: 'Mes commandes' },
-                    { method: 'GET', path: '/payments', auth: true, description: 'Paiements et soldes' },
-                    { method: 'GET', path: '/campaigns', auth: true, description: 'Mes campagnes pub' },
-                    { method: 'POST', path: '/campaigns', auth: true, description: 'Créer campagne' }
-                ]
-            }
-        },
-        authentication: {
-            type: 'JWT Bearer Token',
-            header: 'Authorization: Bearer <token>',
-            token_url: '/api/auth/login'
+            public: '/api/public/campaigns?supplier=X&product=Y',
+            health: '/api/health',
+            test: '/api/test-db'
         }
     });
 });
 
 // ============================================
-// GESTION ERREURS 404 - DOIT ÊTRE DERNIER
+// GESTION ERREURS 404 - DERNIER
 // ============================================
-
 router.use((req, res) => {
     res.status(404).json({
         success: false,
         message: 'Endpoint non trouvé',
-        path: req.path,
-        method: req.method
+        path: req.path
     });
 });
 

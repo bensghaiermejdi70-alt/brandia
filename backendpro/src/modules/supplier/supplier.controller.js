@@ -1,5 +1,14 @@
 const db = require('../../config/db');
-const { sendEmail } = require('../../utils/email');
+
+// Email optionnel - ne bloque pas le chargement
+let sendEmail = null;
+try {
+  const emailModule = require('../../utils/email');
+  sendEmail = emailModule.sendEmail;
+} catch (e) {
+  console.log('[SupplierController] Email module not available');
+  sendEmail = async () => console.log('[Email] Would send email (module not loaded)');
+}
 
 class SupplierController {
   // ==========================================
@@ -9,7 +18,6 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       
-      // Stats globales
       const statsQuery = await db.query(`
         SELECT 
           COALESCE(SUM(o.total_amount), 0) as total_sales,
@@ -23,7 +31,6 @@ class SupplierController {
         WHERE u.id = $1
       `, [supplierId]);
 
-      // Commandes récentes (format attendu par le frontend)
       const ordersQuery = await db.query(`
         SELECT 
           o.id,
@@ -40,7 +47,6 @@ class SupplierController {
         LIMIT 5
       `, [supplierId]);
 
-      // Top produits
       const topProducts = await db.query(`
         SELECT p.name, p.main_image_url, SUM(oi.quantity) as sales
         FROM order_items oi
@@ -217,7 +223,6 @@ class SupplierController {
 
       const result = await db.query(query, params);
 
-      // Compter par statut pour les badges
       const countsQuery = await db.query(`
         SELECT 
           COUNT(*) as all_count,
@@ -291,7 +296,7 @@ class SupplierController {
       const { id } = req.params;
       const { status } = req.body;
 
-      // Envoyer email selon le statut
+      // Envoyer email si expédié (optionnel)
       if (status === 'shipped') {
         await this.sendShippingEmail(id);
       }
@@ -351,7 +356,6 @@ class SupplierController {
       const supplierId = req.user.id;
       const { amount } = req.body;
 
-      // Vérifier solde disponible
       const balanceCheck = await db.query(
         'SELECT COALESCE(SUM(supplier_amount), 0) as balance FROM supplier_payments WHERE supplier_id = $1 AND status = $2',
         [supplierId, 'available']
@@ -361,13 +365,11 @@ class SupplierController {
         return res.status(400).json({ success: false, message: 'Solde insuffisant' });
       }
 
-      // Créer la demande
       await db.query(`
         INSERT INTO payouts (supplier_id, amount, status)
         VALUES ($1, $2, 'pending')
       `, [supplierId, amount]);
 
-      // Marquer les paiements comme en cours de virement
       await db.query(`
         UPDATE supplier_payments 
         SET status = 'payout_requested', updated_at = NOW()
@@ -525,8 +527,41 @@ class SupplierController {
     }
   }
 
+  async getActiveCampaignForProduct(req, res) {
+    try {
+      const { supplierId, productId } = req.params;
+      
+      const result = await db.query(`
+        SELECT 
+          c.id,
+          c.name,
+          c.media_url,
+          c.media_type,
+          c.headline,
+          c.description,
+          c.cta_text,
+          c.cta_link
+        FROM supplier_campaigns c
+        WHERE c.supplier_id = $1
+          AND $2 = ANY(c.target_products)
+          AND c.status = 'active'
+          AND c.start_date <= NOW()
+          AND c.end_date >= NOW()
+        ORDER BY c.created_at DESC
+        LIMIT 1
+      `, [supplierId, productId]);
+
+      res.json({
+        success: true,
+        data: result.rows[0] || null
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
   // ==========================================
-  // TRACKING CAMPAGNES (Views & Clicks)
+  // TRACKING CAMPAGNES
   // ==========================================
   async trackCampaignView(req, res) {
     try {
@@ -547,8 +582,7 @@ class SupplierController {
 
       res.json({ success: true });
     } catch (error) {
-      console.error('[TrackView] Error:', error);
-      res.status(500).json({ success: false });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 
@@ -571,16 +605,17 @@ class SupplierController {
 
       res.json({ success: true });
     } catch (error) {
-      console.error('[TrackClick] Error:', error);
-      res.status(500).json({ success: false });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 
   // ==========================================
-  // EMAILS
+  // EMAILS (optionnel)
   // ==========================================
   async sendShippingEmail(orderId) {
     try {
+      if (!sendEmail) return; // Skip si email non configuré
+      
       const orderData = await db.query(`
         SELECT o.*, u.email, u.first_name
         FROM orders o
@@ -600,9 +635,6 @@ class SupplierController {
       console.error('Erreur envoi email:', error);
     }
   }
-} // ? FIN DE LA CLASSE SupplierController
+}
 
-// ==========================================
-// EXPORT UNIQUE
-// ==========================================
 module.exports = new SupplierController();
