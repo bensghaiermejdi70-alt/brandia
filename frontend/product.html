@@ -23,6 +23,7 @@
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.success { background: #10b981; }
     .toast.error { background: #ef4444; }
+    .toast.warning { background: #f59e0b; }
     .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
   </style>
 </head>
@@ -291,13 +292,15 @@ async function loadProduct() {
     currentProduct = product;
     currentSupplierId = product.supplier_id || product.user_id;
     
-    // ✅ EXPOSER POUR LA PUBLICITÉ
-    w// Exposer le produit courant pour le système de publicité
-window.currentProduct = {
-    id: product.id,
-    supplier_id: product.supplier_id || product.supplierId || product.supplier?.id
-};
-console.log('[Product] Exposed window.currentProduct:', window.currentProduct);
+    // Exposer le produit courant pour le système de publicité
+    window.currentProduct = {
+        id: product.id,
+        supplier_id: product.supplier_id || product.supplierId || product.supplier?.id
+    };
+    console.log('[Product] Exposed window.currentProduct:', window.currentProduct);
+    
+    // ✅ CORRECTION CRUCIALE : Appeler renderProduct pour afficher le produit
+    renderProduct(product);
     
     // ✅ DÉCLENCHER LA PUBLICITÉ APRÈS 3 SECONDES
     setTimeout(() => {
