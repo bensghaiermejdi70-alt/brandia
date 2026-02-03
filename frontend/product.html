@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="assets/js/api.js"></script>
+  <!-- ✅ SCRIPT PUBLICITAIRE AJOUTÉ -->
+  <script src="assets/js/brandia-ads.js"></script>
   <style>
     body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
     .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
@@ -289,7 +291,7 @@ async function loadProduct() {
     currentProduct = product;
     currentSupplierId = product.supplier_id || product.user_id;
     
-    // Exposer pour le système de pub
+    // ✅ EXPOSER POUR LA PUBLICITÉ
     window.currentProduct = {
       id: product.id,
       supplier_id: currentSupplierId,
@@ -297,6 +299,16 @@ async function loadProduct() {
     };
     
     renderProduct(product);
+    
+    // ✅ DÉCLENCHER LA PUBLICITÉ APRÈS 3 SECONDES
+    setTimeout(() => {
+      if (window.brandiaAds && currentSupplierId) {
+        console.log('🎯 Démarrage publicité pour supplier:', currentSupplierId);
+        window.brandiaAds.checkAndShow(product.id, currentSupplierId);
+      } else {
+        console.log('❌ Publicité non disponible:', { brandiaAds: !!window.brandiaAds, supplierId: currentSupplierId });
+      }
+    }, 3000);
     
   } catch (err) {
     console.error('[Product] Error:', err);
@@ -502,42 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCartBadge();
   loadProduct();
 });
-    <!-- ... contenu de la page ... -->
+</script>
 
-    <!-- Scripts -->
-    <script src="assets/js/api.js"></script>
-    <script src="assets/js/brandia-ads.js"></script>  <!-- ✅ AJOUTE CECI -->
-    
-    <script>
-    // Chargement du produit
-    async function loadProduct() {
-        try {
-            const productId = new URLSearchParams(window.location.search).get('id');
-            const response = await BrandiaAPI.Products.getById(productId);
-            const product = response.data.product;
-            
-            // ... affichage du produit ...
-            
-            // ✅ EXPOSER POUR LA PUBLICITÉ (AJOUTE CECI)
-            window.currentProduct = {
-                id: product.id,
-                supplier_id: product.supplier_id,
-                name: product.name
-            };
-            
-            // Déclencher la publicité après 3 secondes
-            setTimeout(() => {
-                if (window.brandiaAds && product.supplier_id) {
-                    window.brandiaAds.checkAndShow(product.id, product.supplier_id);
-                }
-            }, 3000);
-            
-        } catch (error) {
-            console.error('Erreur chargement produit:', error);
-        }
-    }
-    
-    loadProduct();
-    </script>
 </body>
 </html>
