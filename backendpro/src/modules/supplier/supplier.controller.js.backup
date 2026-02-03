@@ -1,28 +1,15 @@
 const db = require('../../config/db');
-
-// Email optionnel
-let sendEmail = null;
-try {
-  const emailModule = require('../../utils/email');
-  sendEmail = emailModule.sendEmail;
-  console.log('[SupplierController] Email module loaded');
-} catch (e) {
-  console.log('[SupplierController] Email module not available - emails disabled');
-  sendEmail = async (options) => {
-    console.log('[Email Mock] Would send:', options.subject, 'to', options.to);
-    return { success: true, mock: true };
-  };
-}
+const { sendEmail } = require('../../utils/email');
 
 class SupplierController {
-  
   // ==========================================
-  // STATISTIQUES
+  // STATISTIQUES TABLEAU DE BORD
   // ==========================================
   async getStats(req, res) {
     try {
       const supplierId = req.user.id;
       
+      // Stats globales
       const statsQuery = await db.query(`
         SELECT 
           COALESCE(SUM(o.total_amount), 0) as total_sales,
@@ -36,10 +23,16 @@ class SupplierController {
         WHERE u.id = $1
       `, [supplierId]);
 
+      // Commandes récentes (format attendu par le frontend)
       const ordersQuery = await db.query(`
         SELECT 
-          o.id, o.order_number, o.total_amount, o.status, o.created_at,
-          u.first_name as customer_name, u.email as customer_email
+          o.id,
+          o.order_number,
+          o.total_amount,
+          o.status,
+          o.created_at,
+          u.first_name as customer_name,
+          u.email as customer_email
         FROM orders o
         JOIN users u ON o.user_id = u.id
         WHERE o.supplier_id = $1
@@ -47,6 +40,7 @@ class SupplierController {
         LIMIT 5
       `, [supplierId]);
 
+      // Top produits
       const topProducts = await db.query(`
         SELECT p.name, p.main_image_url, SUM(oi.quantity) as sales
         FROM order_items oi
@@ -166,7 +160,8 @@ class SupplierController {
       const values = Object.values(updates);
       
       await db.query(`
-        UPDATE products SET ${fields}, updated_at = NOW()
+        UPDATE products 
+        SET ${fields}, updated_at = NOW()
         WHERE id = $1 AND supplier_id = $2
       `, [id, supplierId, ...values]);
 
@@ -198,8 +193,14 @@ class SupplierController {
 
       let query = `
         SELECT 
-          o.id, o.order_number, o.total_amount, o.status, o.created_at,
-          u.first_name as customer_name, u.email as customer_email, o.shipping_address
+          o.id,
+          o.order_number,
+          o.total_amount,
+          o.status,
+          o.created_at,
+          u.first_name as customer_name,
+          u.email as customer_email,
+          o.shipping_address
         FROM orders o
         JOIN users u ON o.user_id = u.id
         WHERE o.supplier_id = $1
@@ -216,6 +217,7 @@ class SupplierController {
 
       const result = await db.query(query, params);
 
+      // Compter par statut pour les badges
       const countsQuery = await db.query(`
         SELECT 
           COUNT(*) as all_count,
@@ -223,7 +225,8 @@ class SupplierController {
           COUNT(*) FILTER (WHERE status = 'paid') as paid_count,
           COUNT(*) FILTER (WHERE status = 'shipped') as shipped_count,
           COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count
-        FROM orders WHERE supplier_id = $1
+        FROM orders
+        WHERE supplier_id = $1
       `, [supplierId]);
 
       const counts = countsQuery.rows[0];
@@ -272,7 +275,10 @@ class SupplierController {
 
       res.json({
         success: true,
-        data: { ...orderResult.rows[0], items: itemsResult.rows }
+        data: {
+          ...orderResult.rows[0],
+          items: itemsResult.rows
+        }
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -285,8 +291,9 @@ class SupplierController {
       const { id } = req.params;
       const { status } = req.body;
 
+      // Envoyer email selon le statut
       if (status === 'shipped') {
-        try { await this.sendShippingEmail(id); } catch (e) {}
+        await this.sendShippingEmail(id);
       }
 
       await db.query(
@@ -312,7 +319,8 @@ class SupplierController {
           COALESCE(SUM(CASE WHEN status = 'available' THEN supplier_amount ELSE 0 END), 0) as available,
           COALESCE(SUM(CASE WHEN status = 'pending' THEN supplier_amount ELSE 0 END), 0) as pending,
           COALESCE(SUM(supplier_amount), 0) as total
-        FROM supplier_payments WHERE supplier_id = $1
+        FROM supplier_payments
+        WHERE supplier_id = $1
       `, [supplierId]);
 
       const transactionsResult = await db.query(`
@@ -343,6 +351,7 @@ class SupplierController {
       const supplierId = req.user.id;
       const { amount } = req.body;
 
+      // Vérifier solde disponible
       const balanceCheck = await db.query(
         'SELECT COALESCE(SUM(supplier_amount), 0) as balance FROM supplier_payments WHERE supplier_id = $1 AND status = $2',
         [supplierId, 'available']
@@ -352,8 +361,18 @@ class SupplierController {
         return res.status(400).json({ success: false, message: 'Solde insuffisant' });
       }
 
-      await db.query(`INSERT INTO payouts (supplier_id, amount, status) VALUES ($1, $2, 'pending')`, [supplierId, amount]);
-      await db.query(`UPDATE supplier_payments SET status = 'payout_requested', updated_at = NOW() WHERE supplier_id = $1 AND status = 'available'`, [supplierId]);
+      // Créer la demande
+      await db.query(`
+        INSERT INTO payouts (supplier_id, amount, status)
+        VALUES ($1, $2, 'pending')
+      `, [supplierId, amount]);
+
+      // Marquer les paiements comme en cours de virement
+      await db.query(`
+        UPDATE supplier_payments 
+        SET status = 'payout_requested', updated_at = NOW()
+        WHERE supplier_id = $1 AND status = 'available'
+      `, [supplierId]);
 
       res.json({ success: true, message: 'Demande de virement envoyée' });
     } catch (error) {
@@ -362,12 +381,18 @@ class SupplierController {
   }
 
   // ==========================================
-  // CAMPAGNES (Auth)
+  // CAMPAGNES PUBLICITAIRES (Fournisseur - Auth)
   // ==========================================
   async getCampaigns(req, res) {
     try {
       const supplierId = req.user.id;
-      const result = await db.query(`SELECT * FROM supplier_campaigns WHERE supplier_id = $1 ORDER BY created_at DESC`, [supplierId]);
+      
+      const result = await db.query(`
+        SELECT * FROM supplier_campaigns 
+        WHERE supplier_id = $1 
+        ORDER BY created_at DESC
+      `, [supplierId]);
+
       res.json({ success: true, data: result.rows });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -377,14 +402,29 @@ class SupplierController {
   async createCampaign(req, res) {
     try {
       const supplierId = req.user.id;
-      const { name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date } = req.body;
+      const {
+        name,
+        headline,
+        description,
+        cta_text,
+        cta_link,
+        media_type,
+        media_url,
+        target_products,
+        start_date,
+        end_date
+      } = req.body;
 
       const result = await db.query(`
         INSERT INTO supplier_campaigns 
-        (supplier_id, name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date, status, views_count, clicks_count)
+        (supplier_id, name, headline, description, cta_text, cta_link, media_type, media_url, 
+         target_products, start_date, end_date, status, views_count, clicks_count)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', 0, 0)
         RETURNING *
-      `, [supplierId, name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date]);
+      `, [
+        supplierId, name, headline, description, cta_text, cta_link,
+        media_type, media_url, target_products, start_date, end_date
+      ]);
 
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
@@ -398,7 +438,12 @@ class SupplierController {
       const { id } = req.params;
       const { status } = req.body;
 
-      await db.query(`UPDATE supplier_campaigns SET status = $1, updated_at = NOW() WHERE id = $2 AND supplier_id = $3`, [status, id, supplierId]);
+      await db.query(`
+        UPDATE supplier_campaigns 
+        SET status = $1, updated_at = NOW()
+        WHERE id = $2 AND supplier_id = $3
+      `, [status, id, supplierId]);
+
       res.json({ success: true, message: 'Campagne mise à jour' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -409,6 +454,7 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       const { id } = req.params;
+
       await db.query('DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2', [id, supplierId]);
       res.json({ success: true, message: 'Campagne supprimée' });
     } catch (error) {
@@ -417,20 +463,33 @@ class SupplierController {
   }
 
   // ==========================================
-  // CAMPAGNES (PUBLIC - Sans auth)
+  // CAMPAGNES PUBLICITAIRES (PUBLIC - Pas d'auth)
   // ==========================================
-  
-  // ? CETTE MÉTHODE ÉTAIT MANQUANTE / MAL DÉFINIE
-  async getActiveCampaignForProduct(req, res) {
+  async getPublicCampaigns(req, res) {
     try {
-      const { supplierId, productId } = req.params;
+      const { supplier, product } = req.query;
       
-      console.log(`[getActiveCampaignForProduct] supplier=${supplierId}, product=${productId}`);
-      
+      console.log(`[PublicCampaigns] Request: supplier=${supplier}, product=${product}`);
+
+      if (!supplier || !product) {
+        return res.status(400).json({
+          success: false,
+          message: 'Les paramètres supplier et product sont requis'
+        });
+      }
+
       const result = await db.query(`
         SELECT 
-          c.id, c.name, c.media_url, c.media_type, c.headline, 
-          c.description, c.cta_text, c.cta_link
+          c.id,
+          c.name,
+          c.media_url,
+          c.media_type,
+          c.headline,
+          c.description,
+          c.cta_text,
+          c.cta_link,
+          c.start_date,
+          c.end_date
         FROM supplier_campaigns c
         WHERE c.supplier_id = $1
           AND $2 = ANY(c.target_products)
@@ -439,15 +498,57 @@ class SupplierController {
           AND c.end_date >= NOW()
         ORDER BY c.created_at DESC
         LIMIT 1
-      `, [supplierId, productId]);
+      `, [supplier, product]);
 
+      if (result.rows.length === 0) {
+        console.log(`[PublicCampaigns] No active campaign found`);
+        return res.json({
+          success: true,
+          data: null,
+          message: 'Aucune campagne active trouvée'
+        });
+      }
+
+      console.log(`[PublicCampaigns] Found campaign: ${result.rows[0].name}`);
+      
       res.json({
         success: true,
-        data: result.rows[0] || null
+        data: result.rows[0]
       });
+
     } catch (error) {
-      console.error('[getActiveCampaignForProduct] Error:', error);
-      res.status(500).json({ success: false, message: error.message });
+      console.error('[PublicCampaigns] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur serveur lors de la récupération de la campagne'
+      });
+    }
+  }
+
+  // ==========================================
+  // TRACKING CAMPAGNES (Views & Clicks)
+  // ==========================================
+  async trackCampaignView(req, res) {
+    try {
+      const { campaignId } = req.body;
+      
+      await db.query(`
+        UPDATE supplier_campaigns 
+        SET views_count = views_count + 1 
+        WHERE id = $1
+      `, [campaignId]);
+
+      await db.query(`
+        INSERT INTO campaign_stats (campaign_id, date, impressions)
+        VALUES ($1, CURRENT_DATE, 1)
+        ON CONFLICT (campaign_id, date) 
+        DO UPDATE SET impressions = campaign_stats.impressions + 1
+      `, [campaignId]);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[TrackView] Error:', error);
+      res.status(500).json({ success: false });
     }
   }
 
@@ -455,46 +556,31 @@ class SupplierController {
     try {
       const { campaignId } = req.body;
       
-      await db.query(`UPDATE supplier_campaigns SET clicks_count = clicks_count + 1 WHERE id = $1`, [campaignId]);
+      await db.query(`
+        UPDATE supplier_campaigns 
+        SET clicks_count = clicks_count + 1 
+        WHERE id = $1
+      `, [campaignId]);
+
       await db.query(`
         INSERT INTO campaign_stats (campaign_id, date, clicks)
         VALUES ($1, CURRENT_DATE, 1)
-        ON CONFLICT (campaign_id, date) DO UPDATE SET clicks = campaign_stats.clicks + 1
+        ON CONFLICT (campaign_id, date) 
+        DO UPDATE SET clicks = campaign_stats.clicks + 1
       `, [campaignId]);
 
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      console.error('[TrackClick] Error:', error);
+      res.status(500).json({ success: false });
     }
   }
 
   // ==========================================
-  // TRACKING (Auth)
-  // ==========================================
-  async trackCampaignView(req, res) {
-    try {
-      const { campaignId } = req.body;
-      
-      await db.query(`UPDATE supplier_campaigns SET views_count = views_count + 1 WHERE id = $1`, [campaignId]);
-      await db.query(`
-        INSERT INTO campaign_stats (campaign_id, date, impressions)
-        VALUES ($1, CURRENT_DATE, 1)
-        ON CONFLICT (campaign_id, date) DO UPDATE SET impressions = campaign_stats.impressions + 1
-      `, [campaignId]);
-
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
-  // ==========================================
-  // EMAIL
+  // EMAILS
   // ==========================================
   async sendShippingEmail(orderId) {
     try {
-      if (!sendEmail) return;
-      
       const orderData = await db.query(`
         SELECT o.*, u.email, u.first_name
         FROM orders o
@@ -511,9 +597,12 @@ class SupplierController {
         });
       }
     } catch (error) {
-      console.error('[Email] Error (non-blocking):', error.message);
+      console.error('Erreur envoi email:', error);
     }
   }
-}
+} // ? FIN DE LA CLASSE SupplierController
 
+// ==========================================
+// EXPORT UNIQUE
+// ==========================================
 module.exports = new SupplierController();

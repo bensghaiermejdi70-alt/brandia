@@ -6,3 +6,9 @@ node_modules/
 token github.txt
 
 
+
+# Secrets
+cle stripe des produit.txt
+*.key
+*.pem
+.env.local
