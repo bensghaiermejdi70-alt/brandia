@@ -292,13 +292,12 @@ async function loadProduct() {
     currentSupplierId = product.supplier_id || product.user_id;
     
     // ✅ EXPOSER POUR LA PUBLICITÉ
-    window.currentProduct = {
-      id: product.id,
-      supplier_id: currentSupplierId,
-      name: product.name
-    };
-    
-    renderProduct(product);
+    w// Exposer le produit courant pour le système de publicité
+window.currentProduct = {
+    id: product.id,
+    supplier_id: product.supplier_id || product.supplierId || product.supplier?.id
+};
+console.log('[Product] Exposed window.currentProduct:', window.currentProduct);
     
     // ✅ DÉCLENCHER LA PUBLICITÉ APRÈS 3 SECONDES
     setTimeout(() => {
