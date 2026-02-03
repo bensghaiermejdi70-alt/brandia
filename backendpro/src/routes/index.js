@@ -14,6 +14,67 @@ const countryRoutes = require('../modules/countries/country.routes');
 const supplierRoutes = require('../modules/supplier/supplier.routes');
 
 // ============================================
+// ROUTES PUBLIQUES - CAMPAGNES PUBLICITAIRES
+// ============================================
+
+// Route publique pour récupérer les campagnes actives (pas d'auth requise)
+router.get('/public/campaigns', async (req, res) => {
+    try {
+        const { supplier, product } = req.query;
+        
+        if (!supplier || !product) {
+            return res.status(400).json({
+                success: false,
+                message: 'supplier et product sont requis'
+            });
+        }
+
+        const { pool } = require('../config/db');
+        
+        // Vérifier si une campagne active existe pour ce produit/fournisseur
+        const result = await pool.query(`
+            SELECT 
+                c.id,
+                c.name,
+                c.media_url,
+                c.media_type,
+                c.headline,
+                c.description,
+                c.cta_text,
+                c.cta_link,
+                c.duration_seconds
+            FROM supplier_campaigns c
+            WHERE c.supplier_id = $1
+            AND $2 = ANY(c.target_products)
+            AND c.status = 'active'
+            AND c.start_date <= NOW()
+            AND c.end_date >= NOW()
+            LIMIT 1
+        `, [supplier, product]);
+
+        if (result.rows.length === 0) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'Aucune campagne active'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur récupération campagne:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur'
+        });
+    }
+});
+
+// ============================================
 // HEALTH CHECK
 // ============================================
 
