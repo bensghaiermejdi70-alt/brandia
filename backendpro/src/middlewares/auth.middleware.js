@@ -35,9 +35,14 @@ const authMiddleware = (req, res, next) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
         
-        console.log('[Auth] Token valide pour user:', decoded.id, 'Role:', decoded.role);
+        console.log('[Auth] Token valide pour user:', decoded.userId, 'Role:', decoded.role);
         
-        req.user = decoded;
+        // ✅ CORRECTION CRITIQUE : Ajouter alias id pour compatibilité
+        req.user = {
+            ...decoded,
+            id: decoded.userId  // Alias pour que req.user.id fonctionne partout
+        };
+        
         next();
 
     } catch (error) {
