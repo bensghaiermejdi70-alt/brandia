@@ -21,13 +21,13 @@ app.use(helmet({
 // ============================================
 
 const allowedOrigins = [
-  'https://brandia-marketplace.netlify.app',      // ← Espace supprimé
-  'https://bensghaiermejdi70-alt.github.io',      // ← Espace supprimé
-  'https://brandia.company',                       // ← Ton nouveau domaine
+  'https://brandia-marketplace.netlify.app',
+  'https://bensghaiermejdi70-alt.github.io',
+  'https://brandia.company',
   'http://localhost:3000',
   'http://localhost:5500',
-  'http://127.0.0.1:5500',                         // ← Espace supprimé
-  null // Pour les requêtes sans origine (mobile, curl)
+  'http://127.0.0.1:5500',
+  null
 ];
 
 app.use(cors({
