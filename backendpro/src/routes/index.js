@@ -91,14 +91,14 @@ router.get('/public/campaigns', async (req, res) => {
     }
 });
 
-// ============================================
+/// ============================================
 // ROUTE CATEGORIES (MANQUANTE)
 // ============================================
 router.get('/categories', async (req, res) => {
     try {
         const db = require('../config/db');
         const result = await db.query(`
-            SELECT id, name, slug, icon, gradient, description, parent_id, sort_order, is_active
+            SELECT id, name, slug, icon, gradient, parent_id, sort_order, is_active
             FROM categories
             WHERE is_active = true OR is_active IS NULL
             ORDER BY sort_order ASC, name ASC
