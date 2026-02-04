@@ -16,30 +16,57 @@ window.SupplierProducts = {
     importInProgress: false
   },
 
+  // Catégories Brandia officielles
+  BRANDIA_CATEGORIES: [
+    { id: 1, slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa', gradient: 'bg-gradient-to-br from-pink-500 to-rose-600' },
+    { id: 2, slug: 'parfums-fragrances', name: 'Parfums & fragrances', icon: 'fa-spray-can', gradient: 'bg-gradient-to-br from-purple-500 to-indigo-600' },
+    { id: 3, slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'bg-gradient-to-br from-red-500 to-pink-600' },
+    { id: 4, slug: 'soins-capillaires', name: 'Soins capillaires', icon: 'fa-cut', gradient: 'bg-gradient-to-br from-amber-500 to-orange-600' },
+    { id: 5, slug: 'complements-bien-etre', name: 'Compléments bien-être', icon: 'fa-heart', gradient: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
+    { id: 6, slug: 'mode-accessoires', name: 'Mode & accessoires', icon: 'fa-tshirt', gradient: 'bg-gradient-to-br from-blue-500 to-cyan-600' },
+    { id: 7, slug: 'montres-bijoux', name: 'Montres & bijoux', icon: 'fa-gem', gradient: 'bg-gradient-to-br from-yellow-500 to-amber-600' },
+    { id: 8, slug: 'sport-fitness', name: 'Articles de sport', icon: 'fa-dumbbell', gradient: 'bg-gradient-to-br from-orange-500 to-red-600' },
+    { id: 9, slug: 'nutrition-sportive', name: 'Nutrition sportive', icon: 'fa-apple-alt', gradient: 'bg-gradient-to-br from-green-500 to-emerald-600' },
+    { id: 10, slug: 'high-tech-mobile', name: 'High-tech & mobile', icon: 'fa-mobile-alt', gradient: 'bg-gradient-to-br from-indigo-500 to-blue-600' },
+    { id: 11, slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', gradient: 'bg-gradient-to-br from-violet-500 to-purple-600' },
+    { id: 12, slug: 'maison-decoration', name: 'Maison & décoration', icon: 'fa-home', gradient: 'bg-gradient-to-br from-orange-500 to-red-500' },
+    { id: 13, slug: 'parfumerie-interieur', name: 'Parfumerie intérieur', icon: 'fa-fire', gradient: 'bg-gradient-to-br from-rose-400 to-pink-500' },
+    { id: 14, slug: 'produits-ecologiques', name: 'Produits écologiques', icon: 'fa-leaf', gradient: 'bg-gradient-to-br from-green-400 to-emerald-500' },
+    { id: 15, slug: 'bebe-maternite', name: 'Bébé & maternité', icon: 'fa-baby', gradient: 'bg-gradient-to-br from-sky-400 to-blue-500' },
+    { id: 16, slug: 'animaux-pets', name: 'Animaux', icon: 'fa-paw', gradient: 'bg-gradient-to-br from-amber-600 to-yellow-600' },
+    { id: 17, slug: 'sante-hygiene', name: 'Santé & hygiène', icon: 'fa-heartbeat', gradient: 'bg-gradient-to-br from-red-400 to-rose-500' },
+    { id: 18, slug: 'bagagerie-voyage', name: 'Bagagerie & voyage', icon: 'fa-suitcase', gradient: 'bg-gradient-to-br from-violet-500 to-purple-600' },
+    { id: 19, slug: 'papeterie-lifestyle', name: 'Papeterie', icon: 'fa-pen-fancy', gradient: 'bg-gradient-to-br from-teal-400 to-cyan-500' },
+    { id: 20, slug: 'artisanat-local', name: 'Artisanat local', icon: 'fa-hands', gradient: 'bg-gradient-to-br from-orange-400 to-amber-500' },
+    { id: 21, slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle', gradient: 'bg-gradient-to-br from-cyan-500 to-blue-600' }
+  ],
+
   init: async () => {
-    await SupplierProducts.loadCategories();
+    SupplierProducts.loadCategories();
     await SupplierProducts.loadProducts();
   },
 
-  loadCategories: async () => {
-    try {
-      const response = await BrandiaAPI.Categories.getAll();
-      SupplierProducts.state.categories = response.data || [];
-      
-      const select = document.getElementById('product-category-filter');
-      if (select) {
-        select.innerHTML = '<option value="">Toutes les catégories</option>' +
-          SupplierProducts.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-      }
-      
-      const modalSelect = document.getElementById('product-category-select');
-      if (modalSelect) {
-        modalSelect.innerHTML = '<option value="">Choisir une catégorie...</option>' +
-          SupplierProducts.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-      }
-    } catch (error) {
-      console.error('Erreur chargement catégories:', error);
+  loadCategories: function() {
+    // Utiliser les catégories Brandia en dur
+    SupplierProducts.state.categories = SupplierProducts.BRANDIA_CATEGORIES;
+    
+    // Mettre à jour les selects
+    const filterSelect = document.getElementById('product-category-filter');
+    const modalSelect = document.getElementById('product-category-select');
+    
+    const optionsHtml = '<option value="">Choisir...</option>' +
+      SupplierProducts.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    
+    if (filterSelect) {
+      filterSelect.innerHTML = '<option value="">Toutes les catégories</option>' + 
+        SupplierProducts.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     }
+    
+    if (modalSelect) {
+      modalSelect.innerHTML = optionsHtml;
+    }
+    
+    console.log('[Categories] Loaded', SupplierProducts.state.categories.length, 'Brandia categories');
   },
 
   loadProducts: async () => {
@@ -171,23 +198,26 @@ window.SupplierProducts = {
     SupplierProducts.state.editingId = productId;
     const modal = document.getElementById('product-modal');
     const title = document.getElementById('product-modal-title');
-    const form = document.getElementById('product-form');
     
     if (!modal) return;
+
+    // S'assurer que les catégories sont chargées
+    if (SupplierProducts.state.categories.length === 0) {
+      SupplierProducts.loadCategories();
+    }
 
     if (productId) {
       const product = SupplierProducts.state.products.find(p => p.id === productId);
       if (!product) return;
       
       title.textContent = 'Modifier le produit';
-      document.getElementById('product-name').value = product.name;
-      document.getElementById('product-price').value = product.price;
-      document.getElementById('product-stock').value = product.stock_quantity;
+      document.getElementById('product-name').value = product.name || '';
+      document.getElementById('product-price').value = product.price || '';
+      document.getElementById('product-stock').value = product.stock_quantity || '';
       document.getElementById('product-category-select').value = product.category_id || '';
-      document.getElementById('product-description').value = product.description || '';
     } else {
       title.textContent = 'Ajouter un produit';
-      form?.reset();
+      document.getElementById('product-form')?.reset();
     }
     
     DashboardApp.openModal('product-modal');
@@ -197,13 +227,12 @@ window.SupplierProducts = {
     const data = {
       name: document.getElementById('product-name')?.value,
       price: parseFloat(document.getElementById('product-price')?.value),
-      stock_quantity: parseInt(document.getElementById('product-stock')?.value),
-      category_id: document.getElementById('product-category-select')?.value,
-      description: document.getElementById('product-description')?.value
+      stock_quantity: parseInt(document.getElementById('product-stock')?.value) || 0,
+      category_id: document.getElementById('product-category-select')?.value || null
     };
 
     if (!data.name || !data.price) {
-      DashboardApp.showToast('Veuillez remplir tous les champs obligatoires', 'error');
+      alert('Veuillez remplir le nom et le prix du produit');
       return;
     }
 
@@ -219,7 +248,7 @@ window.SupplierProducts = {
       DashboardApp.closeModal('product-modal');
       SupplierProducts.loadProducts();
     } catch (error) {
-      DashboardApp.showToast(error.message || 'Erreur lors de l\'enregistrement', 'error');
+      alert('Erreur: ' + (error.message || 'Erreur lors de l\'enregistrement'));
     } finally {
       DashboardApp.showLoading(false);
     }
@@ -251,11 +280,7 @@ window.SupplierProducts = {
     }
   },
 
-  // ==========================================
-  // IMPORT CSV - FONCTION COMPLÈTE
-  // ==========================================
   import: () => {
-    // Créer input file caché
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.csv';
@@ -298,7 +323,6 @@ window.SupplierProducts = {
           throw new Error('Fichier CSV vide ou invalide');
         }
 
-        // Parser header
         const headers = lines[0].split(';').map(h => h.trim().toLowerCase());
         const required = ['name', 'price'];
         const missing = required.filter(r => !headers.includes(r));
@@ -318,7 +342,6 @@ window.SupplierProducts = {
             product[h] = values[idx]?.trim() || '';
           });
 
-          // Validation
           if (!product.name) {
             errors.push(`Ligne ${i + 1}: nom manquant`);
             continue;
@@ -343,7 +366,6 @@ window.SupplierProducts = {
           throw new Error('Aucun produit valide trouvé dans le CSV');
         }
 
-        // Confirmation
         const confirmMsg = `Importer ${products.length} produits ?${errors.length > 0 ? `\n(${errors.length} erreurs ignorées)` : ''}`;
         if (!confirm(confirmMsg)) {
           SupplierProducts.state.importInProgress = false;
@@ -351,7 +373,6 @@ window.SupplierProducts = {
           return;
         }
 
-        // Import un par un
         let success = 0;
         let failed = 0;
 
@@ -371,10 +392,6 @@ window.SupplierProducts = {
           SupplierProducts.loadProducts();
         }
 
-        if (errors.length > 0) {
-          console.warn('Erreurs CSV:', errors);
-        }
-
       } catch (error) {
         DashboardApp.showToast(error.message, 'error');
       } finally {
@@ -392,7 +409,6 @@ window.SupplierProducts = {
     reader.readAsText(file);
   },
 
-  // Télécharger template CSV
   downloadTemplate: () => {
     const csv = 'name;price;stock_quantity;category_id;description\nProduit exemple;29.99;10;1;Description du produit\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
