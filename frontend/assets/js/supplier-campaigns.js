@@ -404,8 +404,8 @@ window.SupplierCampaigns = {
     const file = event.target.files[0];
     if (!file) return;
     
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Le fichier ne doit pas dépasser 5MB');
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Le fichier ne doit pas dépasser 50MB');
       return;
     }
     
