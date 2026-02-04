@@ -5,11 +5,16 @@ const authMiddleware = require('../../middlewares/auth.middleware');
 
 console.log('[Supplier Routes] Loading...');
 
-// ROUTES PUBLIQUES
+// ============================================
+// ROUTES PUBLIQUES (Sans authentification)
+// ============================================
 router.get('/campaigns/active/:supplierId/:productId', supplierController.getActiveCampaignForProduct);
 router.post('/campaigns/track/click', supplierController.trackCampaignClick);
+router.post('/campaigns/track/view', supplierController.trackCampaignView);
 
-// ROUTES PROTÉGÉES
+// ============================================
+// ROUTES PROTÉGÉES (Authentification requise)
+// ============================================
 router.use(authMiddleware);
 
 router.get('/stats', supplierController.getStats);
@@ -26,7 +31,6 @@ router.get('/campaigns', supplierController.getCampaigns);
 router.post('/campaigns', supplierController.createCampaign);
 router.put('/campaigns/:id', supplierController.updateCampaign);
 router.delete('/campaigns/:id', supplierController.deleteCampaign);
-router.post('/campaigns/track/view', supplierController.trackCampaignView);
 
 console.log('[Supplier Routes] Loaded successfully');
 module.exports = router;
