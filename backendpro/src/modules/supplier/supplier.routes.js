@@ -22,7 +22,7 @@ router.get('/products', controller.getProducts);
 
 // ✅ NOUVEAU: Upload image avant création produit
 router.post('/upload-image', uploadMiddleware, controller.uploadImage);
-
+router.post('/upload-video', uploadMiddleware, controller.uploadCampaignVideo);
 router.post('/products', controller.createProduct);
 router.put('/products/:id', controller.updateProduct);
 router.delete('/products/:id', controller.deleteProduct);

@@ -66,7 +66,53 @@ class SupplierController {
         });
     }
   }
+// ==========================================
+// UPLOAD VIDEO POUR CAMPAGNES (NOUVEAU)
+// ==========================================
+async uploadCampaignVideo(req, res) {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Aucune vidéo fournie'
+            });
+        }
 
+        // Vérifier taille (max 50MB pour vidéo)
+        if (req.file.size > 50 * 1024 * 1024) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vidéo trop volumineuse (max 50MB)'
+            });
+        }
+
+        console.log('[Upload Video] Vidéo reçue:', req.file.originalname, '- Taille:', req.file.size);
+
+        const { uploadVideo } = require('../../utils/cloudinary');
+        const result = await uploadVideo(req.file.buffer, 'brandia/campaigns');
+
+        res.json({
+            success: true,
+            message: 'Vidéo uploadée avec succès',
+            data: {
+                url: result.url,
+                thumbnailUrl: result.thumbnailUrl,
+                publicId: result.publicId,
+                width: result.width,
+                height: result.height,
+                duration: result.duration,
+                resourceType: 'video'
+            }
+        });
+
+    } catch (error) {
+        console.error('[Upload Video] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'upload: ' + error.message
+        });
+    }
+}
   // ==========================================
   // STATISTIQUES
   // ==========================================
