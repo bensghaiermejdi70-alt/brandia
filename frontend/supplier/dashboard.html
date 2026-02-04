@@ -841,30 +841,30 @@
       </button>
     </div>
     <div class="flex-1 overflow-y-auto p-6">
-      <div class="grid md:grid-cols-2 gap-6">
+      <form id="product-form" class="grid md:grid-cols-2 gap-6">
         <div>
           <label class="block text-sm text-slate-400 mb-2">Nom du produit *</label>
-          <input type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="Ex: Sérum hydratant">
+          <input type="text" id="product-name" name="name" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="Ex: Sérum hydratant">
         </div>
         <div>
           <label class="block text-sm text-slate-400 mb-2">Prix (€) *</label>
-          <input type="number" step="0.01" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="29.99">
+          <input type="number" id="product-price" name="price" step="0.01" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="29.99">
         </div>
         <div>
           <label class="block text-sm text-slate-400 mb-2">Catégorie</label>
-          <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-            <option>Choisir...</option>
+          <select id="product-category-select" name="category_id" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
+            <option value="">Choisir...</option>
           </select>
         </div>
         <div>
           <label class="block text-sm text-slate-400 mb-2">Stock</label>
-          <input type="number" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="10">
+          <input type="number" id="product-stock" name="stock_quantity" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="10">
         </div>
-      </div>
+      </form>
     </div>
     <div class="p-6 border-t border-slate-800 flex justify-end gap-3">
-      <button onclick="closeModal('product-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">Annuler</button>
-      <button onclick="closeModal('product-modal')" class="btn-primary px-6 py-2.5 rounded-lg font-medium">Enregistrer</button>
+      <button type="button" onclick="closeModal('product-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">Annuler</button>
+      <button type="button" onclick="SupplierProducts.save()" class="btn-primary px-6 py-2.5 rounded-lg font-medium">Enregistrer</button>
     </div>
   </div>
 </div>
