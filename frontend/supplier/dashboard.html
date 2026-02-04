@@ -879,6 +879,15 @@
     <input type="number" id="product-stock" name="stock_quantity" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="10">
   </div>
 </form>
+ <div class="mt-6 pt-6 border-t border-slate-800 flex justify-end gap-3">
+        <button type="button" onclick="closeModal('product-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">Annuler</button>
+        <button type="button" onclick="SupplierProducts.save()" class="btn-primary px-6 py-2.5 rounded-lg font-medium">Enregistrer</button>
+      </div>
+      
+    </div>
+    
+  </div>
+</div>
 <!-- Campaign Modal -->
 <div id="campaign-modal" class="fixed inset-0 z-50 hidden">
   <div class="modal-backdrop absolute inset-0" onclick="closeModal('campaign-modal')"></div>
