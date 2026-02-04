@@ -1,4 +1,19 @@
 const db = require('../../config/db');
+const { uploadImage } = require('../../utils/cloudinary');
+const multer = require('multer');
+
+// Configuration multer (mémoire, pas de stockage local)
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Seules les images sont autorisées'), false);
+        }
+    }
+});
 
 // Email optionnel
 let sendEmail = null;
@@ -16,6 +31,42 @@ try {
 
 class SupplierController {
   
+  // ==========================================
+  // UPLOAD IMAGE (NOUVEAU)
+  // ==========================================
+  async uploadImage(req, res) {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Aucune image fournie'
+            });
+        }
+
+        console.log('[Upload] Image reçue:', req.file.originalname, '- Taille:', req.file.size);
+
+        const result = await uploadImage(req.file.buffer, 'brandia/products');
+
+        res.json({
+            success: true,
+            message: 'Image uploadée avec succès',
+            data: {
+                url: result.url,
+                publicId: result.publicId,
+                width: result.width,
+                height: result.height
+            }
+        });
+
+    } catch (error) {
+        console.error('[Upload] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'upload: ' + error.message
+        });
+    }
+  }
+
   // ==========================================
   // STATISTIQUES
   // ==========================================
@@ -142,13 +193,13 @@ class SupplierController {
   async createProduct(req, res) {
     try {
       const supplierId = req.user.id;
-      const { name, price, stock_quantity, category_id, description } = req.body;
+      const { name, price, stock_quantity, category_id, description, main_image_url } = req.body;
 
       const result = await db.query(`
-        INSERT INTO products (supplier_id, name, price, stock_quantity, category_id, description, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, true)
+        INSERT INTO products (supplier_id, name, price, stock_quantity, category_id, description, main_image_url, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, true)
         RETURNING *
-      `, [supplierId, name, price, stock_quantity, category_id, description]);
+      `, [supplierId, name, price, stock_quantity, category_id, description, main_image_url || null]);
 
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
@@ -420,7 +471,6 @@ class SupplierController {
   // CAMPAGNES (PUBLIC - Sans auth)
   // ==========================================
   
-  // ? CETTE MÉTHODE ÉTAIT MANQUANTE / MAL DÉFINIE
   async getActiveCampaignForProduct(req, res) {
     try {
       const { supplierId, productId } = req.params;
@@ -516,4 +566,8 @@ class SupplierController {
   }
 }
 
-module.exports = new SupplierController();
+// Exporter aussi le middleware multer
+module.exports = {
+    controller: new SupplierController(),
+    uploadMiddleware: upload.single('image')
+};

@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER PRODUCTS MODULE
+// SUPPLIER PRODUCTS MODULE - Avec Upload Cloudinary
 // ============================================
 
 window.SupplierProducts = {
@@ -13,10 +13,10 @@ window.SupplierProducts = {
       status: '',
       category: ''
     },
-    importInProgress: false
+    importInProgress: false,
+    uploadedImage: null
   },
 
-  // Catégories Brandia officielles
   BRANDIA_CATEGORIES: [
     { id: 1, slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa', gradient: 'bg-gradient-to-br from-pink-500 to-rose-600' },
     { id: 2, slug: 'parfums-fragrances', name: 'Parfums & fragrances', icon: 'fa-spray-can', gradient: 'bg-gradient-to-br from-purple-500 to-indigo-600' },
@@ -47,10 +47,8 @@ window.SupplierProducts = {
   },
 
   loadCategories: function() {
-    // Utiliser les catégories Brandia en dur
     SupplierProducts.state.categories = SupplierProducts.BRANDIA_CATEGORIES;
     
-    // Mettre à jour les selects
     const filterSelect = document.getElementById('product-category-filter');
     const modalSelect = document.getElementById('product-category-select');
     
@@ -65,8 +63,6 @@ window.SupplierProducts = {
     if (modalSelect) {
       modalSelect.innerHTML = optionsHtml;
     }
-    
-    console.log('[Categories] Loaded', SupplierProducts.state.categories.length, 'Brandia categories');
   },
 
   loadProducts: async () => {
@@ -110,7 +106,7 @@ window.SupplierProducts = {
     grid.innerHTML = SupplierProducts.state.products.map(p => `
       <div class="card rounded-xl overflow-hidden group hover:shadow-xl transition-all">
         <div class="relative h-48 bg-slate-800 overflow-hidden">
-          <img src="${p.main_image_url || p.image || 'https://via.placeholder.com/400x400?text=Produit'}" 
+          <img src="${p.main_image_url || 'https://via.placeholder.com/400x400?text=Produit'}" 
                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                alt="${p.name}"
                onerror="this.src='https://via.placeholder.com/400x400?text=Produit'">
@@ -194,14 +190,77 @@ window.SupplierProducts = {
     SupplierProducts.loadProducts();
   },
 
+  uploadImage: async (file) => {
+    try {
+      DashboardApp.showLoading(true);
+      
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${BrandiaAPI.config.apiURL}/supplier/upload-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${BrandiaAPI.storage.getToken()}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      SupplierProducts.state.uploadedImage = result.data;
+      
+      const preview = document.getElementById('image-preview');
+      const previewContainer = document.getElementById('image-preview-container');
+      if (preview && previewContainer) {
+        preview.src = result.data.url;
+        previewContainer.classList.remove('hidden');
+      }
+
+      DashboardApp.showToast('Image uploadée avec succès', 'success');
+      return result.data;
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      DashboardApp.showToast('Erreur upload image: ' + error.message, 'error');
+      return null;
+    } finally {
+      DashboardApp.showLoading(false);
+    }
+  },
+
+  handleImageSelect: (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      DashboardApp.showToast('Image trop volumineuse (max 5MB)', 'error');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      DashboardApp.showToast('Seules les images sont acceptées', 'error');
+      return;
+    }
+
+    SupplierProducts.uploadImage(file);
+  },
+
   openModal: (productId = null) => {
     SupplierProducts.state.editingId = productId;
+    SupplierProducts.state.uploadedImage = null;
+    
     const modal = document.getElementById('product-modal');
     const title = document.getElementById('product-modal-title');
     
     if (!modal) return;
 
-    // S'assurer que les catégories sont chargées
+    const previewContainer = document.getElementById('image-preview-container');
+    if (previewContainer) previewContainer.classList.add('hidden');
+
     if (SupplierProducts.state.categories.length === 0) {
       SupplierProducts.loadCategories();
     }
@@ -215,6 +274,15 @@ window.SupplierProducts = {
       document.getElementById('product-price').value = product.price || '';
       document.getElementById('product-stock').value = product.stock_quantity || '';
       document.getElementById('product-category-select').value = product.category_id || '';
+      
+      if (product.main_image_url) {
+        const preview = document.getElementById('image-preview');
+        if (preview && previewContainer) {
+          preview.src = product.main_image_url;
+          previewContainer.classList.remove('hidden');
+          SupplierProducts.state.uploadedImage = { url: product.main_image_url };
+        }
+      }
     } else {
       title.textContent = 'Ajouter un produit';
       document.getElementById('product-form')?.reset();
@@ -228,7 +296,8 @@ window.SupplierProducts = {
       name: document.getElementById('product-name')?.value,
       price: parseFloat(document.getElementById('product-price')?.value),
       stock_quantity: parseInt(document.getElementById('product-stock')?.value) || 0,
-      category_id: document.getElementById('product-category-select')?.value || null
+      category_id: document.getElementById('product-category-select')?.value || null,
+      main_image_url: SupplierProducts.state.uploadedImage?.url || null
     };
 
     if (!data.name || !data.price) {
@@ -420,9 +489,9 @@ window.SupplierProducts = {
   }
 };
 
-// Raccourcis globaux
 window.openProductModal = (id) => SupplierProducts.openModal(id);
 window.importProducts = () => SupplierProducts.import();
 window.filterProducts = () => SupplierProducts.filter();
 window.changeProductPage = (delta) => SupplierProducts.changePage(delta);
 window.downloadImportTemplate = () => SupplierProducts.downloadTemplate();
+window.handleImageSelect = (event) => SupplierProducts.handleImageSelect(event);
