@@ -1,6 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend (v2.3 CORS FIX)
-// Espaces fatals supprimés - Production Ready
+// BRANDIA API CLIENT - Frontend (v2.4 CORRECTED)
+// Espace fatals supprimés - Production Ready
 // ============================================
 
 (function() {
@@ -408,5 +408,5 @@
     }
   };
 
-  console.log('[Brandia API] ✅ Loaded v2.3 - CORS Ready');
+  console.log('[Brandia API] ✅ Loaded v2.4 - CORS Ready - Spaces Fixed');
 })();

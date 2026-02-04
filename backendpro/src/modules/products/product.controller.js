@@ -129,9 +129,8 @@ const ProductController = {
                 });
             }
 
-            // TODO: Récupérer le supplier_id depuis le profil du fournisseur connecté
-            // Pour l'instant, on utilise une valeur fixe pour le test
-            const supplier_id = req.user.supplierId || 1;
+            // ✅ CORRECTION CRITIQUE : Utiliser req.user.id au lieu de req.user.supplierId
+            const supplier_id = req.user.id;
 
             const slug = generateSlug(name);
 
@@ -183,7 +182,13 @@ const ProductController = {
             }
 
             // Vérifier que le fournisseur est propriétaire du produit
-            // TODO: Vérifier supplier_id vs req.user.supplierId
+            // ✅ CORRECTION : Utiliser req.user.id pour la vérification
+            if (existing.supplier_id !== req.user.id) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Vous ne pouvez modifier que vos propres produits'
+                });
+            }
 
             const product = await ProductModel.update(id, updates);
 
@@ -219,7 +224,13 @@ const ProductController = {
             }
 
             // Vérifier que le fournisseur est propriétaire
-            // TODO: Vérifier supplier_id vs req.user.supplierId
+            // ✅ CORRECTION : Utiliser req.user.id pour la vérification
+            if (existing.supplier_id !== req.user.id) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Vous ne pouvez supprimer que vos propres produits'
+                });
+            }
 
             await ProductModel.delete(id);
 
