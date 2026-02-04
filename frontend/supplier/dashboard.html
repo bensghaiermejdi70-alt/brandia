@@ -868,7 +868,6 @@
     </div>
   </div>
 </div>
-
 <!-- Campaign Modal -->
 <div id="campaign-modal" class="fixed inset-0 z-50 hidden">
   <div class="modal-backdrop absolute inset-0" onclick="closeModal('campaign-modal')"></div>
@@ -885,6 +884,7 @@
 
     <form id="campaign-form" class="space-y-6">
       <input type="hidden" id="campaign-id" name="id">
+      <input type="hidden" name="cta_link" id="cta-link-value">
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -954,6 +954,11 @@
               <option value="category">Catégorie</option>
               <option value="external">Lien externe</option>
             </select>
+            <select id="cta-product-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
+              <option value="">Choisir un produit...</option>
+            </select>
+            <input type="url" id="cta-external-url" placeholder="https://..." 
+                   class="w-full hidden bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
           </div>
         </div>
       </div>

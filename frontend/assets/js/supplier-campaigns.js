@@ -41,7 +41,6 @@ window.SupplierCampaigns = {
   },
 
   loadStats: () => {
-    // Calculer les stats réelles ou mockées
     const campaigns = SupplierCampaigns.state.campaigns;
     const totalViews = campaigns.reduce((sum, c) => sum + (c.views_count || 0), 0);
     const totalClicks = campaigns.reduce((sum, c) => sum + (c.clicks_count || 0), 0);
@@ -50,7 +49,7 @@ window.SupplierCampaigns = {
     document.getElementById('ad-views').textContent = totalViews.toLocaleString();
     document.getElementById('ad-clicks').textContent = totalClicks.toLocaleString();
     document.getElementById('ad-ctr').textContent = ctr + '%';
-    document.getElementById('ad-conversions').textContent = '0'; // À implémenter
+    document.getElementById('ad-conversions').textContent = '0';
     
     SupplierCampaigns.renderChart();
   },
@@ -125,7 +124,6 @@ window.SupplierCampaigns = {
       SupplierCampaigns.state.chart.destroy();
     }
 
-    // Données mockées pour l'exemple
     const data = {
       labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
       datasets: [{
@@ -165,13 +163,24 @@ window.SupplierCampaigns = {
     const modal = document.getElementById('campaign-modal');
     if (!modal) return;
     
-    // Charger les produits cibles
+    document.getElementById('campaign-form').reset();
+    document.getElementById('cta-link-value').value = '';
+    document.getElementById('campaign-media-preview').classList.add('hidden');
+    document.getElementById('campaign-media-placeholder').classList.remove('hidden');
+    
     const targetList = document.getElementById('target-products-list');
-    if (targetList && SupplierCampaigns.state.products.length > 0) {
+    const productSelect = document.getElementById('cta-product-select');
+    
+    if (SupplierCampaigns.state.products.length === 0) {
+      targetList.innerHTML = '<div class="text-center py-4 text-red-400">Aucun produit disponible</div>';
+      return;
+    }
+    
+    if (targetList) {
       targetList.innerHTML = SupplierCampaigns.state.products.map(p => `
-        <label class="flex items-center gap-3 p-2 hover:bg-slate-700/50 rounded cursor-pointer">
-          <input type="checkbox" name="target_products" value="${p.id}" class="w-4 h-4 rounded border-slate-600 text-indigo-600 bg-slate-700">
-          <img src="${p.main_image_url || '/placeholder.jpg'}" class="w-10 h-10 rounded object-cover bg-slate-700">
+        <label class="flex items-center gap-3 p-2 hover:bg-slate-700/50 rounded cursor-pointer border border-transparent hover:border-slate-600 transition-all">
+          <input type="checkbox" name="target_products" value="${p.id}" class="w-4 h-4 rounded border-slate-600 text-indigo-600 bg-slate-700 focus:ring-indigo-500" onchange="SupplierCampaigns.updateCtaLink()">
+          <img src="${p.main_image_url || 'https://via.placeholder.com/100'}" class="w-10 h-10 rounded object-cover bg-slate-700" onerror="this.src='https://via.placeholder.com/100'">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-white truncate">${p.name}</p>
             <p class="text-xs text-slate-400">${DashboardApp.formatPrice(p.price)}</p>
@@ -180,13 +189,56 @@ window.SupplierCampaigns = {
       `).join('');
     }
     
-    // Dates par défaut
+    if (productSelect) {
+      productSelect.innerHTML = '<option value="">Choisir un produit...</option>' + 
+        SupplierCampaigns.state.products.map(p => `
+          <option value="https://brandia-marketplace.netlify.app/product.html?id=${p.id}">${p.name}</option>
+        `).join('');
+    }
+    
     const today = new Date().toISOString().split('T')[0];
     const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     document.querySelector('[name="start_date"]').value = today;
     document.querySelector('[name="end_date"]').value = nextMonth;
     
+    SupplierCampaigns.handleCtaType('product');
+    
     DashboardApp.openModal('campaign-modal');
+  },
+
+  handleCtaType: (type) => {
+    const productSelect = document.getElementById('cta-product-select');
+    const externalUrl = document.getElementById('cta-external-url');
+    const linkValue = document.getElementById('cta-link-value');
+    
+    if (type === 'product') {
+      productSelect?.classList.remove('hidden');
+      externalUrl?.classList.add('hidden');
+      productSelect?.addEventListener('change', (e) => {
+        linkValue.value = e.target.value;
+      });
+    } else if (type === 'external') {
+      productSelect?.classList.add('hidden');
+      externalUrl?.classList.remove('hidden');
+      externalUrl?.addEventListener('input', (e) => {
+        linkValue.value = e.target.value;
+      });
+    } else {
+      productSelect?.classList.add('hidden');
+      externalUrl?.classList.add('hidden');
+      linkValue.value = 'https://brandia-marketplace.netlify.app/catalogue.html';
+    }
+  },
+
+  updateCtaLink: () => {
+    const checked = document.querySelectorAll('input[name="target_products"]:checked');
+    const linkValue = document.getElementById('cta-link-value');
+    const type = document.querySelector('[name="cta_link_type"]')?.value;
+    
+    if (checked.length > 0 && type === 'product' && !linkValue.value) {
+      const firstProductId = checked[0].value;
+      linkValue.value = `https://brandia-marketplace.netlify.app/product.html?id=${firstProductId}`;
+    }
   },
 
   save: async () => {
@@ -201,30 +253,52 @@ window.SupplierCampaigns = {
       return;
     }
 
+    let mediaUrl = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800';
+    const preview = document.getElementById('campaign-media-preview');
+    if (preview && !preview.classList.contains('hidden') && preview.src && !preview.src.includes('undefined')) {
+      mediaUrl = preview.src;
+    }
+
+    let ctaLink = document.getElementById('cta-link-value')?.value;
+    if (!ctaLink) {
+      ctaLink = `https://brandia-marketplace.netlify.app/product.html?id=${targetProducts[0]}`;
+    }
+
     const data = {
       name: formData.get('name'),
       headline: formData.get('headline'),
-      description: formData.get('description'),
+      description: formData.get('description') || '',
       cta_text: formData.get('cta_text') || 'Voir l\'offre',
+      cta_link: ctaLink,
       media_type: formData.get('media_type') || 'image',
+      media_url: mediaUrl,
       target_products: targetProducts,
       start_date: formData.get('start_date'),
       end_date: formData.get('end_date')
     };
 
+    console.log('[Campaign] Saving:', data);
+
     try {
-      await BrandiaAPI.Supplier.createCampaign(data);
-      DashboardApp.showToast('Campagne créée avec succès !', 'success');
-      DashboardApp.closeModal('campaign-modal');
-      SupplierCampaigns.loadCampaigns();
+      const response = await BrandiaAPI.Supplier.createCampaign(data);
+      console.log('[Campaign] Response:', response);
+      
+      if (response.success) {
+        DashboardApp.showToast('Campagne créée avec succès !', 'success');
+        DashboardApp.closeModal('campaign-modal');
+        form.reset();
+        SupplierCampaigns.loadCampaigns();
+      } else {
+        DashboardApp.showToast('Erreur: ' + (response.message || 'Inconnue'), 'error');
+      }
     } catch (error) {
-      DashboardApp.showToast('Erreur lors de la création', 'error');
+      console.error('[Campaign] Error:', error);
+      DashboardApp.showToast('Erreur réseau: ' + error.message, 'error');
     }
   },
 
   toggleStatus: async (id, newStatus) => {
     try {
-      // await BrandiaAPI.Supplier.updateCampaignStatus(id, { status: newStatus });
       DashboardApp.showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
       SupplierCampaigns.loadCampaigns();
     } catch (error) {
@@ -235,7 +309,6 @@ window.SupplierCampaigns = {
   delete: async (id) => {
     if (!confirm('Supprimer cette campagne ?')) return;
     try {
-      // await BrandiaAPI.Supplier.deleteCampaign(id);
       SupplierCampaigns.state.campaigns = SupplierCampaigns.state.campaigns.filter(c => c.id !== id);
       SupplierCampaigns.renderList();
       DashboardApp.showToast('Campagne supprimée', 'success');
@@ -269,9 +342,13 @@ window.SupplierCampaigns = {
     const desc = document.querySelector('[name="description"]')?.value || 'Description';
     const cta = document.querySelector('[name="cta_text"]')?.value || 'Voir l\'offre';
     
-    document.getElementById('ad-preview-headline').textContent = headline;
-    document.getElementById('ad-preview-desc').textContent = desc;
-    document.getElementById('ad-preview-cta').textContent = cta;
+    const previewHeadline = document.getElementById('ad-preview-headline');
+    const previewDesc = document.getElementById('ad-preview-desc');
+    const previewCta = document.getElementById('ad-preview-cta');
+    
+    if (previewHeadline) previewHeadline.textContent = headline;
+    if (previewDesc) previewDesc.textContent = desc;
+    if (previewCta) previewCta.textContent = cta;
   }
 };
 
@@ -285,3 +362,5 @@ window.toggleMediaType = (type) => {
   const input = document.getElementById('campaign-media');
   if (input) input.accept = type === 'video' ? 'video/mp4' : 'image/*';
 };
+window.handleCtaType = (type) => SupplierCampaigns.handleCtaType(type);
+window.updateCtaLink = () => SupplierCampaigns.updateCtaLink();
