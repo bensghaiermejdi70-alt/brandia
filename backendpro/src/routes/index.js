@@ -30,9 +30,6 @@ router.get('/health', (req, res) => {
 // ============================================
 // ROUTES PUBLIQUES - CAMPAGNES PUBLICITAIRES
 // ============================================
-// ⚠️ AVANT les routes protégées et AVANT le 404
-
-// Route publique pour récupérer une campagne active
 router.get('/public/campaigns', async (req, res) => {
     try {
         const { supplier, product } = req.query;
@@ -95,6 +92,32 @@ router.get('/public/campaigns', async (req, res) => {
 });
 
 // ============================================
+// ROUTE CATEGORIES (MANQUANTE)
+// ============================================
+router.get('/categories', async (req, res) => {
+    try {
+        const db = require('../config/db');
+        const result = await db.query(`
+            SELECT id, name, slug, icon, gradient, description, parent_id, sort_order, is_active
+            FROM categories
+            WHERE is_active = true OR is_active IS NULL
+            ORDER BY sort_order ASC, name ASC
+        `);
+        
+        res.json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('[Categories] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du chargement des catégories'
+        });
+    }
+});
+
+// ============================================
 // DEBUG ROUTES (TEMPORAIRES)
 // ============================================
 router.get('/fix-diffuseur', async (req, res) => {
@@ -148,6 +171,7 @@ router.get('/', (req, res) => {
         version: '1.0.0',
         endpoints: {
             public: '/api/public/campaigns?supplier=X&product=Y',
+            categories: '/api/categories',
             health: '/api/health',
             test: '/api/test-db'
         }
