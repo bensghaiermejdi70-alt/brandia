@@ -828,8 +828,6 @@
   </div>
 </main>
 
-<!-- MODALS -->
-
 <!-- Product Modal -->
 <div id="product-modal" class="fixed inset-0 z-50 hidden">
   <div class="modal-backdrop absolute inset-0" onclick="closeModal('product-modal')"></div>
@@ -868,6 +866,7 @@
     </div>
   </div>
 </div>
+
 <!-- Campaign Modal -->
 <div id="campaign-modal" class="fixed inset-0 z-50 hidden">
   <div class="modal-backdrop absolute inset-0" onclick="closeModal('campaign-modal')"></div>
@@ -1027,25 +1026,7 @@
   </div>
 </div>
 
-<!-- SCRIPTS CORRIGÉS - Séparation complète -->
-<script src="../assets/js/api.js"></script>
-<script src="../assets/js/supplier-dashboard.js"></script>
-<script>
-// Configuration globale minimale
-const CONFIG = {
-  COMMISSION_RATE: 0.15
-};
-
-// Persistance de session pour les fournisseurs
-document.addEventListener('DOMContentLoaded', () => {
-  // Marquer la session comme active fournisseur pour navigation fluide
-  const user = BrandiaAPI.Auth.getUser();
-  if (user && user.role === 'supplier') {
-    sessionStorage.setItem('brandia_supplier_session', 'true');
-    sessionStorage.setItem('brandia_last_activity', Date.now().toString());
-  }
-});
-<!-- SCRIPTS - Chargement unique -->
+<!-- SCRIPTS - UNIQUEMENT CES 7 FICHIERS, PAS DE DOUBLON -->
 <script src="../assets/js/api.js"></script>
 <script src="../assets/js/supplier-products.js"></script>
 <script src="../assets/js/supplier-promotions.js"></script>
