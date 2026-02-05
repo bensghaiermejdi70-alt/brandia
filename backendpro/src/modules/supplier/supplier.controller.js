@@ -486,59 +486,102 @@ async updateOrderStatus(req, res) {
   }
 
   // ==========================================
-  // CAMPAGNES (Auth)
-  // ==========================================
-  async getCampaigns(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const result = await db.query(`SELECT * FROM supplier_campaigns WHERE supplier_id = $1 ORDER BY created_at DESC`, [supplierId]);
-      res.json({ success: true, data: result.rows });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
+// CAMPAGNES (Auth)
+// ==========================================
+
+async getCampaigns(req, res) {
+  try {
+    const supplierId = req.user.id;
+    const result = await db.query(
+      `SELECT * FROM supplier_campaigns WHERE supplier_id = $1 ORDER BY created_at DESC`, 
+      [supplierId]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('[getCampaigns] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
+}
 
-  async createCampaign(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const { name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date } = req.body;
+async createCampaign(req, res) {
+  try {
+    const supplierId = req.user.id;
+    const { 
+      name, headline, description, cta_text, cta_link, 
+      media_type, media_url, target_products, start_date, end_date 
+    } = req.body;
 
-      const result = await db.query(`
-        INSERT INTO supplier_campaigns 
-        (supplier_id, name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date, status, views_count, clicks_count)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', 0, 0)
-        RETURNING *
-      `, [supplierId, name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date]);
+    const result = await db.query(`
+      INSERT INTO supplier_campaigns 
+      (supplier_id, name, headline, description, cta_text, cta_link, 
+       media_type, media_url, target_products, start_date, end_date, 
+       status, views_count, clicks_count)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', 0, 0)
+      RETURNING *
+    `, [supplierId, name, headline, description, cta_text, cta_link, 
+        media_type, media_url, target_products, start_date, end_date]);
 
-      res.json({ success: true, data: result.rows[0] });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('[createCampaign] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
+}
 
-  async updateCampaign(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const { id } = req.params;
-      const { status } = req.body;
+// ?? CETTE MÉTHODE MANQUE PROBABLEMENT
+async updateCampaign(req, res) {
+  try {
+    const supplierId = req.user.id;
+    const { id } = req.params;
+    const { status } = req.body;
 
-      await db.query(`UPDATE supplier_campaigns SET status = $1, updated_at = NOW() WHERE id = $2 AND supplier_id = $3`, [status, id, supplierId]);
-      res.json({ success: true, message: 'Campagne mise à jour' });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+    console.log('[updateCampaign] Campaign:', id, 'Status:', status, 'Supplier:', supplierId);
+
+    const result = await db.query(
+      `UPDATE supplier_campaigns 
+       SET status = $1, updated_at = NOW() 
+       WHERE id = $2 AND supplier_id = $3
+       RETURNING *`,
+      [status, id, supplierId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Campagne non trouvée' 
+      });
     }
-  }
 
-  async deleteCampaign(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const { id } = req.params;
-      await db.query('DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2', [id, supplierId]);
-      res.json({ success: true, message: 'Campagne supprimée' });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
+    res.json({ success: true, message: 'Campagne mise à jour', data: result.rows[0] });
+  } catch (error) {
+    console.error('[updateCampaign] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
+}
+
+async deleteCampaign(req, res) {
+  try {
+    const supplierId = req.user.id;
+    const { id } = req.params;
+    
+    const result = await db.query(
+      'DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2 RETURNING id',
+      [id, supplierId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Campagne non trouvée' 
+      });
+    }
+    
+    res.json({ success: true, message: 'Campagne supprimée' });
+  } catch (error) {
+    console.error('[deleteCampaign] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+}
 
   // ==========================================
   // CAMPAGNES (PUBLIC - Sans auth)
