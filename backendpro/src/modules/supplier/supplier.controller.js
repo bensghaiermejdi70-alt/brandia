@@ -287,117 +287,143 @@ class SupplierController {
   }
 
   // ==========================================
-  // COMMANDES - CORRIGÉ
-  // ==========================================
-  async getOrders(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const { status } = req.query;
+// COMMANDES - CORRIGÉ
+// ==========================================
 
-      let query = `
-        SELECT 
-          o.id, o.order_number, o.total_amount, o.status, o.created_at,
-          u.first_name as customer_name, u.email as customer_email, o.shipping_address
-        FROM orders o
-        JOIN users u ON o.user_id = u.id
-        WHERE o.supplier_id = $1
-      `;
-      
-      const params = [supplierId];
+async getOrders(req, res) {
+  try {
+    const supplierId = req.user.id;
+    const { status } = req.query;
 
-      if (status && status !== 'all') {
+    console.log('[getOrders] Filtre demandé:', status, '- Supplier:', supplierId);
+
+    let query = `
+      SELECT 
+        o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.created_at,
+        u.first_name as customer_name, u.email as customer_email, o.shipping_address
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      WHERE o.supplier_id = $1
+    `;
+    
+    const params = [supplierId];
+
+    // ?? CORRECTION : Logique de filtrage selon status ou payment_status
+    if (status && status !== 'all') {
+      if (status === 'paid') {
+        // ?? paid = payment_status, pas status logistique
+        query += ` AND o.payment_status = 'paid'`;
+      } else {
+        // Autres statuts = status logistique
         query += ` AND o.status = $2`;
         params.push(status);
       }
+    }
 
-      query += ` ORDER BY o.created_at DESC`;
+    query += ` ORDER BY o.created_at DESC`;
 
-      const result = await db.query(query, params);
+    console.log('[getOrders] SQL:', query);
+    console.log('[getOrders] Params:', params);
 
-      const countsQuery = await db.query(`
-        SELECT 
-          COUNT(*) as all_count,
-          COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
-          COUNT(*) FILTER (WHERE status = 'paid') as paid_count,
-          COUNT(*) FILTER (WHERE status = 'shipped') as shipped_count,
-          COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count
-        FROM orders WHERE supplier_id = $1
-      `, [supplierId]);
+    const result = await db.query(query, params);
 
-      const counts = countsQuery.rows[0];
+    // ?? CORRECTION : Counts avec séparation status / payment_status
+    const countsQuery = await db.query(`
+      SELECT 
+        COUNT(*) as all_count,
+        COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
+        COUNT(*) FILTER (WHERE payment_status = 'paid') as paid_count,
+        COUNT(*) FILTER (WHERE status = 'shipped') as shipped_count,
+        COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count
+      FROM orders 
+      WHERE supplier_id = $1
+    `, [supplierId]);
 
-      res.json({
-        success: true,
-        data: {
-          orders: result.rows,
-          counts: {
-            all: parseInt(counts.all_count),
-            pending: parseInt(counts.pending_count),
-            paid: parseInt(counts.paid_count),
-            shipped: parseInt(counts.shipped_count),
-            delivered: parseInt(counts.delivered_count)
-          }
+    const counts = countsQuery.rows[0];
+
+    console.log('[getOrders] Résultat:', {
+      orders: result.rows.length,
+      counts: {
+        all: parseInt(counts.all_count),
+        pending: parseInt(counts.pending_count),
+        paid: parseInt(counts.paid_count),
+        shipped: parseInt(counts.shipped_count),
+        delivered: parseInt(counts.delivered_count)
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        orders: result.rows,
+        counts: {
+          all: parseInt(counts.all_count),
+          pending: parseInt(counts.pending_count),
+          paid: parseInt(counts.paid_count),
+          shipped: parseInt(counts.shipped_count),
+          delivered: parseInt(counts.delivered_count)
         }
-      });
-    } catch (error) {
-      console.error('Erreur getOrders:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
-  async getOrderById(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const { id } = req.params;
-
-      const orderResult = await db.query(`
-        SELECT o.*, u.first_name as customer_name, u.email as customer_email
-        FROM orders o
-        JOIN users u ON o.user_id = u.id
-        WHERE o.id = $1 AND o.supplier_id = $2
-      `, [id, supplierId]);
-
-      if (orderResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Commande non trouvée' });
       }
+    });
+  } catch (error) {
+    console.error('[getOrders] Erreur:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+}
 
-      const itemsResult = await db.query(`
-        SELECT oi.*, p.name as product_name, p.main_image_url
-        FROM order_items oi
-        JOIN products p ON oi.product_id = p.id
-        WHERE oi.order_id = $1
-      `, [id]);
+async updateOrderStatus(req, res) {
+  try {
+    const supplierId = req.user.id;
+    const { id } = req.params;
+    const { status } = req.body;
 
-      res.json({
-        success: true,
-        data: { ...orderResult.rows[0], items: itemsResult.rows }
+    console.log('[updateOrderStatus] Order:', id, '- New status:', status, '- Supplier:', supplierId);
+
+    // ?? Vérifier que le statut est valide
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Statut invalide: ' + status 
       });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
     }
-  }
 
-  async updateOrderStatus(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const { id } = req.params;
-      const { status } = req.body;
-
-      if (status === 'shipped') {
-        try { await this.sendShippingEmail(id); } catch (e) {}
+    // ?? Envoyer l'email si expédié
+    if (status === 'shipped') {
+      try { await this.sendShippingEmail(id); } catch (e) {
+        console.log('[updateOrderStatus] Email error (non-blocking):', e.message);
       }
-
-      await db.query(
-        'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 AND supplier_id = $3',
-        [status, id, supplierId]
-      );
-
-      res.json({ success: true, message: 'Statut mis à jour', data: { status } });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
     }
-  }
 
+    // ?? Mettre à jour UNIQUEMENT status (logistique), pas payment_status
+    const result = await db.query(
+      `UPDATE orders 
+       SET status = $1, 
+           updated_at = NOW() 
+       WHERE id = $2 AND supplier_id = $3
+       RETURNING id, status, payment_status`,
+      [status, id, supplierId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Commande non trouvée ou accès refusé' 
+      });
+    }
+
+    console.log('[updateOrderStatus] Mise à jour OK:', result.rows[0]);
+
+    res.json({ 
+      success: true, 
+      message: 'Statut mis à jour', 
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('[updateOrderStatus] Erreur:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+}
   // ==========================================
   // PAIEMENTS
   // ==========================================
