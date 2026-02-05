@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER ORDERS MODULE - CORRIGÉ
+// SUPPLIER ORDERS MODULE - CORRIGÉ V2.2
 // ============================================
 
 window.SupplierOrders = {
@@ -10,6 +10,7 @@ window.SupplierOrders = {
   },
 
   init: async () => {
+    console.log('[Orders] Init called');
     await SupplierOrders.loadOrders();
   },
 
@@ -18,10 +19,12 @@ window.SupplierOrders = {
       DashboardApp.showLoading(true);
       console.log('[Orders] Chargement avec filtre:', SupplierOrders.state.currentFilter);
       
-      // 🔧 CORRECTION : Ne pas envoyer 'all' au backend, envoyer null
+      // 🔧 CORRECTION : Ne pas envoyer 'all' au backend
       const statusFilter = SupplierOrders.state.currentFilter === 'all' 
         ? null 
         : SupplierOrders.state.currentFilter;
+      
+      console.log('[Orders] Appel API avec statusFilter:', statusFilter);
       
       const response = await BrandiaAPI.Supplier.getOrders(statusFilter);
       console.log('[Orders] Réponse API:', response);
@@ -39,7 +42,8 @@ window.SupplierOrders = {
         }
       }
 
-      console.log('[Orders] Commandes reçues:', orders.length, '- Filtre appliqué:', statusFilter || 'aucun (toutes)');
+      console.log('[Orders] Commandes reçues:', orders.length);
+      console.log('[Orders] Counts:', counts);
       
       SupplierOrders.state.orders = orders;
       SupplierOrders.render();
@@ -63,12 +67,11 @@ window.SupplierOrders = {
       return;
     }
 
-    // 🔧 Les données sont déjà filtrées par l'API, pas besoin de filtrer localement
     const orders = SupplierOrders.state.orders || [];
 
     if (orders.length === 0) {
       const filterLabel = SupplierOrders.state.currentFilter !== 'all' 
-        ? `avec statut "${DashboardApp.translateStatus(SupplierOrders.state.currentFilter)}"` 
+        ? `avec statut "${SupplierOrders.translateStatus(SupplierOrders.state.currentFilter)}"` 
         : '';
       
       container.innerHTML = `
@@ -90,7 +93,7 @@ window.SupplierOrders = {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3 mb-2 flex-wrap">
               <span class="font-mono text-indigo-400 font-bold">#${orderNumber}</span>
-              <span class="badge badge-${status} capitalize">${DashboardApp.translateStatus(status)}</span>
+              <span class="badge badge-${status} capitalize">${SupplierOrders.translateStatus(status)}</span>
               ${status === 'pending' ? '<span class="animate-pulse w-2 h-2 bg-red-500 rounded-full" title="Nouvelle commande"></span>' : ''}
             </div>
             <p class="text-sm text-slate-400 mb-1">
@@ -125,6 +128,19 @@ window.SupplierOrders = {
     }).join('');
   },
 
+  // 🔧 AJOUT : Méthode translateStatus locale
+  translateStatus: (status) => {
+    const map = {
+      pending: 'En attente',
+      paid: 'Payée',
+      processing: 'En préparation',
+      shipped: 'Expédiée',
+      delivered: 'Livrée',
+      cancelled: 'Annulée'
+    };
+    return map[status] || status;
+  },
+
   updateCounts: (counts) => {
     const map = {
       all: parseInt(counts?.all) || 0,
@@ -134,9 +150,16 @@ window.SupplierOrders = {
       delivered: parseInt(counts?.delivered) || 0
     };
 
+    console.log('[Orders] Mise à jour des compteurs:', map);
+
     Object.keys(map).forEach(key => {
       const el = document.getElementById(`count-${key}`);
-      if (el) el.textContent = map[key];
+      if (el) {
+        el.textContent = map[key];
+        console.log(`[Orders] Compteur ${key} mis à jour:`, map[key]);
+      } else {
+        console.warn(`[Orders] Élément #count-${key} non trouvé`);
+      }
     });
 
     // Badge sidebar
@@ -147,21 +170,31 @@ window.SupplierOrders = {
     }
   },
 
-  // 🔧 CORRECTION : Recharger les données depuis l'API au changement de filtre
+  // 🔧 CORRECTION CRITIQUE : Méthode filter avec logs de debug
   filter: (status) => {
+    console.log('[Orders] Filter appelé avec status:', status);
+    
     SupplierOrders.state.currentFilter = status;
     
     // Update UI tabs
-    document.querySelectorAll('.order-tab').forEach(tab => {
+    const tabs = document.querySelectorAll('.order-tab');
+    console.log('[Orders] Nombre de tabs trouvés:', tabs.length);
+    
+    tabs.forEach((tab, index) => {
+      console.log(`[Orders] Tab ${index}:`, tab.dataset.filter);
+      
       tab.classList.remove('active', 'bg-indigo-600', 'text-white');
       tab.classList.add('text-slate-400');
+      
       if (tab.dataset.filter === status) {
         tab.classList.add('active', 'bg-indigo-600', 'text-white');
         tab.classList.remove('text-slate-400');
+        console.log('[Orders] Tab activé:', status);
       }
     });
 
-    // 🔧 CORRECTION CRITIQUE : Recharger les données depuis l'API avec le nouveau filtre
+    // Recharger les données depuis l'API
+    console.log('[Orders] Rechargement des données avec filtre:', status);
     SupplierOrders.loadOrders();
   },
 
@@ -179,7 +212,10 @@ window.SupplierOrders = {
       
       const status = order.status || 'pending';
 
-      document.getElementById('order-detail-number').textContent = '#' + (order.order_number || order.id);
+      const detailNumber = document.getElementById('order-detail-number');
+      if (detailNumber) {
+        detailNumber.textContent = '#' + (order.order_number || order.id);
+      }
       
       const content = document.getElementById('order-detail-content');
       if (!content) {
@@ -197,7 +233,7 @@ window.SupplierOrders = {
           </div>
           <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
             <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Statut</p>
-            <span class="badge badge-${status}">${DashboardApp.translateStatus(status)}</span>
+            <span class="badge badge-${status}">${SupplierOrders.translateStatus(status)}</span>
           </div>
         </div>
 
@@ -270,7 +306,7 @@ window.SupplierOrders = {
   updateStatus: async (orderId, newStatus) => {
     try {
       await BrandiaAPI.Supplier.updateOrderStatus(orderId, newStatus);
-      DashboardApp.showToast(`Statut mis à jour: ${DashboardApp.translateStatus(newStatus)}`, 'success');
+      DashboardApp.showToast(`Statut mis à jour: ${SupplierOrders.translateStatus(newStatus)}`, 'success');
       DashboardApp.closeModal('order-modal');
       SupplierOrders.loadOrders();
     } catch (error) {
@@ -280,9 +316,26 @@ window.SupplierOrders = {
   }
 };
 
-// Exposer globalement
-window.filterOrders = (status) => SupplierOrders.filter(status);
-window.showOrderDetail = (id) => SupplierOrders.viewDetail(id);
-window.updateOrderStatus = (id, status) => SupplierOrders.updateStatus(id, status);
+// 🔧 CORRECTION : Exposer globalement avec vérification
+window.filterOrders = (status) => {
+  console.log('[Global] filterOrders appelé avec:', status);
+  if (window.SupplierOrders) {
+    window.SupplierOrders.filter(status);
+  } else {
+    console.error('[Global] SupplierOrders non disponible');
+  }
+};
 
-console.log('[SupplierOrders] Module chargé v2.1');
+window.showOrderDetail = (id) => {
+  if (window.SupplierOrders) {
+    window.SupplierOrders.viewDetail(id);
+  }
+};
+
+window.updateOrderStatus = (id, status) => {
+  if (window.SupplierOrders) {
+    window.SupplierOrders.updateStatus(id, status);
+  }
+};
+
+console.log('[SupplierOrders] Module chargé v2.2');

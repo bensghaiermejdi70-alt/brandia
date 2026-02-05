@@ -75,40 +75,46 @@ const DashboardApp = {
   },
 
   loadSectionData: async (section) => {
-    DashboardApp.showLoading(true);
-    try {
-      switch(section) {
-        case 'overview':
-          await DashboardApp.loadOverview();
-          break;
-        case 'products':
-          if (window.SupplierProducts) await SupplierProducts.init();
-          break;
-        case 'orders':
-          if (window.SupplierOrders) await SupplierOrders.init();
-          break;
-        case 'payments':
-          if (window.SupplierPayments) await SupplierPayments.init();
-          break;
-        case 'promotions':
-          if (window.SupplierPromotions) await SupplierPromotions.init();
-          break;
-        case 'advertising':
-          if (window.SupplierCampaigns) await SupplierCampaigns.init();
-          break;
-        case 'analytics':
-          await DashboardApp.loadAnalytics();
-          break;
-        case 'profile':
-          await DashboardApp.loadProfile();
-          break;
-      }
-    } catch (error) {
-      console.error(`Erreur chargement section ${section}:`, error);
-    } finally {
-      DashboardApp.showLoading(false);
+  DashboardApp.showLoading(true);
+  try {
+    switch(section) {
+      case 'overview':
+        await DashboardApp.loadOverview();
+        break;
+      case 'products':
+        if (window.SupplierProducts) await SupplierProducts.init();
+        break;
+      case 'orders':
+        // 🔧 CORRECTION : Toujours appeler SupplierOrders.init() quand on affiche la section
+        if (window.SupplierOrders) {
+          console.log('[Dashboard] Initializing SupplierOrders...');
+          await SupplierOrders.init();
+        } else {
+          console.error('[Dashboard] SupplierOrders not available');
+        }
+        break;
+      case 'payments':
+        if (window.SupplierPayments) await SupplierPayments.init();
+        break;
+      case 'promotions':
+        if (window.SupplierPromotions) await SupplierPromotions.init();
+        break;
+      case 'advertising':
+        if (window.SupplierCampaigns) await SupplierCampaigns.init();
+        break;
+      case 'analytics':
+        await DashboardApp.loadAnalytics();
+        break;
+      case 'profile':
+        await DashboardApp.loadProfile();
+        break;
     }
-  },
+  } catch (error) {
+    console.error(`Erreur chargement section ${section}:`, error);
+  } finally {
+    DashboardApp.showLoading(false);
+  }
+},
 
   // ============================================
   // OVERVIEW
