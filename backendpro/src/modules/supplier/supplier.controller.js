@@ -2,15 +2,15 @@ const db = require('../../config/db');
 const { uploadImage } = require('../../utils/cloudinary');
 const multer = require('multer');
 
-// Configuration multer (mémoire, pas de stockage local)
+// Configuration multer
 const upload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+    limits: { fileSize: 50 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
+        if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
             cb(null, true);
         } else {
-            cb(new Error('Seules les images sont autorisées'), false);
+            cb(new Error('Seules les images et vidÃ©os sont autorisÃ©es'), false);
         }
     }
 });
@@ -32,85 +32,30 @@ try {
 class SupplierController {
   
   // ==========================================
-  // UPLOAD IMAGE
+  // UPLOAD
   // ==========================================
   async uploadImage(req, res) {
     try {
         if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: 'Aucune image fournie'
-            });
+            return res.status(400).json({ success: false, message: 'Aucune image fournie' });
         }
-
-        console.log('[Upload] Image reçue:', req.file.originalname, '- Taille:', req.file.size);
-
         const result = await uploadImage(req.file.buffer, 'brandia/products');
-
-        res.json({
-            success: true,
-            message: 'Image uploadée avec succès',
-            data: {
-                url: result.url,
-                publicId: result.publicId,
-                width: result.width,
-                height: result.height
-            }
-        });
-
+        res.json({ success: true, data: { url: result.url, publicId: result.publicId } });
     } catch (error) {
-        console.error('[Upload] Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de l\'upload: ' + error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
   }
 
-  // ==========================================
-  // UPLOAD VIDEO POUR CAMPAGNES
-  // ==========================================
   async uploadCampaignVideo(req, res) {
     try {
         if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: 'Aucune vidéo fournie'
-            });
+            return res.status(400).json({ success: false, message: 'Aucune vidÃ©o fournie' });
         }
-
-        if (req.file.size > 50 * 1024 * 1024) {
-            return res.status(400).json({
-                success: false,
-                message: 'Vidéo trop volumineuse (max 50MB)'
-            });
-        }
-
-        console.log('[Upload Video] Vidéo reçue:', req.file.originalname, '- Taille:', req.file.size);
-
         const { uploadVideo } = require('../../utils/cloudinary');
         const result = await uploadVideo(req.file.buffer, 'brandia/campaigns');
-
-        res.json({
-            success: true,
-            message: 'Vidéo uploadée avec succès',
-            data: {
-                url: result.url,
-                thumbnailUrl: result.thumbnailUrl,
-                publicId: result.publicId,
-                width: result.width,
-                height: result.height,
-                duration: result.duration,
-                resourceType: 'video'
-            }
-        });
-
+        res.json({ success: true, data: result });
     } catch (error) {
-        console.error('[Upload Video] Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de l\'upload: ' + error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
   }
 
@@ -135,24 +80,12 @@ class SupplierController {
       `, [supplierId]);
 
       const ordersQuery = await db.query(`
-        SELECT 
-          o.id, o.order_number, o.total_amount, o.status, o.created_at,
-          u.first_name as customer_name, u.email as customer_email
+        SELECT o.id, o.order_number, o.total_amount, o.status, o.created_at,
+               u.first_name as customer_name, u.email as customer_email
         FROM orders o
         JOIN users u ON o.user_id = u.id
         WHERE o.supplier_id = $1
         ORDER BY o.created_at DESC
-        LIMIT 5
-      `, [supplierId]);
-
-      const topProducts = await db.query(`
-        SELECT p.name, p.main_image_url, SUM(oi.quantity) as sales
-        FROM order_items oi
-        JOIN products p ON oi.product_id = p.id
-        JOIN orders o ON oi.order_id = o.id
-        WHERE p.supplier_id = $1 AND o.status IN ('paid', 'shipped', 'delivered')
-        GROUP BY p.id, p.name, p.main_image_url
-        ORDER BY sales DESC
         LIMIT 5
       `, [supplierId]);
 
@@ -167,12 +100,11 @@ class SupplierController {
             totalProducts: parseInt(statsQuery.rows[0]?.products_count || 0)
           },
           recentOrders: ordersQuery.rows,
-          topProducts: topProducts.rows,
+          topProducts: [],
           salesChart: []
         }
       });
     } catch (error) {
-      console.error('Erreur getStats:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -217,10 +149,7 @@ class SupplierController {
       params.push(limit, (page - 1) * limit);
 
       const result = await db.query(query, params);
-      const countResult = await db.query(
-        'SELECT COUNT(*) FROM products WHERE supplier_id = $1',
-        [supplierId]
-      );
+      const countResult = await db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1', [supplierId]);
 
       res.json({
         success: true,
@@ -232,7 +161,6 @@ class SupplierController {
         }
       });
     } catch (error) {
-      console.error('Erreur getProducts:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -263,12 +191,10 @@ class SupplierController {
       const fields = Object.keys(updates).map((key, i) => `${key} = $${i + 3}`).join(', ');
       const values = Object.values(updates);
       
-      await db.query(`
-        UPDATE products SET ${fields}, updated_at = NOW()
-        WHERE id = $1 AND supplier_id = $2
-      `, [id, supplierId, ...values]);
+      await db.query(`UPDATE products SET ${fields}, updated_at = NOW() WHERE id = $1 AND supplier_id = $2`, 
+        [id, supplierId, ...values]);
 
-      res.json({ success: true, message: 'Produit mis à jour' });
+      res.json({ success: true, message: 'Produit mis Ã  jour' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -278,152 +204,132 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       const { id } = req.params;
-
       await db.query('DELETE FROM products WHERE id = $1 AND supplier_id = $2', [id, supplierId]);
-      res.json({ success: true, message: 'Produit supprimé' });
+      res.json({ success: true, message: 'Produit supprimÃ©' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
 
   // ==========================================
-// COMMANDES - CORRIGÉ
-// ==========================================
+  // COMMANDES - CORRIGÃ‰
+  // ==========================================
+  async getOrders(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { status } = req.query;
 
-async getOrders(req, res) {
-  try {
-    const supplierId = req.user.id;
-    const { status } = req.query;
+      let query = `
+        SELECT 
+          o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.created_at,
+          u.first_name as customer_name, u.email as customer_email, o.shipping_address
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        WHERE o.supplier_id = $1
+      `;
+      
+      const params = [supplierId];
 
-    console.log('[getOrders] Filtre demandé:', status, '- Supplier:', supplierId);
-
-    let query = `
-      SELECT 
-        o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.created_at,
-        u.first_name as customer_name, u.email as customer_email, o.shipping_address
-      FROM orders o
-      JOIN users u ON o.user_id = u.id
-      WHERE o.supplier_id = $1
-    `;
-    
-    const params = [supplierId];
-
-    // ?? CORRECTION : Logique de filtrage selon status ou payment_status
-    if (status && status !== 'all') {
-      if (status === 'paid') {
-        // ?? paid = payment_status, pas status logistique
-        query += ` AND o.payment_status = 'paid'`;
-      } else {
-        // Autres statuts = status logistique
-        query += ` AND o.status = $2`;
-        params.push(status);
-      }
-    }
-
-    query += ` ORDER BY o.created_at DESC`;
-
-    console.log('[getOrders] SQL:', query);
-    console.log('[getOrders] Params:', params);
-
-    const result = await db.query(query, params);
-
-    // ?? CORRECTION : Counts avec séparation status / payment_status
-    const countsQuery = await db.query(`
-      SELECT 
-        COUNT(*) as all_count,
-        COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
-        COUNT(*) FILTER (WHERE payment_status = 'paid') as paid_count,
-        COUNT(*) FILTER (WHERE status = 'shipped') as shipped_count,
-        COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count
-      FROM orders 
-      WHERE supplier_id = $1
-    `, [supplierId]);
-
-    const counts = countsQuery.rows[0];
-
-    console.log('[getOrders] Résultat:', {
-      orders: result.rows.length,
-      counts: {
-        all: parseInt(counts.all_count),
-        pending: parseInt(counts.pending_count),
-        paid: parseInt(counts.paid_count),
-        shipped: parseInt(counts.shipped_count),
-        delivered: parseInt(counts.delivered_count)
-      }
-    });
-
-    res.json({
-      success: true,
-      data: {
-        orders: result.rows,
-        counts: {
-          all: parseInt(counts.all_count),
-          pending: parseInt(counts.pending_count),
-          paid: parseInt(counts.paid_count),
-          shipped: parseInt(counts.shipped_count),
-          delivered: parseInt(counts.delivered_count)
+      if (status && status !== 'all') {
+        if (status === 'paid') {
+          query += ` AND o.payment_status = 'paid'`;
+        } else {
+          query += ` AND o.status = $2`;
+          params.push(status);
         }
       }
-    });
-  } catch (error) {
-    console.error('[getOrders] Erreur:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
 
-async updateOrderStatus(req, res) {
-  try {
-    const supplierId = req.user.id;
-    const { id } = req.params;
-    const { status } = req.body;
+      query += ` ORDER BY o.created_at DESC`;
 
-    console.log('[updateOrderStatus] Order:', id, '- New status:', status, '- Supplier:', supplierId);
+      const result = await db.query(query, params);
 
-    // ?? Vérifier que le statut est valide
-    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Statut invalide: ' + status 
+      const countsQuery = await db.query(`
+        SELECT 
+          COUNT(*) as all_count,
+          COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
+          COUNT(*) FILTER (WHERE payment_status = 'paid') as paid_count,
+          COUNT(*) FILTER (WHERE status = 'shipped') as shipped_count,
+          COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count
+        FROM orders WHERE supplier_id = $1
+      `, [supplierId]);
+
+      const counts = countsQuery.rows[0];
+
+      res.json({
+        success: true,
+        data: {
+          orders: result.rows,
+          counts: {
+            all: parseInt(counts.all_count),
+            pending: parseInt(counts.pending_count),
+            paid: parseInt(counts.paid_count),
+            shipped: parseInt(counts.shipped_count),
+            delivered: parseInt(counts.delivered_count)
+          }
+        }
       });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
+  }
 
-    // ?? Envoyer l'email si expédié
-    if (status === 'shipped') {
-      try { await this.sendShippingEmail(id); } catch (e) {
-        console.log('[updateOrderStatus] Email error (non-blocking):', e.message);
+  async getOrderById(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { id } = req.params;
+
+      const orderResult = await db.query(`
+        SELECT o.*, u.first_name as customer_name, u.email as customer_email
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        WHERE o.id = $1 AND o.supplier_id = $2
+      `, [id, supplierId]);
+
+      if (orderResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Commande non trouvÃ©e' });
       }
-    }
 
-    // ?? Mettre à jour UNIQUEMENT status (logistique), pas payment_status
-    const result = await db.query(
-      `UPDATE orders 
-       SET status = $1, 
-           updated_at = NOW() 
-       WHERE id = $2 AND supplier_id = $3
-       RETURNING id, status, payment_status`,
-      [status, id, supplierId]
-    );
+      const itemsResult = await db.query(`
+        SELECT oi.*, p.name as product_name, p.main_image_url
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = $1
+      `, [id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Commande non trouvée ou accès refusé' 
+      res.json({
+        success: true,
+        data: { ...orderResult.rows[0], items: itemsResult.rows }
       });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
-
-    console.log('[updateOrderStatus] Mise à jour OK:', result.rows[0]);
-
-    res.json({ 
-      success: true, 
-      message: 'Statut mis à jour', 
-      data: result.rows[0]
-    });
-  } catch (error) {
-    console.error('[updateOrderStatus] Erreur:', error);
-    res.status(500).json({ success: false, message: error.message });
   }
-}
+
+  async updateOrderStatus(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (status === 'shipped') {
+        try { await this.sendShippingEmail(id); } catch (e) {}
+      }
+
+      const result = await db.query(
+        'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 AND supplier_id = $3 RETURNING *',
+        [status, id, supplierId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Commande non trouvÃ©e' });
+      }
+
+      res.json({ success: true, message: 'Statut mis Ã  jour', data: result.rows[0] });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
   // ==========================================
   // PAIEMENTS
   // ==========================================
@@ -477,126 +383,93 @@ async updateOrderStatus(req, res) {
       }
 
       await db.query(`INSERT INTO payouts (supplier_id, amount, status) VALUES ($1, $2, 'pending')`, [supplierId, amount]);
-      await db.query(`UPDATE supplier_payments SET status = 'payout_requested', updated_at = NOW() WHERE supplier_id = $1 AND status = 'available'`, [supplierId]);
+      await db.query(`UPDATE supplier_payments SET status = 'payout_requested' WHERE supplier_id = $1 AND status = 'available'`, [supplierId]);
 
-      res.json({ success: true, message: 'Demande de virement envoyée' });
+      res.json({ success: true, message: 'Demande de virement envoyÃ©e' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
 
   // ==========================================
-// CAMPAGNES (Auth)
-// ==========================================
-
-async getCampaigns(req, res) {
-  try {
-    const supplierId = req.user.id;
-    const result = await db.query(
-      `SELECT * FROM supplier_campaigns WHERE supplier_id = $1 ORDER BY created_at DESC`, 
-      [supplierId]
-    );
-    res.json({ success: true, data: result.rows });
-  } catch (error) {
-    console.error('[getCampaigns] Error:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async createCampaign(req, res) {
-  try {
-    const supplierId = req.user.id;
-    const { 
-      name, headline, description, cta_text, cta_link, 
-      media_type, media_url, target_products, start_date, end_date 
-    } = req.body;
-
-    const result = await db.query(`
-      INSERT INTO supplier_campaigns 
-      (supplier_id, name, headline, description, cta_text, cta_link, 
-       media_type, media_url, target_products, start_date, end_date, 
-       status, views_count, clicks_count)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', 0, 0)
-      RETURNING *
-    `, [supplierId, name, headline, description, cta_text, cta_link, 
-        media_type, media_url, target_products, start_date, end_date]);
-
-    res.json({ success: true, data: result.rows[0] });
-  } catch (error) {
-    console.error('[createCampaign] Error:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-// ?? CETTE MÉTHODE MANQUE PROBABLEMENT
-async updateCampaign(req, res) {
-  try {
-    const supplierId = req.user.id;
-    const { id } = req.params;
-    const { status } = req.body;
-
-    console.log('[updateCampaign] Campaign:', id, 'Status:', status, 'Supplier:', supplierId);
-
-    const result = await db.query(
-      `UPDATE supplier_campaigns 
-       SET status = $1, updated_at = NOW() 
-       WHERE id = $2 AND supplier_id = $3
-       RETURNING *`,
-      [status, id, supplierId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Campagne non trouvée' 
-      });
+  // CAMPAGNES
+  // ==========================================
+  async getCampaigns(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const result = await db.query(`SELECT * FROM supplier_campaigns WHERE supplier_id = $1 ORDER BY created_at DESC`, [supplierId]);
+      res.json({ success: true, data: result.rows });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
-
-    res.json({ success: true, message: 'Campagne mise à jour', data: result.rows[0] });
-  } catch (error) {
-    console.error('[updateCampaign] Error:', error);
-    res.status(500).json({ success: false, message: error.message });
   }
-}
 
-async deleteCampaign(req, res) {
-  try {
-    const supplierId = req.user.id;
-    const { id } = req.params;
-    
-    const result = await db.query(
-      'DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2 RETURNING id',
-      [id, supplierId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Campagne non trouvée' 
-      });
+  async createCampaign(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date } = req.body;
+
+      const result = await db.query(`
+        INSERT INTO supplier_campaigns 
+        (supplier_id, name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date, status, views_count, clicks_count)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', 0, 0)
+        RETURNING *
+      `, [supplierId, name, headline, description, cta_text, cta_link, media_type, media_url, target_products, start_date, end_date]);
+
+      res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
-    
-    res.json({ success: true, message: 'Campagne supprimée' });
-  } catch (error) {
-    console.error('[deleteCampaign] Error:', error);
-    res.status(500).json({ success: false, message: error.message });
   }
-}
+
+  async updateCampaign(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const result = await db.query(
+        `UPDATE supplier_campaigns SET status = $1, updated_at = NOW() WHERE id = $2 AND supplier_id = $3 RETURNING *`,
+        [status, id, supplierId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Campagne non trouvÃ©e' });
+      }
+
+      res.json({ success: true, message: 'Campagne mise Ã  jour', data: result.rows[0] });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async deleteCampaign(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { id } = req.params;
+      
+      const result = await db.query('DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2 RETURNING id', [id, supplierId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Campagne non trouvÃ©e' });
+      }
+      
+      res.json({ success: true, message: 'Campagne supprimÃ©e' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 
   // ==========================================
-  // CAMPAGNES (PUBLIC - Sans auth)
+  // CAMPAGNES PUBLIC
   // ==========================================
-  
   async getActiveCampaignForProduct(req, res) {
     try {
       const { supplierId, productId } = req.params;
       
-      console.log(`[getActiveCampaignForProduct] supplier=${supplierId}, product=${productId}`);
-      
       const result = await db.query(`
-        SELECT 
-          c.id, c.name, c.media_url, c.media_type, c.headline, 
-          c.description, c.cta_text, c.cta_link
+        SELECT c.id, c.name, c.media_url, c.media_type, c.headline, 
+               c.description, c.cta_text, c.cta_link
         FROM supplier_campaigns c
         WHERE c.supplier_id = $1
           AND $2 = ANY(c.target_products)
@@ -607,12 +480,8 @@ async deleteCampaign(req, res) {
         LIMIT 1
       `, [supplierId, productId]);
 
-      res.json({
-        success: true,
-        data: result.rows[0] || null
-      });
+      res.json({ success: true, data: result.rows[0] || null });
     } catch (error) {
-      console.error('[getActiveCampaignForProduct] Error:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -620,34 +489,17 @@ async deleteCampaign(req, res) {
   async trackCampaignClick(req, res) {
     try {
       const { campaignId } = req.body;
-      
       await db.query(`UPDATE supplier_campaigns SET clicks_count = clicks_count + 1 WHERE id = $1`, [campaignId]);
-      await db.query(`
-        INSERT INTO campaign_stats (campaign_id, date, clicks)
-        VALUES ($1, CURRENT_DATE, 1)
-        ON CONFLICT (campaign_id, date) DO UPDATE SET clicks = campaign_stats.clicks + 1
-      `, [campaignId]);
-
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
 
-  // ==========================================
-  // TRACKING (Auth)
-  // ==========================================
   async trackCampaignView(req, res) {
     try {
       const { campaignId } = req.body;
-      
       await db.query(`UPDATE supplier_campaigns SET views_count = views_count + 1 WHERE id = $1`, [campaignId]);
-      await db.query(`
-        INSERT INTO campaign_stats (campaign_id, date, impressions)
-        VALUES ($1, CURRENT_DATE, 1)
-        ON CONFLICT (campaign_id, date) DO UPDATE SET impressions = campaign_stats.impressions + 1
-      `, [campaignId]);
-
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -672,18 +524,30 @@ async deleteCampaign(req, res) {
         const order = orderData.rows[0];
         await sendEmail({
           to: order.email,
-          subject: `Votre commande ${order.order_number} a été expédiée`,
+          subject: `Votre commande ${order.order_number} a Ã©tÃ© expÃ©diÃ©e`,
           html: `<h1>Bonne nouvelle !</h1><p>Votre commande est en route.</p>`
         });
       }
     } catch (error) {
-      console.error('[Email] Error (non-blocking):', error.message);
+      console.error('[Email] Error:', error.message);
     }
   }
 }
 
-// Exporter aussi le middleware multer
+// ==========================================
+// EXPORT
+// ==========================================
+
+const controller = new SupplierController();
+
+console.log('[SupplierController] Export check:', {
+  controller: typeof controller,
+  getOrders: typeof controller.getOrders,
+  getStats: typeof controller.getStats,
+  uploadMiddleware: typeof upload.single('image')
+});
+
 module.exports = {
-    controller: new SupplierController(),
+    controller: controller,
     uploadMiddleware: upload.single('image')
 };

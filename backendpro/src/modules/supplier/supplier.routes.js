@@ -4,6 +4,20 @@ const { controller, uploadMiddleware } = require('./supplier.controller');
 const authMiddleware = require('../../middlewares/auth.middleware');
 
 console.log('[Supplier Routes] Loading...');
+console.log('[Supplier Routes] Controller type:', typeof controller);
+console.log('[Supplier Routes] Controller methods:', {
+  getStats: typeof controller?.getStats,
+  getProducts: typeof controller?.getProducts,
+  getOrders: typeof controller?.getOrders,
+  getOrderById: typeof controller?.getOrderById,
+  updateOrderStatus: typeof controller?.updateOrderStatus,
+  getCampaigns: typeof controller?.getCampaigns,
+  createCampaign: typeof controller?.createCampaign,
+  updateCampaign: typeof controller?.updateCampaign,
+  deleteCampaign: typeof controller?.deleteCampaign,
+  uploadImage: typeof controller?.uploadImage,
+  uploadCampaignVideo: typeof controller?.uploadCampaignVideo
+});
 
 // ============================================
 // ROUTES PUBLIQUES (Sans authentification)
@@ -19,8 +33,6 @@ router.use(authMiddleware);
 
 router.get('/stats', controller.getStats);
 router.get('/products', controller.getProducts);
-
-// ✅ NOUVEAU: Upload image avant création produit
 router.post('/upload-image', uploadMiddleware, controller.uploadImage);
 router.post('/upload-video', uploadMiddleware, controller.uploadCampaignVideo);
 router.post('/products', controller.createProduct);
