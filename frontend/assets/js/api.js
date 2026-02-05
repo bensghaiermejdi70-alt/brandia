@@ -19,9 +19,10 @@
                   window.location.hostname.includes('github.io');
 
   // ✅ CORRECTION CRITIQUE : URL sans espaces
-  const API_BASE = isLocal 
+  
+const API_BASE = isLocal 
   ? 'http://localhost:4000' 
-  : 'https://brandia-1.onrender.com';
+  : 'https://brandia-1.onrender.com';  
 
   const API_BASE_URL = `${API_BASE}/api`;
   const REQUEST_TIMEOUT = 15000;

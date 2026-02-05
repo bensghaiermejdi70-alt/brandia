@@ -32,7 +32,7 @@ try {
 class SupplierController {
   
   // ==========================================
-  // UPLOAD IMAGE (NOUVEAU)
+  // UPLOAD IMAGE
   // ==========================================
   async uploadImage(req, res) {
     try {
@@ -66,10 +66,11 @@ class SupplierController {
         });
     }
   }
-// ==========================================
-// UPLOAD VIDEO POUR CAMPAGNES (NOUVEAU)
-// ==========================================
-async uploadCampaignVideo(req, res) {
+
+  // ==========================================
+  // UPLOAD VIDEO POUR CAMPAGNES
+  // ==========================================
+  async uploadCampaignVideo(req, res) {
     try {
         if (!req.file) {
             return res.status(400).json({
@@ -78,7 +79,6 @@ async uploadCampaignVideo(req, res) {
             });
         }
 
-        // Vérifier taille (max 50MB pour vidéo)
         if (req.file.size > 50 * 1024 * 1024) {
             return res.status(400).json({
                 success: false,
@@ -112,7 +112,8 @@ async uploadCampaignVideo(req, res) {
             message: 'Erreur lors de l\'upload: ' + error.message
         });
     }
-}
+  }
+
   // ==========================================
   // STATISTIQUES
   // ==========================================
@@ -286,7 +287,7 @@ async uploadCampaignVideo(req, res) {
   }
 
   // ==========================================
-  // COMMANDES
+  // COMMANDES - CORRIGÉ
   // ==========================================
   async getOrders(req, res) {
     try {

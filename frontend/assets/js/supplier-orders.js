@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER ORDERS MODULE
+// SUPPLIER ORDERS MODULE - CORRIGÉ
 // ============================================
 
 window.SupplierOrders = {
@@ -16,12 +16,44 @@ window.SupplierOrders = {
   loadOrders: async () => {
     try {
       DashboardApp.showLoading(true);
+      console.log('[Orders] Chargement avec filtre:', SupplierOrders.state.currentFilter);
+      
       const response = await BrandiaAPI.Supplier.getOrders(SupplierOrders.state.currentFilter);
-      SupplierOrders.state.orders = response.data?.orders || [];
+      console.log('[Orders] Réponse API:', response);
+
+      // 🔧 CORRECTION : Gestion robuste de la structure de réponse
+      let orders = [];
+      let counts = { all: 0, pending: 0, paid: 0, shipped: 0, delivered: 0 };
+
+      if (response.success && response.data) {
+        // Structure attendue : { data: { orders: [], counts: {} } }
+        if (response.data.orders && Array.isArray(response.data.orders)) {
+          orders = response.data.orders;
+          counts = response.data.counts || counts;
+        } 
+        // Fallback : si data est directement un tableau
+        else if (Array.isArray(response.data)) {
+          orders = response.data;
+        }
+      }
+
+      // 🔧 CORRECTION : Normaliser les statuts (payment_status → status)
+      orders = orders.map(order => ({
+        ...order,
+        status: order.status || order.payment_status || 'pending'
+      }));
+
+      console.log('[Orders] Commandes parsées:', orders.length);
+      
+      SupplierOrders.state.orders = orders;
       SupplierOrders.render();
-      SupplierOrders.updateCounts(response.data?.counts || {});
+      SupplierOrders.updateCounts(counts);
+      
     } catch (error) {
-      console.error('Erreur chargement commandes:', error);
+      console.error('[Orders] Erreur chargement:', error);
+      SupplierOrders.state.orders = [];
+      SupplierOrders.render();
+      SupplierOrders.updateCounts({ all: 0, pending: 0, paid: 0, shipped: 0, delivered: 0 });
       DashboardApp.showToast('Erreur de chargement des commandes', 'error');
     } finally {
       DashboardApp.showLoading(false);
@@ -30,70 +62,83 @@ window.SupplierOrders = {
 
   render: () => {
     const container = document.getElementById('orders-list');
-    if (!container) return;
+    if (!container) {
+      console.error('[Orders] Container #orders-list non trouvé');
+      return;
+    }
 
-    let filtered = SupplierOrders.state.orders;
+    let filtered = SupplierOrders.state.orders || [];
     
+    // 🔧 CORRECTION : Filtrage avec gestion du statut normalisé
     if (SupplierOrders.state.currentFilter !== 'all') {
-      filtered = filtered.filter(o => o.status === SupplierOrders.state.currentFilter);
+      filtered = filtered.filter(o => {
+        const status = o.status || o.payment_status || 'pending';
+        return status === SupplierOrders.state.currentFilter;
+      });
     }
 
     if (filtered.length === 0) {
       container.innerHTML = `
         <div class="text-center py-12 text-slate-500">
           <i class="fas fa-shopping-bag text-4xl mb-4 opacity-50"></i>
-          <p>Aucune commande ${SupplierOrders.state.currentFilter !== 'all' ? 'avec ce statut' : ''}</p>
+          <p class="text-slate-400 mb-2">Aucune commande ${SupplierOrders.state.currentFilter !== 'all' ? 'avec ce statut' : ''}</p>
+          <p class="text-sm text-slate-600">Les nouvelles commandes apparaîtront ici</p>
         </div>
       `;
       return;
     }
 
-    container.innerHTML = filtered.map(order => `
-      <div class="card rounded-xl p-6 flex flex-col md:flex-row gap-4 items-start md:items-center hover:shadow-lg transition-shadow">
-        <div class="flex-1">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-indigo-400 font-bold">#${order.order_number || order.id}</span>
-            <span class="badge badge-${order.status} capitalize">${DashboardApp.translateStatus(order.status)}</span>
-            ${order.status === 'pending' ? '<span class="animate-pulse w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+    container.innerHTML = filtered.map(order => {
+      const status = order.status || order.payment_status || 'pending';
+      const orderNumber = order.order_number || order.id;
+      
+      return `
+        <div class="card rounded-xl p-6 flex flex-col md:flex-row gap-4 items-start md:items-center hover:shadow-lg transition-shadow border border-slate-800">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-3 mb-2 flex-wrap">
+              <span class="font-mono text-indigo-400 font-bold">#${orderNumber}</span>
+              <span class="badge badge-${status} capitalize">${DashboardApp.translateStatus(status)}</span>
+              ${status === 'pending' ? '<span class="animate-pulse w-2 h-2 bg-red-500 rounded-full" title="Nouvelle commande"></span>' : ''}
+            </div>
+            <p class="text-sm text-slate-400 mb-1">
+              <i class="far fa-calendar mr-1"></i> ${DashboardApp.formatDate(order.created_at)}
+            </p>
+            <p class="text-white font-medium flex items-center gap-2 flex-wrap">
+              <i class="far fa-user text-slate-500"></i> ${order.customer_name || 'Client'}
+              ${order.customer_email ? `<span class="text-slate-500 text-xs">(${order.customer_email})</span>` : ''}
+            </p>
           </div>
-          <p class="text-sm text-slate-400 mb-1">
-            <i class="far fa-calendar mr-1"></i> ${DashboardApp.formatDate(order.created_at)}
-          </p>
-          <p class="text-white font-medium flex items-center gap-2">
-            <i class="far fa-user text-slate-500"></i> ${order.customer_name || 'Client'}
-            <span class="text-slate-500 text-xs">(${order.customer_email || 'email non disponible'})</span>
-          </p>
-        </div>
-        
-        <div class="flex flex-col md:items-end gap-2">
-          <p class="text-2xl font-bold text-white">${DashboardApp.formatPrice(order.total_amount)}</p>
-          <div class="flex gap-2">
-            <button onclick="SupplierOrders.viewDetail(${order.id})" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors">
-              Détails
-            </button>
-            ${order.status === 'paid' ? `
-              <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm transition-colors">
-                <i class="fas fa-truck mr-1"></i> Expédier
+          
+          <div class="flex flex-col md:items-end gap-2 w-full md:w-auto">
+            <p class="text-2xl font-bold text-white">${DashboardApp.formatPrice(order.total_amount)}</p>
+            <div class="flex gap-2 flex-wrap">
+              <button onclick="SupplierOrders.viewDetail(${order.id})" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700">
+                <i class="fas fa-eye mr-1"></i> Détails
               </button>
-            ` : ''}
-            ${order.status === 'shipped' ? `
-              <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm transition-colors">
-                <i class="fas fa-check mr-1"></i> Livrer
-              </button>
-            ` : ''}
+              ${status === 'paid' ? `
+                <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm transition-colors">
+                  <i class="fas fa-truck mr-1"></i> Expédier
+                </button>
+              ` : ''}
+              ${status === 'shipped' ? `
+                <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm transition-colors">
+                  <i class="fas fa-check mr-1"></i> Livrer
+                </button>
+              ` : ''}
+            </div>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   },
 
   updateCounts: (counts) => {
     const map = {
-      all: counts.all || 0,
-      pending: counts.pending || 0,
-      paid: counts.paid || 0,
-      shipped: counts.shipped || 0,
-      delivered: counts.delivered || 0
+      all: parseInt(counts?.all) || 0,
+      pending: parseInt(counts?.pending) || 0,
+      paid: parseInt(counts?.paid) || 0,
+      shipped: parseInt(counts?.shipped) || 0,
+      delivered: parseInt(counts?.delivered) || 0
     };
 
     Object.keys(map).forEach(key => {
@@ -127,40 +172,62 @@ window.SupplierOrders = {
 
   viewDetail: async (orderId) => {
     try {
+      DashboardApp.showLoading(true);
       const response = await BrandiaAPI.Supplier.getOrderById(orderId);
+      
+      if (!response.success || !response.data) {
+        throw new Error('Commande non trouvée');
+      }
+
       const order = response.data;
       SupplierOrders.state.selectedOrder = order;
+      
+      // 🔧 CORRECTION : Normaliser le statut
+      const status = order.status || order.payment_status || 'pending';
 
       document.getElementById('order-detail-number').textContent = '#' + (order.order_number || order.id);
       
       const content = document.getElementById('order-detail-content');
+      if (!content) {
+        console.error('[Orders] Container #order-detail-content non trouvé');
+        return;
+      }
+
+      // 🔧 CORRECTION : Gestion sécurisée des items
+      const items = order.items || [];
+      
       content.innerHTML = `
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <div class="bg-slate-800 p-4 rounded-lg">
-            <p class="text-slate-400 text-xs mb-1">Date de commande</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+            <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Date de commande</p>
             <p class="text-white font-medium">${DashboardApp.formatDate(order.created_at)}</p>
           </div>
-          <div class="bg-slate-800 p-4 rounded-lg">
-            <p class="text-slate-400 text-xs mb-1">Statut</p>
-            <span class="badge badge-${order.status}">${DashboardApp.translateStatus(order.status)}</span>
+          <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+            <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Statut</p>
+            <span class="badge badge-${status}">${DashboardApp.translateStatus(status)}</span>
           </div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-lg mb-6">
-          <h4 class="font-semibold mb-3">Articles commandés</h4>
+        <div class="bg-slate-800 p-4 rounded-lg mb-6 border border-slate-700">
+          <h4 class="font-semibold mb-3 text-white flex items-center gap-2">
+            <i class="fas fa-box text-indigo-400"></i>
+            Articles commandés (${items.length})
+          </h4>
           <div class="space-y-3">
-            ${(order.items || []).map(item => `
-              <div class="flex justify-between items-center py-2 border-b border-slate-700 last:border-0">
+            ${items.length > 0 ? items.map(item => `
+              <div class="flex justify-between items-center py-3 border-b border-slate-700 last:border-0">
                 <div class="flex items-center gap-3">
-                  <img src="${item.main_image_url || 'placeholder.jpg'}" class="w-12 h-12 rounded object-cover bg-slate-700">
+                  <img src="${item.main_image_url || item.image || 'https://via.placeholder.com/48?text=Produit'}" 
+                       class="w-12 h-12 rounded object-cover bg-slate-700"
+                       onerror="this.src='https://via.placeholder.com/48?text=Produit'">
                   <div>
-                    <p class="text-white font-medium">${item.product_name}</p>
-                    <p class="text-xs text-slate-400">Qté: ${item.quantity}</p>
+                    <p class="text-white font-medium">${item.product_name || item.name || 'Produit'}</p>
+                    <p class="text-xs text-slate-400">Qté: ${item.quantity || 1} × ${DashboardApp.formatPrice(item.price || 0)}</p>
                   </div>
                 </div>
-                <p class="text-indigo-400 font-medium">${DashboardApp.formatPrice(item.price * item.quantity)}</p>
+                <p class="text-indigo-400 font-medium">${DashboardApp.formatPrice((item.price || 0) * (item.quantity || 1))}</p>
               </div>
-            `).join('')}
+            `).join('') : '<p class="text-slate-500 text-center py-4">Aucun détail d\'article disponible</p>'}
           </div>
           <div class="flex justify-between items-center pt-4 mt-4 border-t border-slate-700 font-bold text-lg">
             <span class="text-white">Total</span>
@@ -168,33 +235,43 @@ window.SupplierOrders = {
           </div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-lg">
-          <h4 class="font-semibold mb-2">Adresse de livraison</h4>
+        <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+          <h4 class="font-semibold mb-2 text-white flex items-center gap-2">
+            <i class="fas fa-map-marker-alt text-indigo-400"></i>
+            Adresse de livraison
+          </h4>
           <p class="text-slate-300 text-sm whitespace-pre-line">${order.shipping_address || 'Non spécifiée'}</p>
         </div>
       `;
 
       // Actions selon statut
       const actions = document.getElementById('order-actions');
-      actions.innerHTML = '';
-      
-      if (order.status === 'paid') {
-        actions.innerHTML = `
-          <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" class="btn-primary px-6 py-2.5 rounded-lg">
-            <i class="fas fa-truck mr-2"></i>Marquer comme expédiée
-          </button>
-        `;
-      } else if (order.status === 'shipped') {
-        actions.innerHTML = `
-          <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 rounded-lg text-white">
-            <i class="fas fa-check mr-2"></i>Marquer comme livrée
-          </button>
-        `;
+      if (actions) {
+        actions.innerHTML = '';
+        
+        if (status === 'paid') {
+          actions.innerHTML = `
+            <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" class="btn-primary px-6 py-2.5 rounded-lg">
+              <i class="fas fa-truck mr-2"></i>Marquer comme expédiée
+            </button>
+          `;
+        } else if (status === 'shipped') {
+          actions.innerHTML = `
+            <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 rounded-lg text-white transition-colors">
+              <i class="fas fa-check mr-2"></i>Marquer comme livrée
+            </button>
+          `;
+        } else {
+          actions.innerHTML = `<p class="text-slate-500 text-sm">Aucune action disponible pour ce statut</p>`;
+        }
       }
 
       DashboardApp.openModal('order-modal');
     } catch (error) {
-      DashboardApp.showToast('Erreur chargement détails', 'error');
+      console.error('[Orders] Erreur détail:', error);
+      DashboardApp.showToast('Erreur chargement détails: ' + error.message, 'error');
+    } finally {
+      DashboardApp.showLoading(false);
     }
   },
 
@@ -205,11 +282,15 @@ window.SupplierOrders = {
       DashboardApp.closeModal('order-modal');
       SupplierOrders.loadOrders();
     } catch (error) {
-      DashboardApp.showToast('Erreur mise à jour statut', 'error');
+      console.error('[Orders] Erreur update status:', error);
+      DashboardApp.showToast('Erreur mise à jour statut: ' + error.message, 'error');
     }
   }
 };
 
+// Exposer globalement
 window.filterOrders = (status) => SupplierOrders.filter(status);
 window.showOrderDetail = (id) => SupplierOrders.viewDetail(id);
 window.updateOrderStatus = (id, status) => SupplierOrders.updateStatus(id, status);
+
+console.log('[SupplierOrders] Module chargé v2.0');
