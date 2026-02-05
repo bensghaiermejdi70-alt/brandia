@@ -599,39 +599,35 @@
     </section>
 
     <!-- ORDERS SECTION -->
-    <section id="orders" class="section space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Commandes</h2>
-        <p class="text-slate-400 text-sm mt-1">Suivez et gérez vos commandes clients</p>
-      </div>
+<section id="orders" class="section space-y-6">
+  <div>
+    <h2 class="text-2xl font-bold text-white">Commandes</h2>
+    <p class="text-slate-400 text-sm mt-1">Suivez et gérez vos commandes clients</p>
+  </div>
 
-      <div class="card rounded-xl p-2">
-        <div class="flex gap-2 overflow-x-auto">
-          <button onclick="filterOrders('all')" class="order-tab active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-indigo-600 text-white" data-filter="all">
-            Toutes <span class="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-all">0</span>
-          </button>
-          <button onclick="filterOrders('pending')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="pending">
-            À préparer <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-pending">0</span>
-          </button>
-          <button onclick="filterOrders('paid')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="paid">
-            Payées <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-paid">0</span>
-          </button>
-          <button onclick="filterOrders('shipped')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="shipped">
-            Expédiées <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-shipped">0</span>
-          </button>
-          <button onclick="filterOrders('delivered')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="delivered">
-            Livrées <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-delivered">0</span>
-          </button>
-        </div>
-      </div>
+  <div class="card rounded-xl p-2">
+    <div class="flex gap-2 overflow-x-auto">
+      <button onclick="filterOrders('all')" class="order-tab active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-indigo-600 text-white" data-filter="all">
+        Toutes <span class="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-all">0</span>
+      </button>
+      <button onclick="filterOrders('pending')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="pending">
+        À préparer <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-pending">0</span>
+      </button>
+      <button onclick="filterOrders('shipped')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="shipped">
+        Expédiées <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-shipped">0</span>
+      </button>
+      <button onclick="filterOrders('delivered')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="delivered">
+        Livrées <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-delivered">0</span>
+      </button>
+    </div>
+  </div>
 
-      <div id="orders-list" class="space-y-4">
-        <div class="text-center py-12">
-          <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
-        </div>
-      </div>
-    </section>
-
+  <div id="orders-list" class="space-y-4">
+    <div class="text-center py-12">
+      <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
+    </div>
+  </div>
+</section>
     <!-- PAYMENTS SECTION -->
     <section id="payments" class="section space-y-6">
       <div>
