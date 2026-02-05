@@ -14,52 +14,47 @@ window.SupplierOrders = {
   },
 
   loadOrders: async () => {
-    try {
-      DashboardApp.showLoading(true);
-      console.log('[Orders] Chargement avec filtre:', SupplierOrders.state.currentFilter);
-      
-      const response = await BrandiaAPI.Supplier.getOrders(SupplierOrders.state.currentFilter);
-      console.log('[Orders] Réponse API:', response);
+  try {
+    DashboardApp.showLoading(true);
+    console.log('[Orders] Chargement avec filtre:', SupplierOrders.state.currentFilter);
+    
+    // 🔧 CORRECTION : Ne pas envoyer 'all' au backend, envoyer null
+    const statusFilter = SupplierOrders.state.currentFilter === 'all' 
+      ? null 
+      : SupplierOrders.state.currentFilter;
+    
+    const response = await BrandiaAPI.Supplier.getOrders(statusFilter);
+    console.log('[Orders] Réponse API:', response);
 
-      // 🔧 CORRECTION : Gestion robuste de la structure de réponse
-      let orders = [];
-      let counts = { all: 0, pending: 0, paid: 0, shipped: 0, delivered: 0 };
+    // Gestion robuste de la structure de réponse
+    let orders = [];
+    let counts = { all: 0, pending: 0, paid: 0, shipped: 0, delivered: 0 };
 
-      if (response.success && response.data) {
-        // Structure attendue : { data: { orders: [], counts: {} } }
-        if (response.data.orders && Array.isArray(response.data.orders)) {
-          orders = response.data.orders;
-          counts = response.data.counts || counts;
-        } 
-        // Fallback : si data est directement un tableau
-        else if (Array.isArray(response.data)) {
-          orders = response.data;
-        }
+    if (response.success && response.data) {
+      if (response.data.orders && Array.isArray(response.data.orders)) {
+        orders = response.data.orders;
+        counts = response.data.counts || counts;
+      } else if (Array.isArray(response.data)) {
+        orders = response.data;
       }
-
-      // 🔧 CORRECTION : Normaliser les statuts (payment_status → status)
-      orders = orders.map(order => ({
-        ...order,
-        status: order.status || order.payment_status || 'pending'
-      }));
-
-      console.log('[Orders] Commandes parsées:', orders.length);
-      
-      SupplierOrders.state.orders = orders;
-      SupplierOrders.render();
-      SupplierOrders.updateCounts(counts);
-      
-    } catch (error) {
-      console.error('[Orders] Erreur chargement:', error);
-      SupplierOrders.state.orders = [];
-      SupplierOrders.render();
-      SupplierOrders.updateCounts({ all: 0, pending: 0, paid: 0, shipped: 0, delivered: 0 });
-      DashboardApp.showToast('Erreur de chargement des commandes', 'error');
-    } finally {
-      DashboardApp.showLoading(false);
     }
-  },
 
+    console.log('[Orders] Commandes reçues:', orders.length, '- Filtre appliqué:', statusFilter || 'aucun (toutes)');
+    
+    SupplierOrders.state.orders = orders;
+    SupplierOrders.render();
+    SupplierOrders.updateCounts(counts);
+    
+  } catch (error) {
+    console.error('[Orders] Erreur chargement:', error);
+    SupplierOrders.state.orders = [];
+    SupplierOrders.render();
+    SupplierOrders.updateCounts({ all: 0, pending: 0, paid: 0, shipped: 0, delivered: 0 });
+    DashboardApp.showToast('Erreur de chargement des commandes', 'error');
+  } finally {
+    DashboardApp.showLoading(false);
+  }
+},
   render: () => {
     const container = document.getElementById('orders-list');
     if (!container) {

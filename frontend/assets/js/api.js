@@ -205,119 +205,121 @@ const API_BASE = isLocal
     }
   };
 
-  // Supplier API
-  const SupplierAPI = {
-    init: () => {
-      const user = storage.getUser();
-      
-      if (!storage.getToken()) {
-        window.location.href = '../login.html?redirect=supplier/dashboard';
-        return false;
-      }
-      
-      if (user?.role !== 'supplier') {
-        alert('Accès réservé aux fournisseurs');
-        window.location.href = '../index.html';
-        return false;
-      }
-      
-      return true;
-    },
-
-    getStats: async () => {
-      try {
-        return await apiFetch('/supplier/stats');
-      } catch (error) {
-        return { 
-          success: true, 
-          data: {
-            stats: { totalSales: 0, totalOrders: 0, productsCount: 0, balance: 0 },
-            recentOrders: [],
-            topProducts: []
-          }
-        };
-      }
-    },
-
-    getProducts: async (params = {}) => {
-      try {
-        const queryString = new URLSearchParams(params).toString();
-        return await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`);
-      } catch (error) {
-        return { success: false, data: { products: [] }, message: error.message };
-      }
-    },
-
-    createProduct: async (productData) => {
-      return await apiFetch('/supplier/products', {
-        method: 'POST',
-        body: JSON.stringify(productData)
-      });
-    },
-
-    updateProduct: async (id, productData) => {
-      return await apiFetch(`/supplier/products/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(productData)
-      });
-    },
-
-    deleteProduct: async (id) => {
-      return await apiFetch(`/supplier/products/${id}`, {
-        method: 'DELETE'
-      });
-    },
-
-    getOrders: async (status = null) => {
-      const query = status ? `?status=${status}` : '';
-      return await apiFetch(`/supplier/orders${query}`);
-    },
-
-    getOrderById: async (id) => {
-      return await apiFetch(`/supplier/orders/${id}`);
-    },
-
-    updateOrderStatus: async (orderId, status) => {
-      return await apiFetch(`/supplier/orders/${orderId}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status })
-      });
-    },
-
-    getPayments: async () => {
-      return await apiFetch('/supplier/payments');
-    },
-
-    requestPayout: async (amount) => {
-      return await apiFetch('/supplier/payouts', {
-        method: 'POST',
-        body: JSON.stringify({ amount })
-      });
-    },
-
-    getCampaigns: async () => {
-      return await apiFetch('/supplier/campaigns');
-    },
-
-    createCampaign: async (campaignData) => {
-      return await apiFetch('/supplier/campaigns', {
-        method: 'POST',
-        body: JSON.stringify(campaignData)
-      });
-    },
-
-    getPublicCampaign: async (supplierId, productId) => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/public/campaigns?supplier=${supplierId}&product=${productId}`, {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' }
-        });
-        return await response.json();
-      } catch (error) {
-        return { success: false, data: null };
-      }
+ // Supplier API
+const SupplierAPI = {
+  init: () => {
+    const user = storage.getUser();
+    
+    if (!storage.getToken()) {
+      window.location.href = '../login.html?redirect=supplier/dashboard';
+      return false;
     }
-  };
+    
+    if (user?.role !== 'supplier') {
+      alert('Accès réservé aux fournisseurs');
+      window.location.href = '../index.html';
+      return false;
+    }
+    
+    return true;
+  },
+
+  getStats: async () => {
+    try {
+      return await apiFetch('/supplier/stats');
+    } catch (error) {
+      return { 
+        success: true, 
+        data: {
+          stats: { totalSales: 0, totalOrders: 0, productsCount: 0, balance: 0 },
+          recentOrders: [],
+          topProducts: []
+        }
+      };
+    }
+  },
+
+  getProducts: async (params = {}) => {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      return await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`);
+    } catch (error) {
+      return { success: false, data: { products: [] }, message: error.message };
+    }
+  },
+
+  createProduct: async (productData) => {
+    return await apiFetch('/supplier/products', {
+      method: 'POST',
+      body: JSON.stringify(productData)
+    });
+  },
+
+  updateProduct: async (id, productData) => {
+    return await apiFetch(`/supplier/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData)
+    });
+  },
+
+  deleteProduct: async (id) => {
+    return await apiFetch(`/supplier/products/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // 🔧 CORRECTION : getOrders avec gestion de 'all'
+  getOrders: async (status = null) => {
+  // Ne pas envoyer le paramètre si null, undefined ou 'all'
+  const query = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
+  return await apiFetch(`/supplier/orders${query}`);
+},
+
+  getOrderById: async (id) => {
+    return await apiFetch(`/supplier/orders/${id}`);
+  },
+
+  updateOrderStatus: async (orderId, status) => {
+    return await apiFetch(`/supplier/orders/${orderId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  },
+
+  getPayments: async () => {
+    return await apiFetch('/supplier/payments');
+  },
+
+  requestPayout: async (amount) => {
+    return await apiFetch('/supplier/payouts', {
+      method: 'POST',
+      body: JSON.stringify({ amount })
+    });
+  },
+
+  getCampaigns: async () => {
+    return await apiFetch('/supplier/campaigns');
+  },
+
+  createCampaign: async (campaignData) => {
+    return await apiFetch('/supplier/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(campaignData)
+    });
+  },
+
+  getPublicCampaign: async (supplierId, productId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/public/campaigns?supplier=${supplierId}&product=${productId}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, data: null };
+    }
+  }
+};
 
   // Cart API
   const CartAPI = {
