@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER ORDERS MODULE - CORRIGÉ V2.2
+// SUPPLIER ORDERS MODULE - CORRIGÉ V2.3
 // ============================================
 
 window.SupplierOrders = {
@@ -15,50 +15,48 @@ window.SupplierOrders = {
   },
 
   loadOrders: async () => {
-  try {
-    DashboardApp.showLoading(true);
-    console.log('[Orders] === LOAD ORDERS ===');
-    console.log('[Orders] Filtre actuel:', SupplierOrders.state.currentFilter);
-    
-    // 🔧 CORRECTION : Toujours envoyer le status au backend
-    // 'all' = pas de filtre, sinon envoyer la valeur exacte
-    const statusToSend = SupplierOrders.state.currentFilter === 'all' 
-      ? null 
-      : SupplierOrders.state.currentFilter;
+    try {
+      DashboardApp.showLoading(true);
+      console.log('[Orders] Chargement avec filtre:', SupplierOrders.state.currentFilter);
+      
+      const statusFilter = SupplierOrders.state.currentFilter === 'all' 
+        ? null 
+        : SupplierOrders.state.currentFilter;
+      
+      console.log('[Orders] Appel API avec statusFilter:', statusFilter);
+      
+      const response = await BrandiaAPI.Supplier.getOrders(statusFilter);
+      console.log('[Orders] Réponse API:', response);
 
-    console.log('[Orders] Envoi API avec status:', statusToSend || '(aucun - toutes)');
+      let orders = [];
+      let counts = { all: 0, pending: 0, shipped: 0, delivered: 0 };
 
-    const response = await BrandiaAPI.Supplier.getOrders(statusToSend);
-
-    if (!response.success) {
-      throw new Error(response.message || 'Erreur API');
-    }
-
-    let orders = [];
-    let counts = { all: 0, pending: 0, shipped: 0, delivered: 0 };
-
-    if (response.data) {
-      if (Array.isArray(response.data.orders)) {
-        orders = response.data.orders;
-        counts = response.data.counts || counts;
+      if (response.success && response.data) {
+        if (response.data.orders && Array.isArray(response.data.orders)) {
+          orders = response.data.orders;
+          counts = response.data.counts || counts;
+        } else if (Array.isArray(response.data)) {
+          orders = response.data;
+        }
       }
-    }
 
-    console.log('[Orders] Reçu:', orders.length, 'commandes');
-    
-    SupplierOrders.state.orders = orders;
-    SupplierOrders.render();
-    SupplierOrders.updateCounts(counts);
-    
-  } catch (error) {
-    console.error('[Orders] ERREUR:', error);
-    SupplierOrders.state.orders = [];
-    SupplierOrders.render();
-    SupplierOrders.updateCounts({ all: 0, pending: 0, shipped: 0, delivered: 0 });
-  } finally {
-    DashboardApp.showLoading(false);
-  }
-},
+      console.log('[Orders] Commandes reçues:', orders.length);
+      
+      SupplierOrders.state.orders = orders;
+      SupplierOrders.render();
+      SupplierOrders.updateCounts(counts);
+      
+    } catch (error) {
+      console.error('[Orders] Erreur chargement:', error);
+      SupplierOrders.state.orders = [];
+      SupplierOrders.render();
+      SupplierOrders.updateCounts({ all: 0, pending: 0, shipped: 0, delivered: 0 });
+      DashboardApp.showToast('Erreur de chargement des commandes', 'error');
+    } finally {
+      DashboardApp.showLoading(false);
+    }
+  },
+
   render: () => {
     const container = document.getElementById('orders-list');
     if (!container) {
@@ -127,7 +125,6 @@ window.SupplierOrders = {
     }).join('');
   },
 
-  // 🔧 AJOUT : Méthode translateStatus locale
   translateStatus: (status) => {
     const map = {
       pending: 'En attente',
@@ -141,27 +138,18 @@ window.SupplierOrders = {
   },
 
   updateCounts: (counts) => {
-  const map = {
-    all: parseInt(counts?.all) || 0,
-    pending: parseInt(counts?.pending) || 0,
-    shipped: parseInt(counts?.shipped) || 0,
-    delivered: parseInt(counts?.delivered) || 0
-  };
+    const map = {
+      all: parseInt(counts?.all) || 0,
+      pending: parseInt(counts?.pending) || 0,
+      shipped: parseInt(counts?.shipped) || 0,
+      delivered: parseInt(counts?.delivered) || 0
+    };
 
-  Object.keys(map).forEach(key => {
-    const el = document.getElementById(`count-${key}`);
-    if (el) el.textContent = map[key];
-  });
+    Object.keys(map).forEach(key => {
+      const el = document.getElementById(`count-${key}`);
+      if (el) el.textContent = map[key];
+    });
 
-  // Badge sidebar (pending uniquement)
-  const badge = document.getElementById('order-badge');
-  if (badge) {
-    badge.textContent = map.pending;
-    badge.classList.toggle('hidden', map.pending === 0);
-  }
-},
-
-    // Badge sidebar
     const badge = document.getElementById('order-badge');
     if (badge) {
       badge.textContent = map.pending;
@@ -169,30 +157,20 @@ window.SupplierOrders = {
     }
   },
 
-  // 🔧 CORRECTION CRITIQUE : Méthode filter avec logs de debug
   filter: (status) => {
-  console.log('[Orders] === FILTER ===');
-  console.log('[Orders] Clic sur:', status);
-
-  // 🔧 Mettre à jour le state
-  SupplierOrders.state.currentFilter = status;
-
-  // Update UI tabs
-  document.querySelectorAll('.order-tab').forEach(tab => {
-    tab.classList.remove('active', 'bg-indigo-600', 'text-white');
-    tab.classList.add('text-slate-400');
+    console.log('[Orders] Filter appelé avec:', status);
     
-    if (tab.getAttribute('data-filter') === status) {
-      tab.classList.add('active', 'bg-indigo-600', 'text-white');
-      tab.classList.remove('text-slate-400');
-    }
-  });
+    SupplierOrders.state.currentFilter = status;
+    
+    document.querySelectorAll('.order-tab').forEach(tab => {
+      tab.classList.remove('active', 'bg-indigo-600', 'text-white');
+      tab.classList.add('text-slate-400');
+      if (tab.getAttribute('data-filter') === status) {
+        tab.classList.add('active', 'bg-indigo-600', 'text-white');
+        tab.classList.remove('text-slate-400');
+      }
+    });
 
-  // 🔧 CORRECTION : Toujours recharger depuis l'API
-  SupplierOrders.loadOrders();
-},
-    // Recharger les données depuis l'API
-    console.log('[Orders] Rechargement des données avec filtre:', status);
     SupplierOrders.loadOrders();
   },
 
@@ -314,7 +292,7 @@ window.SupplierOrders = {
   }
 };
 
-// 🔧 CORRECTION : Exposer globalement avec vérification
+// Exposer globalement
 window.filterOrders = (status) => {
   console.log('[Global] filterOrders appelé avec:', status);
   if (window.SupplierOrders) {
@@ -336,4 +314,4 @@ window.updateOrderStatus = (id, status) => {
   }
 };
 
-console.log('[SupplierOrders] Module chargé v2.2');
+console.log('[SupplierOrders] Module chargé v2.3');
