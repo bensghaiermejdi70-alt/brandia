@@ -563,7 +563,114 @@ class SupplierController {
     }
   }
 }
+// ==========================================
+// VALIDATION PROMOTIONS 
+// ==========================================
 
+/**
+ * Valide une promotion et calcule la réduction
+ * Appelé par le OrderController lors du checkout
+ */
+async validatePromotion(req, res) {
+    try {
+        const { code, productIds, totalAmount } = req.body;
+        const userId = req.user?.id;
+
+        if (!code) {
+            return res.status(400).json({ success: false, message: 'Code promo requis' });
+        }
+
+        // Chercher la promotion par code
+        const promoResult = await db.query(`
+            SELECT p.*, u.id as supplier_user_id
+            FROM promotions p
+            JOIN users u ON p.supplier_id = u.id
+            WHERE p.code = $1 
+            AND p.status = 'active'
+            AND p.start_date <= CURRENT_DATE 
+            AND p.end_date >= CURRENT_DATE
+            AND (p.max_usage IS NULL OR p.usage_count < p.max_usage)
+            LIMIT 1
+        `, [code.toUpperCase()]);
+
+        if (promoResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Code promo invalide ou expiré' 
+            });
+        }
+
+        const promo = promoResult.rows[0];
+
+        // Vérifier si le code n'a pas déjà été utilisé par ce client
+        // (Optionnel - à implémenter avec une table order_promotions)
+
+        // Vérifier si la promo s'applique aux produits du panier
+        let applicable = false;
+        let discountAmount = 0;
+
+        if (promo.applies_to === 'all') {
+            applicable = true;
+        } else if (promo.applies_to === 'products' && productIds) {
+            const productCheck = await db.query(`
+                SELECT 1 FROM promotion_products 
+                WHERE promotion_id = $1 AND product_id = ANY($2)
+                LIMIT 1
+            `, [promo.id, productIds]);
+            applicable = productCheck.rows.length > 0;
+        }
+
+        if (!applicable) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Ce code ne s\'applique pas à ces produits' 
+            });
+        }
+
+        // Calculer la réduction
+        if (promo.type === 'percentage') {
+            discountAmount = totalAmount * (promo.value / 100);
+        } else if (promo.type === 'fixed') {
+            discountAmount = Math.min(promo.value, totalAmount); // Ne pas dépasser le total
+        }
+
+        res.json({
+            success: true,
+            data: {
+                promo_id: promo.id,
+                code: promo.code,
+                name: promo.name,
+                type: promo.type,
+                value: promo.value,
+                discount_amount: parseFloat(discountAmount.toFixed(2)),
+                final_amount: parseFloat((totalAmount - discountAmount).toFixed(2))
+            }
+        });
+
+    } catch (error) {
+        console.error('[ValidatePromotion] Error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+/**
+ * Incrémente le compteur d'utilisation d'une promotion
+ * Appelé après confirmation de commande
+ */
+async incrementPromoUsage(promoId) {
+    try {
+        await db.query(`
+            UPDATE promotions 
+            SET usage_count = usage_count + 1,
+                updated_at = NOW()
+            WHERE id = $1
+        `, [promoId]);
+        return true;
+    } catch (error) {
+        console.error('[IncrementPromoUsage] Error:', error);
+        return false;
+    }
+}
 // ==========================================
 // EXPORT
 // ==========================================

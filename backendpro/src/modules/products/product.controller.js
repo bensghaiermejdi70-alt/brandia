@@ -1,5 +1,5 @@
 // ============================================
-// PRODUCT CONTROLLER - Logique CRUD Produits
+// PRODUCT CONTROLLER - Logique CRUD Produits (AVEC PROMOTIONS)
 // ============================================
 
 const ProductModel = require('./product.model');
@@ -14,16 +14,14 @@ const generateSlug = (name) => {
 };
 
 const ProductController = {
-    // Liste des produits (public)
+    // Liste des produits (public) - VERSION CLASSIQUE (sans promo pour compatibilité)
     list: async (req, res) => {
         try {
             const { category, search, limit, offset } = req.query;
             
-            // LOG DEBUG CRITIQUE
             console.log('[CONTROLLER] Query params reçus:', req.query);
             console.log('[CONTROLLER] Category reçue:', category);
-            console.log('[CONTROLLER] Category type:', typeof category);
-            
+
             const products = await ProductModel.findAll({
                 category,
                 search,
@@ -48,7 +46,44 @@ const ProductController = {
         }
     },
 
-    // Détail d'un produit (public)
+    // ==========================================
+    // NOUVEAU: Liste avec promotions intégrées
+    // ==========================================
+    listWithPromotions: async (req, res) => {
+        try {
+            const { category, search, limit, offset } = req.query;
+            
+            console.log('[CONTROLLER] listWithPromotions - params:', req.query);
+
+            const products = await ProductModel.findAllWithPromotions({
+                category,
+                search,
+                limit: parseInt(limit) || 20,
+                offset: parseInt(offset) || 0
+            });
+
+            // Calculer stats des promotions
+            const promoCount = products.filter(p => p.has_promotion).length;
+            
+            console.log(`[CONTROLLER] ${products.length} produits, ${promoCount} en promotion`);
+
+            res.json({
+                success: true,
+                count: products.length,
+                promo_count: promoCount,
+                data: { products }
+            });
+
+        } catch (error) {
+            logger.error('❌ Erreur liste produits avec promotions:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur serveur'
+            });
+        }
+    },
+
+    // Détail d'un produit (public) - VERSION CLASSIQUE
     detail: async (req, res) => {
         try {
             const { id } = req.params;
@@ -69,6 +104,36 @@ const ProductController = {
 
         } catch (error) {
             logger.error('❌ Erreur détail produit:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur serveur'
+            });
+        }
+    },
+
+    // ==========================================
+    // NOUVEAU: Détail avec promotion
+    // ==========================================
+    detailWithPromotion: async (req, res) => {
+        try {
+            const { id } = req.params;
+            
+            const product = await ProductModel.findByIdWithPromotion(id);
+            
+            if (!product) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Produit non trouvé'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: { product }
+            });
+
+        } catch (error) {
+            logger.error('❌ Erreur détail produit avec promotion:', error);
             res.status(500).json({
                 success: false,
                 message: 'Erreur serveur'
@@ -107,7 +172,6 @@ const ProductController = {
     // Créer un produit (fournisseur uniquement)
     create: async (req, res) => {
         try {
-            // Vérifier que l'utilisateur est un fournisseur
             if (req.user.role !== 'supplier') {
                 return res.status(403).json({
                     success: false,
@@ -121,7 +185,6 @@ const ProductController = {
                 main_image_url, category_slug, available_countries
             } = req.body;
 
-            // Validation
             if (!name || !price || !category_slug) {
                 return res.status(400).json({
                     success: false,
@@ -129,9 +192,7 @@ const ProductController = {
                 });
             }
 
-            // ✅ CORRECTION CRITIQUE : Utiliser req.user.id au lieu de req.user.supplierId
             const supplier_id = req.user.id;
-
             const slug = generateSlug(name);
 
             const product = await ProductModel.create({
@@ -172,7 +233,6 @@ const ProductController = {
             const { id } = req.params;
             const updates = req.body;
 
-            // Vérifier que le produit existe
             const existing = await ProductModel.findById(id);
             if (!existing) {
                 return res.status(404).json({
@@ -181,8 +241,6 @@ const ProductController = {
                 });
             }
 
-            // Vérifier que le fournisseur est propriétaire du produit
-            // ✅ CORRECTION : Utiliser req.user.id pour la vérification
             if (existing.supplier_id !== req.user.id) {
                 return res.status(403).json({
                     success: false,
@@ -214,7 +272,6 @@ const ProductController = {
         try {
             const { id } = req.params;
 
-            // Vérifier que le produit existe
             const existing = await ProductModel.findById(id);
             if (!existing) {
                 return res.status(404).json({
@@ -223,8 +280,6 @@ const ProductController = {
                 });
             }
 
-            // Vérifier que le fournisseur est propriétaire
-            // ✅ CORRECTION : Utiliser req.user.id pour la vérification
             if (existing.supplier_id !== req.user.id) {
                 return res.status(403).json({
                     success: false,
@@ -250,7 +305,7 @@ const ProductController = {
         }
     },
 
-    // Produits en vedette (public)
+    // Produits en vedette (public) - VERSION CLASSIQUE
     featured: async (req, res) => {
         try {
             const { limit } = req.query;
@@ -265,6 +320,33 @@ const ProductController = {
 
         } catch (error) {
             logger.error('❌ Erreur produits en vedette:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur serveur'
+            });
+        }
+    },
+
+    // ==========================================
+    // NOUVEAU: Produits en vedette avec promotions
+    // ==========================================
+    featuredWithPromotions: async (req, res) => {
+        try {
+            const { limit } = req.query;
+            
+            const products = await ProductModel.findFeaturedWithPromotions(parseInt(limit) || 8);
+            
+            const promoCount = products.filter(p => p.has_promotion).length;
+
+            res.json({
+                success: true,
+                count: products.length,
+                promo_count: promoCount,
+                data: { products }
+            });
+
+        } catch (error) {
+            logger.error('❌ Erreur produits en vedette avec promotions:', error);
             res.status(500).json({
                 success: false,
                 message: 'Erreur serveur'
