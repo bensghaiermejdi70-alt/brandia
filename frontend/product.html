@@ -272,9 +272,8 @@ async function loadProduct() {
       throw new Error('API non chargée');
     }
     
-    const data = await BrandiaAPI.Products.getById(productId);
+    const data = await BrandiaAPI.Products.getByIdWithPromotion(productId);
     let product = null;
-    
     if (data && data.data && data.data.product) {
       product = data.data.product;
     } else if (data && data.data) {
@@ -341,17 +340,23 @@ function renderProduct(p) {
     brandEl.classList.add('hidden');
   }
   
-  const price = parseFloat(p.price) || 0;
-  document.getElementById('product-price').textContent = formatPrice(price);
-  
-  if (p.compare_price && parseFloat(p.compare_price) > price) {
-    const oldPrice = parseFloat(p.compare_price);
-    document.getElementById('product-old-price').textContent = formatPrice(oldPrice);
-    document.getElementById('product-old-price').classList.remove('hidden');
-    const pct = Math.round(((oldPrice - price) / oldPrice) * 100);
-    const discountEl = document.getElementById('product-discount');
-    discountEl.textContent = `-${pct}%`;
-    discountEl.classList.remove('hidden');
+  // Gestion du prix avec promotion
+  const hasPromo = p.has_promotion || p.promo_id;
+  const finalPrice = parseFloat(p.final_price) || parseFloat(p.price) || 0;
+  const originalPrice = parseFloat(p.original_price) || parseFloat(p.price) || 0;
+
+  if (hasPromo && originalPrice > finalPrice) {
+      document.getElementById('product-price').textContent = formatPrice(finalPrice);
+      document.getElementById('product-old-price').textContent = formatPrice(originalPrice);
+      document.getElementById('product-old-price').classList.remove('hidden');
+      
+      const discountEl = document.getElementById('product-discount');
+      discountEl.textContent = p.savings_display || p.discount_display || `-${Math.round((1 - finalPrice/originalPrice)*100)}%`;
+      discountEl.classList.remove('hidden');
+  } else {
+      document.getElementById('product-price').textContent = formatPrice(finalPrice);
+      document.getElementById('product-old-price').classList.add('hidden');
+      document.getElementById('product-discount').classList.add('hidden');
   }
   
   const imgUrl = (p.main_image_url || p.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600').trim();
@@ -434,13 +439,20 @@ function addToCart() {
   const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
   const existing = cart.find(x => x.id === currentProduct.id);
   
+  // Gestion du prix promo pour le panier
+  const hasPromo = currentProduct.has_promotion || currentProduct.promo_id;
+  const finalPrice = parseFloat(currentProduct.final_price) || parseFloat(currentProduct.price) || 0;
+  const originalPrice = parseFloat(currentProduct.original_price) || parseFloat(currentProduct.price) || 0;
   if (existing) {
     existing.quantity = (existing.quantity || 0) + currentQty;
   } else {
     cart.push({
       id: currentProduct.id,
       name: currentProduct.name,
-      price: parseFloat(currentProduct.price),
+      price: finalPrice, // Prix promo si existe
+      original_price: originalPrice, // Prix d'origine pour référence
+      has_promotion: hasPromo,
+      promo_code: currentProduct.promo_code || null,
       main_image_url: currentProduct.main_image_url,
       quantity: currentQty,
       supplier_id: currentSupplierId
