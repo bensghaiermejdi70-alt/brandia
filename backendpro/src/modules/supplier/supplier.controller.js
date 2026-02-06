@@ -30,6 +30,7 @@ try {
 
 class SupplierController {
   
+  // Uploads
   async uploadImage(req, res) {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'Aucune image fournie' });
@@ -51,6 +52,7 @@ class SupplierController {
     }
   }
 
+  // Dashboard
   async getStats(req, res) {
     try {
       const supplierId = req.user.id;
@@ -93,6 +95,7 @@ class SupplierController {
     }
   }
 
+  // Produits
   async getProducts(req, res) {
     try {
       const supplierId = req.user.id;
@@ -184,7 +187,7 @@ class SupplierController {
   }
 
   // ==========================================
-  // COMMANDES - CORRIGÉ
+  // COMMANDES
   // ==========================================
 
   async getOrders(req, res) {
@@ -377,7 +380,7 @@ class SupplierController {
       if (result.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Campagne non trouvée' });
       }
-      res.json({ success: true, message: 'Campagne mise à jour', data: result.rows[0] });
+      res.json({ success: true, data: result.rows[0] });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -463,13 +466,13 @@ class SupplierController {
           html: `<h1>Bonne nouvelle !</h1><p>Votre commande est en route.</p>`
         });
       }
-    } catch (error) {
-      console.error('[Email] Error:', error.message);
-    }
+         } catch (error) {
+        console.error('[Email] Error:', error.message);
+      }
   }
-}
+
   // ==========================================
-  // PROMOTIONS (NOUVEAU)
+  // PROMOTIONS
   // ==========================================
 
   async getPromotions(req, res) {
@@ -482,7 +485,6 @@ class SupplierController {
         WHERE supplier_id = $1 
         ORDER BY created_at DESC
       `, [supplierId]);
-      
       res.json({ success: true, data: result.rows });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -493,18 +495,15 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       const { name, type, value, code, max_usage, start_date, end_date } = req.body;
-      
+
       // Vérifier si le code existe déjà pour ce fournisseur
       const existing = await db.query(
         'SELECT id FROM promotions WHERE supplier_id = $1 AND code = $2',
         [supplierId, code]
       );
-      
+
       if (existing.rows.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Ce code promo existe déjà' 
-        });
+        return res.status(400).json({ success: false, message: 'Ce code promo existe déjà' });
       }
 
       const result = await db.query(`
@@ -513,7 +512,7 @@ class SupplierController {
         VALUES ($1, $2, $3, $4, $5, $6, 0, 'active', $7, $8)
         RETURNING *
       `, [supplierId, name, type, value, code, max_usage || null, start_date, end_date]);
-      
+
       res.json({ success: true, data: result.rows[0], message: 'Promotion créée avec succès' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -525,7 +524,7 @@ class SupplierController {
       const supplierId = req.user.id;
       const { id } = req.params;
       const { name, type, value, code, max_usage, status, start_date, end_date } = req.body;
-      
+
       const result = await db.query(`
         UPDATE promotions 
         SET name = $1, type = $2, value = $3, code = $4, max_usage = $5, 
@@ -533,11 +532,11 @@ class SupplierController {
         WHERE id = $9 AND supplier_id = $10
         RETURNING *
       `, [name, type, value, code, max_usage, status, start_date, end_date, id, supplierId]);
-      
+
       if (result.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Promotion non trouvée' });
       }
-      
+
       res.json({ success: true, data: result.rows[0], message: 'Promotion mise à jour' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -548,33 +547,35 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       const { id } = req.params;
-      
+
       const result = await db.query(
         'DELETE FROM promotions WHERE id = $1 AND supplier_id = $2 RETURNING id',
         [id, supplierId]
       );
-      
+
       if (result.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Promotion non trouvée' });
       }
-      
+
       res.json({ success: true, message: 'Promotion supprimée' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+}
+
 // ==========================================
-// EXPORT CRITIQUE - NE PAS MODIFIER
+// EXPORT
 // ==========================================
 
 const controller = new SupplierController();
 
-// Vérification que toutes les méthodes existent
 const requiredMethods = [
   'uploadImage', 'uploadCampaignVideo', 'getStats', 'getProducts', 'createProduct',
   'updateProduct', 'deleteProduct', 'getOrders', 'getOrderById', 'updateOrderStatus',
   'getPayments', 'requestPayout', 'getCampaigns', 'createCampaign', 'updateCampaign',
-  'deleteCampaign', 'getActiveCampaignForProduct', 'trackCampaignClick', 'trackCampaignView'
+  'deleteCampaign', 'getActiveCampaignForProduct', 'trackCampaignClick', 'trackCampaignView',
+  'getPromotions', 'createPromotion', 'updatePromotion', 'deletePromotion'
 ];
 
 const missingMethods = requiredMethods.filter(m => typeof controller[m] !== 'function');
@@ -586,6 +587,6 @@ if (missingMethods.length > 0) {
 console.log('[SupplierController] Toutes les méthodes sont définies ✓');
 
 module.exports = {
-    controller: controller,
+    controller,
     uploadMiddleware: upload.single('image')
 };
