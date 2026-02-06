@@ -1,6 +1,6 @@
 // ============================================
 // SUPPLIER ORDERS MODULE - Gestion des commandes
-// Version 2.4 - Correction filtrage statuts
+// Version 2.5 - Correction SyntaxError ligne 165
 // ============================================
 
 window.SupplierOrders = {
@@ -37,7 +37,7 @@ window.SupplierOrders = {
   setupEventListeners: () => {
     console.log('[Orders] Setup listeners');
     
-    // Filtres par onglet - CORRECTION CRITIQUE : utiliser data-filter
+    // Filtres par onglet
     document.querySelectorAll('.order-tab').forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.preventDefault();
@@ -61,7 +61,6 @@ window.SupplierOrders = {
       DashboardApp.showLoading(true);
       console.log('[Orders] Chargement avec filtre:', SupplierOrders.state.currentFilter);
       
-      // CORRECTION : Ne pas envoyer 'all' au backend, envoyer null ou rien
       const statusFilter = SupplierOrders.state.currentFilter === 'all' ? null : SupplierOrders.state.currentFilter;
       console.log('[Orders] Appel API avec statusFilter:', statusFilter);
       
@@ -72,11 +71,9 @@ window.SupplierOrders = {
         throw new Error(response.message || 'Erreur de chargement');
       }
 
-      // Gestion de la structure de réponse
       const responseData = response.data || {};
       SupplierOrders.state.orders = responseData.orders || [];
       
-      // CORRECTION : Utiliser les counts du backend ou calculer
       if (responseData.counts) {
         SupplierOrders.state.counts = responseData.counts;
       } else {
@@ -86,7 +83,6 @@ window.SupplierOrders = {
       console.log('[Orders] Commandes reçues:', SupplierOrders.state.orders.length);
       console.log('[Orders] Counts:', SupplierOrders.state.counts);
 
-      // Afficher toutes les commandes initialement
       SupplierOrders.state.filteredOrders = [...SupplierOrders.state.orders];
       SupplierOrders.renderOrders();
       SupplierOrders.updateCounts();
@@ -121,7 +117,7 @@ window.SupplierOrders = {
     SupplierOrders.state.currentFilter = filter;
     SupplierOrders.state.currentPage = 1;
     
-    // Update UI tabs - CORRECTION : sélectionner par data-filter
+    // Update UI tabs
     document.querySelectorAll('.order-tab').forEach(tab => {
       const tabFilter = tab.dataset.filter;
       tab.classList.remove('active', 'bg-indigo-600', 'text-white');
@@ -133,7 +129,6 @@ window.SupplierOrders = {
       }
     });
 
-    // Appliquer le filtrage côté client
     SupplierOrders.applyFilter();
   },
 
@@ -144,7 +139,6 @@ window.SupplierOrders = {
     if (filter === 'all') {
       SupplierOrders.state.filteredOrders = [...SupplierOrders.state.orders];
     } else {
-      // CORRECTION CRITIQUE : Filtrer sur order.status === filter
       SupplierOrders.state.filteredOrders = SupplierOrders.state.orders.filter(
         order => order.status === filter
       );
@@ -178,7 +172,6 @@ window.SupplierOrders = {
   updateCounts: () => {
     const counts = SupplierOrders.state.counts;
     
-    // Mettre à jour les badges des onglets
     const updateBadge = (id, value) => {
       const el = document.getElementById(id);
       if (el) el.textContent = value || 0;
@@ -212,14 +205,35 @@ window.SupplierOrders = {
       return;
     }
 
-    // Pagination
     const start = (SupplierOrders.state.currentPage - 1) * SupplierOrders.state.itemsPerPage;
     const end = start + SupplierOrders.state.itemsPerPage;
     const paginatedOrders = orders.slice(start, end);
 
+    // CORRECTION CRITIQUE : Ligne 165 - Template string proprement formatée
     container.innerHTML = paginatedOrders.map(order => {
       const statusBadge = SupplierOrders.getStatusBadge(order.status);
       
+      // Construction des boutons d'action selon le statut
+      let actionButtons = '';
+      
+      if (order.status === 'pending') {
+        actionButtons = `
+          <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" 
+                  class="w-8 h-8 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-lg transition-colors flex items-center justify-center"
+                  title="Marquer comme expédiée">
+            <i class="fas fa-shipping-fast text-xs"></i>
+          </button>
+        `;
+      } else if (order.status === 'shipped') {
+        actionButtons = `
+          <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" 
+                  class="w-8 h-8 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded-lg transition-colors flex items-center justify-center"
+                  title="Marquer comme livrée">
+            <i class="fas fa-check text-xs"></i>
+          </button>
+        `;
+      }
+
       return `
         <tr class="border-b border-slate-800 hover:bg-slate-800/30 transition-colors group">
           <td class="py-4 px-6">
@@ -243,20 +257,7 @@ window.SupplierOrders = {
                       title="Voir détails">
                 <i class="fas fa-eye text-xs"></i>
               </button>
-              ${order.status === 'pending' ? `
-                <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" 
-                        class="w-8 h-8 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-lg transition-colors flex items-center justify-center"
-                        title="Marquer comme expédiée">
-                  <i class="fas fa-shipping-fast text-xs"></i>
-                </button>
-              ` : ''}
-              ${order.status === 'shipped' ? `
-                <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" 
-                        class="w-8 h-8 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded-lg transition-colors flex items-center justify-center"
-                        title="Marquer comme livrée">
-                  <i class="fas fa-check text-xs"></i>
-                </button>
-              ` : ''}
+              ${actionButtons}
             </div>
           </td>
         </tr>
@@ -374,7 +375,6 @@ window.SupplierOrders = {
   },
 
   showOrderModal: (order) => {
-    // Créer le modal s'il n'existe pas
     let modal = document.getElementById('order-detail-modal');
     if (!modal) {
       modal = document.createElement('div');
@@ -391,6 +391,25 @@ window.SupplierOrders = {
 
     const statusBadge = SupplierOrders.getStatusBadge(order.status);
     const content = modal.querySelector('.modal-content');
+    
+    // Construction des boutons d'action du modal
+    let modalActions = '';
+    
+    if (order.status === 'pending') {
+      modalActions = `
+        <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped'); DashboardApp.closeModal('order-detail-modal');" 
+                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
+          <i class="fas fa-shipping-fast mr-2"></i>Marquer comme expédiée
+        </button>
+      `;
+    } else if (order.status === 'shipped') {
+      modalActions = `
+        <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered'); DashboardApp.closeModal('order-detail-modal');" 
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <i class="fas fa-check mr-2"></i>Marquer comme livrée
+        </button>
+      `;
+    }
     
     content.innerHTML = `
       <div class="p-6">
@@ -442,18 +461,7 @@ window.SupplierOrders = {
         ` : ''}
 
         <div class="flex justify-end gap-3">
-          ${order.status === 'pending' ? `
-            <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped'); DashboardApp.closeModal('order-detail-modal');" 
-                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
-              <i class="fas fa-shipping-fast mr-2"></i>Marquer comme expédiée
-            </button>
-          ` : ''}
-          ${order.status === 'shipped' ? `
-            <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered'); DashboardApp.closeModal('order-detail-modal');" 
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-              <i class="fas fa-check mr-2"></i>Marquer comme livrée
-            </button>
-          ` : ''}
+          ${modalActions}
           <button onclick="DashboardApp.closeModal('order-detail-modal')" 
                   class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
             Fermer
@@ -467,7 +475,9 @@ window.SupplierOrders = {
 
   updateStatus: async (orderId, newStatus) => {
     try {
-      if (!confirm(`Confirmer le changement de statut vers "${SupplierOrders.STATUS_MAP[newStatus]?.label || newStatus}" ?`)) {
+      const statusLabel = SupplierOrders.STATUS_MAP[newStatus]?.label || newStatus;
+      
+      if (!confirm(`Confirmer le changement de statut vers "${statusLabel}" ?`)) {
         return;
       }
 
@@ -480,7 +490,6 @@ window.SupplierOrders = {
 
       DashboardApp.showToast('Statut mis à jour avec succès', 'success');
       
-      // Recharger les commandes
       await SupplierOrders.loadOrders();
       
     } catch (error) {
@@ -492,7 +501,7 @@ window.SupplierOrders = {
   }
 };
 
-console.log('[SupplierOrders] Module chargé v2.4');
+console.log('[SupplierOrders] Module chargé v2.5 - Syntaxe corrigée');
 
-// Exposer globalement pour les onclick inline
+// Exposer globalement
 window.setOrderFilter = (filter) => SupplierOrders.setFilter(filter);
