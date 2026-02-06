@@ -1,6 +1,6 @@
 // ============================================
 // SUPPLIER ORDERS MODULE - Gestion des commandes
-// Version 2.5 - Correction SyntaxError ligne 165
+// Version 2.6 - Design Cards + Filtrage robuste
 // ============================================
 
 window.SupplierOrders = {
@@ -15,17 +15,18 @@ window.SupplierOrders = {
       delivered: 0
     },
     currentPage: 1,
-    itemsPerPage: 10
+    itemsPerPage: 10,
+    selectedOrder: null
   },
 
   // Mapping des statuts DB -> Affichage
   STATUS_MAP: {
-    pending: { label: 'En attente', class: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
-    paid: { label: 'Payée', class: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-    processing: { label: 'En préparation', class: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' },
-    shipped: { label: 'Expédiée', class: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-    delivered: { label: 'Livrée', class: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
-    cancelled: { label: 'Annulée', class: 'bg-red-500/20 text-red-400 border-red-500/30' }
+    pending: { label: 'En attente', class: 'badge-pending' },
+    paid: { label: 'Payée', class: 'badge-paid' },
+    processing: { label: 'En préparation', class: 'badge-processing' },
+    shipped: { label: 'Expédiée', class: 'badge-shipped' },
+    delivered: { label: 'Livrée', class: 'badge-delivered' },
+    cancelled: { label: 'Annulée', class: 'badge-cancelled' }
   },
 
   init: async () => {
@@ -183,14 +184,18 @@ window.SupplierOrders = {
     updateBadge('count-delivered', counts.delivered);
   },
 
-  getStatusBadge: (status) => {
-    const config = SupplierOrders.STATUS_MAP[status] || { 
-      label: status || 'Inconnu', 
-      class: 'bg-slate-500/20 text-slate-400 border-slate-500/30' 
-    };
-    return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.class}">${config.label}</span>`;
+  translateStatus: (status) => {
+    return SupplierOrders.STATUS_MAP[status]?.label || status || 'Inconnu';
   },
 
+  getStatusBadge: (status) => {
+    const config = SupplierOrders.STATUS_MAP[status] || { label: status || 'Inconnu', class: 'badge-pending' };
+    return `<span class="badge ${config.class} capitalize">${config.label}</span>`;
+  },
+
+  // ============================================
+  // RENDU EN CARDS (Design de l'ancien fichier)
+  // ============================================
   renderOrders: () => {
     const container = document.getElementById('orders-list');
     if (!container) {
@@ -201,66 +206,78 @@ window.SupplierOrders = {
     const orders = SupplierOrders.state.filteredOrders;
     
     if (orders.length === 0) {
-      SupplierOrders.renderEmpty('Aucune commande trouvée pour ce filtre');
+      const filterLabel = SupplierOrders.state.currentFilter !== 'all' 
+        ? `avec statut "${SupplierOrders.translateStatus(SupplierOrders.state.currentFilter)}"` 
+        : '';
+      
+      container.innerHTML = `
+        <div class="text-center py-12 text-slate-500">
+          <i class="fas fa-shopping-bag text-4xl mb-4 opacity-50"></i>
+          <p class="text-slate-400 mb-2">Aucune commande ${filterLabel}</p>
+          <p class="text-sm text-slate-600">Les commandes apparaîtront ici</p>
+        </div>
+      `;
       return;
     }
 
+    // Pagination
     const start = (SupplierOrders.state.currentPage - 1) * SupplierOrders.state.itemsPerPage;
     const end = start + SupplierOrders.state.itemsPerPage;
     const paginatedOrders = orders.slice(start, end);
 
-    // CORRECTION CRITIQUE : Ligne 165 - Template string proprement formatée
+    // Rendu en cards (style ancien fichier)
     container.innerHTML = paginatedOrders.map(order => {
-      const statusBadge = SupplierOrders.getStatusBadge(order.status);
+      const status = order.status || 'pending';
+      const orderNumber = order.order_number || order.id;
+      const statusBadge = SupplierOrders.getStatusBadge(status);
       
-      // Construction des boutons d'action selon le statut
+      // Déterminer les boutons d'action selon le statut
       let actionButtons = '';
       
-      if (order.status === 'pending') {
+      if (status === 'pending' || status === 'paid') {
         actionButtons = `
           <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" 
-                  class="w-8 h-8 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-lg transition-colors flex items-center justify-center"
-                  title="Marquer comme expédiée">
-            <i class="fas fa-shipping-fast text-xs"></i>
+                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm transition-colors text-white">
+            <i class="fas fa-truck mr-1"></i> Expédier
           </button>
         `;
-      } else if (order.status === 'shipped') {
+      } else if (status === 'shipped') {
         actionButtons = `
           <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" 
-                  class="w-8 h-8 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded-lg transition-colors flex items-center justify-center"
-                  title="Marquer comme livrée">
-            <i class="fas fa-check text-xs"></i>
+                  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm transition-colors text-white">
+            <i class="fas fa-check mr-1"></i> Marquer livrée
           </button>
         `;
       }
 
       return `
-        <tr class="border-b border-slate-800 hover:bg-slate-800/30 transition-colors group">
-          <td class="py-4 px-6">
-            <div class="font-mono text-indigo-400 font-medium">#${order.order_number || order.id}</div>
-            <div class="text-xs text-slate-500">${DashboardApp.formatDate(order.created_at)}</div>
-          </td>
-          <td class="py-4 px-6">
-            <div class="font-medium text-white">${order.customer_name || 'Client'}</div>
-            <div class="text-xs text-slate-400">${order.customer_email || ''}</div>
-          </td>
-          <td class="py-4 px-6 text-right font-medium text-white">
-            ${DashboardApp.formatPrice(order.total_amount)}
-          </td>
-          <td class="py-4 px-6 text-center">
-            ${statusBadge}
-          </td>
-          <td class="py-4 px-6 text-center">
-            <div class="flex items-center justify-center gap-2">
+        <div class="card rounded-xl p-6 flex flex-col md:flex-row gap-4 items-start md:items-center hover:shadow-lg transition-shadow border border-slate-800 bg-slate-900/50 mb-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-3 mb-2 flex-wrap">
+              <span class="font-mono text-indigo-400 font-bold text-lg">#${orderNumber}</span>
+              ${statusBadge}
+              ${status === 'pending' ? '<span class="animate-pulse w-2 h-2 bg-red-500 rounded-full" title="Nouvelle commande"></span>' : ''}
+            </div>
+            <p class="text-sm text-slate-400 mb-1">
+              <i class="far fa-calendar mr-1"></i> ${DashboardApp.formatDate(order.created_at)}
+            </p>
+            <p class="text-white font-medium flex items-center gap-2 flex-wrap">
+              <i class="far fa-user text-slate-500"></i> ${order.customer_name || 'Client'}
+              ${order.customer_email ? `<span class="text-slate-500 text-xs">(${order.customer_email})</span>` : ''}
+            </p>
+          </div>
+          
+          <div class="flex flex-col md:items-end gap-3 w-full md:w-auto">
+            <p class="text-2xl font-bold text-white">${DashboardApp.formatPrice(order.total_amount)}</p>
+            <div class="flex gap-2 flex-wrap">
               <button onclick="SupplierOrders.viewOrder(${order.id})" 
-                      class="w-8 h-8 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg transition-colors flex items-center justify-center"
-                      title="Voir détails">
-                <i class="fas fa-eye text-xs"></i>
+                      class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700 text-slate-300">
+                <i class="fas fa-eye mr-1"></i> Détails
               </button>
               ${actionButtons}
             </div>
-          </td>
-        </tr>
+          </div>
+        </div>
       `;
     }).join('');
   },
@@ -269,15 +286,11 @@ window.SupplierOrders = {
     const container = document.getElementById('orders-list');
     if (container) {
       container.innerHTML = `
-        <tr>
-          <td colspan="5" class="py-12 text-center text-slate-500">
-            <i class="fas fa-inbox text-4xl mb-4 opacity-50"></i>
-            <p class="text-lg">${message}</p>
-            <p class="text-sm text-slate-400 mt-2">
-              Les commandes apparaîtront ici
-            </p>
-          </td>
-        </tr>
+        <div class="text-center py-12 text-slate-500">
+          <i class="fas fa-inbox text-4xl mb-4 opacity-50"></i>
+          <p class="text-lg text-slate-400 mb-2">${message}</p>
+          <p class="text-sm text-slate-600">Les commandes apparaîtront ici</p>
+        </div>
       `;
     }
   },
@@ -389,27 +402,30 @@ window.SupplierOrders = {
       document.body.appendChild(modal);
     }
 
-    const statusBadge = SupplierOrders.getStatusBadge(order.status);
+    const status = order.status || 'pending';
+    const statusBadge = SupplierOrders.getStatusBadge(status);
     const content = modal.querySelector('.modal-content');
     
     // Construction des boutons d'action du modal
     let modalActions = '';
     
-    if (order.status === 'pending') {
+    if (status === 'pending' || status === 'paid') {
       modalActions = `
         <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped'); DashboardApp.closeModal('order-detail-modal');" 
-                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
-          <i class="fas fa-shipping-fast mr-2"></i>Marquer comme expédiée
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+          <i class="fas fa-truck mr-2"></i>Marquer comme expédiée
         </button>
       `;
-    } else if (order.status === 'shipped') {
+    } else if (status === 'shipped') {
       modalActions = `
         <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered'); DashboardApp.closeModal('order-detail-modal');" 
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
           <i class="fas fa-check mr-2"></i>Marquer comme livrée
         </button>
       `;
     }
+    
+    const items = order.items || [];
     
     content.innerHTML = `
       <div class="p-6">
@@ -440,22 +456,27 @@ window.SupplierOrders = {
           </div>
         ` : ''}
 
-        ${order.items && order.items.length > 0 ? `
+        ${items.length > 0 ? `
           <div class="mb-6">
-            <h4 class="text-sm font-medium text-slate-400 mb-3">Articles</h4>
+            <h4 class="text-sm font-medium text-slate-400 mb-3">Articles (${items.length})</h4>
             <div class="space-y-3">
-              ${order.items.map(item => `
+              ${items.map(item => `
                 <div class="flex items-center gap-4 bg-slate-800/30 rounded-lg p-3">
-                  <img src="${item.main_image_url || 'https://via.placeholder.com/60'}" 
-                       alt="${item.product_name}" 
-                       class="w-16 h-16 object-cover rounded-lg">
+                  <img src="${item.main_image_url || item.image || 'https://via.placeholder.com/60?text=Produit'}" 
+                       alt="${item.product_name || item.name || 'Produit'}" 
+                       class="w-16 h-16 object-cover rounded-lg"
+                       onerror="this.src='https://via.placeholder.com/60?text=Produit'">
                   <div class="flex-1">
-                    <p class="font-medium text-white">${item.product_name}</p>
-                    <p class="text-sm text-slate-400">Qté: ${item.quantity} × ${DashboardApp.formatPrice(item.unit_price)}</p>
+                    <p class="font-medium text-white">${item.product_name || item.name || 'Produit'}</p>
+                    <p class="text-sm text-slate-400">Qté: ${item.quantity || 1} × ${DashboardApp.formatPrice(item.unit_price || item.price || 0)}</p>
                   </div>
-                  <p class="font-medium text-white">${DashboardApp.formatPrice(item.total_price || (item.quantity * item.unit_price))}</p>
+                  <p class="font-medium text-white">${DashboardApp.formatPrice((item.unit_price || item.price || 0) * (item.quantity || 1))}</p>
                 </div>
               `).join('')}
+            </div>
+            <div class="flex justify-between items-center pt-4 mt-4 border-t border-slate-700">
+              <span class="text-slate-400">Total</span>
+              <span class="text-xl font-bold text-emerald-400">${DashboardApp.formatPrice(order.total_amount)}</span>
             </div>
           </div>
         ` : ''}
@@ -475,7 +496,7 @@ window.SupplierOrders = {
 
   updateStatus: async (orderId, newStatus) => {
     try {
-      const statusLabel = SupplierOrders.STATUS_MAP[newStatus]?.label || newStatus;
+      const statusLabel = SupplierOrders.translateStatus(newStatus);
       
       if (!confirm(`Confirmer le changement de statut vers "${statusLabel}" ?`)) {
         return;
@@ -490,6 +511,7 @@ window.SupplierOrders = {
 
       DashboardApp.showToast('Statut mis à jour avec succès', 'success');
       
+      // Recharger les commandes pour refléter le changement
       await SupplierOrders.loadOrders();
       
     } catch (error) {
@@ -501,7 +523,8 @@ window.SupplierOrders = {
   }
 };
 
-console.log('[SupplierOrders] Module chargé v2.5 - Syntaxe corrigée');
+console.log('[SupplierOrders] Module chargé v2.6 - Design Cards + Filtrage');
 
-// Exposer globalement
+// Exposer globalement pour les onclick inline
 window.setOrderFilter = (filter) => SupplierOrders.setFilter(filter);
+window.filterOrders = (filter) => SupplierOrders.setFilter(filter);
