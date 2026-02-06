@@ -224,6 +224,30 @@ const SupplierAPI = {
     return true;
   },
 
+  getPromotions: async () => {
+    return await apiFetch('/supplier/promotions');
+  },
+
+  createPromotion: async (promotionData) => {
+    return await apiFetch('/supplier/promotions', {
+      method: 'POST',
+      body: JSON.stringify(promotionData)
+    });
+  },
+
+  updatePromotion: async (id, promotionData) => {
+    return await apiFetch(`/supplier/promotions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(promotionData)
+    });
+  },
+
+  deletePromotion: async (id) => {
+    return await apiFetch(`/supplier/promotions/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
   getStats: async () => {
     try {
       return await apiFetch('/supplier/stats');

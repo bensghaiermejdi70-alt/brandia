@@ -30,7 +30,10 @@ router.post('/campaigns/track/view', controller.trackCampaignView);
 // ROUTES PROTÉGÉES (Authentification requise)
 // ============================================
 router.use(authMiddleware);
-
+router.get('/promotions', controller.getPromotions);
+router.post('/promotions', controller.createPromotion);
+router.put('/promotions/:id', controller.updatePromotion);
+router.delete('/promotions/:id', controller.deletePromotion);
 router.get('/stats', controller.getStats);
 router.get('/products', controller.getProducts);
 router.post('/upload-image', uploadMiddleware, controller.uploadImage);

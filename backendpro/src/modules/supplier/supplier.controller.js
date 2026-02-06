@@ -468,7 +468,101 @@ class SupplierController {
     }
   }
 }
+  // ==========================================
+  // PROMOTIONS (NOUVEAU)
+  // ==========================================
 
+  async getPromotions(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const result = await db.query(`
+        SELECT id, name, type, value, code, max_usage, usage_count, status, 
+               start_date, end_date, created_at
+        FROM promotions 
+        WHERE supplier_id = $1 
+        ORDER BY created_at DESC
+      `, [supplierId]);
+      
+      res.json({ success: true, data: result.rows });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async createPromotion(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { name, type, value, code, max_usage, start_date, end_date } = req.body;
+      
+      // Vérifier si le code existe déjà pour ce fournisseur
+      const existing = await db.query(
+        'SELECT id FROM promotions WHERE supplier_id = $1 AND code = $2',
+        [supplierId, code]
+      );
+      
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Ce code promo existe déjà' 
+        });
+      }
+
+      const result = await db.query(`
+        INSERT INTO promotions 
+        (supplier_id, name, type, value, code, max_usage, usage_count, status, start_date, end_date)
+        VALUES ($1, $2, $3, $4, $5, $6, 0, 'active', $7, $8)
+        RETURNING *
+      `, [supplierId, name, type, value, code, max_usage || null, start_date, end_date]);
+      
+      res.json({ success: true, data: result.rows[0], message: 'Promotion créée avec succès' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async updatePromotion(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { id } = req.params;
+      const { name, type, value, code, max_usage, status, start_date, end_date } = req.body;
+      
+      const result = await db.query(`
+        UPDATE promotions 
+        SET name = $1, type = $2, value = $3, code = $4, max_usage = $5, 
+            status = $6, start_date = $7, end_date = $8, updated_at = NOW()
+        WHERE id = $9 AND supplier_id = $10
+        RETURNING *
+      `, [name, type, value, code, max_usage, status, start_date, end_date, id, supplierId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Promotion non trouvée' });
+      }
+      
+      res.json({ success: true, data: result.rows[0], message: 'Promotion mise à jour' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async deletePromotion(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { id } = req.params;
+      
+      const result = await db.query(
+        'DELETE FROM promotions WHERE id = $1 AND supplier_id = $2 RETURNING id',
+        [id, supplierId]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Promotion non trouvée' });
+      }
+      
+      res.json({ success: true, message: 'Promotion supprimée' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 // ==========================================
 // EXPORT CRITIQUE - NE PAS MODIFIER
 // ==========================================
