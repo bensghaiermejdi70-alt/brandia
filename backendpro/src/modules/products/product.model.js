@@ -336,8 +336,8 @@ const ProductModel = {
                     FROM active_promotions
                     ORDER BY 
                         CASE promo_type 
-                            WHEN 'percentage' THEN value * final_price / 100 
-                            ELSE value 
+                            WHEN 'percentage' THEN promo_value * final_price / 100 
+                            ELSE promo_value 
                         END DESC
                     LIMIT 1
                 )
