@@ -616,6 +616,19 @@ function getFlagEmoji(countryCode) {
       </div>
     </div>
   `}).join('');
+
+function getFlagEmoji(countryCode) {
+  const flags = {
+    'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱',
+    'BE': '🇧🇪', 'PT': '🇵🇹', 'AT': '🇦🇹', 'IE': '🇮🇪', 'FI': '🇫🇮',
+    'GB': '🇬🇧', 'CH': '🇨🇭', 'US': '🇺🇸', 'CA': '🇨🇦', 'BR': '🇧🇷',
+    'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'SG': '🇸🇬', 'AU': '🇦🇺',
+    'TN': '🇹🇳', 'DZ': '🇩🇿', 'MA': '🇲🇦', 'EG': '🇪🇬',
+    'AE': '🇦🇪', 'SA': '🇸🇦', 'QA': '🇶🇦', 'KW': '🇰🇼', 'LU': '🇱🇺'
+  };
+  return flags[countryCode] || '🏳️';
+}
+
 window.updateQuantity = updateQuantity;
 window.removeItem = removeItem;
 window.proceedToCheckout = proceedToCheckout;
