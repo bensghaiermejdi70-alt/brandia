@@ -1,9 +1,3 @@
-<script>
-// Définition API_BASE pour environnement local ou production
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:4000' 
-  : 'https://brandia-1.onrender.com';
-</script>
 <!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
@@ -193,9 +187,15 @@ const API_BASE = window.location.hostname === 'localhost'
 
 <script>
 // ==========================================
+// CONFIGURATION API
+// ==========================================
+const API_BASE = window.location.hostname === 'localhost' 
+  ? 'http://localhost:4000' 
+  : 'https://brandia-1.onrender.com';
+
+// ==========================================
 // CONFIGURATION - 21 CATÉGORIES
 // ==========================================
-
 const CATEGORIES = [
   { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
   { slug: 'parfums-fragrances', name: 'Parfums & fragrances', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
@@ -248,9 +248,8 @@ const CATEGORY_IMAGES = {
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=400&fit=crop&q=80';
 
 // ==========================================
-// PANIER - FONCTIONNE SANS API
+// PANIER
 // ==========================================
-
 let cart = { items: [], discount: null };
 
 function isValidImageUrl(url) {
@@ -261,6 +260,7 @@ function isValidImageUrl(url) {
 
 function getProductImage(item) {
   if (isValidImageUrl(item.image_url)) return item.image_url;
+  if (isValidImageUrl(item.main_image_url)) return item.main_image_url;
   if (item.category_slug && CATEGORY_IMAGES[item.category_slug]) return CATEGORY_IMAGES[item.category_slug];
   return DEFAULT_IMAGE;
 }
@@ -277,8 +277,11 @@ function loadCart() {
         product_id: item.product_id || item.id || Date.now(),
         name: item.name || 'Produit',
         price: parseFloat(item.price) || 0,
+        original_price: parseFloat(item.original_price) || parseFloat(item.price) || 0,
+        has_promotion: item.has_promotion || false,
+        promo_code: item.promo_code || null,
         quantity: parseInt(item.quantity) || 1,
-        image_url: item.image_url || item.image || null,
+        image_url: item.image_url || item.main_image_url || item.image || null,
         category_slug: item.category_slug || null,
         brand: item.brand || item.supplier_name || 'Marque'
       }));
@@ -316,6 +319,8 @@ function renderCart() {
   container.innerHTML = cart.items.map((item, index) => {
     const imageUrl = getProductImage(item);
     const itemTotal = (item.price * item.quantity).toFixed(2);
+    const itemOriginalTotal = (item.original_price * item.quantity).toFixed(2);
+    const hasDiscount = item.original_price > item.price;
     
     return `
     <div class="cart-item bg-neutral-800 rounded-lg p-4 border border-neutral-700">
@@ -330,6 +335,11 @@ function renderCart() {
             <div class="min-w-0 flex-1">
               <div class="text-white font-medium">${item.name}</div>
               <p class="text-sm text-neutral-500 truncate">${item.brand}</p>
+              ${item.has_promotion ? `
+                <p class="text-xs text-emerald-400 mt-1">
+                  <i class="fas fa-tag mr-1"></i>Promo ${item.promo_code ? `<span class="font-mono bg-emerald-500/20 px-1 rounded">${item.promo_code}</span>` : ''}
+                </p>
+              ` : ''}
             </div>
             <button onclick="removeItem(${index})" class="text-neutral-500 hover:text-red-400 flex-shrink-0 p-1">
               <i class="fas fa-trash-alt"></i>
@@ -348,8 +358,13 @@ function renderCart() {
             </div>
             
             <div class="text-right">
-              <p class="text-lg font-bold text-indigo-400">${itemTotal} €</p>
-              <p class="text-xs text-neutral-500">${item.price.toFixed(2)} € / unité</p>
+              <p class="text-lg font-bold ${hasDiscount ? 'text-emerald-400' : 'text-indigo-400'}">${itemTotal} €</p>
+              ${hasDiscount ? `
+                <p class="text-xs text-neutral-500 line-through">${itemOriginalTotal} €</p>
+                <p class="text-xs text-emerald-400">Économie: ${(itemOriginalTotal - itemTotal).toFixed(2)} €</p>
+              ` : `
+                <p class="text-xs text-neutral-500">${item.price.toFixed(2)} € / unité</p>
+              `}
             </div>
           </div>
         </div>
@@ -394,6 +409,8 @@ function saveCart() {
 
 function calculateTotals() {
   const subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const originalSubtotal = cart.items.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+  const itemSavings = originalSubtotal - subtotal;
   
   let discountAmount = 0;
   if (cart.discount) {
@@ -408,13 +425,14 @@ function calculateTotals() {
   const discountedSubtotal = subtotal - discountAmount;
   const shipping = discountedSubtotal >= 50 ? 0 : 5.90;
   const total = discountedSubtotal + shipping;
+  const totalSavings = itemSavings + discountAmount;
   
   document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
   
   const discountRow = document.getElementById('discount-row');
-  if (cart.discount && discountAmount > 0) {
+  if ((cart.discount && discountAmount > 0) || itemSavings > 0) {
     discountRow?.classList.remove('hidden');
-    document.getElementById('discount-amount').textContent = '-' + discountAmount.toFixed(2) + ' €';
+    document.getElementById('discount-amount').textContent = '-' + totalSavings.toFixed(2) + ' €';
   } else {
     discountRow?.classList.add('hidden');
   }
@@ -432,6 +450,7 @@ async function applyPromo() {
   const code = document.getElementById('promo-code')?.value?.trim().toUpperCase();
   const msgEl = document.getElementById('promo-message');
   if (!code) return;
+  
   try {
     const response = await fetch(`${API_BASE}/api/public/promotions/validate`, {
       method: 'POST',
@@ -442,7 +461,9 @@ async function applyPromo() {
         totalAmount: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
       })
     });
+    
     const data = await response.json();
+    
     if (data.success) {
       cart.discount = {
         type: data.data.type,
@@ -482,7 +503,6 @@ function proceedToCheckout() {
     return;
   }
   
-  // Vérifier connexion
   const token = localStorage.getItem('token');
   if (!token) {
     showToast('Connectez-vous pour continuer', 'info');
@@ -519,7 +539,6 @@ function initCountrySelector() {
   const selector = document.getElementById('countrySelector');
   if (!selector) return;
   
-  // TOUS les pays supportés (28 pays)
   const countries = {
     'FR': { name: 'France', currency: 'EUR' },
     'BE': { name: 'Belgique', currency: 'EUR' },
@@ -568,8 +587,6 @@ function initCountrySelector() {
   });
 }
 
-// ...existing code...
-
 function getFlagEmoji(countryCode) {
   const flags = {
     'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱',
@@ -582,6 +599,34 @@ function getFlagEmoji(countryCode) {
   return flags[countryCode] || '🏳️';
 }
 
+function renderHeaderCategories() {
+  const dropdown = document.getElementById('header-categories-list');
+  if (!dropdown) return;
+  
+  dropdown.innerHTML = CATEGORIES.map(cat => `
+    <a href="catalogue.html?category=${cat.slug}" 
+       class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
+      <div class="w-8 h-8 bg-gradient-to-br ${cat.gradient} rounded-lg flex items-center justify-center flex-shrink-0">
+        <i class="fas ${cat.icon} text-white text-xs"></i>
+      </div>
+      <span class="font-medium truncate">${cat.name}</span>
+    </a>
+  `).join('');
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ Panier chargé - Mode localStorage');
+  renderHeaderCategories();
+  initCountrySelector();
+  loadCart();
+  
+  document.getElementById('promo-code')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') applyPromo();
+  });
+});
+
+// Exposer globalement
 window.updateQuantity = updateQuantity;
 window.removeItem = removeItem;
 window.proceedToCheckout = proceedToCheckout;

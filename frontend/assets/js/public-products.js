@@ -16,7 +16,6 @@ window.PublicProducts = {
     init: async () => {
         console.log('[PublicProducts] Initialisation...');
         
-        // Charger les catégories depuis categories-config.js si disponible
         if (window.BRANDIA_CATEGORIES) {
             PublicProducts.state.categories = window.BRANDIA_CATEGORIES;
         }
@@ -27,15 +26,9 @@ window.PublicProducts = {
     // ==========================================
     // CHARGEMENT PRODUITS
     // ==========================================
-    
-    /**
-     * Charge les produits en vedette avec promotions (pour page d'accueil)
-     */
     loadFeaturedProducts: async () => {
         try {
             PublicProducts.showLoading(true);
-            
-            // Utiliser la nouvelle API avec promotions
             const response = await BrandiaAPI.Products.getFeaturedWithPromotions();
             
             if (response.success) {
@@ -45,23 +38,17 @@ window.PublicProducts = {
             } else {
                 throw new Error(response.message);
             }
-            
         } catch (error) {
             console.error('[PublicProducts] Erreur chargement featured:', error);
-            // Fallback sur ancienne API
             PublicProducts.loadFeaturedFallback();
         } finally {
             PublicProducts.showLoading(false);
         }
     },
 
-    /**
-     * Charge tous les produits avec promotions (pour page catalogue)
-     */
     loadAllProducts: async (category = null) => {
         try {
             PublicProducts.showLoading(true);
-            // Nettoyage du paramètre category
             let cleanCategory = category;
             if (cleanCategory === 'null' || cleanCategory === 'undefined') {
                 cleanCategory = null;
@@ -73,14 +60,12 @@ window.PublicProducts = {
             if (response.success) {
                 PublicProducts.state.products = response.data.products || [];
                 PublicProducts.renderProductGrid('products-grid', PublicProducts.state.products);
-                // Mettre à jour le titre
                 PublicProducts.updateCategoryTitle(cleanCategory);
             } else {
                 throw new Error(response.message);
             }
         } catch (error) {
             console.error('[PublicProducts] Erreur chargement produits:', error);
-            // Fallback
             let cleanCategory = category;
             if (cleanCategory === 'null' || cleanCategory === 'undefined') {
                 cleanCategory = null;
@@ -94,9 +79,6 @@ window.PublicProducts = {
         }
     },
 
-    /**
-     * Fallback si l'API avec promotions échoue
-     */
     loadFeaturedFallback: async () => {
         try {
             const response = await BrandiaAPI.Products.getFeatured();
@@ -112,10 +94,6 @@ window.PublicProducts = {
     // ==========================================
     // RENDU HTML
     // ==========================================
-    
-    /**
-     * Rend une grille de produits
-     */
     renderProductGrid: (containerId, products) => {
         const container = document.getElementById(containerId);
         if (!container) {
@@ -131,15 +109,11 @@ window.PublicProducts = {
         container.innerHTML = products.map(p => PublicProducts.renderProductCard(p)).join('');
     },
 
-    /**
-     * Rend une carte produit complète avec promotion
-     */
     renderProductCard: (product) => {
         const hasPromo = product.has_promotion === true;
         const finalPrice = parseFloat(product.final_price || product.price);
         const basePrice = parseFloat(product.base_price || product.original_price || product.price);
         
-        // Calcul des économies
         let savingsAmount = 0;
         let savingsPercent = 0;
         
@@ -148,7 +122,6 @@ window.PublicProducts = {
             savingsPercent = Math.round((savingsAmount / basePrice) * 100);
         }
 
-        // Badge promotion
         const promoBadge = hasPromo ? `
             <div class="absolute top-3 left-3 z-10">
                 <span class="bg-gradient-to-r from-red-500 to-pink-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg animate-pulse">
@@ -157,7 +130,6 @@ window.PublicProducts = {
             </div>
         ` : '';
 
-        // Badge stock faible
         const stockBadge = product.stock_quantity < 5 ? `
             <div class="absolute top-3 right-3 z-10">
                 <span class="bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded">
@@ -166,7 +138,6 @@ window.PublicProducts = {
             </div>
         ` : '';
 
-        // Affichage prix
         const priceDisplay = hasPromo ? `
             <div class="flex flex-col">
                 <span class="text-slate-400 line-through text-sm">${PublicProducts.formatPrice(basePrice)}</span>
@@ -181,7 +152,6 @@ window.PublicProducts = {
             <span class="text-indigo-400 font-bold text-xl">${PublicProducts.formatPrice(finalPrice)}</span>
         `;
 
-        // Info promotion supplémentaire
         const promoInfo = hasPromo ? `
             <div class="mt-2 p-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg border border-indigo-500/20">
                 <div class="flex items-center gap-2 text-xs text-indigo-300">
@@ -202,34 +172,30 @@ window.PublicProducts = {
             </div>
         ` : '';
 
+        // ✅ CORRECTION ICI : Image Unsplash par défaut + pas d'espace dans l'URL
         return `
             <div class="group relative bg-slate-800 rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 border border-slate-700 hover:border-indigo-500/50">
-                <!-- Image -->
                 <div class="relative h-64 overflow-hidden bg-slate-900">
-                    <img src="${product.main_image_url || 'https://via.placeholder.com/400x400?text=Produit'}" 
+                    <img src="${product.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80'}" 
                          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                          alt="${product.name}"
                          loading="lazy"
-                         onerror="this.src='https://via.placeholder.com/400x400?text=Produit'">
+                         onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80'">
                     
-                    <!-- Overlay au hover -->
                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
                     
                     ${promoBadge}
                     ${stockBadge}
                     
-                    <!-- Bouton rapide hover -->
                     <div class="absolute bottom-4 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                        <button onclick="PublicProducts.quickAddToCart(${product.id})" 
+                        <button onclick="PublicProducts.quickAddToCart(${product.id}, event)" 
                                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium shadow-lg backdrop-blur-sm bg-opacity-90">
                             <i class="fas fa-cart-plus mr-2"></i>Ajouter
                         </button>
                     </div>
                 </div>
                 
-                <!-- Contenu -->
                 <div class="p-5">
-                    <!-- Catégorie -->
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-xs text-slate-500 uppercase tracking-wider">${product.category_name || 'Catégorie'}</span>
                         ${product.supplier_company ? `
@@ -239,24 +205,20 @@ window.PublicProducts = {
                         ` : ''}
                     </div>
                     
-                    <!-- Nom -->
                     <h3 class="font-semibold text-white text-lg mb-1 line-clamp-2 group-hover:text-indigo-400 transition-colors">
                         ${product.name}
                     </h3>
                     
-                    <!-- Description courte -->
                     <p class="text-slate-400 text-sm line-clamp-2 mb-3 h-10">
                         ${product.description || 'Découvrez ce produit de qualité'}
                     </p>
                     
-                    <!-- Prix -->
                     <div class="mb-3">
                         ${priceDisplay}
                     </div>
                     
                     ${promoInfo}
                     
-                    <!-- Actions -->
                     <div class="mt-4 flex gap-2">
                         <button onclick="PublicProducts.addToCart(${product.id})" 
                                 class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
@@ -286,21 +248,13 @@ window.PublicProducts = {
     // ==========================================
     // ACTIONS
     // ==========================================
-    
-    /**
-     * Ajout rapide au panier (depuis la grille)
-     */
-    quickAddToCart: async (productId) => {
+    quickAddToCart: async (productId, event) => { // ✅ CORRECTION : event en paramètre
         event.stopPropagation();
         await PublicProducts.addToCart(productId);
     },
 
-    /**
-     * Ajout au panier avec récupération du prix promo
-     */
     addToCart: async (productId) => {
         try {
-            // Récupérer le détail complet avec promotion
             const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
             
             if (!response.success || !response.data.product) {
@@ -309,12 +263,11 @@ window.PublicProducts = {
 
             const product = response.data.product;
             
-            // Ajouter au panier avec le prix promo déjà calculé
             BrandiaAPI.Cart.add({
                 id: product.id,
                 name: product.name,
-                price: product.final_price || product.price, // Prix promo appliqué
-                base_price: product.base_price || product.price, // Prix d'origine pour référence
+                price: product.final_price || product.price,
+                base_price: product.base_price || product.price,
                 has_promotion: product.has_promotion,
                 promo_code: product.promo_code,
                 promo_id: product.promo_id,
@@ -322,10 +275,8 @@ window.PublicProducts = {
                 supplier_id: product.supplier_id
             });
 
-            // Feedback visuel
             PublicProducts.showToast(`${product.name} ajouté au panier !`, 'success');
             
-            // Animation sur le bouton
             const btn = event.target.closest('button');
             if (btn) {
                 const originalHTML = btn.innerHTML;
@@ -343,13 +294,6 @@ window.PublicProducts = {
         }
     },
 
-    // ==========================================
-    // CATÉGORIES
-    // ==========================================
-    
-    /**
-     * Filtre par catégorie
-     */
     filterByCategory: (categorySlug) => {
         PublicProducts.loadAllProducts(categorySlug);
     },
@@ -363,15 +307,10 @@ window.PublicProducts = {
             return;
         }
         
-        // Chercher le nom de la catégorie
         const cat = PublicProducts.state.categories.find(c => c.slug === category || c.id == category);
         titleEl.textContent = cat ? cat.name : 'Produits';
     },
 
-    // ==========================================
-    // UTILITAIRES
-    // ==========================================
-    
     showLoading: (show) => {
         const loader = document.getElementById('products-loader');
         if (loader) {
@@ -388,11 +327,9 @@ window.PublicProducts = {
     },
 
     showToast: (message, type = 'info') => {
-        // Utiliser le toast de DashboardApp si disponible, sinon créer un simple alert
         if (window.DashboardApp && DashboardApp.showToast) {
             DashboardApp.showToast(message, type);
         } else {
-            // Créer un toast simple
             const toast = document.createElement('div');
             toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-y-0 transition-all z-50 ${
                 type === 'success' ? 'bg-emerald-500' : 
@@ -410,11 +347,7 @@ window.PublicProducts = {
     }
 };
 
-// ==========================================
-// INITIALISATION AUTO
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Vérifier si on est sur une page qui a besoin des produits publics
     if (document.getElementById('featured-products-grid') || 
         document.getElementById('products-grid')) {
         PublicProducts.init();
