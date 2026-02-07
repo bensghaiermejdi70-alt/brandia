@@ -568,54 +568,7 @@ function initCountrySelector() {
   });
 }
 
-function getFlagEmoji(countryCode) {
-    return `
-    <div class="cart-item bg-neutral-800 rounded-lg p-4 border border-neutral-700">
-      <div class="flex gap-4">
-        <div class="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-neutral-900">
-          <img src="${imageUrl}" alt="${item.name}" class="w-full h-full object-cover"
-               onerror="this.onerror=null; this.src='${DEFAULT_IMAGE}';">
-        </div>
-        
-        <div class="flex-1 min-w-0">
-          <div class="flex justify-between items-start gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="text-white font-medium">${item.name}</div>
-              <p class="text-sm text-neutral-500 truncate">${item.brand}</p>
-            </div>
-            <button onclick="removeItem(${index})" class="text-neutral-500 hover:text-red-400 flex-shrink-0 p-1">
-              <i class="fas fa-trash-alt"></i>
-            </button>
-          </div>
-          
-          <div class="flex justify-between items-end mt-3">
-            <div class="flex items-center border border-neutral-700 rounded-lg bg-neutral-900">
-              <button onclick="updateQuantity(${index}, -1)" class="px-3 py-2 text-neutral-400 hover:text-white rounded-l-lg" ${item.quantity <= 1 ? 'disabled' : ''}>
-                <i class="fas fa-minus text-xs"></i>
-              </button>
-              <span class="px-3 py-2 text-sm font-medium min-w-[40px] text-center">${item.quantity}</span>
-              <button onclick="updateQuantity(${index}, 1)" class="px-3 py-2 text-neutral-400 hover:text-white rounded-r-lg">
-                <i class="fas fa-plus text-xs"></i>
-              </button>
-            </div>
-            <div class="text-right">
-                ${item.has_promotion ? `
-                    <p class="text-xs text-emerald-400 mb-1">
-                        <i class="fas fa-tag mr-1"></i>Promo appliquée
-                        ${item.promo_code ? `<span class="font-mono bg-emerald-500/20 px-1 rounded">${item.promo_code}</span>` : ''}
-                    </p>
-                ` : ''}
-                <p class="text-lg font-bold text-indigo-400">${itemTotal} €</p>
-                ${item.original_price && item.original_price > item.price ? `
-                    <p class="text-xs text-neutral-500 line-through">${(item.original_price * item.quantity).toFixed(2)} €</p>
-                    <p class="text-xs text-emerald-400">Économie: ${((item.original_price - item.price) * item.quantity).toFixed(2)} €</p>
-                ` : `<p class="text-xs text-neutral-500">${item.price.toFixed(2)} € / unité</p>`}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `}).join('');
+// ...existing code...
 
 function getFlagEmoji(countryCode) {
   const flags = {
