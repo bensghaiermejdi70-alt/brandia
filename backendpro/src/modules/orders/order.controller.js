@@ -7,7 +7,7 @@ const ProductModel = require('../products/product.model');
 const logger = require('../../utils/logger');
 const { pool } = require('../../config/db');
 const stripe = require('../../config/stripe');
-const EmailService = require('../../services/email.service'); // 🎯 AJOUT: Service Email
+const EmailService = require('../../services/email.service');
 
 // ==========================================
 // HELPERS
@@ -17,6 +17,68 @@ const generateOrderNumber = () => {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 5).toUpperCase();
     return `BRD-${timestamp}-${random}`;
+};
+
+// ✅ VALIDATION STRICTE DES IDs
+const validateProductId = (id) => {
+    if (!id) return null;
+    // Convertir en nombre entier
+    const numId = parseInt(id);
+    // Vérifier que c'est un nombre valide et positif
+    if (isNaN(numId) || numId <= 0 || !Number.isInteger(numId)) {
+        return null;
+    }
+    return numId;
+};
+
+// ✅ VALIDATION DES ITEMS DU PANIER
+const validateCartItems = (items) => {
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return { valid: false, error: 'Le panier est vide ou invalide' };
+    }
+
+    const validatedItems = [];
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // Vérifier product_id
+        const productId = validateProductId(item.product_id || item.id);
+        if (!productId) {
+            return { 
+                valid: false, 
+                error: `Produit invalide à l'index ${i}: ID manquant ou incorrect (${item.product_id || item.id})` 
+            };
+        }
+
+        // Vérifier quantity
+        const quantity = parseInt(item.quantity);
+        if (isNaN(quantity) || quantity < 1 || quantity > 99) {
+            return { 
+                valid: false, 
+                error: `Quantité invalide pour le produit ${productId}: ${item.quantity}` 
+            };
+        }
+
+        // Vérifier price (optionnel mais recommandé)
+        const price = parseFloat(item.price);
+        if (isNaN(price) || price < 0) {
+            return { 
+                valid: false, 
+                error: `Prix invalide pour le produit ${productId}: ${item.price}` 
+            };
+        }
+
+        validatedItems.push({
+            product_id: productId,
+            quantity: quantity,
+            price: price,
+            original_price: parseFloat(item.original_price) || price,
+            name: item.name || 'Produit sans nom'
+        });
+    }
+
+    return { valid: true, items: validatedItems };
 };
 
 // ==========================================
@@ -59,7 +121,16 @@ const OrderController = {
             const { id } = req.params;
             const userId = req.user.userId;
 
-            const order = await OrderModel.findById(id);
+            // ✅ Validation ID commande
+            const orderId = validateProductId(id);
+            if (!orderId) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'ID de commande invalide' 
+                });
+            }
+
+            const order = await OrderModel.findById(orderId);
 
             if (!order) {
                 return res.status(404).json({ success: false, message: 'Commande non trouvée' });
@@ -71,7 +142,7 @@ const OrderController = {
                     `SELECT 1 FROM order_items oi 
                      JOIN suppliers s ON oi.supplier_id = s.id 
                      WHERE oi.order_id = $1 AND s.user_id = $2 LIMIT 1`,
-                    [id, userId]
+                    [orderId, userId]
                 );
                 
                 if (supplierCheck.rows.length === 0) {
@@ -110,12 +181,19 @@ const OrderController = {
                 customer_phone
             } = req.body;
 
-            // Validation
-            if (!items || !Array.isArray(items) || items.length === 0) {
+            // ✅ VALIDATION STRICTE DES ITEMS
+            const validation = validateCartItems(items);
+            if (!validation.valid) {
                 await client.query('ROLLBACK');
                 client.release();
-                return res.status(400).json({ success: false, message: 'Le panier est vide' });
+                return res.status(400).json({ 
+                    success: false, 
+                    message: validation.error 
+                });
             }
+
+            const validatedItems = validation.items;
+            logger.info(`[Order] Validation OK: ${validatedItems.length} items pour user ${userId}`);
 
             // Calcul des totaux et vérification stock
             let subtotal = 0;
@@ -124,7 +202,8 @@ const OrderController = {
             const supplierAmounts = {};
             let primarySupplierId = null;
 
-            for (const item of items) {
+            for (const item of validatedItems) {
+                // ✅ Utiliser l'ID validé
                 const product = await ProductModel.findById(item.product_id);
                 
                 if (!product) {
@@ -141,12 +220,12 @@ const OrderController = {
                     client.release();
                     return res.status(400).json({ 
                         success: false, 
-                        message: `Stock insuffisant pour ${product.name} (dispo: ${product.stock_quantity})` 
+                        message: `Stock insuffisant pour ${product.name} (dispo: ${product.stock_quantity}, demandé: ${item.quantity})` 
                     });
                 }
 
                 const unitPrice = parseFloat(product.price);
-                const quantity = parseInt(item.quantity);
+                const quantity = item.quantity;
                 const totalPrice = unitPrice * quantity;
                 const vatRate = parseFloat(product.vat_rate || 20);
                 const vatOnItem = totalPrice * (vatRate / 100);
@@ -159,21 +238,32 @@ const OrderController = {
                 subtotal += totalPrice;
                 vatAmount += vatOnItem;
 
+                // ✅ Validation supplier_id
+                const supplierId = validateProductId(product.supplier_id);
+                if (!supplierId) {
+                    await client.query('ROLLBACK');
+                    client.release();
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Fournisseur invalide pour le produit ${product.name}` 
+                    });
+                }
+
                 // Grouper par fournisseur
-                if (!supplierAmounts[product.supplier_id]) {
-                    supplierAmounts[product.supplier_id] = {
+                if (!supplierAmounts[supplierId]) {
+                    supplierAmounts[supplierId] = {
                         amount: 0,
                         stripe_account_id: null,
                         company_name: null,
                         email: null
                     };
                 }
-                supplierAmounts[product.supplier_id].amount += supplierAmount;
-                if (!primarySupplierId) primarySupplierId = product.supplier_id;
+                supplierAmounts[supplierId].amount += supplierAmount;
+                if (!primarySupplierId) primarySupplierId = supplierId;
 
                 orderItems.push({
                     product_id: product.id,
-                    supplier_id: product.supplier_id,
+                    supplier_id: supplierId,
                     product_name: product.name,
                     product_sku: product.sku,
                     product_image_url: product.main_image_url,
@@ -244,6 +334,7 @@ const OrderController = {
                     logger.info(`💳 PaymentIntent Connect créé: ${stripePaymentIntentId} | Order: ${orderNumber}`);
                 } catch (stripeError) {
                     logger.error('❌ Erreur Stripe:', stripeError);
+                    // On continue sans Stripe en mode démo
                 }
             }
 
@@ -301,6 +392,7 @@ const OrderController = {
             try {
                 const primarySupplier = supplierAmounts[primarySupplierId];
                 
+                // ✅ Image fallback si pas d'image produit
                 const orderData = {
                     id: order.id,
                     orderNumber: orderNumber,
@@ -311,7 +403,7 @@ const OrderController = {
                         name: item.product_name,
                         quantity: item.quantity,
                         price: item.unit_price,
-                        image: item.product_image_url || 'https://via.placeholder.com/60',
+                        image: item.product_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=60&h=60&fit=crop',
                         supplierName: supplierAmounts[item.supplier_id]?.company_name || 'Marque'
                     })),
                     supplierName: primarySupplier?.company_name || 'Marque'
@@ -346,13 +438,12 @@ const OrderController = {
                 }
 
             } catch (emailError) {
-                // On logue mais on ne fait pas échouer la commande
                 logger.error('⚠️ Erreur envoi emails:', emailError);
             }
 
             client.release();
 
-            logger.info(`✅ Commande ${orderNumber} créée | Total: ${totalAmount}€ | Stripe: ${stripePaymentIntentId || 'N/A'}`);
+            logger.info(`✅ Commande ${orderNumber} créée | Total: ${totalAmount}€ | Items: ${orderItems.length} | Stripe: ${stripePaymentIntentId || 'N/A'}`);
 
             res.status(201).json({
                 success: true,
@@ -380,31 +471,38 @@ const OrderController = {
     },
 
     // ==========================================
-    // Confirmer le paiement (avec Email confirmation)
+    // Confirmer le paiement
     // ==========================================
     confirmPayment: async (req, res) => {
         try {
             const { order_id, payment_intent_id } = req.body;
             
+            // ✅ Validation ID
+            const orderId = validateProductId(order_id);
+            if (!orderId) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'ID de commande invalide' 
+                });
+            }
+
             let orderResult;
             
             if (process.env.STRIPE_SECRET_KEY && payment_intent_id) {
                 const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
                 
                 if (paymentIntent.status === 'succeeded') {
-                    // Mettre à jour la commande
                     orderResult = await pool.query(
                         `UPDATE orders SET status = 'paid', paid_at = NOW() WHERE id = $1 RETURNING *`,
-                        [order_id]
+                        [orderId]
                     );
                     
-                    // Mettre à jour les items
                     await pool.query(
                         `UPDATE order_items SET payment_status = 'paid' WHERE order_id = $1`,
-                        [order_id]
+                        [orderId]
                     );
                     
-                    logger.info(`💰 Paiement confirmé: Commande ${order_id} | PI: ${payment_intent_id}`);
+                    logger.info(`💰 Paiement confirmé: Commande ${orderId} | PI: ${payment_intent_id}`);
                     
                 } else {
                     return res.status(400).json({
@@ -413,21 +511,11 @@ const OrderController = {
                     });
                 }
             } else {
-                // Mode sans Stripe
                 orderResult = await pool.query(
                     `UPDATE orders SET status = 'paid' WHERE id = $1 RETURNING *`,
-                    [order_id]
+                    [orderId]
                 );
             }
-
-            // 🎯 Email de confirmation de paiement (optionnel, peut être redondant avec la création)
-            // Décommenter si vous voulez un email spécifique "Paiement confirmé"
-            /*
-            if (orderResult.rows[0]) {
-                const order = orderResult.rows[0];
-                // Envoi email paiement confirmé...
-            }
-            */
 
             res.json({
                 success: true,
@@ -449,6 +537,15 @@ const OrderController = {
             const { id } = req.params;
             const { status, tracking_number } = req.body;
 
+            // ✅ Validation ID
+            const orderId = validateProductId(id);
+            if (!orderId) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'ID de commande invalide' 
+                });
+            }
+
             const validStatuses = [
                 'pending', 'pending_payment', 'paid', 'processing', 
                 'shipped', 'delivered', 'cancelled', 'refunded'
@@ -459,7 +556,7 @@ const OrderController = {
             }
 
             let updateQuery = `UPDATE orders SET status = $1, updated_at = NOW()`;
-            let params = [status, id];
+            let params = [status, orderId];
             
             if (status === 'shipped' && tracking_number) {
                 updateQuery += `, tracking_number = $3, shipped_at = NOW()`;
@@ -479,7 +576,6 @@ const OrderController = {
             // 🎯 Email d'expédition si statut = shipped
             if (status === 'shipped') {
                 try {
-                    // Récupérer les infos pour l'email
                     const userResult = await pool.query(
                         'SELECT email, first_name, last_name FROM users WHERE id = $1',
                         [order.user_id]
@@ -488,9 +584,8 @@ const OrderController = {
                     if (userResult.rows.length > 0) {
                         const user = userResult.rows[0];
                         
-                        // Ici vous pourriez récupérer le transporteur depuis la DB ou utiliser un défaut
                         const trackingInfo = {
-                            carrier: 'Transporteur', // À remplacer par vraie donnée
+                            carrier: 'Transporteur',
                             number: tracking_number || 'N/A',
                             url: `https://tracking.example.com/${tracking_number || ''}`,
                             estimatedDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
@@ -516,7 +611,7 @@ const OrderController = {
                 }
             }
             
-            logger.info(`✅ Statut commande mis à jour: ${id} → ${status}`);
+            logger.info(`✅ Statut commande mis à jour: ${orderId} → ${status}`);
 
             res.json({ 
                 success: true, 
