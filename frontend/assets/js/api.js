@@ -179,24 +179,35 @@
      * Récupère tous les produits avec leurs promotions actives intégrées
      * Chaque produit contient: has_promotion, final_price, promo_type, etc.
      */
-    getAllWithPromotions: async (params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      return await apiFetch(`/products/with-promotions${queryString ? '?' + queryString : ''}`);
-    },
-
     /**
-     * Récupère les produits en vedette avec promotions
-     */
-    getFeaturedWithPromotions: async () => {
-      return await apiFetch('/products/featured-with-promotions');
-    },
-
-    /**
-     * Récupère le détail d'un produit avec sa promotion active
-     */
-    getByIdWithPromotion: async (id) => {
-      return await apiFetch(`/products/${id}/with-promotion`);
-    },
+ * Récupère tous les produits avec leurs promotions actives intégrées
+ * Filtre les params null/undefined pour éviter les erreurs
+ */
+getAllWithPromotions: async (params = {}) => {
+  const queryString = new URLSearchParams();
+  
+  // ✅ Ne pas ajouter si null/undefined/vide
+  if (params.category && params.category !== 'null' && params.category !== '') {
+    queryString.append('category', params.category);
+  }
+  if (params.search && params.search.trim() !== '') {
+    queryString.append('search', params.search.trim());
+  }
+  if (params.limit && !isNaN(params.limit)) {
+    queryString.append('limit', parseInt(params.limit));
+  }
+  if (params.offset && !isNaN(params.offset)) {
+    queryString.append('offset', parseInt(params.offset));
+  }
+  if (params.sort && params.sort !== '') {
+    queryString.append('sort', params.sort);
+  }
+  
+  const url = `/products/with-promotions${queryString.toString() ? '?' + queryString.toString() : ''}`;
+  console.log('[API] getAllWithPromotions:', url);
+  
+  return await apiFetch(url);
+},
 
     /**
      * Helper: Calcule le prix final d'un produit (côté client)
