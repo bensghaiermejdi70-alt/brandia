@@ -1,3 +1,9 @@
+<script>
+// Définition API_BASE pour environnement local ou production
+const API_BASE = window.location.hostname === 'localhost' 
+  ? 'http://localhost:4000' 
+  : 'https://brandia-1.onrender.com';
+</script>
 <!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
@@ -422,48 +428,44 @@ function calculateTotals() {
   document.getElementById('total').textContent = total.toFixed(2) + ' €';
 }
 
-function applyPromo() {
+async function applyPromo() {
   const code = document.getElementById('promo-code')?.value?.trim().toUpperCase();
   const msgEl = document.getElementById('promo-message');
   if (!code) return;
-  
-    try {
-        // Appel API pour valider le code
-        const response = await fetch(`${window.API_BASE || ''}/api/public/promotions/validate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                code: code,
-                productIds: cart.items.map(i => i.product_id || i.id),
-                totalAmount: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            cart.discount = {
-                type: data.data.type,
-                value: data.data.value,
-                name: data.data.name,
-                code: code,
-                discount_amount: data.data.discount
-            };
-            localStorage.setItem('brandia_discount', JSON.stringify(cart.discount));
-            msgEl.textContent = `✓ ${data.data.name} appliquée (-${data.data.discount.toFixed(2)}€)`;
-            msgEl.className = 'text-xs mt-1 text-emerald-400';
-            msgEl.classList.remove('hidden');
-            calculateTotals();
-            showToast('Code promo appliqué !', 'success');
-        } else {
-            throw new Error(data.message);
-        }
-    } catch (error) {
-        msgEl.textContent = '✗ ' + (error.message || 'Code promo invalide');
-        msgEl.className = 'text-xs mt-1 text-red-400';
-        msgEl.classList.remove('hidden');
-        showToast('Code promo invalide', 'error');
+  try {
+    const response = await fetch(`${API_BASE}/api/public/promotions/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: code,
+        productIds: cart.items.map(i => i.product_id || i.id),
+        totalAmount: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      })
+    });
+    const data = await response.json();
+    if (data.success) {
+      cart.discount = {
+        type: data.data.type,
+        value: data.data.value,
+        name: data.data.name,
+        code: code,
+        discount_amount: data.data.discount
+      };
+      localStorage.setItem('brandia_discount', JSON.stringify(cart.discount));
+      msgEl.textContent = `✓ ${data.data.name} appliquée (-${data.data.discount.toFixed(2)}€)`;
+      msgEl.className = 'text-xs mt-1 text-emerald-400';
+      msgEl.classList.remove('hidden');
+      calculateTotals();
+      showToast('Code promo appliqué !', 'success');
+    } else {
+      throw new Error(data.message);
     }
+  } catch (error) {
+    msgEl.textContent = '✗ ' + (error.message || 'Code promo invalide');
+    msgEl.className = 'text-xs mt-1 text-red-400';
+    msgEl.classList.remove('hidden');
+    showToast('Code promo invalide', 'error');
+  }
 }
 
 function updateCartBadge() {
