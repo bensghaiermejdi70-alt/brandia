@@ -4,131 +4,688 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Paiement – Brandia</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://js.stripe.com/v3/"></script>
-
   <style>
-    body { background-color:#0b111e; color:#f3f4f6; font-family:system-ui,sans-serif }
-    .container { max-width:1200px; margin:auto; padding:0 1rem }
-    .step-active { background:#6366f1; border-color:#6366f1; color:white }
-    .step-completed { background:#10b981; border-color:#10b981; color:white }
-    .form-input:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.15) }
-    .form-input.error { border-color:#ef4444 }
-    #card-element { padding:12px; border:1px solid #374151; border-radius:.5rem; background:#111827 }
+    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
+    .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
+    .step-indicator { transition: all 0.3s ease; }
+    .step-active { background-color: #6366f1; border-color: #6366f1; color: white; }
+    .step-completed { background-color: #10b981; border-color: #10b981; color: white; }
+    .form-input { transition: all 0.2s; }
+    .form-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+    .form-input.error { border-color: #ef4444; }
+    #card-element { padding: 12px; border: 1px solid #374151; border-radius: 0.5rem; background-color: #111827; }
+    #card-element.StripeElement--focus { border-color: #6366f1; }
+    #card-element.StripeElement--invalid { border-color: #ef4444; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
-
 <body>
 
 <header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
-  <nav class="container flex items-center justify-between py-3">
-    <a href="index.html" class="flex items-center gap-3">
+  <nav class="container flex items-center justify-between px-4 py-3">
+    <a href="index.html" class="flex items-center space-x-3">
       <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
-        <i class="fas fa-store text-white"></i>
+        <i class="fas fa-store text-white text-sm"></i>
       </div>
-      <span class="font-bold text-lg">Brandia</span>
+      <span class="font-bold text-lg text-neutral-100">Brandia</span>
     </a>
-    <div class="text-sm text-neutral-400 flex items-center gap-2">
-      <i class="fas fa-lock text-emerald-400"></i>Paiement sécurisé
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center gap-2 text-sm text-neutral-400">
+        <i class="fas fa-lock text-emerald-400"></i>
+        <span>Paiement sécurisé</span>
+      </div>
     </div>
   </nav>
 </header>
 
-<section class="py-8">
-  <div class="container grid lg:grid-cols-3 gap-8">
-
-    <!-- LEFT -->
-    <div class="lg:col-span-2 space-y-6">
-
-      <!-- STEP 1 -->
-      <div class="bg-neutral-800 p-6 rounded-lg border border-neutral-700">
-        <h2 class="text-lg font-semibold mb-4 flex gap-2">
-          <i class="fas fa-truck text-indigo-400"></i> Adresse de livraison
-        </h2>
-
-        <form id="shipping-form" class="space-y-4">
-
-          <div class="grid md:grid-cols-2 gap-4">
-            <input id="first-name" required placeholder="Prénom *"
-              class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-            <input id="last-name" required placeholder="Nom *"
-              class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-          </div>
-
-          <input id="email" type="email" required placeholder="Email *"
-            class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-
-          <input id="phone" required placeholder="Téléphone *"
-            class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-
-          <input id="address" required placeholder="Adresse *"
-            class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-
-          <div class="grid md:grid-cols-3 gap-4">
-            <input id="postal-code" required placeholder="Code postal *"
-              class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-            <input id="city" required placeholder="Ville *"
-              class="form-input md:col-span-2 w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-          </div>
-
-          <!-- 🌍 PAYS -->
-          <select id="country" required
-            class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg">
-
-            <option value="TN">🇹🇳 Tunisie</option>
-            <option value="FR">🇫🇷 France</option>
-            <option value="DE">🇩🇪 Allemagne</option>
-            <option value="BE">🇧🇪 Belgique</option>
-            <option value="CH">🇨🇭 Suisse</option>
-            <option value="CA">🇨🇦 Canada</option>
-
-            <option disabled>──────── Tous les pays ────────</option>
-          </select>
-
-        </form>
+<!-- Progress Steps -->
+<section class="border-b border-neutral-800 bg-neutral-900/30">
+  <div class="container px-4 py-6">
+    <div class="flex items-center justify-center max-w-2xl mx-auto">
+      <div class="flex items-center">
+        <div id="step-1-indicator" class="step-indicator step-active w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold text-sm">1</div>
+        <span class="ml-2 text-sm font-medium text-white hidden sm:block">Livraison</span>
+      </div>
+      <div class="flex-1 h-0.5 bg-neutral-700 mx-4" id="line-1-2"></div>
+      <div class="flex items-center">
+        <div id="step-2-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-neutral-600 text-neutral-400 flex items-center justify-center font-semibold text-sm">2</div>
+        <span class="ml-2 text-sm font-medium text-neutral-400 hidden sm:block">Paiement</span>
+      </div>
+      <div class="flex-1 h-0.5 bg-neutral-700 mx-4" id="line-2-3"></div>
+      <div class="flex items-center">
+        <div id="step-3-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-neutral-600 text-neutral-400 flex items-center justify-center font-semibold text-sm">3</div>
+        <span class="ml-2 text-sm font-medium text-neutral-400 hidden sm:block">Confirmation</span>
       </div>
     </div>
-
-    <!-- RIGHT -->
-    <div class="bg-neutral-800 p-6 rounded-lg border border-neutral-700 sticky top-24">
-      <h2 class="text-lg font-semibold mb-4">Votre commande</h2>
-      <p class="text-sm text-neutral-400">Résumé du panier</p>
-    </div>
-
   </div>
 </section>
 
-<!-- 🌍 SCRIPT PAYS COMPLETS -->
+<section class="py-8">
+  <div class="container px-4">
+    <!-- Auth Check Warning -->
+    <div id="auth-warning" class="hidden mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-center">
+      <p class="text-yellow-400 mb-2">Vous devez être connecté pour finaliser votre achat</p>
+      <a href="login.html?redirect=checkout.html" class="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg">Se connecter</a>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+      
+      <!-- Left Column -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- STEP 1 -->
+        <div id="step-1" class="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+          <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-truck text-indigo-400"></i> Adresse de livraison
+          </h2>
+          
+          <form id="shipping-form" class="space-y-4">
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-neutral-400 mb-1">Prénom *</label>
+                <input type="text" id="first-name" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+              <div>
+                <label class="block text-sm text-neutral-400 mb-1">Nom *</label>
+                <input type="text" id="last-name" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Email *</label>
+              <input type="email" id="email" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Téléphone *</label>
+              <input type="tel" id="phone" required placeholder="+33 6 12 34 56 78" class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Adresse *</label>
+              <input type="text" id="address" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm text-neutral-400 mb-1">Code postal *</label>
+                <input type="text" id="postal-code" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm text-neutral-400 mb-1">Ville *</label>
+                <input type="text" id="city" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm text-neutral-400 mb-1">Pays *</label>
+              <select id="country" required class="form-input w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white outline-none">
+                <!-- tous les pays pour les clients (vous pouvez ajouter les autres) -->
+                 <option value="AF">🇦🇫 Afghanistan</option>
+  <option value="ZA">🇿🇦 Afrique du Sud</option>
+  <option value="AL">🇦🇱 Albanie</option>
+  <option value="DZ">🇩🇿 Algérie</option>
+  <option value="DE">🇩🇪 Allemagne</option>
+  <option value="AD">🇦🇩 Andorre</option>
+  <option value="AO">🇦🇴 Angola</option>
+  <option value="AG">🇦🇬 Antigua-et-Barbuda</option>
+  <option value="SA">🇸🇦 Arabie saoudite</option>
+  <option value="AR">🇦🇷 Argentine</option>
+  <option value="AM">🇦🇲 Arménie</option>
+  <option value="AU">🇦🇺 Australie</option>
+  <option value="AT">🇦🇹 Autriche</option>
+  <option value="AZ">🇦🇿 Azerbaïdjan</option>
+
+  <option value="BS">🇧🇸 Bahamas</option>
+  <option value="BH">🇧🇭 Bahreïn</option>
+  <option value="BD">🇧🇩 Bangladesh</option>
+  <option value="BB">🇧🇧 Barbade</option>
+  <option value="BE">🇧🇪 Belgique</option>
+  <option value="BZ">🇧🇿 Belize</option>
+  <option value="BJ">🇧🇯 Bénin</option>
+  <option value="BT">🇧🇹 Bhoutan</option>
+  <option value="BY">🇧🇾 Biélorussie</option>
+  <option value="MM">🇲🇲 Birmanie</option>
+  <option value="BO">🇧🇴 Bolivie</option>
+  <option value="BA">🇧🇦 Bosnie-Herzégovine</option>
+  <option value="BW">🇧🇼 Botswana</option>
+  <option value="BR">🇧🇷 Brésil</option>
+  <option value="BN">🇧🇳 Brunéi</option>
+  <option value="BG">🇧🇬 Bulgarie</option>
+  <option value="BF">🇧🇫 Burkina Faso</option>
+  <option value="BI">🇧🇮 Burundi</option>
+
+  <option value="KH">🇰🇭 Cambodge</option>
+  <option value="CM">🇨🇲 Cameroun</option>
+  <option value="CA">🇨🇦 Canada</option>
+  <option value="CV">🇨🇻 Cap-Vert</option>
+  <option value="CL">🇨🇱 Chili</option>
+  <option value="CN">🇨🇳 Chine</option>
+  <option value="CY">🇨🇾 Chypre</option>
+  <option value="CO">🇨🇴 Colombie</option>
+  <option value="KM">🇰🇲 Comores</option>
+  <option value="CG">🇨🇬 Congo</option>
+  <option value="KR">🇰🇷 Corée du Sud</option>
+  <option value="CR">🇨🇷 Costa Rica</option>
+  <option value="CI">🇨🇮 Côte d’Ivoire</option>
+  <option value="HR">🇭🇷 Croatie</option>
+  <option value="CU">🇨🇺 Cuba</option>
+
+  <option value="DK">🇩🇰 Danemark</option>
+  <option value="DJ">🇩🇯 Djibouti</option>
+  <option value="DM">🇩🇲 Dominique</option>
+
+  <option value="EG">🇪🇬 Égypte</option>
+  <option value="AE">🇦🇪 Émirats arabes unis</option>
+  <option value="EC">🇪🇨 Équateur</option>
+  <option value="ER">🇪🇷 Érythrée</option>
+  <option value="ES">🇪🇸 Espagne</option>
+  <option value="EE">🇪🇪 Estonie</option>
+  <option value="US">🇺🇸 États-Unis</option>
+  <option value="ET">🇪🇹 Éthiopie</option>
+
+  <option value="FI">🇫🇮 Finlande</option>
+  <option value="FR">🇫🇷 France</option>
+
+  <option value="GA">🇬🇦 Gabon</option>
+  <option value="GM">🇬🇲 Gambie</option>
+  <option value="GE">🇬🇪 Géorgie</option>
+  <option value="GH">🇬🇭 Ghana</option>
+  <option value="GR">🇬🇷 Grèce</option>
+  <option value="GD">🇬🇩 Grenade</option>
+  <option value="GT">🇬🇹 Guatemala</option>
+  <option value="GN">🇬🇳 Guinée</option>
+
+  <option value="HT">🇭🇹 Haïti</option>
+  <option value="HN">🇭🇳 Honduras</option>
+  <option value="HU">🇭🇺 Hongrie</option>
+
+  <option value="IN">🇮🇳 Inde</option>
+  <option value="ID">🇮🇩 Indonésie</option>
+  <option value="IQ">🇮🇶 Irak</option>
+  <option value="IR">🇮🇷 Iran</option>
+  <option value="IE">🇮🇪 Irlande</option>
+  <option value="IS">🇮🇸 Islande</option>
+  <option value="IL">🇮🇱 Israël</option>
+  <option value="IT">🇮🇹 Italie</option>
+
+  <option value="JP">🇯🇵 Japon</option>
+  <option value="JO">🇯🇴 Jordanie</option>
+
+  <option value="KZ">🇰🇿 Kazakhstan</option>
+  <option value="KE">🇰🇪 Kenya</option>
+  <option value="KW">🇰🇼 Koweït</option>
+
+  <option value="LA">🇱🇦 Laos</option>
+  <option value="LV">🇱🇻 Lettonie</option>
+  <option value="LB">🇱🇧 Liban</option>
+  <option value="LY">🇱🇾 Libye</option>
+  <option value="LI">🇱🇮 Liechtenstein</option>
+  <option value="LT">🇱🇹 Lituanie</option>
+  <option value="LU">🇱🇺 Luxembourg</option>
+
+  <option value="MG">🇲🇬 Madagascar</option>
+  <option value="MA">🇲🇦 Maroc</option>
+  <option value="MX">🇲🇽 Mexique</option>
+  <option value="MC">🇲🇨 Monaco</option>
+
+  <option value="NL">🇳🇱 Pays-Bas</option>
+  <option value="NO">🇳🇴 Norvège</option>
+
+  <option value="PK">🇵🇰 Pakistan</option>
+  <option value="PE">🇵🇪 Pérou</option>
+  <option value="PH">🇵🇭 Philippines</option>
+  <option value="PL">🇵🇱 Pologne</option>
+  <option value="PT">🇵🇹 Portugal</option>
+
+  <option value="QA">🇶🇦 Qatar</option>
+
+  <option value="RO">🇷🇴 Roumanie</option>
+  <option value="GB">🇬🇧 Royaume-Uni</option>
+  <option value="RU">🇷🇺 Russie</option>
+
+  <option value="SN">🇸🇳 Sénégal</option>
+  <option value="RS">🇷🇸 Serbie</option>
+  <option value="SG">🇸🇬 Singapour</option>
+  <option value="SI">🇸🇮 Slovénie</option>
+  <option value="SK">🇸🇰 Slovaquie</option>
+  <option value="ES">🇪🇸 Espagne</option>
+  <option value="SE">🇸🇪 Suède</option>
+  <option value="CH">🇨🇭 Suisse</option>
+
+  <option value="TN">🇹🇳 Tunisie</option>
+  <option value="TR">🇹🇷 Turquie</option>
+
+  <option value="UA">🇺🇦 Ukraine</option>
+  <option value="UY">🇺🇾 Uruguay</option>
+
+  <option value="VE">🇻🇪 Venezuela</option>
+  <option value="VN">🇻🇳 Viêt Nam</option>
+
+  <option value="YE">🇾🇪 Yémen</option>
+
+  <option value="ZM">🇿🇲 Zambie</option>
+  <option value="ZW">🇿🇼 Zimbabwe</option>
+
+              </select>
+              <p class="text-xs text-neutral-500 mt-1">D'autres pays disponibles prochainement</p>
+            </div>
+          </form>
+          
+          <button onclick="goToStep(2)" class="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2">
+            Continuer vers le paiement <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- STEP 2 -->
+        <div id="step-2" class="hidden bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+          <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-credit-card text-indigo-400"></i> Paiement sécurisé
+          </h2>
+          
+          <div class="space-y-3 mb-6">
+            <div class="payment-method selected p-4 border border-indigo-500 bg-indigo-500/10 rounded-lg flex items-center gap-3">
+              <i class="fas fa-credit-card text-indigo-400 text-xl"></i>
+              <div class="flex-1">
+                <p class="font-medium text-white">Carte bancaire</p>
+                <p class="text-xs text-neutral-400">Test: 4242 4242 4242 4242</p>
+              </div>
+            </div>
+          </div>
+          
+          <div id="card-payment-form" class="space-y-4">
+            <div>
+              <label class="block text-sm text-neutral-400 mb-2">Numéro de carte</label>
+              <div id="card-element"></div>
+              <div id="card-errors" class="text-red-400 text-sm mt-2 hidden"></div>
+            </div>
+            
+            <div class="flex items-center gap-2 text-sm text-neutral-500">
+              <i class="fas fa-lock text-emerald-400"></i>
+              <span>Sécurisé par Stripe - Données chiffrées (AES-256)</span>
+            </div>
+          </div>
+          
+          <div class="flex gap-3 mt-6">
+            <button onclick="goToStep(1)" class="px-6 py-3 border border-neutral-600 text-neutral-300 rounded-lg hover:bg-neutral-700 transition">
+              Retour
+            </button>
+            <button onclick="processPayment()" id="btn-pay" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2">
+              <span>Payer</span>
+              <span id="pay-amount" class="font-bold">0,00 €</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div id="step-3" class="hidden text-center py-12">
+          <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-check text-3xl text-white"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-white mb-2">Commande confirmée !</h2>
+          <p class="text-neutral-400 mb-2">Merci pour votre achat</p>
+          <p class="text-indigo-400 font-semibold mb-6" id="order-number">Commande #---</p>
+          
+          <div class="bg-neutral-800 rounded-lg p-6 border border-neutral-700 max-w-md mx-auto mb-6 text-left">
+            <h3 class="font-semibold text-white mb-4">Récapitulatif</h3>
+            <div id="confirmation-items" class="space-y-2 mb-4 text-sm"></div>
+            <div class="border-t border-neutral-700 pt-4 flex justify-between">
+              <span class="text-neutral-400">Total payé</span>
+              <span id="confirmation-total" class="text-xl font-bold text-emerald-400">0,00 €</span>
+            </div>
+          </div>
+          
+          <a href="index.html" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+            Retour à l'accueil
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="lg:col-span-1">
+        <div class="bg-neutral-800 rounded-lg p-6 border border-neutral-700 sticky top-24">
+          <h2 class="text-lg font-semibold text-white mb-4">Votre commande</h2>
+          
+          <div id="order-items" class="space-y-3 mb-4 max-h-64 overflow-y-auto"></div>
+          
+          <div class="space-y-2 text-sm border-t border-neutral-700 pt-4">
+            <div class="flex justify-between text-neutral-400">
+              <span>Sous-total</span>
+              <span id="checkout-subtotal" class="text-white">0,00 €</span>
+            </div>
+            <div class="flex justify-between text-neutral-400">
+              <span>Livraison</span>
+              <span id="checkout-shipping" class="text-emerald-400">Gratuit</span>
+            </div>
+            <div class="border-t border-neutral-700 pt-2 flex justify-between">
+              <span class="text-white font-semibold">Total</span>
+              <span id="checkout-total" class="text-2xl font-bold text-indigo-400">0,00 €</span>
+            </div>
+          </div>
+          
+          <div class="mt-6 text-center text-xs text-neutral-500">
+            <i class="fas fa-shield-alt mr-1"></i> Paiement 100% sécurisé
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+
+<script src="assets/js/api.js"></script>
 <script>
-const COUNTRIES = [
-["AF","🇦🇫","Afghanistan"],["ZA","🇿🇦","Afrique du Sud"],["AL","🇦🇱","Albanie"],
-["DZ","🇩🇿","Algérie"],["DE","🇩🇪","Allemagne"],["AD","🇦🇩","Andorre"],
-["AO","🇦🇴","Angola"],["SA","🇸🇦","Arabie saoudite"],["AR","🇦🇷","Argentine"],
-["AU","🇦🇺","Australie"],["AT","🇦🇹","Autriche"],["BE","🇧🇪","Belgique"],
-["BR","🇧🇷","Brésil"],["CA","🇨🇦","Canada"],["CN","🇨🇳","Chine"],
-["ES","🇪🇸","Espagne"],["US","🇺🇸","États-Unis"],["FR","🇫🇷","France"],
-["IT","🇮🇹","Italie"],["MA","🇲🇦","Maroc"],["NL","🇳🇱","Pays-Bas"],
-["PT","🇵🇹","Portugal"],["GB","🇬🇧","Royaume-Uni"],
-["CH","🇨🇭","Suisse"],["TN","🇹🇳","Tunisie"],["TR","🇹🇷","Turquie"]
-];
+let currentStep = 1;
+let cart = { items: [], totals: {} };
+let stripe = null;
+let cardElement = null;
 
-const TOP = ["TN","FR","DE","BE","CH","CA"];
+// ✅ CLÉ TEST STRIPE - REMPLACEZ PAR VOTRE VRAIE CLÉ
+const STRIPE_PUBLIC_KEY = 'pk_test_51SWLnfEAFgk3T0QBjYH8tjF5qAU0DBK2CBda3Nw6xvnOuVqB7vV6ecbTrHYCRs4aBpBebTDIWsAXNL3EuSK4FZVN00G2zDAHEH';
 
-document.addEventListener("DOMContentLoaded", () => {
-  const select = document.getElementById("country");
-
-  COUNTRIES
-    .filter(c => !TOP.includes(c[0]))
-    .sort((a,b)=>a[2].localeCompare(b[2],'fr'))
-    .forEach(([code,flag,name])=>{
-      const o=document.createElement("option");
-      o.value=code;
-      o.textContent=`${flag} ${name}`;
-      select.appendChild(o);
-    });
+document.addEventListener('DOMContentLoaded', () => {
+  // Vérifier auth
+  if (!BrandiaAPI.Auth.isLoggedIn()) {
+    document.getElementById('auth-warning').classList.remove('hidden');
+    document.querySelector('#step-1').classList.add('opacity-50', 'pointer-events-none');
+    return;
+  }
+  
+  loadCart();
+  initStripe();
+  
+  // Pré-remplir email
+  const user = BrandiaAPI.Auth.getUser();
+  if (user) document.getElementById('email').value = user.email || '';
 });
+
+function loadCart() {
+  const saved = localStorage.getItem('brandia_checkout_cart');
+  if (!saved) {
+    showToast('Panier vide', 'error');
+    window.location.href = 'panier.html';
+    return;
+  }
+  
+  cart = JSON.parse(saved);
+  if (!cart.items?.length) {
+    window.location.href = 'panier.html';
+    return;
+  }
+  
+  // ✅ CORRECTION : S'assurer que chaque item a un product_id valide
+  cart.items = cart.items.map(item => ({
+    ...item,
+    product_id: item.product_id || item.id, // Fallback sur id si product_id manquant
+    id: item.id || item.product_id // S'assurer que id existe aussi
+  })).filter(item => item.product_id); // Filtrer les items sans ID
+  
+  if (cart.items.length === 0) {
+    showToast('Erreur: produits invalides dans le panier', 'error');
+    window.location.href = 'panier.html';
+    return;
+  }
+  
+  renderOrderSummary();
+}
+
+function renderOrderSummary() {
+  const container = document.getElementById('order-items');
+  // ✅ CORRECTION : Image fallback Unsplash au lieu de placeholder.com
+  const fallbackImage = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=60&h=60&fit=crop';
+  
+  container.innerHTML = cart.items.map(item => `
+    <div class="flex gap-3 text-sm">
+      <div class="w-12 h-12 bg-neutral-700 rounded flex-shrink-0 overflow-hidden">
+        <img src="${item.image_url || item.image || fallbackImage}" 
+             class="w-full h-full object-cover"
+             onerror="this.src='${fallbackImage}'">
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-white truncate">${item.name}</p>
+        <p class="text-neutral-500 text-xs">Qté: ${item.quantity}</p>
+      </div>
+      <p class="text-white font-medium">${formatPrice(item.price * item.quantity)}</p>
+    </div>
+  `).join('');
+  
+  updateTotals();
+}
+
+function updateTotals() {
+  const subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+  const shipping = subtotal >= 50 ? 0 : 5.90;
+  const total = subtotal + shipping;
+  
+  cart.totals = { subtotal, shipping, total };
+  
+  document.getElementById('checkout-subtotal').textContent = formatPrice(subtotal);
+  document.getElementById('checkout-total').textContent = formatPrice(total);
+  document.getElementById('pay-amount').textContent = formatPrice(total);
+  document.getElementById('checkout-shipping').textContent = shipping === 0 ? 'Gratuit' : formatPrice(shipping);
+}
+
+function initStripe() {
+  // ✅ CLÉ TEST HARDCODÉE - À REMPLACER
+  if (!STRIPE_PUBLIC_KEY || STRIPE_PUBLIC_KEY === 'pk_test_VOTRE_CLE_ICI') {
+    console.warn('⚠️ Clé Stripe test non configurée - Mode démo activé');
+    return;
+  }
+  
+  try {
+    stripe = Stripe(STRIPE_PUBLIC_KEY);
+    const elements = stripe.elements({
+      appearance: { theme: 'night', variables: { colorPrimary: '#6366f1', colorBackground: '#111827' }}
+    });
+    
+    cardElement = elements.create('card', {
+      style: { base: { fontSize: '16px', color: '#f3f4f6', '::placeholder': { color: '#6b7280' }}}
+    });
+    
+    cardElement.on('change', (e) => {
+      const err = document.getElementById('card-errors');
+      if (e.error) {
+        err.textContent = e.error.message;
+        err.classList.remove('hidden');
+      } else {
+        err.classList.add('hidden');
+      }
+    });
+    
+  } catch (err) {
+    console.error('Erreur Stripe:', err);
+  }
+}
+
+function goToStep(step) {
+  if (step === 2 && !validateForm()) return;
+  
+  document.getElementById('step-1').classList.add('hidden');
+  document.getElementById('step-2').classList.add('hidden');
+  document.getElementById('step-3').classList.add('hidden');
+  document.getElementById(`step-${step}`).classList.remove('hidden');
+  
+  updateIndicators(step);
+  
+  if (step === 2 && cardElement && !cardElement._mounted) {
+    setTimeout(() => {
+      cardElement.mount('#card-element');
+      cardElement._mounted = true;
+    }, 100);
+  }
+  
+  currentStep = step;
+}
+
+function updateIndicators(step) {
+  // Step 1
+  const s1 = document.getElementById('step-1-indicator');
+  if (step > 1) { s1.className = 'step-indicator step-completed w-10 h-10 rounded-full border-2 flex items-center justify-center'; s1.innerHTML = '<i class="fas fa-check"></i>'; }
+  else if (step === 1) { s1.className = 'step-indicator step-active w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold'; s1.innerHTML = '1'; }
+  
+  // Step 2
+  const s2 = document.getElementById('step-2-indicator');
+  if (step > 2) { s2.className = 'step-indicator step-completed w-10 h-10 rounded-full border-2 flex items-center justify-center'; s2.innerHTML = '<i class="fas fa-check"></i>'; }
+  else if (step === 2) { s2.className = 'step-indicator step-active w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold'; s2.innerHTML = '2'; }
+  else { s2.className = 'step-indicator w-10 h-10 rounded-full border-2 border-neutral-600 text-neutral-400 flex items-center justify-center font-semibold'; s2.innerHTML = '2'; }
+  
+  // Lines
+  document.getElementById('line-1-2').className = `flex-1 h-0.5 mx-4 ${step >= 2 ? 'bg-emerald-500' : 'bg-neutral-700'}`;
+  document.getElementById('line-2-3').className = `flex-1 h-0.5 mx-4 ${step >= 3 ? 'bg-emerald-500' : 'bg-neutral-700'}`;
+}
+
+function validateForm() {
+  const fields = ['first-name', 'last-name', 'email', 'phone', 'address', 'postal-code', 'city'];
+  let valid = true;
+  
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) {
+      el.classList.add('error');
+      valid = false;
+    } else {
+      el.classList.remove('error');
+    }
+  });
+  
+  if (!valid) showToast('Veuillez remplir tous les champs', 'error');
+  return valid;
+}
+
+async function processPayment() {
+  const btn = document.getElementById('btn-pay');
+  
+  if (!BrandiaAPI.Auth.isLoggedIn()) {
+    showToast('Session expirée', 'error');
+    window.location.href = 'login.html?redirect=checkout.html';
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Traitement...';
+  
+  try {
+    // 1. Préparer les données avec VALIDATION STRICTE
+    const shipping = {
+      first_name: document.getElementById('first-name').value.trim(),
+      last_name: document.getElementById('last-name').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      postal_code: document.getElementById('postal-code').value.trim(),
+      city: document.getElementById('city').value.trim(),
+      country: document.getElementById('country').value
+    };
+    
+    // ✅ CORRECTION CRUCIALE : Mapping des items avec validation product_id
+    const items = cart.items.map(i => {
+      const productId = parseInt(i.product_id || i.id);
+      if (!productId || isNaN(productId)) {
+        throw new Error(`Produit invalide dans le panier: ${i.name}`);
+      }
+      return {
+        product_id: productId,
+        quantity: parseInt(i.quantity) || 1,
+        price: parseFloat(i.price) || 0
+      };
+    });
+    
+    console.log('[Checkout] Creating order with items:', items);
+    
+    // 2. Créer la commande
+    const orderRes = await BrandiaAPI.Orders.create({
+      items: items,
+      shipping_address: shipping,
+      billing_address: shipping
+    });
+    
+    console.log('[Checkout] Order response:', orderRes);
+    
+    if (!orderRes.success) {
+      throw new Error(orderRes.message || 'Erreur création commande');
+    }
+    
+    // ✅ CORRECTION : Gestion flexible de la réponse
+    const orderData = orderRes.data || orderRes;
+    const orderNumber = orderData.order_number || orderData.order?.order_number;
+    const clientSecret = orderData.client_secret || orderData.order?.client_secret;
+    
+    if (!orderNumber) {
+      throw new Error('Numéro de commande manquant dans la réponse');
+    }
+    
+    // 3. Si Stripe configuré et client_secret présent
+    if (clientSecret && stripe) {
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement }
+      });
+      
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      
+      if (result.paymentIntent.status === 'succeeded') {
+        completeOrder(orderNumber);
+      }
+    } else {
+      // Mode simulation ou Stripe non configuré
+      console.log('[Checkout] No Stripe client_secret, completing order directly');
+      await new Promise(r => setTimeout(r, 1000));
+      completeOrder(orderNumber);
+    }
+    
+  } catch (error) {
+    console.error('[Checkout] Payment error:', error);
+    showToast(error.message || 'Erreur lors du paiement', 'error');
+    btn.disabled = false;
+    btn.innerHTML = `<span>Payer</span><span id="pay-amount" class="font-bold">${formatPrice(cart.totals.total)}</span>`;
+  }
+}
+
+function completeOrder(orderNumber) {
+  // Vider panier
+  localStorage.removeItem('brandia_cart');
+  localStorage.removeItem('brandia_checkout_cart');
+  
+  // Afficher confirmation
+  const displayNumber = orderNumber || 'BRD-' + Date.now().toString(36).toUpperCase();
+  document.getElementById('order-number').textContent = `Commande #${displayNumber}`;
+  
+  // Récapitulatif
+  document.getElementById('confirmation-items').innerHTML = cart.items.map(i => `
+    <div class="flex justify-between text-sm mb-2">
+      <span class="text-neutral-400">${i.quantity}x ${i.name}</span>
+      <span class="text-white">${formatPrice(i.price * i.quantity)}</span>
+    </div>
+  `).join('');
+  
+  document.getElementById('confirmation-total').textContent = formatPrice(cart.totals.total);
+  
+  goToStep(3);
+}
+
+function formatPrice(amount) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  const colors = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-indigo-500';
+  toast.className = `${colors} text-white px-4 py-3 rounded-lg shadow-lg mb-2 flex items-center gap-2 animate-fade-in`;
+  toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check' : type === 'error' ? 'fa-exclamation' : 'fa-info'}"></i><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+window.goToStep = goToStep;
+window.processPayment = processPayment;
 </script>
 
 </body>
