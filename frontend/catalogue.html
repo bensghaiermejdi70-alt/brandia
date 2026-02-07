@@ -297,10 +297,15 @@ window.CatalogueApp = {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement des produits...</p></div>';
 
+    // Nettoyage du paramètre category
+    let category = CatalogueApp.state.filters.category;
+    if (category === 'null' || category === 'undefined') {
+      category = null;
+    }
     try {
       // Utiliser la nouvelle API avec promotions
       const response = await BrandiaAPI.Products.getAllWithPromotions({
-        category: CatalogueApp.state.filters.category,
+        category,
         limit: 100
       });
 
@@ -323,7 +328,7 @@ window.CatalogueApp = {
       // Fallback sur ancienne API
       try {
         const fallback = await BrandiaAPI.Products.getAll({
-          category: CatalogueApp.state.filters.category,
+          category,
           limit: 100
         });
         if (fallback.success) {

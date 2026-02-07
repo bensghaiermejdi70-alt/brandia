@@ -32,7 +32,7 @@ const ProductModel = {
         const params = [];
         let paramCount = 0;
 
-        if (category) {
+        if (category && category !== 'null' && category !== 'undefined') {
             paramCount++;
             sql += ` AND p.category_slug = $${paramCount}`;
             params.push(category);
@@ -226,7 +226,7 @@ const ProductModel = {
             const params = [];
             let paramCount = 0;
 
-            if (category) {
+            if (category && category !== 'null' && category !== 'undefined') {
                 paramCount++;
                 sql += ` AND (c.slug = $${paramCount} OR c.id::text = $${paramCount})`;
                 params.push(category);

@@ -61,27 +61,31 @@ window.PublicProducts = {
     loadAllProducts: async (category = null) => {
         try {
             PublicProducts.showLoading(true);
-            PublicProducts.state.currentCategory = category;
-            
+            // Nettoyage du paramètre category
+            let cleanCategory = category;
+            if (cleanCategory === 'null' || cleanCategory === 'undefined') {
+                cleanCategory = null;
+            }
+            PublicProducts.state.currentCategory = cleanCategory;
             const params = {};
-            if (category) params.category = category;
-            
+            if (cleanCategory) params.category = cleanCategory;
             const response = await BrandiaAPI.Products.getAllWithPromotions(params);
-            
             if (response.success) {
                 PublicProducts.state.products = response.data.products || [];
                 PublicProducts.renderProductGrid('products-grid', PublicProducts.state.products);
-                
                 // Mettre à jour le titre
-                PublicProducts.updateCategoryTitle(category);
+                PublicProducts.updateCategoryTitle(cleanCategory);
             } else {
                 throw new Error(response.message);
             }
-            
         } catch (error) {
             console.error('[PublicProducts] Erreur chargement produits:', error);
             // Fallback
-            const fallback = await BrandiaAPI.Products.getAll({ category });
+            let cleanCategory = category;
+            if (cleanCategory === 'null' || cleanCategory === 'undefined') {
+                cleanCategory = null;
+            }
+            const fallback = await BrandiaAPI.Products.getAll({ category: cleanCategory });
             if (fallback.success) {
                 PublicProducts.renderProductGrid('products-grid', fallback.data.products);
             }
