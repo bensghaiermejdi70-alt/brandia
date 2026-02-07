@@ -30,9 +30,10 @@
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.success { background: #10b981; }
     .toast.error { background: #ef4444; }
-    /* Badge promotion animé */
     .promo-badge { animation: pulse-red 2s infinite; }
     @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } }
+    .category-radio:checked + span { color: white; font-weight: 500; }
+    .category-radio:checked { background: #6366f1; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -117,7 +118,7 @@
           </div>
         </div>
 
-        <!-- NOUVEAU: Filtre Promotions -->
+        <!-- Filtre Promotions -->
         <div class="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
           <h3 class="font-semibold text-white mb-3 flex items-center gap-2">
             <i class="fas fa-fire text-red-500"></i>
@@ -203,7 +204,7 @@
 
 <script>
 // ==========================================
-// LES 21 CATÉGORIES (inchangé)
+// LES 21 CATÉGORIES
 // ==========================================
 const BRANDIA_CATEGORIES = [
   { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
@@ -264,7 +265,7 @@ const COUNTRIES = {
 };
 
 // ==========================================
-// CATALOGUE APP - Gestion complète avec promotions
+// CATALOGUE APP
 // ==========================================
 window.CatalogueApp = {
   state: {
@@ -290,24 +291,29 @@ window.CatalogueApp = {
     updateCartBadge();
   },
 
-  // ==========================================
-  // CHARGEMENT PRODUITS AVEC PROMOTIONS
-  // ==========================================
+  // ✅ CORRIGÉ : Nettoyage complet de la catégorie
   loadProducts: async () => {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement des produits...</p></div>';
 
-    // Nettoyage du paramètre category
+    // Nettoyage complet du paramètre category
     let category = CatalogueApp.state.filters.category;
-    if (category === 'null' || category === 'undefined') {
+    
+    // ✅ Double vérification : null, undefined, 'null', 'undefined', ''
+    if (!category || category === 'null' || category === 'undefined' || category === '') {
       category = null;
     }
+    
+    console.log('[CatalogueApp] Loading with category:', category);
+
     try {
-      // Utiliser la nouvelle API avec promotions
-      const response = await BrandiaAPI.Products.getAllWithPromotions({
-        category,
-        limit: 100
-      });
+      const params = {};
+      if (category) {
+        params.category = category;
+      }
+      params.limit = 100;
+
+      const response = await BrandiaAPI.Products.getAllWithPromotions(params);
 
       console.log('[CatalogueApp] Réponse API:', response);
 
@@ -315,7 +321,6 @@ window.CatalogueApp = {
         CatalogueApp.state.allProducts = response.data.products || [];
         CatalogueApp.applyFilters();
         
-        // Afficher compteur de promos si présent
         if (response.data.promo_count > 0) {
           console.log(`[CatalogueApp] ${response.data.promo_count} produits en promotion`);
         }
@@ -325,12 +330,9 @@ window.CatalogueApp = {
 
     } catch (error) {
       console.error('[CatalogueApp] Erreur API avec promotions:', error);
-      // Fallback sur ancienne API
+      // Fallback
       try {
-        const fallback = await BrandiaAPI.Products.getAll({
-          category,
-          limit: 100
-        });
+        const fallback = await BrandiaAPI.Products.getAll({ limit: 100 });
         if (fallback.success) {
           CatalogueApp.state.allProducts = fallback.data.products || [];
           CatalogueApp.applyFilters();
@@ -350,9 +352,6 @@ window.CatalogueApp = {
     }
   },
 
-  // ==========================================
-  // FILTRAGE ET TRI
-  // ==========================================
   applyFilters: () => {
     let products = [...CatalogueApp.state.allProducts];
     const f = CatalogueApp.state.filters;
@@ -400,7 +399,6 @@ window.CatalogueApp = {
         case 'price_desc':
           return priceB - priceA;
         case 'promo':
-          // Priorité aux promos, puis par % de réduction
           if (a.has_promotion && !b.has_promotion) return -1;
           if (!a.has_promotion && b.has_promotion) return 1;
           if (a.has_promotion && b.has_promotion) {
@@ -416,15 +414,11 @@ window.CatalogueApp = {
     });
   },
 
-  // ==========================================
-  // RENDU DES PRODUITS AVEC PROMOTIONS
-  // ==========================================
   renderProducts: (products) => {
     const container = document.getElementById('products-container');
     const resultsCount = document.getElementById('results-count');
     const emptyState = document.getElementById('empty-state');
 
-    // Mise à jour compteur
     const promoCount = products.filter(p => p.has_promotion).length;
     resultsCount.textContent = `${products.length} produit(s) trouvé(s)${promoCount > 0 ? ` (${promoCount} en promo)` : ''}`;
 
@@ -437,12 +431,9 @@ window.CatalogueApp = {
     emptyState.classList.add('hidden');
 
     container.innerHTML = products.map((p, index) => {
-      // Utiliser renderProductCard de public-products.js si disponible, sinon fallback
       if (window.PublicProducts && PublicProducts.renderProductCard) {
         return PublicProducts.renderProductCard(p);
       }
-      
-      // Fallback: rendu inline avec support promotions
       return CatalogueApp.renderProductCardFallback(p, index);
     }).join('');
   },
@@ -450,30 +441,31 @@ window.CatalogueApp = {
   renderProductCardFallback: (p, index) => {
     const hasPromo = p.has_promotion === true;
     const finalPrice = parseFloat(p.final_price || p.price);
-    const basePrice = parseFloat(p.base_price || p.price);
-    const savings = hasPromo ? basePrice - finalPrice : 0;
-    const discountPercent = hasPromo ? Math.round((savings / basePrice) * 100) : 0;
+    const basePrice = parseFloat(p.base_price || p.original_price || p.price);
     
-    const image = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
-    const supplier = p.supplier_company || p.supplier_name || 'Marque';
+    let savingsAmount = 0;
+    let savingsPercent = 0;
+    
+    if (hasPromo && basePrice > finalPrice) {
+      savingsAmount = basePrice - finalPrice;
+      savingsPercent = Math.round((savingsAmount / basePrice) * 100);
+    }
 
-    // Badge promotion
     const promoBadge = hasPromo ? `
       <div class="absolute top-2 left-2 z-10 promo-badge">
         <span class="bg-gradient-to-r from-red-500 to-pink-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-          <i class="fas fa-fire mr-1"></i>-${p.discount_display || discountPercent + '%'}
+          <i class="fas fa-fire mr-1"></i>-${p.discount_display || savingsPercent + '%'}
         </span>
       </div>
     ` : '';
 
-    // Affichage prix
     const priceDisplay = hasPromo ? `
       <div class="flex flex-col">
         <span class="text-neutral-500 line-through text-xs">${basePrice.toFixed(2)} €</span>
         <div class="flex items-center gap-2">
           <span class="text-emerald-400 font-bold text-lg">${finalPrice.toFixed(2)} €</span>
           <span class="text-xs text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-            -${savings.toFixed(2)} €
+            -${savingsAmount.toFixed(2)} €
           </span>
         </div>
       </div>
@@ -481,7 +473,6 @@ window.CatalogueApp = {
       <span class="text-lg font-bold text-white">${finalPrice.toFixed(2)} €</span>
     `;
 
-    // Info promo supplémentaire
     const promoInfo = hasPromo ? `
       <div class="mt-2 p-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded border border-indigo-500/20">
         <div class="flex items-center gap-2 text-xs text-indigo-300">
@@ -497,6 +488,8 @@ window.CatalogueApp = {
       </div>
     ` : '';
 
+    const image = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
+
     return `
       <div class="product-card group bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition-all duration-300 fade-in" style="animation-delay: ${index * 0.05}s">
         <a href="product.html?id=${p.id}" class="block relative">
@@ -508,7 +501,7 @@ window.CatalogueApp = {
         </a>
         <div class="p-4">
           <h3 class="text-sm font-medium text-white mb-1 line-clamp-2 hover:text-indigo-400 transition cursor-pointer" onclick="window.location.href='product.html?id=${p.id}'">${p.name}</h3>
-          <p class="text-xs text-neutral-500 mb-2">${supplier}</p>
+          <p class="text-xs text-neutral-500 mb-2">${p.supplier_company || p.supplier_name || 'Marque'}</p>
           
           ${priceDisplay}
           ${promoInfo}
@@ -528,12 +521,8 @@ window.CatalogueApp = {
     `;
   },
 
-  // ==========================================
-  // ACTIONS
-  // ==========================================
   addToCart: async (productId) => {
     try {
-      // Récupérer détail avec promotion pour prix exact
       const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
       
       if (!response.success || !response.data.product) {
@@ -542,7 +531,6 @@ window.CatalogueApp = {
 
       const product = response.data.product;
       
-      // Ajouter au panier avec prix promo
       const cartItem = {
         id: product.id,
         name: product.name,
@@ -557,7 +545,6 @@ window.CatalogueApp = {
       if (window.BrandiaAPI && BrandiaAPI.Cart) {
         BrandiaAPI.Cart.add(cartItem);
       } else {
-        // Fallback localStorage
         let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
         const existing = cart.find(x => x.id === product.id);
         if (existing) {
@@ -591,7 +578,7 @@ window.CatalogueApp = {
 };
 
 // ==========================================
-// FONCTIONS UTILITAIRES (inchangées)
+// FONCTIONS UTILITAIRES
 // ==========================================
 function getFlagEmoji(countryCode) {
   const flags = { 
@@ -653,13 +640,20 @@ function initCountrySelector() {
   selector.addEventListener('change', (e) => {
     localStorage.setItem('country', e.target.value);
     localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
-    CatalogueApp.loadProducts();
   });
 }
 
+// ✅ CORRIGÉ : Nettoyage complet de la catégorie au chargement
 function initFilters() {
   const urlParams = new URLSearchParams(window.location.search);
-  CatalogueApp.state.filters.category = urlParams.get('category');
+  let rawCategory = urlParams.get('category');
+  
+  // ✅ Nettoyer 'null', 'undefined', '' en string
+  if (rawCategory === 'null' || rawCategory === 'undefined' || rawCategory === '') {
+    rawCategory = null;
+  }
+  
+  CatalogueApp.state.filters.category = rawCategory;
   
   updatePageTitle();
 
@@ -668,7 +662,7 @@ function initFilters() {
   if (container) {
     container.innerHTML = BRANDIA_CATEGORIES.map(cat => `
       <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-2 rounded transition ${CatalogueApp.state.filters.category === cat.slug ? 'bg-neutral-700/30' : ''}">
-        <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom" ${CatalogueApp.state.filters.category === cat.slug ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
+        <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom category-radio" ${CatalogueApp.state.filters.category === cat.slug ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
         <span class="text-sm text-neutral-300">${cat.name}</span>
       </label>
     `).join('');
@@ -688,20 +682,41 @@ function initFilters() {
   }
 }
 
+// ✅ CORRIGÉ : Fonction updateCategory complètement réécrite
 function updateCategory(slug) {
-  CatalogueApp.state.filters.category = slug;
+  console.log('[updateCategory] Appel avec slug:', slug);
+  
+  // ✅ Normaliser le slug
+  const cleanSlug = (!slug || slug === 'null' || slug === 'undefined' || slug === '') ? null : slug;
+  
+  console.log('[updateCategory] Clean slug:', cleanSlug);
+  
+  // Mettre à jour l'état
+  CatalogueApp.state.filters.category = cleanSlug;
   updatePageTitle();
   
-  document.querySelectorAll('#filter-categories label').forEach((label, idx) => {
-    if (BRANDIA_CATEGORIES[idx].slug === slug) {
-      label.classList.add('bg-neutral-700/30');
+  // Mettre à jour visuellement les radios
+  document.querySelectorAll('input[name="category"]').forEach(radio => {
+    const label = radio.closest('label');
+    if (radio.value === cleanSlug) {
+      radio.checked = true;
+      label?.classList.add('bg-neutral-700/30');
     } else {
-      label.classList.remove('bg-neutral-700/30');
+      radio.checked = false;
+      label?.classList.remove('bg-neutral-700/30');
     }
   });
   
+  // ✅ Forcer rechargement avec la bonne catégorie
+  console.log('[updateCategory] Rechargement des produits...');
   CatalogueApp.loadProducts();
-  window.history.replaceState({}, '', slug ? `?category=${slug}` : window.location.pathname);
+  
+  // Mettre à jour URL sans recharger
+  if (cleanSlug) {
+    window.history.replaceState({}, '', `?category=${cleanSlug}`);
+  } else {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
 }
 
 function initSearch() {
@@ -767,7 +782,11 @@ function resetAll() {
   document.getElementById('promo-only').checked = false;
   document.getElementById('sort-select').value = 'newest';
   
-  document.querySelectorAll('input[name="category"]').forEach(cb => cb.checked = false);
+  // Décocher tous les radios
+  document.querySelectorAll('input[name="category"]').forEach(radio => {
+    radio.checked = false;
+    radio.closest('label')?.classList.remove('bg-neutral-700/30');
+  });
   
   window.history.replaceState({}, '', window.location.pathname);
   

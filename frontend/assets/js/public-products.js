@@ -188,7 +188,7 @@ window.PublicProducts = {
                     ${stockBadge}
                     
                     <div class="absolute bottom-4 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                        <button onclick="PublicProducts.quickAddToCart(${product.id}, event)" 
+                        <button onclick="PublicProducts.addToCart(${product.id}, event)"
                                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium shadow-lg backdrop-blur-sm bg-opacity-90">
                             <i class="fas fa-cart-plus mr-2"></i>Ajouter
                         </button>
@@ -253,7 +253,9 @@ window.PublicProducts = {
         await PublicProducts.addToCart(productId);
     },
 
-    addToCart: async (productId) => {
+    // ... (tout le début identique jusqu'à addToCart)
+
+    addToCart: async (productId, event = null) => { // ✅ event optionnel avec valeur par défaut
         try {
             const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
             
@@ -277,15 +279,18 @@ window.PublicProducts = {
 
             PublicProducts.showToast(`${product.name} ajouté au panier !`, 'success');
             
-            const btn = event.target.closest('button');
-            if (btn) {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
-                btn.classList.add('bg-emerald-600');
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                    btn.classList.remove('bg-emerald-600');
-                }, 1500);
+            // ✅ Animation uniquement si event existe (bouton rapide)
+            if (event) {
+                const btn = event.target.closest('button');
+                if (btn) {
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
+                    btn.classList.add('bg-emerald-600');
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.classList.remove('bg-emerald-600');
+                    }, 1500);
+                }
             }
 
         } catch (error) {
@@ -293,6 +298,8 @@ window.PublicProducts = {
             PublicProducts.showToast('Erreur lors de l\'ajout', 'error');
         }
     },
+
+// ... (reste du fichier identique)
 
     filterByCategory: (categorySlug) => {
         PublicProducts.loadAllProducts(categorySlug);
