@@ -46,6 +46,28 @@ window.SupplierProducts = {
     await SupplierProducts.loadProducts();
   },
 
+  /* ===========================
+     LOAD PRODUCTS ✅ AJOUTÉ
+  =========================== */
+  loadProducts: async function () {
+    try {
+      console.log('[Products] Chargement...');
+      const response = await BrandiaAPI.Supplier.getProducts();
+
+      if (response.success) {
+        this.state.products = response.data || [];
+        this.renderProducts();
+        console.log('[Products] Chargés:', this.state.products.length);
+      } else {
+        console.error('[Products] Erreur API:', response.message);
+        DashboardApp.showToast('Erreur chargement produits', 'error');
+      }
+    } catch (error) {
+      console.error('[Products] Erreur:', error);
+      DashboardApp.showToast('Erreur chargement produits', 'error');
+    }
+  },
+
   loadCategories() {
     SupplierProducts.state.categories = SupplierProducts.BRANDIA_CATEGORIES;
 
@@ -55,13 +77,17 @@ window.SupplierProducts = {
     if (filter) {
       filter.innerHTML =
         '<option value="">Toutes les catégories</option>' +
-        SupplierProducts.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        SupplierProducts.state.categories
+          .map(c => `<option value="${c.id}">${c.name}</option>`)
+          .join('');
     }
 
     if (select) {
       select.innerHTML =
         '<option value="">Choisir...</option>' +
-        SupplierProducts.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        SupplierProducts.state.categories
+          .map(c => `<option value="${c.id}">${c.name}</option>`)
+          .join('');
     }
   },
 
@@ -117,7 +143,6 @@ window.SupplierProducts = {
       main_image_url: SupplierProducts.state.uploadedImage?.url || null
     };
 
-    // ✅ VALIDATIONS
     if (!data.name || data.name.length < 2) {
       return alert('Le nom du produit doit contenir au moins 2 caractères');
     }
