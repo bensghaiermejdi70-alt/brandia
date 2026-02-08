@@ -1,6 +1,6 @@
 // SupplierController.js
 
-const db = require('../db'); // Assure-toi que le chemin est correct
+const db = require('../../config/db'); // Assure-toi que le chemin est correct
 const upload = require('../middleware/upload'); // Middleware pour upload d'image
 
 class SupplierController {
