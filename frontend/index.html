@@ -258,28 +258,132 @@
 <!-- Script pour la page d'accueil -->
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-  // Charger les produits en vedette
-  try {
-    const response = await BrandiaAPI.Products.getFeaturedWithPromotions();
-    if (response.success) {
-      const grid = document.getElementById('featured-products-grid');
-      const loader = document.getElementById('featured-loader');
-            
-      if (response.data.products.length > 0) {
-        grid.innerHTML = response.data.products.map(p => 
-          PublicProducts.renderProductCard(p)
-        ).join('');
-                
-        loader.classList.add('hidden');
-        grid.classList.remove('hidden');
-      } else {
-        loader.innerHTML = '<p class="text-slate-500">Aucun produit disponible</p>';
-      }
-    }
-  } catch (error) {
-    console.error('Erreur chargement featured:', error);
-  }
+  // ==========================================
+// CHARGEMENT DES PRODUITS EN VEDETTE (CORRIGÉ)
+// ==========================================
+async function loadFeaturedProducts() {
+    const container = document.getElementById('featured-products');
+    if (!container) return;
     
+    try {
+        // Essayer d'abord avec promotions
+        let response;
+        try {
+            response = await BrandiaAPI.Products.getFeaturedWithPromotions();
+        } catch (e) {
+            console.log('[Home] Fallback to getFeatured');
+            response = await BrandiaAPI.Products.getFeatured();
+        }
+        
+        console.log('API Response:', response);
+        
+        if (!response.success || !response.data) {
+            throw new Error('Réponse API invalide');
+        }
+
+        // Gérer les deux formats de réponse
+        const products = response.data.products || response.data;
+        
+        if (!Array.isArray(products) || products.length === 0) {
+            container.innerHTML = '<p class="text-neutral-500 text-center py-8">Aucun produit en vedette</p>';
+            return;
+        }
+
+        container.innerHTML = products.map(p => {
+            // Détection promo (nouveau ou ancien format)
+            const hasPromo = p.has_promotion || p.final_price < p.price || p.promo_id;
+            const finalPrice = parseFloat(p.final_price) || parseFloat(p.price) || 0;
+            const originalPrice = parseFloat(p.original_price) || parseFloat(p.price) || 0;
+            const discountDisplay = p.discount_display || p.savings_display || '';
+            
+            const imageUrl = p.main_image_url || p.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
+            
+            return `
+            <div class="bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500 transition group">
+                <div class="relative aspect-square overflow-hidden">
+                    <img src="${imageUrl}" alt="${p.name}" 
+                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                         onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
+                    ${hasPromo ? `
+                        <div class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                            ${discountDisplay || '- Promo'}
+                        </div>
+                    ` : ''}
+                    <button onclick="addToCart(${p.id})" class="absolute bottom-3 right-3 w-10 h-10 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <p class="text-xs text-indigo-400 mb-1">${p.category_name || p.category_slug || 'Catégorie'}</p>
+                    <h3 class="font-semibold text-white mb-2 truncate">${p.name}</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg font-bold ${hasPromo ? 'text-emerald-400' : 'text-white'}">${formatPrice(finalPrice)}</span>
+                        ${hasPromo && originalPrice > finalPrice ? `
+                            <span class="text-sm text-neutral-500 line-through">${formatPrice(originalPrice)}</span>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Erreur chargement featured:', error);
+        container.innerHTML = `
+            <div class="col-span-full text-center py-8">
+                <p class="text-neutral-500 mb-2">Erreur de chargement</p>
+                <button onclick="loadFeaturedProducts()" class="text-indigo-400 hover:text-indigo-300">
+                    <i class="fas fa-redo mr-1"></i> Réessayer
+                </button>
+            </div>
+        `;
+    }
+}
+
+function formatPrice(amount) {
+    return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR'
+    }).format(amount || 0);
+}
+
+async function addToCart(productId) {
+    try {
+        const response = await BrandiaAPI.Products.getById(productId);
+        if (!response.success) throw new Error('Produit non trouvé');
+        
+        const product = response.data.product || response.data;
+        
+        BrandiaAPI.Cart.add({
+            id: product.id,
+            name: product.name,
+            price: parseFloat(product.final_price || product.price),
+            original_price: parseFloat(product.price),
+            has_promotion: product.has_promotion || false,
+            main_image_url: product.main_image_url,
+            quantity: 1
+        });
+        
+        showToast('Produit ajouté au panier !', 'success');
+    } catch (error) {
+        console.error('Erreur ajout panier:', error);
+        showToast('Erreur lors de l\'ajout', 'error');
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+    } text-white transform translate-y-0 transition-all duration-300`;
+    toast.innerHTML = `<i class="fas fa-check mr-2"></i>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
   // Mettre à jour le panier
   BrandiaAPI.Cart.updateBadge();
 });

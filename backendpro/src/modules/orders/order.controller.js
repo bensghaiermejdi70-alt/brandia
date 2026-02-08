@@ -238,16 +238,18 @@ const OrderController = {
                 subtotal += totalPrice;
                 vatAmount += vatOnItem;
 
-                // ✅ Validation supplier_id
-                const supplierId = validateProductId(product.supplier_id);
-                if (!supplierId) {
-                    await client.query('ROLLBACK');
-                    client.release();
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: `Fournisseur invalide pour le produit ${product.name}` 
-                    });
-                }
+                
+             // ✅ CORRECTION: Validation supplier_id avec message clair
+             const supplierId = validateProductId(product.supplier_id);
+            if (!supplierId) {
+         await client.query('ROLLBACK');
+        client.release();
+        logger.error(`❌ Produit sans fournisseur: ${product.name} (ID: ${product.id})`);
+       return res.status(400).json({ 
+        success: false, 
+        message: `Le produit "${product.name}" n'est pas associé à un vendeur. Veuillez contacter le support ou choisir un autre produit.` 
+    });
+}
 
                 // Grouper par fournisseur
                 if (!supplierAmounts[supplierId]) {

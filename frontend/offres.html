@@ -3,60 +3,334 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="offres-meta">Offres – Brandia</title>
+  <title>Offres – Brandia</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/countries.css">
-  <style>body{background-color:#0b111e;color:#f3f4f6;font-family:system-ui,sans-serif;}.container{max-width:1200px;margin:auto;padding:0 1rem;}</style>
+  <style>
+    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
+    .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
+    .promo-card { transition: all 0.3s ease; }
+    .promo-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2); }
+    .promo-badge { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+  </style>
 </head>
 <body>
 
 <header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
   <nav class="container flex items-center justify-between px-4 py-3">
     <a href="index.html" class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center"><i class="fas fa-store text-white text-sm"></i></div>
+      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+        <i class="fas fa-store text-white text-sm"></i>
+      </div>
       <span class="font-bold text-lg text-neutral-100">Brandia</span>
     </a>
     <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="catalogue.html?filter=new" data-i18n="nav-new">Nouveautés</a>
-      <a href="catalogue.html?tab=brands" data-i18n="nav-brands">Marques</a>
-      <a href="offres.html" data-i18n="nav-offers">Offres</a>
-      <a href="#about" data-i18n="nav-about">À propos</a>
-      <a href="categories.html" data-i18n="nav-categories">Catégories</a>
-      <a href="login.html" data-i18n="nav-login">Connexion</a>
+      <a href="catalogue.html" class="hover:text-white transition">Catalogue</a>
+      <a href="index.html" class="hover:text-white transition">Accueil</a>
+      <a href="offres.html" class="text-indigo-400 font-medium">Offres</a>
     </div>
-    <div class="flex items-center space-x-3 text-sm text-neutral-300">
-      <select id="langSwitch" class="px-2 py-1 bg-neutral-800 rounded text-xs">
-        <option value="fr">🇫🇷 FR</option>
-        <option value="en">🇬🇧 EN</option>
-      </select>
-      <a href="panier.html" class="relative"><i class="fas fa-shopping-bag"></i><span class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span></a>
+    <div class="flex items-center space-x-3">
+      <a href="panier.html" class="relative">
+        <i class="fas fa-shopping-bag text-neutral-300"></i>
+        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white hidden">0</span>
+      </a>
     </div>
   </nav>
 </header>
 
 <section class="py-10">
-  <div class="container">
-    <h1 class="text-2xl font-bold mb-4 text-neutral-100" data-i18n="offres-title">Offres du jour</h1>
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-      <a href="product.html?id=1" class="block bg-neutral-800 rounded p-3 ring-1 ring-neutral-700 hover:ring-indigo-400 transition">
-        <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0&auto=format&fit=crop&w=400&q=80" class="w-full h-32 object-cover rounded mb-2">
-        <p class="text-sm text-neutral-100 truncate" data-i18n="product-creme">Crème Anti-Âge</p>
-        <p class="font-bold text-indigo-400"><span class="line-through text-neutral-500 text-xs">55,90 €</span> -30% 26,90 €</p>
+  <div class="container px-4">
+    <div class="text-center mb-10">
+      <h1 class="text-3xl font-bold text-white mb-2">🔥 Nos meilleures offres</h1>
+      <p class="text-neutral-400">Profitez de nos promotions exclusives</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-offers" class="text-center py-12">
+      <i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-4"></i>
+      <p class="text-neutral-500">Chargement des offres...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-offers" class="hidden text-center py-12">
+      <i class="fas fa-exclamation-circle text-red-400 text-3xl mb-4"></i>
+      <p class="text-neutral-400 mb-4">Erreur de chargement</p>
+      <button onclick="loadOffers()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition">
+        <i class="fas fa-redo mr-2"></i>Réessayer
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-offers" class="hidden text-center py-12">
+      <i class="fas fa-tag text-neutral-600 text-4xl mb-4"></i>
+      <p class="text-neutral-400">Aucune promotion active pour le moment</p>
+      <a href="catalogue.html" class="inline-block mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition">
+        Voir le catalogue
       </a>
-      <a href="product.html?id=1" class="block bg-neutral-800 rounded p-3 ring-1 ring-neutral-700 hover:ring-indigo-400 transition">
-        <img src="https://images.unsplash.com/photo-1556228578-8c89e6adf883?ixlib=rb-4.0&auto=format&fit=crop&w=400&q=80" class="w-full h-32 object-cover rounded mb-2">
-        <p class="text-sm text-neutral-100 truncate" data-i18n="product-serum">Sérum Hydratant</p>
-        <p class="font-bold text-indigo-400"><span class="line-through text-neutral-500 text-xs">30,90 €</span> -25% 16,90 €</p>
-      </a>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="offers-grid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- Rempli dynamiquement -->
     </div>
   </div>
 </section>
 
-<footer class="border-t border-neutral-800 py-6 text-center text-xs text-neutral-500" data-i18n="footer">© 2026 Brandia – Marketplace officielle des marques</footer>
+<footer class="border-t border-neutral-800 py-6 text-center text-xs text-neutral-500">
+  <div class="container">
+    <p>© 2026 Brandia – Marketplace officielle des marques</p>
+  </div>
+</footer>
 
-<script src="assets/js/lang.js"></script>
-<script>applyLang(localStorage.getItem("lang") || "fr");</script>
+<script src="assets/js/api.js"></script>
+<script>
+const API_BASE = window.location.hostname === 'localhost' 
+  ? 'http://localhost:4000' 
+  : 'https://brandia-1.onrender.com';
+
+// ==========================================
+// CHARGEMENT DES OFFRES
+// ==========================================
+async function loadOffers() {
+  const loadingEl = document.getElementById('loading-offers');
+  const errorEl = document.getElementById('error-offers');
+  const emptyEl = document.getElementById('empty-offers');
+  const gridEl = document.getElementById('offers-grid');
+
+  // Reset states
+  loadingEl.classList.remove('hidden');
+  errorEl.classList.add('hidden');
+  emptyEl.classList.add('hidden');
+  gridEl.classList.add('hidden');
+
+  try {
+    // Essayer d'abord l'API avec promotions
+    let response;
+    try {
+      response = await fetch(`${API_BASE}/api/public/promotions/active`);
+      const data = await response.json();
+      
+      if (data.success && data.data && data.data.length > 0) {
+        renderPromotions(data.data);
+        loadingEl.classList.add('hidden');
+        gridEl.classList.remove('hidden');
+        return;
+      }
+    } catch (e) {
+      console.log('[Offers] API promotions indisponible, fallback sur produits');
+    }
+
+    // Fallback: charger tous les produits et filtrer ceux avec promo
+    const productsRes = await fetch(`${API_BASE}/api/products/featured`);
+    const productsData = await productsRes.json();
+    
+    if (productsData.success && productsData.data && productsData.data.products) {
+      const productsWithPromo = productsData.data.products.filter(p => 
+        p.has_promotion || p.final_price < p.price || p.promo_id
+      );
+      
+      if (productsWithPromo.length > 0) {
+        renderProducts(productsWithPromo);
+        loadingEl.classList.add('hidden');
+        gridEl.classList.remove('hidden');
+      } else {
+        loadingEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+      }
+    } else {
+      throw new Error('Aucune donnée reçue');
+    }
+
+  } catch (error) {
+    console.error('[Offers] Erreur:', error);
+    loadingEl.classList.add('hidden');
+    errorEl.classList.remove('hidden');
+  }
+}
+
+// ==========================================
+// RENDU PROMOTIONS (API /public/promotions/active)
+// ==========================================
+function renderPromotions(promotions) {
+  const grid = document.getElementById('offers-grid');
+  
+  grid.innerHTML = promotions.map(promo => {
+    const discountLabel = promo.type === 'percentage' 
+      ? `-${promo.value}%` 
+      : `-${promo.value}€`;
+    
+    const endDate = promo.end_date 
+      ? new Date(promo.end_date).toLocaleDateString('fr-FR')
+      : 'Date limitée';
+
+    return `
+      <div class="promo-card bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500/50">
+        <div class="relative h-40 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
+          <div class="text-center p-4">
+            <div class="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+              <i class="fas fa-percentage text-indigo-400 text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-white text-lg">${promo.name}</h3>
+          </div>
+          <div class="absolute top-3 right-3">
+            <span class="promo-badge bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+              ${discountLabel}
+            </span>
+          </div>
+        </div>
+        <div class="p-4">
+          <p class="text-sm text-neutral-400 mb-2">${promo.supplier_company || 'Brandia'}</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-amber-400">
+              <i class="fas fa-clock mr-1"></i>Jusqu'au ${endDate}
+            </span>
+            <span class="text-xs text-neutral-500">${promo.products_count || 0} produits</span>
+          </div>
+          ${promo.code ? `
+            <div class="mt-3 p-2 bg-neutral-900 rounded text-center">
+              <span class="text-xs text-neutral-500">Code:</span>
+              <span class="font-mono text-emerald-400 font-bold ml-2">${promo.code}</span>
+            </div>
+          ` : ''}
+          <a href="catalogue.html?promo=${promo.id}" class="block mt-3 w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-center rounded-lg transition">
+            Voir les produits
+          </a>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==========================================
+// RENDU PRODUITS (Fallback)
+// ==========================================
+function renderProducts(products) {
+  const grid = document.getElementById('offers-grid');
+  
+  grid.innerHTML = products.map(p => {
+    const finalPrice = parseFloat(p.final_price || p.price);
+    const basePrice = parseFloat(p.base_price || p.original_price || p.price);
+    const discount = basePrice > finalPrice 
+      ? Math.round(((basePrice - finalPrice) / basePrice) * 100) 
+      : 0;
+
+    const imageUrl = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
+
+    return `
+      <div class="promo-card bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500/50">
+        <div class="relative h-48">
+          <img src="${imageUrl}" alt="${p.name}" 
+               class="w-full h-full object-cover"
+               onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
+          ${discount > 0 ? `
+            <div class="absolute top-3 left-3">
+              <span class="promo-badge bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                -${discount}%
+              </span>
+            </div>
+          ` : ''}
+        </div>
+        <div class="p-4">
+          <p class="text-xs text-indigo-400 mb-1">${p.category_name || 'Catégorie'}</p>
+          <h3 class="font-semibold text-white mb-2 line-clamp-2">${p.name}</h3>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xl font-bold text-emerald-400">${formatPrice(finalPrice)}</span>
+            ${basePrice > finalPrice ? `
+              <span class="text-sm text-neutral-500 line-through">${formatPrice(basePrice)}</span>
+            ` : ''}
+          </div>
+          <div class="flex gap-2">
+            <button onclick="addToCart(${p.id})" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+              <i class="fas fa-cart-plus mr-2"></i>Ajouter
+            </button>
+            <a href="product.html?id=${p.id}" class="px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition">
+              <i class="fas fa-eye"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==========================================
+// UTILITAIRES
+// ==========================================
+function formatPrice(amount) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount || 0);
+}
+
+async function addToCart(productId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/products/${productId}`);
+    const data = await response.json();
+    
+    if (!data.success) throw new Error('Produit non trouvé');
+    
+    const product = data.data.product || data.data;
+    
+    // Récupérer panier existant
+    let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+    
+    const existing = cart.find(item => item.id == productId);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: parseFloat(product.final_price || product.price),
+        original_price: parseFloat(product.original_price || product.price),
+        has_promotion: product.has_promotion || false,
+        main_image_url: product.main_image_url,
+        quantity: 1
+      });
+    }
+    
+    localStorage.setItem('brandia_cart', JSON.stringify(cart));
+    updateCartBadge();
+    showToast('Produit ajouté au panier !', 'success');
+    
+  } catch (error) {
+    console.error('[Offers] Erreur ajout panier:', error);
+    showToast('Erreur lors de l\'ajout', 'error');
+  }
+}
+
+function updateCartBadge() {
+  const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+  const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const badge = document.getElementById('cart-count');
+  if (badge) {
+    badge.textContent = count;
+    badge.classList.toggle('hidden', count === 0);
+  }
+}
+
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+    type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+  } text-white transform translate-y-0 transition-all duration-300`;
+  toast.innerHTML = `<i class="fas fa-check mr-2"></i>${message}`;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  loadOffers();
+  updateCartBadge();
+});
+</script>
 
 </body>
 </html>

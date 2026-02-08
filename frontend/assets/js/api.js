@@ -150,10 +150,10 @@
   };
 
   // ==========================================
-  // PRODUCTS API (AVEC PROMOTIONS)
-  // ==========================================
-  const ProductsAPI = {
-    // Méthodes classiques (sans promotions)
+// PRODUCTS API (AVEC PROMOTIONS)
+// ==========================================
+const ProductsAPI = {
+    // Méthodes classiques
     getAll: async (params = {}) => {
       const queryString = new URLSearchParams(params).toString();
       return await apiFetch(`/products${queryString ? '?' + queryString : ''}`);
@@ -172,46 +172,51 @@
     },
 
     // ==========================================
-    // NOUVEAU: Méthodes avec promotions
+    // MÉTHODES AVEC PROMOTIONS (CORRIGÉES)
     // ==========================================
     
     /**
-     * Récupère tous les produits avec leurs promotions actives intégrées
-     * Chaque produit contient: has_promotion, final_price, promo_type, etc.
+     * Récupère tous les produits avec leurs promotions actives
      */
-    /**
- * Récupère tous les produits avec leurs promotions actives intégrées
- * Filtre les params null/undefined pour éviter les erreurs
- */
-getAllWithPromotions: async (params = {}) => {
-  const queryString = new URLSearchParams();
-  
-  // ✅ Ne pas ajouter si null/undefined/vide
-  if (params.category && params.category !== 'null' && params.category !== '') {
-    queryString.append('category', params.category);
-  }
-  if (params.search && params.search.trim() !== '') {
-    queryString.append('search', params.search.trim());
-  }
-  if (params.limit && !isNaN(params.limit)) {
-    queryString.append('limit', parseInt(params.limit));
-  }
-  if (params.offset && !isNaN(params.offset)) {
-    queryString.append('offset', parseInt(params.offset));
-  }
-  if (params.sort && params.sort !== '') {
-    queryString.append('sort', params.sort);
-  }
-  
-  const url = `/products/with-promotions${queryString.toString() ? '?' + queryString.toString() : ''}`;
-  console.log('[API] getAllWithPromotions:', url);
-  
-  return await apiFetch(url);
-},
+    getAllWithPromotions: async (params = {}) => {
+      const queryString = new URLSearchParams();
+      
+      if (params.category && params.category !== 'null' && params.category !== 'undefined') {
+        queryString.append('category', params.category);
+      }
+      if (params.search && params.search.trim()) {
+        queryString.append('search', params.search.trim());
+      }
+      if (params.limit && !isNaN(params.limit)) {
+        queryString.append('limit', params.limit);
+      }
+      
+      const url = `/products/with-promotions${queryString.toString() ? '?' + queryString.toString() : ''}`;
+      console.log('[API] getAllWithPromotions:', url);
+      
+      return await apiFetch(url);
+    },
 
     /**
-     * Helper: Calcule le prix final d'un produit (côté client)
-     * Utilisé si les données ne viennent pas de l'API avec promo
+     * ✅ NOUVEAU: Récupère les produits en vedette avec promotions
+     */
+    getFeaturedWithPromotions: async () => {
+      return await apiFetch('/products/featured-with-promotions');
+    },
+
+    /**
+     * ✅ NOUVEAU: Récupère le détail d'un produit avec sa promotion
+     */
+    getByIdWithPromotion: async (id) => {
+      if (!id || id === 'null' || id === 'undefined') {
+        console.error('[API] Invalid product ID:', id);
+        return { success: false, message: 'ID produit invalide' };
+      }
+      return await apiFetch(`/products/${id}/with-promotion`);
+    },
+
+    /**
+     * Helper: Calcule le prix final d'un produit
      */
     calculateFinalPrice: (product, promotion) => {
       if (!promotion || !promotion.type) return parseFloat(product.price);
@@ -224,8 +229,7 @@ getAllWithPromotions: async (params = {}) => {
       }
       return basePrice;
     }
-  };
-
+};
   // Categories API
   const CategoriesAPI = {
     getAll: async () => {
