@@ -1,7 +1,21 @@
-// SupplierController.js
+// supplier.controller.js
 
-const db = require('../../config/db'); // Assure-toi que le chemin est correct
-const upload = require('../middleware/upload'); // Middleware pour upload d'image
+const db = require('../../config/db');
+const { uploadImage, uploadVideo } = require('../../utils/cloudinary'); // uploadImage et uploadVideo
+const multer = require('multer');
+
+// Configuration multer inline (pas besoin de fichier séparé)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Seules les images et vidéos sont autorisées'), false);
+    }
+  }
+});
 
 class SupplierController {
   /* ================= PRODUITS ================= */
@@ -21,12 +35,21 @@ class SupplierController {
     try {
       const { name, price, stock } = req.body;
       const supplier_id = req.params.supplierId;
-      const image = req.file ? req.file.filename : null;
+      let image = null;
+      let video = null;
+
+      if (req.file) {
+        if (req.file.mimetype.startsWith('image/')) {
+          image = await uploadImage(req.file.buffer);
+        } else if (req.file.mimetype.startsWith('video/')) {
+          video = await uploadVideo(req.file.buffer);
+        }
+      }
 
       const result = await db.query(
-        `INSERT INTO products (name, price, stock, supplier_id, image) 
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [name, price, stock, supplier_id, image]
+        `INSERT INTO products (name, price, stock, supplier_id, image, video) 
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [name, price, stock, supplier_id, image, video]
       );
 
       res.json({ success: true, data: result.rows[0] });
@@ -40,14 +63,28 @@ class SupplierController {
     try {
       const { productId } = req.params;
       const { name, price, stock } = req.body;
-      const image = req.file ? req.file.filename : null;
+      let fields = [name, price, stock];
+      let query = `UPDATE products SET name=$1, price=$2, stock=$3`;
+      let idx = 4;
 
-      const result = await db.query(
-        `UPDATE products SET name=$1, price=$2, stock=$3${image ? ', image=$4' : ''}, updated_at=NOW()
-         WHERE id=$5 RETURNING *`,
-        image ? [name, price, stock, image, productId] : [name, price, stock, productId]
-      );
+      if (req.file) {
+        if (req.file.mimetype.startsWith('image/')) {
+          const image = await uploadImage(req.file.buffer);
+          query += `, image=$${idx}`;
+          fields.push(image);
+          idx++;
+        } else if (req.file.mimetype.startsWith('video/')) {
+          const video = await uploadVideo(req.file.buffer);
+          query += `, video=$${idx}`;
+          fields.push(video);
+          idx++;
+        }
+      }
 
+      query += `, updated_at=NOW() WHERE id=$${idx} RETURNING *`;
+      fields.push(productId);
+
+      const result = await db.query(query, fields);
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
       console.error('[Update Product] Error:', error);
@@ -94,7 +131,6 @@ class SupplierController {
     try {
       const { supplierId } = req.params;
       const { amount } = req.body;
-      // Logique simplifiée pour demande de payout
       await db.query(
         `INSERT INTO payouts (supplier_id, amount, status, created_at) VALUES ($1, $2, 'pending', NOW())`,
         [supplierId, amount]
@@ -169,14 +205,12 @@ class SupplierController {
     }
   }
 
-  /* ================= PUBLIC CAMPAGNES (MANQUANTES) ================= */
+  /* ================= PUBLIC CAMPAGNES ================= */
 
   async getActiveCampaignForProduct(req, res) {
     try {
       const { supplierId, productId } = req.params;
-      
-      console.log(`[Public Campaigns] Request: supplier=${supplierId}, product=${productId}`);
-      
+
       if (!supplierId || !productId) {
         return res.status(400).json({
           success: false,
@@ -185,69 +219,37 @@ class SupplierController {
       }
 
       const result = await db.query(`
-        SELECT 
-          c.id,
-          c.name,
-          c.media_url,
-          c.media_type,
-          c.headline,
-          c.description,
-          c.cta_text,
-          c.cta_link,
-          c.start_date,
-          c.end_date
-        FROM supplier_campaigns c
-        WHERE c.supplier_id = $1
-          AND $2 = ANY(c.target_products)
-          AND c.status = 'active'
-          AND c.start_date <= NOW()
-          AND c.end_date >= NOW()
-        ORDER BY c.created_at DESC
+        SELECT id, name, media_url, media_type, headline, description, cta_text, cta_link, start_date, end_date
+        FROM supplier_campaigns
+        WHERE supplier_id=$1
+          AND $2 = ANY(target_products)
+          AND status='active'
+          AND start_date <= NOW()
+          AND end_date >= NOW()
+        ORDER BY created_at DESC
         LIMIT 1
       `, [supplierId, productId]);
 
-      console.log(`[Public Campaigns] Found: ${result.rows.length} campaign(s)`);
-
       if (result.rows.length === 0) {
-        return res.json({
-          success: true,
-          data: null,
-          message: 'Aucune campagne active trouvée'
-        });
+        return res.json({ success: true, data: null, message: 'Aucune campagne active trouvée' });
       }
 
-      res.json({
-        success: true,
-        data: result.rows[0]
-      });
-
+      res.json({ success: true, data: result.rows[0] });
     } catch (error) {
       console.error('[Public Campaigns] Error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur serveur lors de la récupération de la campagne'
-      });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 
   async trackCampaignClick(req, res) {
     try {
       const { campaign_id } = req.body;
-      
+
       if (!campaign_id) {
-        return res.status(400).json({
-          success: false,
-          message: 'campaign_id requis'
-        });
+        return res.status(400).json({ success: false, message: 'campaign_id requis' });
       }
-      
-      await db.query(`
-        UPDATE supplier_campaigns 
-        SET clicks_count = clicks_count + 1,
-            updated_at = NOW()
-        WHERE id = $1
-      `, [campaign_id]);
-      
+
+      await db.query(`UPDATE supplier_campaigns SET clicks_count = clicks_count + 1, updated_at=NOW() WHERE id=$1`, [campaign_id]);
       res.json({ success: true, message: 'Clic enregistré' });
     } catch (error) {
       console.error('[Track Click] Error:', error);
@@ -258,21 +260,12 @@ class SupplierController {
   async trackCampaignView(req, res) {
     try {
       const { campaign_id } = req.body;
-      
+
       if (!campaign_id) {
-        return res.status(400).json({
-          success: false,
-          message: 'campaign_id requis'
-        });
+        return res.status(400).json({ success: false, message: 'campaign_id requis' });
       }
-      
-      await db.query(`
-        UPDATE supplier_campaigns 
-        SET views_count = views_count + 1,
-            updated_at = NOW()
-        WHERE id = $1
-      `, [campaign_id]);
-      
+
+      await db.query(`UPDATE supplier_campaigns SET views_count = views_count + 1, updated_at=NOW() WHERE id=$1`, [campaign_id]);
       res.json({ success: true, message: 'Vue enregistrée' });
     } catch (error) {
       console.error('[Track View] Error:', error);
@@ -287,10 +280,7 @@ const controller = new SupplierController();
 
 module.exports = {
   controller,
-  uploadMiddleware: upload.single('image'),
-  // Export direct des méthodes pour usage routeur si besoin
-  updatePromotion: controller.updatePromotion?.bind(controller),
-  deletePromotion: controller.deletePromotion?.bind(controller),
+  uploadMiddleware: upload.single('image'), // ✅ multer inline
   getProducts: controller.getProducts.bind(controller),
   createProduct: controller.createProduct.bind(controller),
   updateProduct: controller.updateProduct.bind(controller),
@@ -302,7 +292,6 @@ module.exports = {
   createCampaign: controller.createCampaign.bind(controller),
   updateCampaign: controller.updateCampaign.bind(controller),
   deleteCampaign: controller.deleteCampaign.bind(controller),
-  // ✅ AJOUTÉ :
   getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
   trackCampaignClick: controller.trackCampaignClick.bind(controller),
   trackCampaignView: controller.trackCampaignView.bind(controller)
