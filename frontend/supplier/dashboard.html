@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">   
   <title>Dashboard Fournisseur - Brandia</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -175,6 +175,7 @@
       border-color: #6366f1;
     }
 
+    /* Protection anti-clic pendant chargement */
     .loading-disabled {
       pointer-events: none;
       opacity: 0.6;
@@ -1051,26 +1052,33 @@
 
 <!-- INITIALISATION & PROTECTION -->
 <script>
+// ==========================================
+// PROTECTION D'ACCÈS & GESTION D'ERREURS
+// ==========================================
+
 (function() {
   'use strict';
   
-  // Vérifier authentification
+  // Vérifier authentification immédiatement
   function checkAuth() {
     try {
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || 'null');
       
       if (!token || !user) {
+        console.error('[Dashboard] Non authentifié');
         window.location.href = '../login.html?redirect=supplier/dashboard&error=unauthorized';
         return false;
       }
       
       if (user.role !== 'supplier') {
+        console.error('[Dashboard] Accès refusé - rôle:', user.role);
         alert('Accès réservé aux fournisseurs');
         window.location.href = '../index.html';
         return false;
       }
       
+      // Afficher nom utilisateur
       const userNameEl = document.getElementById('user-name');
       if (userNameEl) {
         userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
@@ -1078,6 +1086,7 @@
       
       return true;
     } catch (error) {
+      console.error('[Dashboard] Erreur auth:', error);
       window.location.href = '../login.html?error=session';
       return false;
     }
@@ -1090,6 +1099,7 @@
     return false;
   };
 
+  // Gestionnaire de promesses rejetées
   window.onunhandledrejection = function(event) {
     console.error('[Dashboard Promise Error]', event.reason);
     showToast('Erreur de chargement des données', 'error');
@@ -1109,7 +1119,11 @@
     toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>${message}`;
     
     container.appendChild(toast);
+    
+    // Animer entrée
     setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+    
+    // Supprimer après 3s
     setTimeout(() => {
       toast.classList.add('translate-x-full');
       setTimeout(() => toast.remove(), 300);
@@ -1141,6 +1155,7 @@
   };
 
   window.navigate = function(section) {
+    // Mettre à jour nav
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-link').forEach(el => {
       if (el.getAttribute('onclick')?.includes(section)) {
@@ -1148,12 +1163,14 @@
       }
     });
     
+    // Afficher section
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
     const targetSection = document.getElementById(section);
     if (targetSection) {
       targetSection.classList.add('active');
     }
     
+    // Mettre à jour titre
     const titles = {
       'overview': ['Tableau de bord', 'Vue d\'ensemble de votre activité'],
       'products': ['Mes produits', 'Gérez votre catalogue produits'],
@@ -1173,6 +1190,7 @@
     if (titleEl) titleEl.textContent = title;
     if (subtitleEl) subtitleEl.textContent = subtitle;
     
+    // Sauvegarder section active
     localStorage.setItem('dashboard_last_section', section);
   };
 
@@ -1183,15 +1201,20 @@
     window.location.href = '../login.html';
   };
 
+  // Initialisation sécurisée
   if (!checkAuth()) return;
 
+  // Restaurer dernière section ou défaut
   const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
   
+  // Attendre que tous les modules soient chargés
   document.addEventListener('DOMContentLoaded', function() {
     console.log('[Dashboard] Initialisation...');
     
+    // Navigation initiale
     navigate(lastSection);
     
+    // Initialiser les modules si disponibles
     setTimeout(() => {
       try {
         if (window.SupplierProducts) {
@@ -1215,6 +1238,7 @@
           SupplierPromotions.init();
         }
         
+        // Charger stats overview
         loadOverviewStats();
         
       } catch (error) {
@@ -1224,9 +1248,7 @@
     }, 100);
   });
 
-  // ==========================================
-  // FONCTION CORRIGÉE POUR CHART.JS
-  // ==========================================
+  // Charger stats overview
   async function loadOverviewStats() {
     try {
       if (typeof BrandiaAPI === 'undefined') {
@@ -1240,13 +1262,14 @@
       if (response?.success && response.data) {
         const data = response.data;
         
+        // Mettre à jour KPIs
         updateElement('kpi-revenue', formatPrice(data.totalSales || 0));
         updateElement('kpi-orders', data.totalOrders || 0);
         updateElement('kpi-products', data.activeProducts || 0);
         updateElement('kpi-total-products', data.totalProducts || 0);
         updateElement('kpi-balance', formatPrice(data.balance || 0));
         
-        // Initialiser graphique avec gestion du canvas existant
+        // Initialiser graphique si Chart.js disponible
         if (typeof Chart !== 'undefined') {
           initSalesChart(data.salesData || []);
         }
@@ -1268,64 +1291,62 @@
     }).format(amount || 0);
   }
 
-  // ==========================================
-  // CORRECTION CHART.JS - DESTRUCTION PROPRE
-  // ==========================================
-  function initSalesChart(data) {
-    const ctx = document.getElementById('salesChart');
-    if (!ctx) return;
-    
-    // ✅ Détruire le graphique existant s'il y en a un
-    if (window.salesChartInstance) {
-      window.salesChartInstance.destroy();
-      window.salesChartInstance = null;
-    }
-    
-    // ✅ Vider le canvas complètement pour éviter "Canvas is already in use"
-    const parent = ctx.parentElement;
-    const newCanvas = document.createElement('canvas');
-    newCanvas.id = 'salesChart';
-    parent.innerHTML = '';
-    parent.appendChild(newCanvas);
-    
-    // Créer le nouveau graphique
-    window.salesChartInstance = new Chart(newCanvas, {
-      type: 'line',
-      data: {
-        labels: data.map(d => d.date) || ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-        datasets: [{
-          label: 'Ventes (€)',
-          data: data.map(d => d.amount) || [0, 0, 0, 0, 0, 0, 0],
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { 
-            beginAtZero: true, 
-            grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
-            ticks: { color: '#94a3b8' } 
-          },
-          x: { 
-            grid: { display: false }, 
-            ticks: { color: '#94a3b8' } 
-          }
-        }
-      }
-    });
+  <script>
+function initSalesChart(data) {
+  const ctx = document.getElementById('salesChart');
+  if (!ctx) return;
+
+  // ✅ Détruire le graphique existant
+  if (window.salesChartInstance) {
+    window.salesChartInstance.destroy();
+    window.salesChartInstance = null;
   }
 
-  window.updateSalesChart = function() {
-    loadOverviewStats();
-  };
+  // ✅ Recréer proprement le canvas
+  const parent = ctx.parentElement;
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = 'salesChart';
+  parent.innerHTML = '';
+  parent.appendChild(newCanvas);
 
-})();
+  // ✅ Créer le nouveau graphique
+  window.salesChartInstance = new Chart(newCanvas, {
+    type: 'line',
+    data: {
+      labels: (data && data.length)
+        ? data.map(d => d.date)
+        : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+      datasets: [{
+        label: 'Ventes (€)',
+        data: (data && data.length)
+          ? data.map(d => d.amount)
+          : [0, 0, 0, 0, 0, 0, 0],
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: { color: '#94a3b8' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        }
+      }
+    }
+  });
+}
 </script>
 
 </body>
