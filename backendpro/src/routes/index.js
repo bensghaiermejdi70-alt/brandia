@@ -91,8 +91,8 @@ router.get('/public/campaigns', async (req, res) => {
     }
 });
 
-/// ============================================
-// ROUTE CATEGORIES (MANQUANTE)
+// ============================================
+// ROUTE CATEGORIES
 // ============================================
 router.get('/categories', async (req, res) => {
     try {
@@ -150,14 +150,10 @@ router.get('/test-db', async (req, res) => {
         });
     }
 });
+
 // ============================================
 // ROUTES PUBLIQUES - PROMOTIONS
 // ============================================
-
-/**
- * GET /api/public/promotions/active
- * Renvoie toutes les promotions actives du site (pour page /offres)
- */
 router.get('/public/promotions/active', async (req, res) => {
     try {
         const db = require('../config/db');
@@ -203,10 +199,6 @@ router.get('/public/promotions/active', async (req, res) => {
     }
 });
 
-/**
- * POST /api/public/promotions/validate
- * Valide un code promo (appelé depuis le panier)
- */
 router.post('/public/promotions/validate', async (req, res) => {
     try {
         const { code, productIds, totalAmount } = req.body;
@@ -281,6 +273,7 @@ router.post('/public/promotions/validate', async (req, res) => {
         res.status(500).json({ success: false, message: 'Erreur serveur' });
     }
 });
+
 // ============================================
 // ROUTES API (protégées ou spécifiques)
 // ============================================
@@ -290,6 +283,52 @@ router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/countries', countryRoutes);
 router.use('/supplier', supplierRoutes);
+
+// ============================================
+// Fallback produit sans promotion
+// ============================================
+router.get('/products/:id', async (req, res) => {
+  try {
+    const db = require('../config/db');
+    const result = await db.query(`
+      SELECT 
+        p.*,
+        c.name as category_name,
+        u.first_name as supplier_name,
+        s.company_name as brand_name,
+        s.logo_url as supplier_logo,
+        s.description as supplier_description,
+        s.country as supplier_country
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN users u ON p.supplier_id = u.id
+      LEFT JOIN suppliers s ON u.id = s.user_id
+      WHERE p.id = $1 AND (p.is_active = true OR p.is_active IS NULL)
+    `, [req.params.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Produit non trouvé' });
+    }
+    
+    const product = result.rows[0];
+    product.supplier = {
+      name: product.brand_name || product.supplier_name,
+      company_name: product.brand_name,
+      logo_url: product.supplier_logo,
+      description: product.supplier_description,
+      country: product.supplier_country
+    };
+    
+    res.json({
+      success: true,
+      data: { product }
+    });
+    
+  } catch (error) {
+    console.error('[Product Detail] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // ============================================
 // DOCUMENTATION API
