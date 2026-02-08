@@ -22,7 +22,6 @@
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.success { background: #10b981; }
     .toast.error { background: #ef4444; }
-    .toast.warning { background: #f59e0b; }
     .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
   </style>
 </head>
@@ -40,20 +39,21 @@
     <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
       <a href="catalogue.html" class="hover:text-white transition">Catalogue</a>
       <a href="index.html" class="hover:text-white transition">Accueil</a>
+      <a href="offres.html" class="hover:text-white transition">Offres</a>
     </div>
 
     <div class="flex items-center space-x-3">
-      <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
+      <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700">
         <option value="">Chargement...</option>
       </select>
       
       <div id="auth-buttons" class="flex items-center space-x-2">
-        <a href="login.html" class="text-sm text-neutral-300 hover:text-white transition">Connexion</a>
+        <a href="login.html" class="text-sm text-neutral-300 hover:text-white">Connexion</a>
       </div>
       
       <div id="user-menu" class="hidden items-center space-x-3">
         <span id="user-name" class="text-sm text-neutral-300"></span>
-        <button onclick="logout()" class="text-sm text-red-400 hover:text-red-300 transition">Déconnexion</button>
+        <button onclick="logout()" class="text-sm text-red-400 hover:text-red-300">Déconnexion</button>
       </div>
 
       <a href="panier.html" class="relative">
@@ -67,49 +67,54 @@
 <section class="border-b border-neutral-800 bg-neutral-900/30">
   <div class="container px-4 py-3">
     <div class="flex items-center text-sm text-neutral-400">
-      <a href="index.html" class="hover:text-white transition">Accueil</a>
+      <a href="index.html" class="hover:text-white">Accueil</a>
       <i class="fas fa-chevron-right text-xs mx-2"></i>
-      <a href="catalogue.html" class="hover:text-white transition">Catalogue</a>
+      <a href="catalogue.html" class="hover:text-white">Catalogue</a>
       <i class="fas fa-chevron-right text-xs mx-2"></i>
       <span id="breadcrumb-product" class="text-neutral-500">Produit</span>
     </div>
   </div>
 </section>
 
+<!-- Loading State -->
 <div id="loading-state" class="container px-4 py-20 text-center">
   <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-500 mb-4"></div>
   <p class="text-neutral-400">Chargement du produit...</p>
 </div>
 
+<!-- Error State -->
 <div id="error-state" class="hidden container px-4 py-20 text-center fade-in">
   <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
     <i class="fas fa-exclamation-triangle text-red-400 text-3xl"></i>
   </div>
   <h2 class="text-2xl font-bold text-white mb-2">Produit non disponible</h2>
   <p class="text-neutral-400 mb-6">Ce produit n'existe pas ou est temporairement indisponible.</p>
-  <a href="catalogue.html" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition font-medium">
+  <a href="catalogue.html" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
     Voir le catalogue
   </a>
 </div>
 
+<!-- Product Content -->
 <div id="product-content" class="hidden container px-4 py-8 fade-in">
-  <!-- Content produit identique à l’existant (gallery, détails, stock, supplier...) -->
   <div class="grid lg:grid-cols-2 gap-8">
-    <!-- Images & gallery -->
+    
+    <!-- Gallery -->
     <div class="space-y-4">
       <div class="relative aspect-square bg-neutral-800 rounded-xl overflow-hidden zoom-container">
-        <img id="main-image" src="" alt="" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=800'">
-        <div id="stock-badge" class="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">En stock</div>
+        <img id="main-image" src="" alt="" class="w-full h-full object-cover">
+        <div id="stock-badge" class="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          En stock
+        </div>
       </div>
       <div class="flex gap-3 overflow-x-auto pb-2" id="gallery-thumbs"></div>
     </div>
 
-    <!-- Détails produit -->
+    <!-- Info -->
     <div class="space-y-6">
       <div>
-        <div class="flex items-center gap-3 mb-3">
-          <span id="product-category" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider rounded-full">Catégorie</span>
-          <span id="product-brand" class="px-3 py-1 bg-slate-700 text-slate-300 text-xs font-bold rounded-full cursor-pointer hover:bg-slate-600 transition"></span>
+        <div class="flex items-center gap-3 mb-3 flex-wrap">
+          <span id="product-category" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-bold uppercase rounded-full">Catégorie</span>
+          <span id="product-brand" class="px-3 py-1 bg-slate-700 text-slate-300 text-xs font-bold rounded-full hidden"></span>
         </div>
         <h1 id="product-name" class="text-3xl md:text-4xl font-bold text-white mb-3">Nom du produit</h1>
         <div class="flex items-center gap-4 mb-4 flex-wrap">
@@ -120,25 +125,28 @@
         </div>
       </div>
 
+      <!-- Price Section -->
       <div class="flex items-baseline gap-4 flex-wrap">
         <span id="product-price" class="text-4xl font-bold text-white">-- €</span>
         <span id="product-old-price" class="hidden text-2xl text-neutral-500 line-through">-- €</span>
-        <span id="product-discount" class="hidden px-3 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded-full border border-red-500/30">-0%</span>
+        <span id="product-discount" class="hidden px-3 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded-full">-0%</span>
       </div>
 
       <p id="product-description" class="text-neutral-300 leading-relaxed text-lg">Description...</p>
 
+      <!-- Add to Cart -->
       <div class="flex items-center gap-4 pt-4">
         <div class="flex items-center border border-neutral-700 rounded-lg bg-neutral-900">
-          <button onclick="updateQty(-1)" class="px-4 py-3 text-neutral-400 hover:text-white transition w-12">
+          <button onclick="updateQty(-1)" class="px-4 py-3 text-neutral-400 hover:text-white w-12">
             <i class="fas fa-minus"></i>
           </button>
           <span id="quantity" class="px-4 py-2 font-bold text-lg min-w-[3rem] text-center">1</span>
-          <button onclick="updateQty(1)" class="px-4 py-3 text-neutral-400 hover:text-white transition w-12">
+          <button onclick="updateQty(1)" class="px-4 py-3 text-neutral-400 hover:text-white w-12">
             <i class="fas fa-plus"></i>
           </button>
         </div>
-        <button onclick="addToCart()" id="btn-add-cart" class="flex-1 btn-primary px-8 py-3 text-white font-bold rounded-lg transition flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-indigo-500/25">
+        
+        <button onclick="addToCart()" id="btn-add-cart" class="flex-1 btn-primary px-8 py-3 text-white font-bold rounded-lg transition flex items-center justify-center gap-2">
           <i class="fas fa-shopping-cart"></i>
           <span>Ajouter au panier</span>
         </button>
@@ -147,6 +155,48 @@
       <div id="stock-info" class="flex items-center gap-2 text-sm text-emerald-400">
         <i class="fas fa-check-circle"></i>
         <span>En stock - Livraison 2-4 jours</span>
+      </div>
+
+      <!-- Features -->
+      <div class="grid grid-cols-3 gap-4 pt-6 border-t border-neutral-800">
+        <div class="text-center">
+          <i class="fas fa-truck text-indigo-400 text-2xl mb-2"></i>
+          <p class="text-xs text-neutral-400">Livraison gratuite dès 50€</p>
+        </div>
+        <div class="text-center">
+          <i class="fas fa-shield-alt text-indigo-400 text-2xl mb-2"></i>
+          <p class="text-xs text-neutral-400">Paiement sécurisé</p>
+        </div>
+        <div class="text-center">
+          <i class="fas fa-undo text-indigo-400 text-2xl mb-2"></i>
+          <p class="text-xs text-neutral-400">Retour sous 14 jours</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supplier Section -->
+  <div class="mt-12 pt-8 border-t border-neutral-800">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white">Vendu par <span id="supplier-name-display">...</span></h3>
+      <a href="#" id="supplier-link" class="text-indigo-400 hover:text-indigo-300 text-sm">Voir la boutique <i class="fas fa-arrow-right ml-1"></i></a>
+    </div>
+    <div class="bg-neutral-900 rounded-xl p-6 border border-neutral-800">
+      <div class="flex items-start gap-4">
+        <div id="supplier-initial" class="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white">
+          B
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <h4 class="font-semibold text-lg" id="supplier-name-full">Marque</h4>
+            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">Vérifié</span>
+          </div>
+          <p class="text-neutral-400 text-sm mb-3" id="supplier-description">Description du vendeur...</p>
+          <div class="flex items-center gap-4 text-sm text-neutral-500">
+            <span><i class="fas fa-star text-yellow-400 mr-1"></i> <span id="supplier-rating">4.8</span></span>
+            <span><i class="fas fa-map-marker-alt text-red-400 mr-1"></i> <span id="supplier-location">France</span></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -161,35 +211,25 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// -----------------------------
-// Variables globales
-// -----------------------------
 const COUNTRIES = {
-  'DZ': { name: 'Algérie', currency: 'DZD' },
-  'DE': { name: 'Allemagne', currency: 'EUR' },
   'FR': { name: 'France', currency: 'EUR' },
-  'US': { name: 'États-Unis', currency: 'USD' },
-  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+  'DE': { name: 'Allemagne', currency: 'EUR' },
   'IT': { name: 'Italie', currency: 'EUR' },
   'ES': { name: 'Espagne', currency: 'EUR' },
-  'AU': { name: 'Australie', currency: 'AUD' },
-  'BR': { name: 'Brésil', currency: 'BRL' },
-  'CA': { name: 'Canada', currency: 'CAD' },
-  'JP': { name: 'Japon', currency: 'JPY' },
-  'KR': { name: 'Corée du Sud', currency: 'KRW' },
-  'CN': { name: 'Chine', currency: 'CNY' },
+  'TN': { name: 'Tunisie', currency: 'TND' },
+  'DZ': { name: 'Algérie', currency: 'DZD' },
+  'MA': { name: 'Maroc', currency: 'MAD' },
+  'BE': { name: 'Belgique', currency: 'EUR' },
   'CH': { name: 'Suisse', currency: 'CHF' },
-  'SG': { name: 'Singapour', currency: 'SGD' },
-  'TN': { name: 'Tunisie', currency: 'TND' }
+  'CA': { name: 'Canada', currency: 'CAD' },
+  'US': { name: 'États-Unis', currency: 'USD' },
+  'GB': { name: 'Royaume-Uni', currency: 'GBP' }
 };
 
 let currentProduct = null;
 let currentQty = 1;
 let currentSupplierId = null;
 
-// -----------------------------
-// Toast
-// -----------------------------
 function showToast(msg, type='success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -197,13 +237,10 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// -----------------------------
-// Quantity update
-// -----------------------------
 function updateQty(delta) {
   const newQty = currentQty + delta;
   if (newQty < 1) return;
-  if (currentProduct && newQty > currentProduct.stock_quantity) {
+  if (currentProduct && newQty > (currentProduct.stock_quantity || 999)) {
     showToast('Stock maximum atteint', 'warning');
     return;
   }
@@ -211,50 +248,66 @@ function updateQty(delta) {
   document.getElementById('quantity').textContent = currentQty;
 }
 
-// -----------------------------
-// Load product (corrigé)
-// -----------------------------
+// ==========================================
+// FONCTION CRITIQUE CORRIGÉE
+// ==========================================
 async function loadProduct() {
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
   
+  console.log('[Product] Loading ID:', productId);
+  
   if (!productId) {
+    console.error('[Product] No ID in URL');
     showError();
     return;
   }
 
   try {
+    // Vérifier API disponible
     if (typeof BrandiaAPI === 'undefined') {
-      throw new Error('API non chargée - vérifiez que api.js est bien inclus');
+      throw new Error('BrandiaAPI not loaded');
     }
     
-    console.log('[Product] Loading product ID:', productId);
-    
-    const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
-    console.log('[Product] API Response:', response);
-    
+    // 🔥 CORRECTION : Utiliser l'API standard qui fonctionne (comme offres.html)
+    // au lieu de getByIdWithPromotion qui peut avoir des problèmes de jointure
     let product = null;
     
-    if (response && response.success && response.data) {
-      if (response.data.product) {
-        product = response.data.product;
-      } else if (response.data.id || response.data.name) {
-        product = response.data;
+    try {
+      // Essayer d'abord l'API avec promotion
+      console.log('[Product] Trying getByIdWithPromotion...');
+      const promoData = await BrandiaAPI.Products.getByIdWithPromotion(productId);
+      console.log('[Product] Promo API response:', promoData);
+      
+      if (promoData?.success && promoData.data) {
+        product = promoData.data.product || promoData.data;
       }
-    } else if (response && (response.id || response.name)) {
-      product = response;
+    } catch (promoErr) {
+      console.warn('[Product] Promo API failed:', promoErr.message);
+    }
+    
+    // Si échec, utiliser l'API standard
+    if (!product) {
+      console.log('[Product] Falling back to standard API...');
+      const standardRes = await fetch(`${BrandiaAPI.config.apiURL}/products/${productId}`);
+      const standardData = await standardRes.json();
+      console.log('[Product] Standard API response:', standardData);
+      
+      if (standardData?.success && standardData.data) {
+        product = standardData.data.product || standardData.data;
+      }
     }
     
     if (!product || !product.id) {
-      console.error('[Product] Product data invalid:', product);
-      throw new Error('Données produit invalides');
+      throw new Error('Product not found in any API');
     }
     
-    console.log('[Product] Parsed product:', product);
+    console.log('[Product] Final product data:', product);
     
     currentProduct = product;
     currentSupplierId = product.supplier_id || product.supplier?.id || product.user_id;
     
+    // Exposer pour publicité
     window.currentProduct = {
       id: product.id,
       supplier_id: currentSupplierId
@@ -262,39 +315,226 @@ async function loadProduct() {
     
     renderProduct(product);
     
+    // Publicité après 3s
     setTimeout(() => {
       if (window.brandiaAds && currentSupplierId) {
-        console.log('[Ads] Triggering for supplier:', currentSupplierId);
         window.brandiaAds.checkAndShow(product.id, currentSupplierId);
       }
     }, 3000);
     
   } catch (err) {
-    console.error('[Product] Error loading product:', err);
+    console.error('[Product] Fatal error:', err);
     showError();
   }
 }
 
-// -----------------------------
-// Affichage produit (identique)
-// -----------------------------
-function renderProduct(p) {
-  /* ... la fonction renderProduct complète que tu avais ... */
+function showError() {
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('error-state').classList.remove('hidden');
 }
 
-// -----------------------------
-// Reste des fonctions (cart, gallery, auth, countries)
-// -----------------------------
-function addToCart() { /* ... */ }
-function updateCartBadge() { /* ... */ }
-function initCountries() { /* ... */ }
-function getFlagEmoji(code) { /* ... */ }
-function initAuth() { /* ... */ }
-function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.reload(); }
+function renderProduct(p) {
+  console.log('[Product] Rendering:', p.name);
+  
+  document.title = `${p.name} - Brandia`;
+  document.getElementById('breadcrumb-product').textContent = p.name;
+  document.getElementById('product-name').textContent = p.name || 'Sans nom';
+  document.getElementById('product-category').textContent = p.category_name || p.category_slug || 'Produit';
+  document.getElementById('product-description').textContent = p.description || 'Aucune description disponible';
+  document.getElementById('product-sku').textContent = 'REF: ' + (p.sku || p.id);
+  
+  // Brand
+  const brandEl = document.getElementById('product-brand');
+  const brandName = p.brand_name || p.supplier_name || (p.supplier?.name);
+  if (brandName) {
+    brandEl.textContent = brandName;
+    brandEl.classList.remove('hidden');
+  }
+  
+  // Price with promotion handling
+  const finalPrice = parseFloat(p.final_price) || parseFloat(p.price) || 0;
+  const originalPrice = parseFloat(p.original_price) || parseFloat(p.base_price) || parseFloat(p.price) || 0;
+  const hasPromo = p.has_promotion || p.promo_id || (originalPrice > finalPrice);
 
-// -----------------------------
+  document.getElementById('product-price').textContent = formatPrice(finalPrice);
+  
+  if (hasPromo && originalPrice > finalPrice) {
+    document.getElementById('product-old-price').textContent = formatPrice(originalPrice);
+    document.getElementById('product-old-price').classList.remove('hidden');
+    
+    const discountPct = Math.round((1 - finalPrice/originalPrice) * 100);
+    document.getElementById('product-discount').textContent = `-${discountPct}%`;
+    document.getElementById('product-discount').classList.remove('hidden');
+  } else {
+    document.getElementById('product-old-price').classList.add('hidden');
+    document.getElementById('product-discount').classList.add('hidden');
+  }
+  
+  // Image
+  const imgUrl = (p.main_image_url || p.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600').trim();
+  document.getElementById('main-image').src = imgUrl;
+  document.getElementById('main-image').onerror = function() {
+    this.src = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600';
+  };
+  
+  // Gallery thumbnails
+  const thumbs = document.getElementById('gallery-thumbs');
+  if (p.images && p.images.length > 1) {
+    thumbs.innerHTML = p.images.map((img, idx) => 
+      `<img src="${img.url || img}" class="gallery-thumb w-20 h-20 object-cover rounded-lg ${idx===0?'active':''}" onclick="changeImage(this)" data-url="${img.url || img}">`
+    ).join('');
+  } else {
+    thumbs.innerHTML = `<img src="${imgUrl}" class="gallery-thumb w-20 h-20 object-cover rounded-lg active" onclick="changeImage(this)">`;
+  }
+  
+  // Stock
+  const stock = parseInt(p.stock_quantity) || 0;
+  const badge = document.getElementById('stock-badge');
+  const btn = document.getElementById('btn-add-cart');
+  const info = document.getElementById('stock-info');
+  
+  if (stock > 0) {
+    badge.textContent = stock > 10 ? 'En stock' : `Stock limité (${stock})`;
+    badge.className = stock > 10 
+      ? 'absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+      : 'absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30';
+    info.innerHTML = '<i class="fas fa-check-circle"></i><span>En stock - Livraison 2-4 jours</span>';
+    info.className = 'flex items-center gap-2 text-sm text-emerald-400';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-shopping-cart"></i><span>Ajouter au panier</span>';
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+  } else {
+    badge.textContent = 'Rupture';
+    badge.className = 'absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30';
+    info.innerHTML = '<i class="fas fa-times-circle"></i><span>Produit en rupture de stock</span>';
+    info.className = 'flex items-center gap-2 text-sm text-red-400';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-times"></i><span>Indisponible</span>';
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+  
+  // Rating
+  const rating = parseFloat(p.rating) || 0;
+  const stars = Array(5).fill(0).map((_, i) => 
+    `<i class="${i < Math.floor(rating) ? 'fas' : 'far'} fa-star text-yellow-400 text-sm"></i>`
+  ).join('');
+  document.getElementById('product-rating').innerHTML = stars;
+  document.getElementById('review-count').textContent = `${p.reviews_count || 0} avis`;
+  
+  // Supplier info
+  const supplier = p.supplier || {};
+  const supplierName = supplier.name || supplier.company_name || p.supplier_name || p.brand_name || 'Marque';
+  
+  document.getElementById('supplier-name-display').textContent = supplierName;
+  document.getElementById('supplier-name-full').textContent = supplierName;
+  document.getElementById('supplier-description').textContent = supplier.description || 'Vendeur professionnel sur Brandia';
+  document.getElementById('supplier-rating').textContent = supplier.rating || '4.5';
+  document.getElementById('supplier-location').textContent = supplier.country || 'France';
+  document.getElementById('supplier-initial').textContent = supplierName.charAt(0).toUpperCase();
+  
+  // Show content
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('product-content').classList.remove('hidden');
+}
+
+function changeImage(thumb) {
+  const url = thumb.dataset.url || thumb.src;
+  document.getElementById('main-image').src = url;
+  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+  thumb.classList.add('active');
+}
+
+function addToCart() {
+  if (!currentProduct) return;
+  
+  const stock = parseInt(currentProduct.stock_quantity) || 0;
+  if (stock <= 0) {
+    showToast('Produit en rupture de stock', 'error');
+    return;
+  }
+  
+  let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+  const productId = currentProduct.id;
+  const existing = cart.find(x => x.id == productId);
+  
+  const finalPrice = parseFloat(currentProduct.final_price) || parseFloat(currentProduct.price) || 0;
+  const originalPrice = parseFloat(currentProduct.original_price) || parseFloat(currentProduct.price) || finalPrice;
+  
+  if (existing) {
+    existing.quantity += currentQty;
+  } else {
+    cart.push({
+      id: productId,
+      name: currentProduct.name,
+      price: finalPrice,
+      original_price: originalPrice,
+      has_promotion: currentProduct.has_promotion || (originalPrice > finalPrice),
+      promo_code: currentProduct.promo_code || null,
+      main_image_url: currentProduct.main_image_url,
+      quantity: currentQty,
+      supplier_id: currentSupplierId
+    });
+  }
+  
+  localStorage.setItem('brandia_cart', JSON.stringify(cart));
+  showToast(`${currentQty} × ${currentProduct.name} ajouté(s) au panier`);
+  updateCartBadge();
+  currentQty = 1;
+  document.getElementById('quantity').textContent = '1';
+}
+
+function updateCartBadge() {
+  const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+  const count = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+  const badge = document.getElementById('cart-count');
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function formatPrice(amount) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount || 0);
+}
+
+function initCountries() {
+  const sel = document.getElementById('countrySelector');
+  const saved = localStorage.getItem('country') || 'FR';
+  
+  sel.innerHTML = Object.entries(COUNTRIES)
+    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .map(([code, c]) => `<option value="${code}" ${code===saved?'selected':''}>${c.name}</option>`)
+    .join('');
+  
+  sel.onchange = (e) => {
+    localStorage.setItem('country', e.target.value);
+    localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
+  };
+}
+
+function initAuth() {
+  if (typeof BrandiaAPI === 'undefined') return;
+  const user = BrandiaAPI.Auth.getUser();
+  if (user?.email) {
+    document.getElementById('auth-buttons').classList.add('hidden');
+    document.getElementById('user-menu').classList.remove('hidden');
+    document.getElementById('user-menu').classList.add('flex');
+    document.getElementById('user-name').textContent = user.first_name || user.email;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.reload();
+}
+
 // Init
-// -----------------------------
 document.addEventListener('DOMContentLoaded', () => {
   initCountries();
   initAuth();
