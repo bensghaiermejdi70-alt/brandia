@@ -674,157 +674,195 @@ function loadCategories() {
 
 function initCountrySelector() {
   const selector = document.getElementById('countrySelector');
-  if (!selector) return;
+  if (!selector) {
+    console.error('[Country Selector] Element #countrySelector not found');
+    return;
+  }
   
-  // 28 pays complets
+  // ==========================================
+  // FONCTION EMOJI DRAPEAU (MANQUANTE)
+  // ==========================================
+  function getFlagEmoji(countryCode) {
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+  }
+  
+  //  pays complets
   const countries = {
-  'AF': { name: 'Afghanistan', currency: 'AFN' },
-  'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
-  'AL': { name: 'Albanie', currency: 'ALL' },
-  'DZ': { name: 'Algérie', currency: 'DZD' },
-  'DE': { name: 'Allemagne', currency: 'EUR' },
-  'AD': { name: 'Andorre', currency: 'EUR' },
-  'AO': { name: 'Angola', currency: 'AOA' },
-  'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
-  'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
-  'AR': { name: 'Argentine', currency: 'ARS' },
-  'AM': { name: 'Arménie', currency: 'AMD' },
-  'AU': { name: 'Australie', currency: 'AUD' },
-  'AT': { name: 'Autriche', currency: 'EUR' },
-  'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
+    'AF': { name: 'Afghanistan', currency: 'AFN' },
+    'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
+    'AL': { name: 'Albanie', currency: 'ALL' },
+    'DZ': { name: 'Algérie', currency: 'DZD' },
+    'DE': { name: 'Allemagne', currency: 'EUR' },
+    'AD': { name: 'Andorre', currency: 'EUR' },
+    'AO': { name: 'Angola', currency: 'AOA' },
+    'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
+    'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
+    'AR': { name: 'Argentine', currency: 'ARS' },
+    'AM': { name: 'Arménie', currency: 'AMD' },
+    'AU': { name: 'Australie', currency: 'AUD' },
+    'AT': { name: 'Autriche', currency: 'EUR' },
+    'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
 
-  'BS': { name: 'Bahamas', currency: 'BSD' },
-  'BH': { name: 'Bahreïn', currency: 'BHD' },
-  'BD': { name: 'Bangladesh', currency: 'BDT' },
-  'BB': { name: 'Barbade', currency: 'BBD' },
-  'BE': { name: 'Belgique', currency: 'EUR' },
-  'BZ': { name: 'Belize', currency: 'BZD' },
-  'BJ': { name: 'Bénin', currency: 'XOF' },
-  'BT': { name: 'Bhoutan', currency: 'BTN' },
-  'BY': { name: 'Biélorussie', currency: 'BYN' },
-  'BO': { name: 'Bolivie', currency: 'BOB' },
-  'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
-  'BW': { name: 'Botswana', currency: 'BWP' },
-  'BR': { name: 'Brésil', currency: 'BRL' },
-  'BN': { name: 'Brunei', currency: 'BND' },
-  'BG': { name: 'Bulgarie', currency: 'BGN' },
-  'BF': { name: 'Burkina Faso', currency: 'XOF' },
-  'BI': { name: 'Burundi', currency: 'BIF' },
+    'BS': { name: 'Bahamas', currency: 'BSD' },
+    'BH': { name: 'Bahreïn', currency: 'BHD' },
+    'BD': { name: 'Bangladesh', currency: 'BDT' },
+    'BB': { name: 'Barbade', currency: 'BBD' },
+    'BE': { name: 'Belgique', currency: 'EUR' },
+    'BZ': { name: 'Belize', currency: 'BZD' },
+    'BJ': { name: 'Bénin', currency: 'XOF' },
+    'BT': { name: 'Bhoutan', currency: 'BTN' },
+    'BY': { name: 'Biélorussie', currency: 'BYN' },
+    'BO': { name: 'Bolivie', currency: 'BOB' },
+    'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
+    'BW': { name: 'Botswana', currency: 'BWP' },
+    'BR': { name: 'Brésil', currency: 'BRL' },
+    'BN': { name: 'Brunei', currency: 'BND' },
+    'BG': { name: 'Bulgarie', currency: 'BGN' },
+    'BF': { name: 'Burkina Faso', currency: 'XOF' },
+    'BI': { name: 'Burundi', currency: 'BIF' },
 
-  'KH': { name: 'Cambodge', currency: 'KHR' },
-  'CM': { name: 'Cameroun', currency: 'XAF' },
-  'CA': { name: 'Canada', currency: 'CAD' },
-  'CV': { name: 'Cap-Vert', currency: 'CVE' },
-  'CL': { name: 'Chili', currency: 'CLP' },
-  'CN': { name: 'Chine', currency: 'CNY' },
-  'CY': { name: 'Chypre', currency: 'EUR' },
-  'CO': { name: 'Colombie', currency: 'COP' },
-  'KM': { name: 'Comores', currency: 'KMF' },
-  'CG': { name: 'Congo', currency: 'XAF' },
-  'CD': { name: 'Congo (RDC)', currency: 'CDF' },
-  'KR': { name: 'Corée du Sud', currency: 'KRW' },
-  'CR': { name: 'Costa Rica', currency: 'CRC' },
-  'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
-  'HR': { name: 'Croatie', currency: 'EUR' },
-  'CU': { name: 'Cuba', currency: 'CUP' },
+    'KH': { name: 'Cambodge', currency: 'KHR' },
+    'CM': { name: 'Cameroun', currency: 'XAF' },
+    'CA': { name: 'Canada', currency: 'CAD' },
+    'CV': { name: 'Cap-Vert', currency: 'CVE' },
+    'CL': { name: 'Chili', currency: 'CLP' },
+    'CN': { name: 'Chine', currency: 'CNY' },
+    'CY': { name: 'Chypre', currency: 'EUR' },
+    'CO': { name: 'Colombie', currency: 'COP' },
+    'KM': { name: 'Comores', currency: 'KMF' },
+    'CG': { name: 'Congo', currency: 'XAF' },
+    'CD': { name: 'Congo (RDC)', currency: 'CDF' },
+    'KR': { name: 'Corée du Sud', currency: 'KRW' },
+    'CR': { name: 'Costa Rica', currency: 'CRC' },
+    'CI': { name: 'Côte d\'Ivoire', currency: 'XOF' },
+    'HR': { name: 'Croatie', currency: 'EUR' },
+    'CU': { name: 'Cuba', currency: 'CUP' },
 
-  'DK': { name: 'Danemark', currency: 'DKK' },
-  'DJ': { name: 'Djibouti', currency: 'DJF' },
-  'DO': { name: 'République dominicaine', currency: 'DOP' },
+    'DK': { name: 'Danemark', currency: 'DKK' },
+    'DJ': { name: 'Djibouti', currency: 'DJF' },
+    'DO': { name: 'République dominicaine', currency: 'DOP' },
 
-  'EG': { name: 'Égypte', currency: 'EGP' },
-  'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
-  'EC': { name: 'Équateur', currency: 'USD' },
-  'ER': { name: 'Érythrée', currency: 'ERN' },
-  'ES': { name: 'Espagne', currency: 'EUR' },
-  'EE': { name: 'Estonie', currency: 'EUR' },
-  'US': { name: 'États-Unis', currency: 'USD' },
-  'ET': { name: 'Éthiopie', currency: 'ETB' },
+    'EG': { name: 'Égypte', currency: 'EGP' },
+    'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
+    'EC': { name: 'Équateur', currency: 'USD' },
+    'ER': { name: 'Érythrée', currency: 'ERN' },
+    'ES': { name: 'Espagne', currency: 'EUR' },
+    'EE': { name: 'Estonie', currency: 'EUR' },
+    'US': { name: 'États-Unis', currency: 'USD' },
+    'ET': { name: 'Éthiopie', currency: 'ETB' },
 
-  'FI': { name: 'Finlande', currency: 'EUR' },
-  'FR': { name: 'France', currency: 'EUR' },
+    'FI': { name: 'Finlande', currency: 'EUR' },
+    'FR': { name: 'France', currency: 'EUR' },
 
-  'GA': { name: 'Gabon', currency: 'XAF' },
-  'GM': { name: 'Gambie', currency: 'GMD' },
-  'GE': { name: 'Géorgie', currency: 'GEL' },
-  'GH': { name: 'Ghana', currency: 'GHS' },
-  'GR': { name: 'Grèce', currency: 'EUR' },
-  'GT': { name: 'Guatemala', currency: 'GTQ' },
-  'GN': { name: 'Guinée', currency: 'GNF' },
+    'GA': { name: 'Gabon', currency: 'XAF' },
+    'GM': { name: 'Gambie', currency: 'GMD' },
+    'GE': { name: 'Géorgie', currency: 'GEL' },
+    'GH': { name: 'Ghana', currency: 'GHS' },
+    'GR': { name: 'Grèce', currency: 'EUR' },
+    'GT': { name: 'Guatemala', currency: 'GTQ' },
+    'GN': { name: 'Guinée', currency: 'GNF' },
 
-  'HT': { name: 'Haïti', currency: 'HTG' },
-  'HN': { name: 'Honduras', currency: 'HNL' },
-  'HU': { name: 'Hongrie', currency: 'HUF' },
+    'HT': { name: 'Haïti', currency: 'HTG' },
+    'HN': { name: 'Honduras', currency: 'HNL' },
+    'HU': { name: 'Hongrie', currency: 'HUF' },
 
-  'IN': { name: 'Inde', currency: 'INR' },
-  'ID': { name: 'Indonésie', currency: 'IDR' },
-  'IQ': { name: 'Irak', currency: 'IQD' },
-  'IR': { name: 'Iran', currency: 'IRR' },
-  'IE': { name: 'Irlande', currency: 'EUR' },
-  'IS': { name: 'Islande', currency: 'ISK' },
-  'IL': { name: 'Israël', currency: 'ILS' },
-  'IT': { name: 'Italie', currency: 'EUR' },
+    'IN': { name: 'Inde', currency: 'INR' },
+    'ID': { name: 'Indonésie', currency: 'IDR' },
+    'IQ': { name: 'Irak', currency: 'IQD' },
+    'IR': { name: 'Iran', currency: 'IRR' },
+    'IE': { name: 'Irlande', currency: 'EUR' },
+    'IS': { name: 'Islande', currency: 'ISK' },
+    'IL': { name: 'Israël', currency: 'ILS' },
+    'IT': { name: 'Italie', currency: 'EUR' },
 
-  'JP': { name: 'Japon', currency: 'JPY' },
-  'JO': { name: 'Jordanie', currency: 'JOD' },
+    'JP': { name: 'Japon', currency: 'JPY' },
+    'JO': { name: 'Jordanie', currency: 'JOD' },
 
-  'KE': { name: 'Kenya', currency: 'KES' },
-  'KW': { name: 'Koweït', currency: 'KWD' },
+    'KE': { name: 'Kenya', currency: 'KES' },
+    'KW': { name: 'Koweït', currency: 'KWD' },
 
-  'LB': { name: 'Liban', currency: 'LBP' },
-  'LY': { name: 'Libye', currency: 'LYD' },
-  'LU': { name: 'Luxembourg', currency: 'EUR' },
+    'LB': { name: 'Liban', currency: 'LBP' },
+    'LY': { name: 'Libye', currency: 'LYD' },
+    'LU': { name: 'Luxembourg', currency: 'EUR' },
 
-  'MY': { name: 'Malaisie', currency: 'MYR' },
-  'MA': { name: 'Maroc', currency: 'MAD' },
-  'MX': { name: 'Mexique', currency: 'MXN' },
+    'MY': { name: 'Malaisie', currency: 'MYR' },
+    'MA': { name: 'Maroc', currency: 'MAD' },
+    'MX': { name: 'Mexique', currency: 'MXN' },
 
-  'NL': { name: 'Pays-Bas', currency: 'EUR' },
-  'NG': { name: 'Nigéria', currency: 'NGN' },
-  'NO': { name: 'Norvège', currency: 'NOK' },
+    'NL': { name: 'Pays-Bas', currency: 'EUR' },
+    'NG': { name: 'Nigéria', currency: 'NGN' },
+    'NO': { name: 'Norvège', currency: 'NOK' },
 
-  'PK': { name: 'Pakistan', currency: 'PKR' },
-  'PE': { name: 'Pérou', currency: 'PEN' },
-  'PH': { name: 'Philippines', currency: 'PHP' },
-  'PL': { name: 'Pologne', currency: 'PLN' },
-  'PT': { name: 'Portugal', currency: 'EUR' },
+    'PK': { name: 'Pakistan', currency: 'PKR' },
+    'PE': { name: 'Pérou', currency: 'PEN' },
+    'PH': { name: 'Philippines', currency: 'PHP' },
+    'PL': { name: 'Pologne', currency: 'PLN' },
+    'PT': { name: 'Portugal', currency: 'EUR' },
 
-  'QA': { name: 'Qatar', currency: 'QAR' },
+    'QA': { name: 'Qatar', currency: 'QAR' },
 
-  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-  'RO': { name: 'Roumanie', currency: 'RON' },
-  'RU': { name: 'Russie', currency: 'RUB' },
+    'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+    'RO': { name: 'Roumanie', currency: 'RON' },
+    'RU': { name: 'Russie', currency: 'RUB' },
 
-  'SG': { name: 'Singapour', currency: 'SGD' },
-  'SE': { name: 'Suède', currency: 'SEK' },
-  'CH': { name: 'Suisse', currency: 'CHF' },
+    'SG': { name: 'Singapour', currency: 'SGD' },
+    'SE': { name: 'Suède', currency: 'SEK' },
+    'CH': { name: 'Suisse', currency: 'CHF' },
 
-  'TN': { name: 'Tunisie', currency: 'TND' },
-  'TR': { name: 'Turquie', currency: 'TRY' },
+    'TN': { name: 'Tunisie', currency: 'TND' },
+    'TR': { name: 'Turquie', currency: 'TRY' },
 
-  'UA': { name: 'Ukraine', currency: 'UAH' },
+    'UA': { name: 'Ukraine', currency: 'UAH' },
 
-  'VN': { name: 'Vietnam', currency: 'VND' }
-};
+    'VN': { name: 'Vietnam', currency: 'VND' }
+  };
 
-  
   const savedCountry = localStorage.getItem('country') || 'FR';
+  
+  // Vider le selecteur
   selector.innerHTML = '';
   
-  Object.entries(countries).sort((a,b) => a[1].name.localeCompare(b[1].name)).forEach(([code, country]) => {
-    const option = document.createElement('option');
-    option.value = code;
-    option.textContent = `${getFlagEmoji(code)} ${country.name}`;
-    if (code === savedCountry) option.selected = true;
-    selector.appendChild(option);
+  // Trier par nom et créer les options
+  Object.entries(countries)
+    .sort((a, b) => a[1].name.localeCompare(b[1].name, 'fr'))
+    .forEach(([code, country]) => {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = `${getFlagEmoji(code)} ${country.name}`;
+      if (code === savedCountry) option.selected = true;
+      selector.appendChild(option);
+    });
+  
+  // Event listener pour sauvegarder la sélection
+  selector.addEventListener('change', (e) => {
+    const selectedCode = e.target.value;
+    localStorage.setItem('country', selectedCode);
+    localStorage.setItem('currency', countries[selectedCode]?.currency || 'EUR');
+    
+    // Déclencher un événement personnalisé pour notifier les autres composants
+    window.dispatchEvent(new CustomEvent('countryChanged', { 
+      detail: { 
+        code: selectedCode, 
+        country: countries[selectedCode] 
+      } 
+    }));
+    
+    console.log('[Country Selector] Changed to:', selectedCode, countries[selectedCode]?.name);
   });
   
-  selector.addEventListener('change', (e) => {
-    localStorage.setItem('country', e.target.value);
-    localStorage.setItem('currency', countries[e.target.value].currency);
-  });
+  console.log('[Country Selector] Initialized with', Object.keys(countries).length, 'countries');
 }
 
+// ==========================================
+// INITIALISATION AUTO AU CHARGEMENT
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+  initCountrySelector();
+});
 function initAuth() {
   if (typeof BrandiaAPI === 'undefined') return;
   const user = BrandiaAPI.Auth.getUser();
