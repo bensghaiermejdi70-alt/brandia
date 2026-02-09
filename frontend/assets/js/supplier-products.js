@@ -258,11 +258,15 @@ window.SupplierProducts = {
         const newStatus = !currentStatus;
         console.log(`[Products] Toggle status ${productId}: ${currentStatus} → ${newStatus}`);
         
-        // 🔥 CORRECTION : Ne pas inclure stock dans la mise à jour
-        // Envoyer UNIQUEMENT is_active
-        await BrandiaAPI.Supplier.updateProduct(productId, {
-            is_active: newStatus
-        });
+        // 🔥 CORRECTION : Ne PAS inclure stock dans la mise à jour
+        const updateData = { is_active: newStatus };
+        
+        // Appel API
+        const response = await BrandiaAPI.Supplier.updateProduct(productId, updateData);
+        
+        if (!response.success) {
+            throw new Error(response.message || 'Erreur mise à jour');
+        }
 
         // Mettre à jour localement
         const product = this.state.products.find(p => p.id === productId);
@@ -270,15 +274,26 @@ window.SupplierProducts = {
             product.is_active = newStatus;
         }
 
-        this.renderList();
-        this.showToast(newStatus ? 'Produit activé' : 'Produit désactivé', 'success');
+        // 🔥 CORRECTION : Utiliser SupplierProducts au lieu de this
+        SupplierProducts.renderList();
+        
+        // Notification
+        if (typeof SupplierProducts.showToast === 'function') {
+            SupplierProducts.showToast(
+                newStatus ? 'Produit activé' : 'Produit désactivé', 
+                'success'
+            );
+        }
 
     } catch (error) {
-        console.error('Toggle status error:', error);
-        this.showToast('Erreur: ' + error.message, 'error');
+        console.error('[Products] Toggle status error:', error);
+        
+        if (typeof SupplierProducts.showToast === 'function') {
+            SupplierProducts.showToast('Erreur: ' + error.message, 'error');
+        }
         
         // Re-render pour remettre le toggle dans son état original
-        this.renderList();
+        SupplierProducts.renderList();
     }
 },
 
