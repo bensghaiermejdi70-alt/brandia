@@ -424,59 +424,64 @@ window.SupplierCampaigns = {
     }
   },
 
-  // ==========================================
-  // UPLOAD CLOUDINARY (Image & Vidéo)
-  // ==========================================
-  uploadMediaToCloudinary: async function() {
-    if (!this.state.uploadedMedia) {
-      throw new Error('Aucun média sélectionné');
-    }
+  /// ==========================================
+// UPLOAD CLOUDINARY (Image & Vidéo)
+// ==========================================
+uploadMediaToCloudinary: async function() {
+  if (!this.state.uploadedMedia) {
+    throw new Error('Aucun média sélectionné');
+  }
 
-    const { file, type } = this.state.uploadedMedia;
+  const { file, type } = this.state.uploadedMedia;
+  
+  // Vérifier durée vidéo si c'est une vidéo
+  if (type === 'video') {
+    const isValidDuration = await this.checkVideoDuration(file);
+    if (!isValidDuration) {
+      throw new Error('La vidéo ne doit pas dépasser 15 secondes');
+    }
+  }
+
+  const formData = new FormData();
+  // 🔥 CORRECTION : Utiliser 'media' comme fieldname pour les deux types
+  formData.append('media', file);
+
+  try {
+    window.DashboardApp?.showLoading(true);
     
-    // Vérifier durée vidéo si c'est une vidéo
-    if (type === 'video') {
-      const isValidDuration = await this.checkVideoDuration(file);
-      if (!isValidDuration) {
-        throw new Error('La vidéo ne doit pas dépasser 15 secondes');
-      }
+    const endpoint = type === 'video' 
+      ? '/supplier/upload-video' 
+      : '/supplier/upload-image';
+    
+    console.log(`[Campaigns] Uploading ${type} to ${endpoint}`);
+    
+    const response = await fetch(`${BrandiaAPI.config.apiURL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        // 🔥 NE PAS mettre Content-Type, le navigateur le fait automatiquement avec boundary
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+    console.log('[Campaigns] Upload response:', result);
+
+    if (result.success) {
+      return {
+        url: result.data?.url || result.data,
+        type: type
+      };
+    } else {
+      throw new Error(result.message || 'Erreur upload');
     }
-
-    const formData = new FormData();
-    formData.append(type === 'video' ? 'video' : 'image', file);
-
-    try {
-      window.DashboardApp?.showLoading(true);
-      
-      const endpoint = type === 'video' 
-        ? '/supplier/upload-video' 
-        : '/supplier/upload-image';
-      
-      const response = await fetch(`${BrandiaAPI.config.apiURL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        return {
-          url: result.data.url,
-          type: type
-        };
-      } else {
-        throw new Error(result.message || 'Erreur upload');
-      }
-    } catch (error) {
-      console.error('[Campaigns] Upload error:', error);
-      throw error;
-    } finally {
-      window.DashboardApp?.showLoading(false);
-    }
-  },
+  } catch (error) {
+    console.error('[Campaigns] Upload error:', error);
+    throw error;
+  } finally {
+    window.DashboardApp?.showLoading(false);
+  }
+},
 
   checkVideoDuration: function(file) {
     return new Promise((resolve) => {
