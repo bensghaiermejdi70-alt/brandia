@@ -286,7 +286,26 @@
       } 
     },
     createProduct: async (data) => await apiFetch('/supplier/products', { method:'POST', body:JSON.stringify(data) }),
-    updateProduct: async (id, data) => await apiFetch(`/supplier/products/${id}`, { method:'PUT', body:JSON.stringify(data) }),
+    updateProduct: async (id, data) => {
+    // 🔥 CORRECTION : Filtrer les champs non autorisés
+    const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active', 'category_id'];
+    
+    const cleanData = {};
+    for (const [key, value] of Object.entries(data)) {
+        if (allowedFields.includes(key)) {
+            cleanData[key] = value;
+        } else {
+            console.warn(`[API] Field "${key}" filtered out - not allowed`);
+        }
+    }
+    
+    console.log('[API] updateProduct clean data:', cleanData);
+    
+    return await apiFetch(`/supplier/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(cleanData)
+    });
+},
     deleteProduct: async (id) => await apiFetch(`/supplier/products/${id}`, { method:'DELETE' }),
 
     // Orders

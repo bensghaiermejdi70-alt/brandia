@@ -63,46 +63,68 @@ class SupplierController {
 
   async updateProduct(req, res) {
     try {
-      const supplierId = req.user.id;
-      const { id } = req.params;
-      const { name, price, stock, description, category_id } = req.body;
+        const supplierId = req.user.id;
+        const { id } = req.params;
+        
+        // 🔥 CORRECTION : Whitelist des champs autorisés
+        const allowedFields = {
+            name: req.body.name,
+            price: req.body.price,
+            stock_quantity: req.body.stock_quantity,
+            description: req.body.description,
+            category_id: req.body.category_id,
+            is_active: req.body.is_active,
+            main_image_url: req.body.main_image_url
+        };
 
-      const result = await db.query(
-        `UPDATE products 
-         SET name=$1, price=$2, stock=$3, description=$4, category_id=$5, updated_at=NOW()
-         WHERE id=$6 AND supplier_id=$7
-         RETURNING *`,
-        [name, price, stock, description, category_id, id, supplierId]
-      );
+        // Filtrer les undefined
+        const updates = {};
+        for (const [key, value] of Object.entries(allowedFields)) {
+            if (value !== undefined) updates[key] = value;
+        }
 
-      if (!result.rows.length) {
-        return res.status(404).json({ success: false, message: 'Produit non trouvé' });
-      }
+        console.log('[UpdateProduct] Clean updates:', updates);
 
-      res.json({ success: true, data: result.rows[0] });
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Aucun champ valide à mettre à jour' 
+            });
+        }
+
+        const fields = Object.keys(updates);
+        const values = Object.values(updates);
+        
+        const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
+        
+        const sql = `
+            UPDATE products 
+            SET ${setClause}, updated_at = NOW()
+            WHERE id = $${fields.length + 1} AND supplier_id = $${fields.length + 2}
+            RETURNING *
+        `;
+        
+        values.push(id, supplierId);
+
+        const result = await db.query(sql, values);
+
+        if (!result.rows.length) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Produit non trouvé ou non autorisé' 
+            });
+        }
+
+        res.json({ success: true, data: result.rows[0] });
+        
     } catch (error) {
-      console.error('[Update Product] Error:', error);
-      res.status(500).json({ success: false, message: error.message });
+        console.error('[UpdateProduct] Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
     }
-  }
-
-  async deleteProduct(req, res) {
-    try {
-      const supplierId = req.user.id;
-      const { id } = req.params;
-
-      await db.query(
-        'DELETE FROM products WHERE id = $1 AND supplier_id = $2',
-        [id, supplierId]
-      );
-
-      res.json({ success: true, message: 'Produit supprimé' });
-    } catch (error) {
-      console.error('[Delete Product] Error:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
+}
   /* ================= COMMANDES ================= */
 
   async getOrders(req, res) {
