@@ -13,8 +13,24 @@
   
   <style>
     /* Styles publicité */
-    .brandia-ad-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
-    .brandia-ad-overlay.active { display: flex; }
+    .brandia-ad-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: none; /* Caché par défaut */
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.brandia-ad-overlay.active {
+  display: flex; /* Affiché quand active */
+}
     .brandia-ad-container { position: relative; width: 100%; max-width: 600px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); animation: adSlideIn 0.4s ease-out; }
     @keyframes adSlideIn { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .brandia-ad-media { width: 100%; height: 300px; object-fit: cover; background: #0f172a; }
