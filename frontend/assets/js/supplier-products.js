@@ -253,26 +253,34 @@ window.SupplierProducts = {
     this.renderProducts();
   },
 
-  toggleStatus: async function(productId) {
+ toggleStatus: async function(productId, currentStatus) {
     try {
-      const product = this.state.products.find(p => p.id === productId);
-      if (!product) return;
+        const newStatus = !currentStatus;
+        console.log(`[Products] Toggle status ${productId}: ${currentStatus} → ${newStatus}`);
+        
+        // 🔥 CORRECTION : Ne pas inclure stock dans la mise à jour
+        // Envoyer UNIQUEMENT is_active
+        await BrandiaAPI.Supplier.updateProduct(productId, {
+            is_active: newStatus
+        });
 
-      const newStatus = product.is_active === false ? true : false;
-      
-      await BrandiaAPI.Supplier.updateProduct(productId, {
-        ...product,
-        is_active: newStatus
-      });
+        // Mettre à jour localement
+        const product = this.state.products.find(p => p.id === productId);
+        if (product) {
+            product.is_active = newStatus;
+        }
 
-      product.is_active = newStatus;
-      this.renderProducts();
-      this.showToast(`Produit ${newStatus ? 'activé' : 'désactivé'}`, 'success');
+        this.renderList();
+        this.showToast(newStatus ? 'Produit activé' : 'Produit désactivé', 'success');
+
     } catch (error) {
-      console.error('Toggle status error:', error);
-      this.showToast('Erreur lors du changement de statut', 'error');
+        console.error('Toggle status error:', error);
+        this.showToast('Erreur: ' + error.message, 'error');
+        
+        // Re-render pour remettre le toggle dans son état original
+        this.renderList();
     }
-  },
+},
 
   deleteProduct: async function(productId) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) return;
