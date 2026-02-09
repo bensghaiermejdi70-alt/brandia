@@ -1,5 +1,5 @@
 // ============================================
-// PRODUCT MODEL - Requêtes SQL Produits (AVEC PROMOTIONS)
+// PRODUCT MODEL - Requêtes SQL Produits (AVEC PROMOTIONS) v2.0 CORRIGÉ
 // ============================================
 
 const { query } = require('../../config/db');
@@ -62,7 +62,13 @@ const ProductModel = {
             const result = await query(sql, params);
             console.log(`[ProductModel] ${result.rows.length} produits trouvés`);
 
-            return result.rows;
+            // 🔥 CORRECTION : S'assurer que supplier_id est un nombre
+            const products = result.rows;
+            products.forEach(p => {
+                if (p.supplier_id) p.supplier_id = parseInt(p.supplier_id);
+            });
+
+            return products;
 
         } catch (error) {
             console.error('❌ [ProductModel] Erreur findAll:', error.message);
@@ -166,7 +172,13 @@ const ProductModel = {
             const result = await query(sql, params);
             console.log(`[ProductModel] ${result.rows.length} produits avec promotions trouvés`);
 
-            return result.rows;
+            // 🔥 CORRECTION : S'assurer que supplier_id est un nombre
+            const products = result.rows;
+            products.forEach(p => {
+                if (p.supplier_id) p.supplier_id = parseInt(p.supplier_id);
+            });
+
+            return products;
 
         } catch (error) {
             console.error('❌ [ProductModel] Erreur findAllWithPromotions:', error.message);
@@ -175,7 +187,7 @@ const ProductModel = {
     },
 
     // ==========================================
-    // Détail produit simple
+    // Détail produit simple (CORRIGÉ)
     // ==========================================
     findById: async (id) => {
         try {
@@ -183,8 +195,9 @@ const ProductModel = {
                 SELECT 
                     p.*,
                     u.first_name as supplier_name,
-                    s.id as supplier_id,
+                    u.id as supplier_id,  -- 🔥 CORRECTION : u.id au lieu de s.id
                     s.company_name as supplier_company,
+                    s.logo_url as supplier_logo,
                     c.name as category_name,
                     c.slug as category_slug
                 FROM products p
@@ -195,7 +208,14 @@ const ProductModel = {
                 AND (p.is_active = true OR p.is_active IS NULL)
             `;
             const result = await query(sql, [id]);
-            return result.rows[0] || null;
+            
+            // 🔥 CORRECTION : S'assurer que supplier_id est un nombre
+            const product = result.rows[0] || null;
+            if (product && product.supplier_id) {
+                product.supplier_id = parseInt(product.supplier_id);
+            }
+            
+            return product;
         } catch (error) {
             console.error('❌ [ProductModel] Erreur findById:', error.message);
             throw error;
@@ -203,7 +223,7 @@ const ProductModel = {
     },
 
     // ==========================================
-    // Détail produit avec promotion
+    // Détail produit avec promotion (CORRIGÉ)
     // ==========================================
     findByIdWithPromotion: async (id) => {
         try {
@@ -211,8 +231,9 @@ const ProductModel = {
                 SELECT 
                     p.*,
                     u.first_name as supplier_name,
-                    s.id as supplier_id,
+                    u.id as supplier_id,  -- 🔥 CORRECTION : u.id au lieu de s.id
                     s.company_name as supplier_company,
+                    s.logo_url as supplier_logo,
                     c.name as category_name,
                     c.slug as category_slug,
                     promo.id as promo_id,
@@ -245,7 +266,14 @@ const ProductModel = {
                 AND (p.is_active = true OR p.is_active IS NULL)
             `;
             const result = await query(sql, [id]);
-            return result.rows[0] || null;
+            
+            // 🔥 CORRECTION : S'assurer que supplier_id est un nombre
+            const product = result.rows[0] || null;
+            if (product && product.supplier_id) {
+                product.supplier_id = parseInt(product.supplier_id);
+            }
+            
+            return product;
         } catch (error) {
             console.error('❌ [ProductModel] Erreur findByIdWithPromotion:', error.message);
             throw error;
@@ -253,13 +281,14 @@ const ProductModel = {
     },
 
     // ==========================================
-    // Produits en vedette
+    // Produits en vedette (CORRIGÉ)
     // ==========================================
     findFeatured: async (limit = 8) => {
         const sql = `
             SELECT 
                 p.*,
                 u.first_name as supplier_name,
+                u.id as supplier_id,  -- 🔥 CORRECTION : Ajout explicite
                 s.company_name as supplier_company
             FROM products p
             LEFT JOIN users u ON p.supplier_id = u.id
@@ -269,9 +298,19 @@ const ProductModel = {
             LIMIT $1
         `;
         const result = await query(sql, [parseInt(limit)]);
-        return result.rows;
+        
+        // 🔥 CORRECTION : S'assurer que supplier_id est un nombre
+        const products = result.rows;
+        products.forEach(p => {
+            if (p.supplier_id) p.supplier_id = parseInt(p.supplier_id);
+        });
+        
+        return products;
     },
 
+    // ==========================================
+    // Produits en vedette avec promotions (CORRIGÉ)
+    // ==========================================
     findFeaturedWithPromotions: async (limit = 8) => {
         const sql = `
             WITH active_promotions AS (
@@ -301,6 +340,7 @@ const ProductModel = {
             SELECT 
                 p.*,
                 u.first_name as supplier_name,
+                u.id as supplier_id,  -- 🔥 CORRECTION : u.id explicite
                 s.company_name as supplier_company,
                 COALESCE(bp.final_price, p.price) as price,
                 bp.promo_id,
@@ -317,26 +357,45 @@ const ProductModel = {
             LIMIT $1
         `;
         const result = await query(sql, [parseInt(limit)]);
-        return result.rows;
+        
+        // 🔥 CORRECTION : S'assurer que supplier_id est un nombre
+        const products = result.rows;
+        products.forEach(p => {
+            if (p.supplier_id) p.supplier_id = parseInt(p.supplier_id);
+        });
+        
+        return products;
     },
 
     // ==========================================
-    // Création d’un produit
+    // Création d'un produit
     // ==========================================
     create: async (productData) => {
-        const { supplier_id, name, description, price, stock_quantity, main_image_url } = productData;
+        const { supplier_id, name, description, price, stock_quantity, main_image_url, category_id, category_slug } = productData;
         const sql = `
             INSERT INTO products 
-                (supplier_id, name, description, price, stock_quantity, main_image_url, is_active, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
+                (supplier_id, name, description, price, stock_quantity, main_image_url, category_id, category_slug, is_active, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, NOW())
             RETURNING *
         `;
-        const result = await query(sql, [supplier_id, name, description, price, stock_quantity, main_image_url]);
+        const result = await query(sql, [
+            supplier_id, 
+            name, 
+            description, 
+            price, 
+            stock_quantity, 
+            main_image_url,
+            category_id || null,
+            category_slug || null
+        ]);
         return result.rows[0];
     },
 
+    // ==========================================
+    // Mise à jour d'un produit
+    // ==========================================
     update: async (id, updates) => {
-        const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active'];
+        const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active', 'category_id', 'category_slug'];
         const setClause = [];
         const values = [];
         let paramCount = 1;
@@ -357,6 +416,9 @@ const ProductModel = {
         return result.rows[0];
     },
 
+    // ==========================================
+    // Suppression d'un produit
+    // ==========================================
     delete: async (id) => {
         const result = await query('DELETE FROM products WHERE id = $1 RETURNING id, name', [id]);
         return result.rows[0];
