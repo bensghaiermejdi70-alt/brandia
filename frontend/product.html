@@ -3,362 +3,673 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Produit</title>
+  <title>Produit - Brandia</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Styles -->
   <link rel="stylesheet" href="assets/css/style.css">
+  
+  <style>
+    /* Styles pour la publicité contextuelle */
+    .brandia-ad-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .brandia-ad-overlay.active {
+      display: flex;
+    }
+    
+    .brandia-ad-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: adSlideIn 0.4s ease-out;
+    }
+    
+    @keyframes adSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .brandia-ad-media {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      background: #0f172a;
+    }
+    
+    .brandia-ad-video {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      background: #000;
+    }
+    
+    .brandia-ad-content {
+      padding: 24px;
+    }
+    
+    .brandia-ad-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+    
+    .brandia-ad-close:hover {
+      background: rgba(239, 68, 68, 0.9);
+      transform: scale(1.1);
+    }
+    
+    .brandia-ad-timer {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .brandia-ad-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ec4899, #8b5cf6);
+      transition: width 1s linear;
+    }
+    
+    .brandia-ad-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    
+    .brandia-ad-headline {
+      font-size: 22px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    
+    .brandia-ad-description {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    
+    .brandia-ad-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      color: white;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .brandia-ad-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.4);
+    }
+    
+    .brandia-ad-footer {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+    }
+    
+    /* Responsive */
+    @media (max-width: 640px) {
+      .brandia-ad-container {
+        max-width: 100%;
+        margin: 10px;
+      }
+      
+      .brandia-ad-media,
+      .brandia-ad-video {
+        height: 200px;
+      }
+    }
+  </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white min-h-screen">
 
-<!-- Exemple de structure de la page produit -->
-<div id="product-container"></div>
+  <!-- ========================================== -->
+  <!-- HEADER -->
+  <!-- ========================================== -->
+  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-gradient-to-br from-pink-500 to-violet-600 rounded-lg flex items-center justify-center">
+            <span class="font-bold text-white text-sm">B</span>
+          </div>
+          <span class="font-bold text-xl bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Brandia</span>
+        </a>
 
-<!-- Sélecteur de pays -->
-<select id="countrySelector"></select>
+        <!-- Navigation -->
+        <nav class="hidden md:flex items-center gap-8">
+          <a href="catalogue.html" class="text-slate-300 hover:text-white transition">Catalogue</a>
+          <a href="categories.html" class="text-slate-300 hover:text-white transition">Catégories</a>
+          <a href="marques.html" class="text-slate-300 hover:text-white transition">Marques</a>
+        </nav>
 
-<!-- Auth / User menu -->
-<div id="auth-buttons">Connexion / Inscription</div>
-<div id="user-menu" class="hidden">
-  <span id="user-name"></span>
-  <button onclick="logout()">Déconnexion</button>
-</div>
+        <!-- Actions -->
+        <div class="flex items-center gap-4">
+          <!-- Sélecteur pays -->
+          <select id="countrySelector" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-pink-500">
+            <option value="AF">🇦🇫 Afghanistan</option>
+  <option value="AL">🇦🇱 Albanie</option>
+  <option value="DZ">🇩🇿 Algérie</option>
+  <option value="AD">🇦🇩 Andorre</option>
+  <option value="AO">🇦🇴 Angola</option>
+  <option value="AG">🇦🇬 Antigua-et-Barbuda</option>
+  <option value="AR">🇦🇷 Argentine</option>
+  <option value="AM">🇦🇲 Arménie</option>
+  <option value="AU">🇦🇺 Australie</option>
+  <option value="AT">🇦🇹 Autriche</option>
+  <option value="AZ">🇦🇿 Azerbaïdjan</option>
+  <option value="BS">🇧🇸 Bahamas</option>
+  <option value="BH">🇧🇭 Bahreïn</option>
+  <option value="BD">🇧🇩 Bangladesh</option>
+  <option value="BB">🇧🇧 Barbade</option>
+  <option value="BY">🇧🇾 Biélorussie</option>
+  <option value="BE">🇧🇪 Belgique</option>
+  <option value="BZ">🇧🇿 Belize</option>
+  <option value="BJ">🇧🇯 Bénin</option>
+  <option value="BT">🇧🇹 Bhoutan</option>
+  <option value="BO">🇧🇴 Bolivie</option>
+  <option value="BA">🇧🇦 Bosnie-Herzégovine</option>
+  <option value="BW">🇧🇼 Botswana</option>
+  <option value="BR">🇧🇷 Brésil</option>
+  <option value="BN">🇧🇳 Brunei</option>
+  <option value="BG">🇧🇬 Bulgarie</option>
+  <option value="BF">🇧🇫 Burkina Faso</option>
+  <option value="BI">🇧🇮 Burundi</option>
+  <option value="CV">🇨🇻 Cap-Vert</option>
+  <option value="KH">🇰🇭 Cambodge</option>
+  <option value="CM">🇨🇲 Cameroun</option>
+  <option value="CA">🇨🇦 Canada</option>
+  <option value="CF">🇨🇫 Centrafrique</option>
+  <option value="TD">🇹🇩 Tchad</option>
+  <option value="CL">🇨🇱 Chili</option>
+  <option value="CN">🇨🇳 Chine</option>
+  <option value="CO">🇨🇴 Colombie</option>
+  <option value="KM">🇰🇲 Comores</option>
+  <option value="CG">🇨🇬 Congo</option>
+  <option value="CD">🇨🇩 Congo (RDC)</option>
+  <option value="CR">🇨🇷 Costa Rica</option>
+  <option value="CI">🇨🇮 Côte d’Ivoire</option>
+  <option value="HR">🇭🇷 Croatie</option>
+  <option value="CU">🇨🇺 Cuba</option>
+  <option value="CY">🇨🇾 Chypre</option>
+  <option value="CZ">🇨🇿 République tchèque</option>
+  <option value="DK">🇩🇰 Danemark</option>
+  <option value="DJ">🇩🇯 Djibouti</option>
+  <option value="DM">🇩🇲 Dominique</option>
+  <option value="DO">🇩🇴 République dominicaine</option>
+  <option value="EC">🇪🇨 Équateur</option>
+  <option value="EG">🇪🇬 Égypte</option>
+  <option value="SV">🇸🇻 Salvador</option>
+  <option value="GQ">🇬🇶 Guinée équatoriale</option>
+  <option value="ER">🇪🇷 Érythrée</option>
+  <option value="EE">🇪🇪 Estonie</option>
+  <option value="ET">🇪🇹 Éthiopie</option>
+  <option value="FJ">🇫🇯 Fidji</option>
+  <option value="FI">🇫🇮 Finlande</option>
+  <option value="FR">🇫🇷 France</option>
+  <option value="GA">🇬🇦 Gabon</option>
+  <option value="GM">🇬🇲 Gambie</option>
+  <option value="GE">🇬🇪 Géorgie</option>
+  <option value="DE">🇩🇪 Allemagne</option>
+  <option value="GH">🇬🇭 Ghana</option>
+  <option value="GR">🇬🇷 Grèce</option>
+  <option value="GD">🇬🇩 Grenade</option>
+  <option value="GT">🇬🇹 Guatemala</option>
+  <option value="GN">🇬🇳 Guinée</option>
+  <option value="GW">🇬🇼 Guinée-Bissau</option>
+  <option value="GY">🇬🇾 Guyana</option>
+  <option value="HT">🇭🇹 Haïti</option>
+  <option value="HN">🇭🇳 Honduras</option>
+  <option value="HU">🇭🇺 Hongrie</option>
+  <option value="IS">🇮🇸 Islande</option>
+  <option value="IN">🇮🇳 Inde</option>
+  <option value="ID">🇮🇩 Indonésie</option>
+  <option value="IR">🇮🇷 Iran</option>
+  <option value="IQ">🇮🇶 Irak</option>
+  <option value="IE">🇮🇪 Irlande</option>
+  <option value="IL">🇮🇱 Israël</option>
+  <option value="IT">🇮🇹 Italie</option>
+  <option value="JM">🇯🇲 Jamaïque</option>
+  <option value="JP">🇯🇵 Japon</option>
+  <option value="JO">🇯🇴 Jordanie</option>
+  <option value="KZ">🇰🇿 Kazakhstan</option>
+  <option value="KE">🇰🇪 Kenya</option>
+  <option value="KI">🇰🇮 Kiribati</option>
+  <option value="KP">🇰🇵 Corée du Nord</option>
+  <option value="KR">🇰🇷 Corée du Sud</option>
+  <option value="KW">🇰🇼 Koweït</option>
+  <option value="KG">🇰🇬 Kirghizistan</option>
+  <option value="LA">🇱🇦 Laos</option>
+  <option value="LV">🇱🇻 Lettonie</option>
+  <option value="LB">🇱🇧 Liban</option>
+  <option value="LS">🇱🇸 Lesotho</option>
+  <option value="LR">🇱🇷 Libéria</option>
+  <option value="LY">🇱🇾 Libye</option>
+  <option value="LI">🇱🇮 Liechtenstein</option>
+  <option value="LT">🇱🇹 Lituanie</option>
+  <option value="LU">🇱🇺 Luxembourg</option>
+  <option value="MG">🇲🇬 Madagascar</option>
+  <option value="MW">🇲🇼 Malawi</option>
+  <option value="MY">🇲🇾 Malaisie</option>
+  <option value="MV">🇲🇻 Maldives</option>
+  <option value="ML">🇲🇱 Mali</option>
+  <option value="MT">🇲🇹 Malte</option>
+  <option value="MH">🇲🇭 Îles Marshall</option>
+  <option value="MR">🇲🇷 Mauritanie</option>
+  <option value="MU">🇲🇺 Maurice</option>
+  <option value="MX">🇲🇽 Mexique</option>
+  <option value="FM">🇫🇲 États fédérés de Micronésie</option>
+  <option value="MD">🇲🇩 Moldavie</option>
+  <option value="MC">🇲🇨 Monaco</option>
+  <option value="MN">🇲🇳 Mongolie</option>
+  <option value="ME">🇲🇪 Monténégro</option>
+  <option value="MA">🇲🇦 Maroc</option>
+  <option value="MZ">🇲🇿 Mozambique</option>
+  <option value="MM">🇲🇲 Myanmar</option>
+  <option value="NA">🇳🇦 Namibie</option>
+  <option value="NR">🇳🇷 Nauru</option>
+  <option value="NP">🇳🇵 Népal</option>
+  <option value="NL">🇳🇱 Pays-Bas</option>
+  <option value="NZ">🇳🇿 Nouvelle-Zélande</option>
+  <option value="NI">🇳🇮 Nicaragua</option>
+  <option value="NE">🇳🇪 Niger</option>
+  <option value="NG">🇳🇬 Nigéria</option>
+  <option value="NO">🇳🇴 Norvège</option>
+  <option value="OM">🇴🇲 Oman</option>
+  <option value="PK">🇵🇰 Pakistan</option>
+  <option value="PW">🇵🇼 Palaos</option>
+  <option value="PA">🇵🇦 Panama</option>
+  <option value="PG">🇵🇬 Papouasie-Nouvelle-Guinée</option>
+  <option value="PY">🇵🇾 Paraguay</option>
+  <option value="PE">🇵🇪 Pérou</option>
+  <option value="PH">🇵🇭 Philippines</option>
+  <option value="PL">🇵🇱 Pologne</option>
+  <option value="PT">🇵🇹 Portugal</option>
+  <option value="QA">🇶🇦 Qatar</option>
+  <option value="RO">🇷🇴 Roumanie</option>
+  <option value="RU">🇷🇺 Russie</option>
+  <option value="RW">🇷🇼 Rwanda</option>
+  <option value="KN">🇰🇳 Saint-Kitts-et-Nevis</option>
+  <option value="LC">🇱🇨 Sainte-Lucie</option>
+  <option value="VC">🇻🇨 Saint-Vincent-et-les-Grenadines</option>
+  <option value="WS">🇼🇸 Samoa</option>
+  <option value="SM">🇸🇲 Saint-Marin</option>
+  <option value="ST">🇸🇹 Sao Tomé-et-Principe</option>
+  <option value="SA">🇸🇦 Arabie saoudite</option>
+  <option value="SN">🇸🇳 Sénégal</option>
+  <option value="RS">🇷🇸 Serbie</option>
+  <option value="SC">🇸🇨 Seychelles</option>
+  <option value="SL">🇸🇱 Sierra Leone</option>
+  <option value="SG">🇸🇬 Singapour</option>
+  <option value="SK">🇸🇰 Slovaquie</option>
+  <option value="SI">🇸🇮 Slovénie</option>
+  <option value="SB">🇸🇧 Îles Salomon</option>
+  <option value="SO">🇸🇴 Somalie</option>
+  <option value="ZA">🇿🇦 Afrique du Sud</option>
+  <option value="ES">🇪🇸 Espagne</option>
+  <option value="LK">🇱🇰 Sri Lanka</option>
+  <option value="SD">🇸🇩 Soudan</option>
+  <option value="SR">🇸🇷 Suriname</option>
+  <option value="SE">🇸🇪 Suède</option>
+  <option value="CH">🇨🇭 Suisse</option>
+  <option value="SY">🇸🇾 Syrie</option>
+  <option value="TW">🇹🇼 Taïwan</option>
+  <option value="TJ">🇹🇯 Tadjikistan</option>
+  <option value="TZ">🇹🇿 Tanzanie</option>
+  <option value="TH">🇹🇭 Thaïlande</option>
+  <option value="TL">🇹🇱 Timor oriental</option>
+  <option value="TG">🇹🇬 Togo</option>
+  <option value="TO">🇹🇴 Tonga</option>
+  <option value="TT">🇹🇹 Trinité-et-Tobago</option>
+  <option value="TN">🇹🇳 Tunisie</option>
+  <option value="TR">🇹🇷 Turquie</option>
+  <option value="TM">🇹🇲 Turkménistan</option>
+  <option value="UG">🇺🇬 Ouganda</option>
+  <option value="UA">🇺🇦 Ukraine</option>
+  <option value="AE">🇦🇪 Émirats arabes unis</option>
+  <option value="GB">🇬🇧 Royaume-Uni</option>
+  <option value="US">🇺🇸 États-Unis</option>
+  <option value="UY">🇺🇾 Uruguay</option>
+  <option value="UZ">🇺🇿 Ouzbékistan</option>
+  <option value="VU">🇻🇺 Vanuatu</option>
+  <option value="VE">🇻🇪 Venezuela</option>
+  <option value="VN">🇻🇳 Viêt Nam</option>
+  <option value="YE">🇾🇪 Yémen</option>
+  <option value="ZM">🇿🇲 Zambie</option>
+  <option value="ZW">🇿🇼 Zimbabwe</option>
+          </select>
 
-<!-- Panier -->
-<div id="cart-count" class="hidden">0</div>
+          <!-- Panier -->
+          <a href="panier.html" class="relative p-2 text-slate-300 hover:text-white transition">
+            <i class="fas fa-shopping-cart text-xl"></i>
+            <span id="cart-count" class="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full text-xs flex items-center justify-center font-bold hidden">0</span>
+          </a>
 
-<script>
-  // ==========================================
-  // FONCTION CRITIQUE CORRIGÉE - EXPOSER POUR PUBLICITÉ
-  // ==========================================
-  async function loadProduct() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
-    
-    console.log('[Product] Loading ID:', productId);
-    
-    if (!productId) {
-      console.error('[Product] No ID in URL');
-      showError();
-      return;
-    }
+          <!-- Auth -->
+          <div id="auth-buttons">
+            <a href="login.html" class="text-slate-300 hover:text-white transition text-sm">Connexion</a>
+          </div>
+          <div id="user-menu" class="hidden items-center gap-3">
+            <span id="user-name" class="text-sm text-slate-300"></span>
+            <button onclick="logout()" class="text-slate-400 hover:text-white transition">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
 
-    try {
-      // 🔥 Exemple récupération produit depuis API
-      const res = await fetch(`/api/products/${productId}`);
-      if (!res.ok) throw new Error('Produit introuvable');
-      const product = await res.json();
+  <!-- ========================================== -->
+  <!-- CONTENU PRODUIT -->
+  <!-- ========================================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div id="product-container" class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <!-- Loading state -->
+      <div class="col-span-full flex items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        <span class="ml-4 text-slate-400">Chargement du produit...</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- PUBLICITÉ CONTEXTUELLE BRANDIA -->
+  <!-- ========================================== -->
+  <div id="brandia-ad-overlay" class="brandia-ad-overlay">
+    <div class="brandia-ad-container">
+      <!-- Timer -->
+      <div class="brandia-ad-timer">
+        <i class="fas fa-clock"></i>
+        <span id="ad-timer-text">15s</span>
+      </div>
       
-      renderProduct(product);
+      <!-- Fermer -->
+      <button class="brandia-ad-close" onclick="brandiaAds.close()" title="Fermer (Esc)">
+        <i class="fas fa-times"></i>
+      </button>
+      
+      <!-- Média -->
+      <div id="ad-media-container">
+        <!-- Image ou vidéo injectée ici -->
+      </div>
+      
+      <!-- Progress bar -->
+      <div class="brandia-ad-progress" id="ad-progress" style="width: 100%"></div>
+      
+      <!-- Contenu -->
+      <div class="brandia-ad-content">
+        <div class="brandia-ad-badge">
+          <i class="fas fa-bullhorn"></i>
+          Offre spéciale
+        </div>
+        
+        <h3 id="ad-headline" class="brandia-ad-headline">Titre de la campagne</h3>
+        <p id="ad-description" class="brandia-ad-description">Description de l'offre</p>
+        
+        <a id="ad-cta" href="#" class="brandia-ad-cta" target="_blank" onclick="brandiaAds.trackClick()">
+          <span>Voir l'offre</span>
+          <i class="fas fa-arrow-right"></i>
+        </a>
+        
+        <div class="brandia-ad-footer">
+          <i class="fas fa-info-circle mr-1"></i>
+          Contenu proposé par la marque que vous consultez
+        </div>
+      </div>
+    </div>
+  </div>
 
-      // 🔥🔥🔥 AJOUT CRITIQUE : Exposer pour publicité
-      window.currentProduct = {
-        id: product.id,
-        supplier_id: product.supplier_id || null
-      };
-      console.log('[Product] Exposed for ads:', window.currentProduct);
+  <!-- ========================================== -->
+  <!-- FOOTER -->
+  <!-- ========================================== -->
+  <footer class="bg-slate-900 border-t border-slate-800 mt-20">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-center text-slate-500 text-sm">
+      <p>&copy; 2026 Brandia. Tous droits réservés.</p>
+    </div>
+  </footer>
 
-      // 🔥🔥🔥 DÉCLENCHER LA PUBLICITÉ
-      setTimeout(() => {
-        if (window.brandiaAds && window.currentProduct.supplier_id) {
-          console.log('[Product] Triggering ad check...');
-          window.brandiaAds.checkAndShow(window.currentProduct.id, window.currentProduct.supplier_id);
-        } else {
-          console.warn('[Product] brandiaAds not ready, retrying...');
-          setTimeout(() => {
-            if (window.brandiaAds && window.currentProduct.supplier_id) {
-              window.brandiaAds.checkAndShow(window.currentProduct.id, window.currentProduct.supplier_id);
-            }
-          }, 1000);
+  <!-- ========================================== -->
+  <!-- SCRIPTS -->
+  <!-- ========================================== -->
+  
+  <!-- 1. API Client Brandia -->
+  <script src="assets/js/api.js"></script>
+  
+  <!-- 2. Système de Publicité Contextuelle -->
+  <script src="assets/js/brandia-ads.js"></script>
+  
+  <!-- 3. Logique Produit -->
+  <script>
+    // ==========================================
+    // VARIABLE GLOBALE POUR LA PUBLICITÉ
+    // ==========================================
+    window.currentProduct = null;
+
+    // ==========================================
+    // CHARGEMENT PRODUIT (CORRIGÉ)
+    // ==========================================
+    async function loadProduct() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+      
+      console.log('[Product] Loading ID:', productId);
+      
+      if (!productId || productId === 'null' || productId === 'undefined') {
+        console.error('[Product] Invalid ID:', productId);
+        showError('Produit non trouvé');
+        return;
+      }
+
+      const container = document.getElementById('product-container');
+      
+      try {
+        // 🔥 UTILISER BrandiaAPI AU LIEU DE FETCH DIRECT
+        const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
+        console.log('[Product] API Response:', response);
+        
+        if (!response.success) {
+          throw new Error(response.message || 'Produit non trouvé');
         }
-      }, 2000);
+        
+        const productData = response.data?.product || response.data;
+        if (!productData) {
+          throw new Error('Données produit vides');
+        }
+        
+        // 🔥 EXPOSER POUR LA PUBLICITÉ (CRITIQUE)
+        window.currentProduct = {
+          id: productData.id,
+          supplier_id: productData.supplier_id || productData.supplier?.id || null,
+          name: productData.name,
+          category_id: productData.category_id
+        };
+        
+        console.log('[Product] Exposed for ads:', window.currentProduct);
 
-    } catch (err) {
-      console.error('[Product] Fatal error:', err);
-      showError();
-    }
-  }
+        // Rendu du produit
+        renderProduct(productData);
+        
+        // 🔥 DÉCLENCHER LA PUBLICITÉ APRÈS RENDU
+        setTimeout(() => {
+          triggerAdCheck();
+        }, 1500);
 
-  // ==========================================
-  // DÉCLENCHEMENT PUBLICITÉ (BACKUP)
-  // ==========================================
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function checkAndTriggerAd() {
-      if (window.currentProduct?.supplier_id && window.brandiaAds) {
-        console.log('[Product] Backup trigger for ad');
-        window.brandiaAds.checkAndShow(
-          window.currentProduct.id, 
-          window.currentProduct.supplier_id
-        );
-      } else {
-        console.log('[Product] Waiting for product/ads...');
-        setTimeout(checkAndTriggerAd, 1000);
+      } catch (err) {
+        console.error('[Product] Fatal error:', err);
+        showError(err.message || 'Erreur lors du chargement du produit');
       }
-    }, 3000);
-  });
+    }
 
-  // ==========================================
-  // FONCTIONS UTILITAIRES MANQUANTES
-  // ==========================================
-  function initCountries() {
-    const selector = document.getElementById('countrySelector');
-    if (!selector) return;
-    
-    const countries = {
-      'AF': { name: 'Afghanistan', currency: 'AFN' },
-      'AL': { name: 'Albanie', currency: 'ALL' },
-      'DZ': { name: 'Algérie', currency: 'DZD' },
-      'AD': { name: 'Andorre', currency: 'EUR' },
-      'AO': { name: 'Angola', currency: 'AOA' },
-      'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
-      'AR': { name: 'Argentine', currency: 'ARS' },
-      'AM': { name: 'Arménie', currency: 'AMD' },
-      'AU': { name: 'Australie', currency: 'AUD' },
-      'AT': { name: 'Autriche', currency: 'EUR' },
-      'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
-      'BS': { name: 'Bahamas', currency: 'BSD' },
-      'BH': { name: 'Bahreïn', currency: 'BHD' },
-      'BD': { name: 'Bangladesh', currency: 'BDT' },
-      'BB': { name: 'Barbade', currency: 'BBD' },
-      'BY': { name: 'Biélorussie', currency: 'BYN' },
-      'BE': { name: 'Belgique', currency: 'EUR' },
-      'BZ': { name: 'Belize', currency: 'BZD' },
-      'BJ': { name: 'Bénin', currency: 'XOF' },
-      'BT': { name: 'Bhoutan', currency: 'BTN' },
-      'BO': { name: 'Bolivie', currency: 'BOB' },
-      'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
-      'BW': { name: 'Botswana', currency: 'BWP' },
-      'BR': { name: 'Brésil', currency: 'BRL' },
-      'BN': { name: 'Brunei', currency: 'BND' },
-      'BG': { name: 'Bulgarie', currency: 'BGN' },
-      'BF': { name: 'Burkina Faso', currency: 'XOF' },
-      'BI': { name: 'Burundi', currency: 'BIF' },
-      'CV': { name: 'Cap-Vert', currency: 'CVE' },
-      'KH': { name: 'Cambodge', currency: 'KHR' },
-      'CM': { name: 'Cameroun', currency: 'XAF' },
-      'CA': { name: 'Canada', currency: 'CAD' },
-      'CF': { name: 'Centrafrique', currency: 'XAF' },
-      'TD': { name: 'Tchad', currency: 'XAF' },
-      'CL': { name: 'Chili', currency: 'CLP' },
-      'CN': { name: 'Chine', currency: 'CNY' },
-      'CO': { name: 'Colombie', currency: 'COP' },
-      'KM': { name: 'Comores', currency: 'KMF' },
-      'CG': { name: 'Congo', currency: 'XAF' },
-      'CD': { name: 'Congo (RDC)', currency: 'CDF' },
-      'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
-      'HR': { name: 'Croatie', currency: 'EUR' },
-      'CU': { name: 'Cuba', currency: 'CUP' },
-      'CY': { name: 'Chypre', currency: 'EUR' },
-      'CZ': { name: 'République tchèque', currency: 'CZK' },
-      'DK': { name: 'Danemark', currency: 'DKK' },
-      'DJ': { name: 'Djibouti', currency: 'DJF' },
-      'DM': { name: 'Dominique', currency: 'XCD' },
-      'DO': { name: 'République dominicaine', currency: 'DOP' },
-      'EC': { name: 'Équateur', currency: 'USD' },
-      'EG': { name: 'Égypte', currency: 'EGP' },
-      'SV': { name: 'Salvador', currency: 'USD' },
-      'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
-      'ER': { name: 'Érythrée', currency: 'ERN' },
-      'EE': { name: 'Estonie', currency: 'EUR' },
-      'ET': { name: 'Éthiopie', currency: 'ETB' },
-      'FJ': { name: 'Fidji', currency: 'FJD' },
-      'FI': { name: 'Finlande', currency: 'EUR' },
-      'FR': { name: 'France', currency: 'EUR' },
-      'GA': { name: 'Gabon', currency: 'XAF' },
-      'GM': { name: 'Gambie', currency: 'GMD' },
-      'GE': { name: 'Géorgie', currency: 'GEL' },
-      'DE': { name: 'Allemagne', currency: 'EUR' },
-      'GH': { name: 'Ghana', currency: 'GHS' },
-      'GR': { name: 'Grèce', currency: 'EUR' },
-      'GD': { name: 'Grenade', currency: 'XCD' },
-      'GT': { name: 'Guatemala', currency: 'GTQ' },
-      'GN': { name: 'Guinée', currency: 'GNF' },
-      'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
-      'GY': { name: 'Guyana', currency: 'GYD' },
-      'HT': { name: 'Haïti', currency: 'HTG' },
-      'HN': { name: 'Honduras', currency: 'HNL' },
-      'HU': { name: 'Hongrie', currency: 'HUF' },
-      'IS': { name: 'Islande', currency: 'ISK' },
-      'IN': { name: 'Inde', currency: 'INR' },
-      'ID': { name: 'Indonésie', currency: 'IDR' },
-      'IR': { name: 'Iran', currency: 'IRR' },
-      'IQ': { name: 'Irak', currency: 'IQD' },
-      'IE': { name: 'Irlande', currency: 'EUR' },
-      'IL': { name: 'Israël', currency: 'ILS' },
-      'IT': { name: 'Italie', currency: 'EUR' },
-      'JM': { name: 'Jamaïque', currency: 'JMD' },
-      'JP': { name: 'Japon', currency: 'JPY' },
-      'JO': { name: 'Jordanie', currency: 'JOD' },
-      'KZ': { name: 'Kazakhstan', currency: 'KZT' },
-      'KE': { name: 'Kenya', currency: 'KES' },
-      'KI': { name: 'Kiribati', currency: 'AUD' },
-      'KP': { name: 'Corée du Nord', currency: 'KPW' },
-      'KR': { name: 'Corée du Sud', currency: 'KRW' },
-      'KW': { name: 'Koweït', currency: 'KWD' },
-      'KG': { name: 'Kirghizistan', currency: 'KGS' },
-      'LA': { name: 'Laos', currency: 'LAK' },
-      'LV': { name: 'Lettonie', currency: 'EUR' },
-      'LB': { name: 'Liban', currency: 'LBP' },
-      'LS': { name: 'Lesotho', currency: 'LSL' },
-      'LR': { name: 'Libéria', currency: 'LRD' },
-      'LY': { name: 'Libye', currency: 'LYD' },
-      'LI': { name: 'Liechtenstein', currency: 'CHF' },
-      'LT': { name: 'Lituanie', currency: 'EUR' },
-      'LU': { name: 'Luxembourg', currency: 'EUR' },
-      'MG': { name: 'Madagascar', currency: 'MGA' },
-      'MW': { name: 'Malawi', currency: 'MWK' },
-      'MY': { name: 'Malaisie', currency: 'MYR' },
-      'MV': { name: 'Maldives', currency: 'MVR' },
-      'ML': { name: 'Mali', currency: 'XOF' },
-      'MT': { name: 'Malte', currency: 'EUR' },
-      'MH': { name: 'Îles Marshall', currency: 'USD' },
-      'MR': { name: 'Mauritanie', currency: 'MRO' },
-      'MU': { name: 'Maurice', currency: 'MUR' },
-      'MX': { name: 'Mexique', currency: 'MXN' },
-      'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
-      'MD': { name: 'Moldavie', currency: 'MDL' },
-      'MC': { name: 'Monaco', currency: 'EUR' },
-      'MN': { name: 'Mongolie', currency: 'MNT' },
-      'ME': { name: 'Monténégro', currency: 'EUR' },
-      'MA': { name: 'Maroc', currency: 'MAD' },
-      'MZ': { name: 'Mozambique', currency: 'MZN' },
-      'MM': { name: 'Myanmar', currency: 'MMK' },
-      'NA': { name: 'Namibie', currency: 'NAD' },
-      'NR': { name: 'Nauru', currency: 'AUD' },
-      'NP': { name: 'Népal', currency: 'NPR' },
-      'NL': { name: 'Pays-Bas', currency: 'EUR' },
-      'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
-      'NI': { name: 'Nicaragua', currency: 'NIO' },
-      'NE': { name: 'Niger', currency: 'XOF' },
-      'NG': { name: 'Nigéria', currency: 'NGN' },
-      'NO': { name: 'Norvège', currency: 'NOK' },
-      'OM': { name: 'Oman', currency: 'OMR' },
-      'PK': { name: 'Pakistan', currency: 'PKR' },
-      'PW': { name: 'Palaos', currency: 'USD' },
-      'PA': { name: 'Panama', currency: 'PAB' },
-      'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
-      'PY': { name: 'Paraguay', currency: 'PYG' },
-      'PE': { name: 'Pérou', currency: 'PEN' },
-      'PH': { name: 'Philippines', currency: 'PHP' },
-      'PL': { name: 'Pologne', currency: 'PLN' },
-      'PT': { name: 'Portugal', currency: 'EUR' },
-      'QA': { name: 'Qatar', currency: 'QAR' },
-      'RO': { name: 'Roumanie', currency: 'RON' },
-      'RU': { name: 'Russie', currency: 'RUB' },
-      'RW': { name: 'Rwanda', currency: 'RWF' },
-      'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
-      'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
-      'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
-      'WS': { name: 'Samoa', currency: 'WST' },
-      'SM': { name: 'Saint-Marin', currency: 'EUR' },
-      'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
-      'SA': { name: 'Arabie saoudite', currency: 'SAR' },
-      'SN': { name: 'Sénégal', currency: 'XOF' },
-      'RS': { name: 'Serbie', currency: 'RSD' },
-      'SC': { name: 'Seychelles', currency: 'SCR' },
-      'SL': { name: 'Sierra Leone', currency: 'SLL' },
-      'SG': { name: 'Singapour', currency: 'SGD' },
-      'SK': { name: 'Slovaquie', currency: 'EUR' },
-      'SI': { name: 'Slovénie', currency: 'EUR' },
-      'SB': { name: 'Îles Salomon', currency: 'SBD' },
-      'SO': { name: 'Somalie', currency: 'SOS' },
-      'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
-      'ES': { name: 'Espagne', currency: 'EUR' },
-      'LK': { name: 'Sri Lanka', currency: 'LKR' },
-      'SD': { name: 'Soudan', currency: 'SDG' },
-      'SR': { name: 'Suriname', currency: 'SRD' },
-      'SE': { name: 'Suède', currency: 'SEK' },
-      'CH': { name: 'Suisse', currency: 'CHF' },
-      'SY': { name: 'Syrie', currency: 'SYP' },
-      'TW': { name: 'Taïwan', currency: 'TWD' },
-      'TJ': { name: 'Tadjikistan', currency: 'TJS' },
-      'TZ': { name: 'Tanzanie', currency: 'TZS' },
-      'TH': { name: 'Thaïlande', currency: 'THB' },
-      'TL': { name: 'Timor oriental', currency: 'USD' },
-      'TG': { name: 'Togo', currency: 'XOF' },
-      'TO': { name: 'Tonga', currency: 'TOP' },
-      'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
-      'TN': { name: 'Tunisie', currency: 'TND' },
-      'TR': { name: 'Turquie', currency: 'TRY' },
-      'TM': { name: 'Turkménistan', currency: 'TMT' },
-      'UG': { name: 'Ouganda', currency: 'UGX' },
-      'UA': { name: 'Ukraine', currency: 'UAH' },
-      'AE': { name: 'Émirats arabes unis', currency: 'AED' },
-      'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-      'US': { name: 'États-Unis', currency: 'USD' },
-      'UY': { name: 'Uruguay', currency: 'UYU' },
-      'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
-      'VU': { name: 'Vanuatu', currency: 'VUV' },
-      'VE': { name: 'Venezuela', currency: 'VES' },
-      'VN': { name: 'Viêt Nam', currency: 'VND' },
-      'YE': { name: 'Yémen', currency: 'YER' },
-      'ZM': { name: 'Zambie', currency: 'ZMW' },
-      'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
-    };
-
-    const saved = localStorage.getItem('country') || 'FR';
-    selector.innerHTML = Object.entries(countries)
-      .sort((a,b) => a[1].name.localeCompare(b[1].name))
-      .map(([code, c]) => `<option value="${code}" ${code===saved?'selected':''}>${c.name}</option>`)
-      .join('');
-
-    selector.onchange = (e) => {
-      localStorage.setItem('country', e.target.value);
-      localStorage.setItem('currency', countries[e.target.value].currency);
-    };
-  }
-
-  function initAuth() {
-    if (typeof BrandiaAPI === 'undefined') return;
-    const user = BrandiaAPI.Auth.getUser();
-    if (user?.email) {
-      const authButtons = document.getElementById('auth-buttons');
-      const userMenu = document.getElementById('user-menu');
-      const userName = document.getElementById('user-name');
+    // ==========================================
+    // DÉCLENCHEMENT PUBLICITÉ (FONCTION SÉCURISÉE)
+    // ==========================================
+    function triggerAdCheck() {
+      console.log('[Product] Triggering ad check...');
+      console.log('[Product] currentProduct:', window.currentProduct);
+      console.log('[Product] brandiaAds exists:', !!window.brandiaAds);
       
-      if (authButtons) authButtons.classList.add('hidden');
-      if (userMenu) {
-        userMenu.classList.remove('hidden');
-        userMenu.classList.add('flex');
+      if (!window.currentProduct?.supplier_id) {
+        console.warn('[Product] No supplier_id, skipping ad');
+        return;
       }
-      if (userName) userName.textContent = user.first_name || user.email;
+      
+      if (!window.brandiaAds) {
+        console.warn('[Product] brandiaAds not loaded yet, retrying...');
+        setTimeout(triggerAdCheck, 1000);
+        return;
+      }
+      
+      // Vérifier si déjà vue cette session
+      const sessionKey = `ad_seen_${window.currentProduct.supplier_id}_${window.currentProduct.id}`;
+      if (sessionStorage.getItem(sessionKey)) {
+        console.log('[Product] Ad already seen this session');
+        return;
+      }
+      
+      // Lancer la vérification
+      window.brandiaAds.checkAndShow(
+        window.currentProduct.id, 
+        window.currentProduct.supplier_id
+      );
     }
-  }
 
-  function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = 'index.html';
-  }
+    // ============================================
+// TRACKING CAMPAGNES (AJOUTER SI MANQUANT)
+// ============================================
 
-  function updateCartBadge() {
-    const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-    const count = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
-    const badge = document.getElementById('cart-count');
-    if (badge) {
-      badge.textContent = count > 99 ? '99+' : count;
-      badge.classList.toggle('hidden', count === 0);
+router.post('/public/campaigns/track-view', async (req, res) => {
+    try {
+        const { campaign_id } = req.body;
+        if (!campaign_id) {
+            return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        }
+
+        const db = require('../config/db');
+        
+        // Incrémenter les vues
+        await db.query(
+            'UPDATE supplier_campaigns SET views_count = COALESCE(views_count, 0) + 1 WHERE id = $1',
+            [campaign_id]
+        );
+
+        // Mettre à jour les stats quotidiennes
+        await db.query(`
+            INSERT INTO campaign_stats (campaign_id, date, impressions)
+            VALUES ($1, CURRENT_DATE, 1)
+            ON CONFLICT (campaign_id, date)
+            DO UPDATE SET impressions = campaign_stats.impressions + 1
+        `, [campaign_id]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Track View] Error:', error);
+        res.status(500).json({ success: false });
     }
-  }
+});
 
-  // ==========================================
-  // INITIALISATION
-  // ==========================================
-  document.addEventListener('DOMContentLoaded', function() {
-    initCountries();
-    initAuth();
-    updateCartBadge();
-    loadProduct();
-  });
+router.post('/public/campaigns/track-click', async (req, res) => {
+    try {
+        const { campaign_id } = req.body;
+        if (!campaign_id) {
+            return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        }
 
-  function renderProduct(product) {
-    const container = document.getElementById('product-container');
-    container.innerHTML = `<h1>${product.name}</h1><p>${product.description}</p>`;
-  }
+        const db = require('../config/db');
+        
+        // Incrémenter les clics
+        await db.query(
+            'UPDATE supplier_campaigns SET clicks_count = COALESCE(clicks_count, 0) + 1 WHERE id = $1',
+            [campaign_id]
+        );
 
-  function showError() {
-    const container = document.getElementById('product-container');
-    container.innerHTML = '<p>Erreur lors du chargement du produit.</p>';
-  }
-</script>
+        // Mettre à jour les stats quotidiennes
+        await db.query(`
+            INSERT INTO campaign_stats (campaign_id, date, clicks)
+            VALUES ($1, CURRENT_DATE, 1)
+            ON CONFLICT (campaign_id, date)
+            DO UPDATE SET clicks = campaign_stats.clicks + 1
+        `, [campaign_id]);
 
-</body>
-</html>
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Track Click] Error:', error);
+        res.status(500).json({ success: false });
+    }
+});
