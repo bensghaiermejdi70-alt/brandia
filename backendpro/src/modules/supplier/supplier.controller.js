@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER CONTROLLER - VERSION CORRIGÉE
+// SUPPLIER CONTROLLER - VERSION FINALE CORRIGÉE
 // ============================================
 
 const db = require('../../config/db');
@@ -21,10 +21,7 @@ const upload = multer({
       originalname: file.originalname
     });
 
-    if (
-      file.mimetype.startsWith('image/') ||
-      file.mimetype.startsWith('video/')
-    ) {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
       cb(new Error('Seules les images et vidéos sont autorisées'));
@@ -35,100 +32,48 @@ const upload = multer({
 /* ================= CONTROLLER ================= */
 
 class SupplierController {
-
   /* ================= UPLOAD IMAGE ================= */
-
   async uploadImage(req, res) {
     try {
-      console.log('[Upload Image] Request received');
-
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'Aucun fichier fourni'
-        });
+        return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
       }
-
       if (!req.file.mimetype.startsWith('image/')) {
-        return res.status(400).json({
-          success: false,
-          message: 'Le fichier doit être une image'
-        });
+        return res.status(400).json({ success: false, message: 'Le fichier doit être une image' });
       }
-
       const result = await uploadImageToCloudinary(req.file.buffer);
-
-      res.json({
-        success: true,
-        data: {
-          url: result.url || result,
-          type: 'image'
-        }
-      });
+      res.json({ success: true, data: { url: result.url || result, type: 'image' } });
     } catch (error) {
       console.error('[Upload Image] Error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur upload image: ' + error.message
-      });
+      res.status(500).json({ success: false, message: 'Erreur upload image: ' + error.message });
     }
   }
 
   /* ================= UPLOAD VIDEO ================= */
-
   async uploadCampaignVideo(req, res) {
     try {
-      console.log('[Upload Video] Request received');
-
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'Aucun fichier vidéo fourni'
-        });
+        return res.status(400).json({ success: false, message: 'Aucun fichier vidéo fourni' });
       }
-
       if (!req.file.mimetype.startsWith('video/')) {
-        return res.status(400).json({
-          success: false,
-          message: 'Le fichier doit être une vidéo (MP4, WebM)'
-        });
+        return res.status(400).json({ success: false, message: 'Le fichier doit être une vidéo (MP4, WebM)' });
       }
-
       if (req.file.size > 50 * 1024 * 1024) {
-        return res.status(400).json({
-          success: false,
-          message: 'La vidéo ne doit pas dépasser 50MB'
-        });
+        return res.status(400).json({ success: false, message: 'La vidéo ne doit pas dépasser 50MB' });
       }
-
       const result = await uploadVideoToCloudinary(req.file.buffer);
-
-      res.json({
-        success: true,
-        data: {
-          url: result.url || result,
-          type: 'video',
-          thumbnailUrl: result.thumbnailUrl || null
-        }
-      });
+      res.json({ success: true, data: { url: result.url || result, type: 'video', thumbnailUrl: result.thumbnailUrl || null } });
     } catch (error) {
       console.error('[Upload Video] Error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur upload vidéo: ' + error.message
-      });
+      res.status(500).json({ success: false, message: 'Erreur upload vidéo: ' + error.message });
     }
   }
 
   /* ================= PRODUITS ================= */
-
   async getProducts(req, res) {
     try {
       const supplierId = req.user.id;
-      const result = await db.query(
-        'SELECT * FROM products WHERE supplier_id = $1 ORDER BY created_at DESC',
-        [supplierId]
-      );
+      const result = await db.query('SELECT * FROM products WHERE supplier_id=$1 ORDER BY created_at DESC', [supplierId]);
       res.json({ success: true, data: result.rows });
     } catch (error) {
       console.error('[Get Products] Error:', error);
@@ -140,15 +85,11 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       const { name, price, stock, description, category_id } = req.body;
-
       const result = await db.query(
-        `INSERT INTO products
-         (supplier_id, name, price, stock, description, category_id, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,true)
-         RETURNING *`,
+        `INSERT INTO products (supplier_id,name,price,stock,description,category_id,is_active)
+         VALUES ($1,$2,$3,$4,$5,$6,true) RETURNING *`,
         [supplierId, name, price, stock, description, category_id]
       );
-
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
       console.error('[Create Product] Error:', error);
@@ -161,19 +102,13 @@ class SupplierController {
       const supplierId = req.user.id;
       const { id } = req.params;
       const { name, price, stock, description, category_id } = req.body;
-
       const result = await db.query(
         `UPDATE products
          SET name=$1, price=$2, stock=$3, description=$4, category_id=$5, updated_at=NOW()
-         WHERE id=$6 AND supplier_id=$7
-         RETURNING *`,
+         WHERE id=$6 AND supplier_id=$7 RETURNING *`,
         [name, price, stock, description, category_id, id, supplierId]
       );
-
-      if (!result.rows.length) {
-        return res.status(404).json({ success: false, message: 'Produit non trouvé' });
-      }
-
+      if (!result.rows.length) return res.status(404).json({ success: false, message: 'Produit non trouvé' });
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
       console.error('[Update Product] Error:', error);
@@ -185,12 +120,7 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       const { id } = req.params;
-
-      await db.query(
-        'DELETE FROM products WHERE id=$1 AND supplier_id=$2',
-        [id, supplierId]
-      );
-
+      await db.query('DELETE FROM products WHERE id=$1 AND supplier_id=$2', [id, supplierId]);
       res.json({ success: true, message: 'Produit supprimé' });
     } catch (error) {
       console.error('[Delete Product] Error:', error);
@@ -199,17 +129,14 @@ class SupplierController {
   }
 
   /* ================= STATS ================= */
-
   async getStats(req, res) {
     try {
       const supplierId = req.user.id;
-
       const [sales, orders, products] = await Promise.all([
         db.query('SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE supplier_id=$1', [supplierId]),
         db.query('SELECT COUNT(*) FROM orders WHERE supplier_id=$1', [supplierId]),
         db.query('SELECT COUNT(*) FROM products WHERE supplier_id=$1 AND is_active=true', [supplierId])
       ]);
-
       res.json({
         success: true,
         data: {
@@ -225,20 +152,11 @@ class SupplierController {
   }
 }
 
-/* ================= EXPORT ================= */
+/* ================= EXPORT FINAL ================= */
 
 const controller = new SupplierController();
 
 module.exports = {
-  uploadMiddleware: upload.single('media'),
-
-  uploadImage: controller.uploadImage.bind(controller),
-  uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller),
-
-  getProducts: controller.getProducts.bind(controller),
-  createProduct: controller.createProduct.bind(controller),
-  updateProduct: controller.updateProduct.bind(controller),
-  deleteProduct: controller.deleteProduct.bind(controller),
-
-  getStats: controller.getStats.bind(controller)
+  controller, // ⚡️ IMPORTANT pour routes
+  uploadMiddleware: upload.single('media')
 };
