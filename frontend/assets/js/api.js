@@ -1,5 +1,5 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend (v2.5 AVEC PROMOTIONS)
+// BRANDIA API CLIENT - Frontend (v2.6 CORRIGÉ)
 // ============================================
 
 (function() {
@@ -178,7 +178,6 @@
 
     getFeaturedWithPromotions: async () => await apiFetch('/products/featured-with-promotions'),
 
-    // ---------- CORRIGÉ getByIdWithPromotion ----------
     getByIdWithPromotion: async (id) => {
       if (!id || id === 'null' || id === 'undefined') {
         console.error('[API] Invalid product ID:', id);
@@ -238,36 +237,95 @@
   };
 
   // -------------------------------
-  // Supplier API
+  // Supplier API (CORRIGÉ - AJOUT deleteCampaign & updateCampaign)
   // -------------------------------
   const SupplierAPI = {
     init: () => {
       const user = storage.getUser();
-      if (!storage.getToken()) { window.location.href = '../login.html?redirect=supplier/dashboard'; return false; }
-      if (user?.role !== 'supplier') { alert('Accès réservé aux fournisseurs'); window.location.href = '../index.html'; return false; }
+      if (!storage.getToken()) { 
+        window.location.href = '../login.html?redirect=supplier/dashboard'; 
+        return false; 
+      }
+      if (user?.role !== 'supplier') { 
+        alert('Accès réservé aux fournisseurs'); 
+        window.location.href = '../index.html'; 
+        return false; 
+      }
       return true;
     },
+
+    // Promotions
     getPromotions: async () => await apiFetch('/supplier/promotions'),
     createPromotion: async (promotionData) => await apiFetch('/supplier/promotions', { method: 'POST', body: JSON.stringify(promotionData) }),
     updatePromotion: async (id, promotionData) => await apiFetch(`/supplier/promotions/${id}`, { method: 'PUT', body: JSON.stringify(promotionData) }),
     deletePromotion: async (id) => await apiFetch(`/supplier/promotions/${id}`, { method: 'DELETE' }),
-    getStats: async () => { try { return await apiFetch('/supplier/stats'); } catch { return { success: true, data: { stats: { totalSales:0,totalOrders:0,productsCount:0,balance:0 }, recentOrders:[], topProducts:[] } }; } },
-    getProducts: async (params = {}) => { try { const queryString = new URLSearchParams(params).toString(); return await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`); } catch (e) { return { success:false, data:{products:[]}, message:e.message }; } },
+
+    // Stats
+    getStats: async () => { 
+      try { 
+        return await apiFetch('/supplier/stats'); 
+      } catch { 
+        return { 
+          success: true, 
+          data: { 
+            stats: { totalSales:0, totalOrders:0, productsCount:0, balance:0 }, 
+            recentOrders:[], 
+            topProducts:[] 
+          } 
+        }; 
+      } 
+    },
+
+    // Products
+    getProducts: async (params = {}) => { 
+      try { 
+        const queryString = new URLSearchParams(params).toString(); 
+        return await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`); 
+      } catch (e) { 
+        return { success:false, data:{products:[]}, message:e.message }; 
+      } 
+    },
     createProduct: async (data) => await apiFetch('/supplier/products', { method:'POST', body:JSON.stringify(data) }),
-    updateProduct: async (id,data) => await apiFetch(`/supplier/products/${id}`, { method:'PUT', body:JSON.stringify(data) }),
+    updateProduct: async (id, data) => await apiFetch(`/supplier/products/${id}`, { method:'PUT', body:JSON.stringify(data) }),
     deleteProduct: async (id) => await apiFetch(`/supplier/products/${id}`, { method:'DELETE' }),
-    getOrders: async (status=null) => { const query = status && status!=='all'?`?status=${encodeURIComponent(status)}`:''; return await apiFetch(`/supplier/orders${query}`); },
+
+    // Orders
+    getOrders: async (status=null) => { 
+      const query = status && status!=='all' ? `?status=${encodeURIComponent(status)}` : ''; 
+      return await apiFetch(`/supplier/orders${query}`); 
+    },
     getOrderById: async (id) => await apiFetch(`/supplier/orders/${id}`),
-    updateOrderStatus: async (orderId,status) => await apiFetch(`/supplier/orders/${orderId}/status`, { method:'PUT', body:JSON.stringify({status}) }),
+    updateOrderStatus: async (orderId, status) => await apiFetch(`/supplier/orders/${orderId}/status`, { method:'PUT', body:JSON.stringify({status}) }),
+
+    // Payments
     getPayments: async () => await apiFetch('/supplier/payments'),
     requestPayout: async (amount) => await apiFetch('/supplier/payouts', { method:'POST', body:JSON.stringify({amount}) }),
+
+    // Campaigns (CORRIGÉ - AJOUT DES MANQUANTS)
     getCampaigns: async () => await apiFetch('/supplier/campaigns'),
     createCampaign: async (data) => await apiFetch('/supplier/campaigns', { method:'POST', body:JSON.stringify(data) }),
+    
+    // 🔥 AJOUTÉ : Mise à jour campagne
+    updateCampaign: async (id, data) => await apiFetch(`/supplier/campaigns/${id}`, { 
+      method: 'PUT', 
+      body: JSON.stringify(data) 
+    }),
+    
+    // 🔥 AJOUTÉ : Suppression campagne
+    deleteCampaign: async (id) => await apiFetch(`/supplier/campaigns/${id}`, { 
+      method: 'DELETE' 
+    }),
+
     getPublicCampaign: async (supplierId, productId) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/public/campaigns?supplier=${supplierId}&product=${productId}`, { method:'GET', headers:{'Accept':'application/json'} });
+        const response = await fetch(`${API_BASE_URL}/public/campaigns?supplier=${supplierId}&product=${productId}`, { 
+          method:'GET', 
+          headers:{'Accept':'application/json'} 
+        });
         return await response.json();
-      } catch { return { success:false, data:null }; }
+      } catch { 
+        return { success:false, data:null }; 
+      }
     }
   };
 
@@ -275,25 +333,86 @@
   // Cart API
   // -------------------------------
   const CartAPI = {
-    get: () => { try { return JSON.parse(localStorage.getItem('brandia_cart') || '[]'); } catch { return []; } },
+    get: () => { 
+      try { 
+        return JSON.parse(localStorage.getItem('brandia_cart') || '[]'); 
+      } catch { 
+        return []; 
+      } 
+    },
+    
     add: (product, quantity=1) => {
       if (!product) return;
       const cart = CartAPI.get();
       const productId = product.id || product.product_id;
       const existing = cart.find(item => (item.product_id || item.id) == productId);
       const finalPrice = product.final_price || product.price;
-      if (existing) { existing.quantity = (parseInt(existing.quantity)||0)+quantity; }
-      else { cart.push({ product_id:productId, name:product.name, price:parseFloat(finalPrice)||0, original_price:product.base_price||product.price, has_promotion:product.has_promotion||false, promo_code:product.promo_code||null, image:product.main_image_url||product.image||'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400', quantity:quantity }); }
+      
+      if (existing) { 
+        existing.quantity = (parseInt(existing.quantity)||0) + quantity; 
+      } else { 
+        cart.push({ 
+          product_id: productId, 
+          name: product.name, 
+          price: parseFloat(finalPrice)||0, 
+          original_price: product.base_price||product.price, 
+          has_promotion: product.has_promotion||false, 
+          promo_code: product.promo_code||null, 
+          image: product.main_image_url||product.image||'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400', 
+          quantity: quantity 
+        }); 
+      }
+      
       localStorage.setItem('brandia_cart', JSON.stringify(cart));
       CartAPI.updateBadge();
     },
-    remove: (productId) => { const cart = CartAPI.get().filter(item => (item.product_id||item.id)!=productId); localStorage.setItem('brandia_cart', JSON.stringify(cart)); CartAPI.updateBadge(); },
-    updateQuantity: (productId, quantity) => { if(quantity<1){ CartAPI.remove(productId); return; } const cart=CartAPI.get(); const item=cart.find(i => (i.product_id||i.id)==productId); if(item){ item.quantity=parseInt(quantity); localStorage.setItem('brandia_cart', JSON.stringify(cart)); CartAPI.updateBadge(); } },
-    clear: () => { localStorage.removeItem('brandia_cart'); CartAPI.updateBadge(); },
-    getCount: () => CartAPI.get().reduce((sum,item)=>sum+(parseInt(item.quantity)||0),0),
-    getTotal: () => CartAPI.get().reduce((sum,item)=>sum+((parseFloat(item.price)||0)*(parseInt(item.quantity)||0)),0),
-    getSavings: () => CartAPI.get().reduce((sum,item)=>{ if(item.original_price && item.price<item.original_price) return sum+((item.original_price-item.price)*item.quantity); return sum; },0),
-    updateBadge: () => { const badges=document.querySelectorAll('#cart-count,.cart-badge'); const count=CartAPI.getCount(); badges.forEach(b=>{ if(b){ b.textContent=count; b.style.display=count===0?'none':'flex'; } }); }
+    
+    remove: (productId) => { 
+      const cart = CartAPI.get().filter(item => (item.product_id||item.id) != productId); 
+      localStorage.setItem('brandia_cart', JSON.stringify(cart)); 
+      CartAPI.updateBadge(); 
+    },
+    
+    updateQuantity: (productId, quantity) => { 
+      if(quantity < 1){ 
+        CartAPI.remove(productId); 
+        return; 
+      } 
+      const cart = CartAPI.get(); 
+      const item = cart.find(i => (i.product_id||i.id) == productId); 
+      if(item){ 
+        item.quantity = parseInt(quantity); 
+        localStorage.setItem('brandia_cart', JSON.stringify(cart)); 
+        CartAPI.updateBadge(); 
+      } 
+    },
+    
+    clear: () => { 
+      localStorage.removeItem('brandia_cart'); 
+      CartAPI.updateBadge(); 
+    },
+    
+    getCount: () => CartAPI.get().reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0),
+    
+    getTotal: () => CartAPI.get().reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0),
+    
+    getSavings: () => CartAPI.get().reduce((sum, item) => { 
+      if(item.original_price && item.price < item.original_price) {
+        return sum + ((item.original_price - item.price) * item.quantity); 
+      }
+      return sum; 
+    }, 0),
+    
+    updateBadge: () => { 
+      const badges = document.querySelectorAll('#cart-count, .cart-badge'); 
+      const count = CartAPI.getCount(); 
+      badges.forEach(b => { 
+        if(b){ 
+          b.textContent = count; 
+          b.style.display = count === 0 ? 'none' : 'flex'; 
+        } 
+      }); 
+    }
   };
 
   // -------------------------------
@@ -310,5 +429,5 @@
     config: { baseURL: API_BASE, isLocal: isLocal, apiURL: API_BASE_URL }
   };
 
-  console.log('[Brandia API] ✅ Loaded v2.5 - Promotions Ready');
+  console.log('[Brandia API] ✅ Loaded v2.6 - Campaigns Fix Ready');
 })();

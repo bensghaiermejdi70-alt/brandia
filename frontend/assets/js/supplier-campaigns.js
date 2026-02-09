@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE (Publicité)
+// SUPPLIER CAMPAIGNS MODULE (Publicité) - CORRIGÉ v3.0
 // ============================================
 
 window.SupplierCampaigns = {
@@ -9,33 +9,33 @@ window.SupplierCampaigns = {
     chart: null
   },
 
-  init: async () => {
+  init: async function() {
     console.log('[Campaigns] Initializing...');
-    await SupplierCampaigns.loadProducts();
-    await SupplierCampaigns.loadCampaigns();
-    await SupplierCampaigns.loadStats();
+    await this.loadProducts();
+    await this.loadCampaigns();
+    await this.loadStats();
   },
 
-  loadProducts: async () => {
+  loadProducts: async function() {
     try {
       const response = await BrandiaAPI.Supplier.getProducts();
-      SupplierCampaigns.state.products = response.data?.products || response.data || [];
-      console.log('[Campaigns] Loaded products:', SupplierCampaigns.state.products.length);
+      this.state.products = response.data?.products || response.data || [];
+      console.log('[Campaigns] Loaded products:', this.state.products.length);
     } catch (error) {
       console.error('Erreur chargement produits:', error);
-      SupplierCampaigns.state.products = [];
+      this.state.products = [];
     }
   },
 
-  loadCampaigns: async () => {
+  loadCampaigns: async function() {
     try {
       const response = await BrandiaAPI.Supplier.getCampaigns();
-      SupplierCampaigns.state.campaigns = response.data || [];
-      console.log('[Campaigns] Loaded campaigns:', SupplierCampaigns.state.campaigns.length);
-      SupplierCampaigns.renderList();
+      this.state.campaigns = response.data || [];
+      console.log('[Campaigns] Loaded campaigns:', this.state.campaigns.length);
+      this.renderList();
     } catch (error) {
       console.error('Erreur chargement campagnes:', error);
-      SupplierCampaigns.state.campaigns = [];
+      this.state.campaigns = [];
       const container = document.getElementById('campaigns-list');
       if (container) {
         container.innerHTML = `
@@ -51,8 +51,8 @@ window.SupplierCampaigns = {
     }
   },
 
-  loadStats: () => {
-    const campaigns = SupplierCampaigns.state.campaigns;
+  loadStats: function() {
+    const campaigns = this.state.campaigns;
     const totalViews = campaigns.reduce((sum, c) => sum + (parseInt(c.views_count) || 0), 0);
     const totalClicks = campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count) || 0), 0);
     const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : 0;
@@ -67,17 +67,17 @@ window.SupplierCampaigns = {
     if (ctrEl) ctrEl.textContent = ctr + '%';
     if (convEl) convEl.textContent = '0';
     
-    SupplierCampaigns.renderChart();
+    this.renderChart();
   },
 
-  renderList: () => {
+  renderList: function() {
     const container = document.getElementById('campaigns-list');
     if (!container) {
       console.error('[Campaigns] Container not found');
       return;
     }
 
-    if (SupplierCampaigns.state.campaigns.length === 0) {
+    if (this.state.campaigns.length === 0) {
       container.innerHTML = `
         <div class="p-8 text-center text-slate-500">
           <i class="fas fa-bullhorn text-4xl mb-4 opacity-50"></i>
@@ -91,7 +91,7 @@ window.SupplierCampaigns = {
       return;
     }
 
-    container.innerHTML = SupplierCampaigns.state.campaigns.map(c => `
+    container.innerHTML = this.state.campaigns.map(c => `
       <div class="p-6 flex items-center gap-4 hover:bg-slate-800/30 transition-colors border-b border-slate-800 last:border-0">
         <div class="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
           ${c.media_type === 'video' 
@@ -107,7 +107,7 @@ window.SupplierCampaigns = {
           <p class="text-sm text-slate-400 mb-2 truncate">${c.headline || ''}</p>
           <div class="flex items-center gap-4 text-xs text-slate-500">
             <span><i class="fas fa-crosshairs mr-1"></i>${(c.target_products || []).length} produits</span>
-            <span><i class="fas fa-calendar mr-1"></i>${SupplierCampaigns.formatDate(c.start_date)} - ${SupplierCampaigns.formatDate(c.end_date)}</span>
+            <span><i class="fas fa-calendar mr-1"></i>${this.formatDate(c.start_date)} - ${this.formatDate(c.end_date)}</span>
           </div>
         </div>
         <div class="text-right">
@@ -135,12 +135,12 @@ window.SupplierCampaigns = {
     `).join('');
   },
 
-  renderChart: () => {
+  renderChart: function() {
     const ctx = document.getElementById('campaignChart');
     if (!ctx) return;
     
-    if (SupplierCampaigns.state.chart) {
-      SupplierCampaigns.state.chart.destroy();
+    if (this.state.chart) {
+      this.state.chart.destroy();
     }
 
     const data = {
@@ -156,7 +156,7 @@ window.SupplierCampaigns = {
     };
 
     try {
-      SupplierCampaigns.state.chart = new Chart(ctx, {
+      this.state.chart = new Chart(ctx, {
         type: 'line',
         data: data,
         options: {
@@ -182,7 +182,7 @@ window.SupplierCampaigns = {
     }
   },
 
-  openModal: () => {
+  openModal: function() {
     console.log('[Campaigns] Opening modal...');
     const modal = document.getElementById('campaign-modal');
     if (!modal) {
@@ -210,7 +210,7 @@ window.SupplierCampaigns = {
     const targetList = document.getElementById('target-products-list');
     const productSelect = document.getElementById('cta-product-select');
     
-    const products = SupplierCampaigns.state.products;
+    const products = this.state.products;
     console.log('[Campaigns] Products for modal:', products.length);
     
     if (products.length === 0) {
@@ -226,7 +226,7 @@ window.SupplierCampaigns = {
             <img src="${p.main_image_url || 'https://via.placeholder.com/100'}" class="w-10 h-10 rounded object-cover bg-slate-700" onerror="this.src='https://via.placeholder.com/100'">
             <div class="flex-1 min-w-0">
               <p class="text-sm text-white truncate">${p.name || 'Produit sans nom'}</p>
-              <p class="text-xs text-slate-400">${SupplierCampaigns.formatPrice(p.price)}</p>
+              <p class="text-xs text-slate-400">${this.formatPrice(p.price)}</p>
             </div>
           </label>
         `).join('');
@@ -248,7 +248,7 @@ window.SupplierCampaigns = {
     if (endDate) endDate.value = nextMonth;
     
     // Initialiser le type de CTA
-    SupplierCampaigns.handleCtaType('product');
+    this.handleCtaType('product');
     
     // Afficher le modal
     modal.classList.remove('hidden');
@@ -256,7 +256,7 @@ window.SupplierCampaigns = {
     console.log('[Campaigns] Modal opened successfully');
   },
 
-  handleCtaType: (type) => {
+  handleCtaType: function(type) {
     const productSelect = document.getElementById('cta-product-select');
     const externalUrl = document.getElementById('cta-external-url');
     const linkValue = document.getElementById('cta-link-value');
@@ -288,7 +288,7 @@ window.SupplierCampaigns = {
     }
   },
 
-  updateCtaLink: () => {
+  updateCtaLink: function() {
     const checked = document.querySelectorAll('input[name="target_products"]:checked');
     const linkValue = document.getElementById('cta-link-value');
     const type = document.querySelector('[name="cta_link_type"]')?.value;
@@ -301,7 +301,7 @@ window.SupplierCampaigns = {
     }
   },
 
-  save: async () => {
+  save: async function() {
     const form = document.getElementById('campaign-form');
     if (!form) {
       alert('Formulaire non trouvé');
@@ -353,9 +353,9 @@ window.SupplierCampaigns = {
       
       if (response.success) {
         alert('Campagne créée avec succès !');
-        SupplierCampaigns.closeModal();
+        this.closeModal();
         form.reset();
-        SupplierCampaigns.loadCampaigns();
+        this.loadCampaigns();
       } else {
         alert('Erreur: ' + (response.message || 'Inconnue'));
       }
@@ -365,7 +365,7 @@ window.SupplierCampaigns = {
     }
   },
 
-  closeModal: () => {
+  closeModal: function() {
     const modal = document.getElementById('campaign-modal');
     if (modal) {
       modal.classList.add('hidden');
@@ -373,34 +373,57 @@ window.SupplierCampaigns = {
     }
   },
 
-  toggleStatus: async (id, newStatus) => {
+  toggleStatus: async function(id, newStatus) {
     try {
-      // TODO: Implémenter l'appel API quand le backend sera prêt
-      console.log(`[Campaign] Toggle status ${id} -> ${newStatus}`);
-      alert(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`);
-      SupplierCampaigns.loadCampaigns();
+      // Appel API pour mettre à jour le statut
+      const response = await BrandiaAPI.Supplier.updateCampaign(id, { status: newStatus });
+      
+      if (response.success) {
+        // Mettre à jour localement
+        const campaign = this.state.campaigns.find(c => c.id === id);
+        if (campaign) {
+          campaign.status = newStatus;
+        }
+        this.renderList();
+        this.showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
+      } else {
+        throw new Error(response.message);
+      }
     } catch (error) {
-      console.error('Erreur:', error);
-      alert('Erreur lors de la mise à jour');
+      console.error('Erreur toggle status:', error);
+      this.showToast('Erreur lors de la mise à jour', 'error');
     }
   },
 
-  deleteCampaign: async (id) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
+  // ==========================================
+  // 🔴 CORRECTION CRITIQUE : SUPPRESSION API
+  // ==========================================
+  deleteCampaign: async function(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ? Cette action est irréversible.')) return;
     
     try {
-      // TODO: Implémenter l'appel API
-      console.log(`[Campaign] Delete ${id}`);
-      SupplierCampaigns.state.campaigns = SupplierCampaigns.state.campaigns.filter(c => c.id !== id);
-      SupplierCampaigns.renderList();
-      SupplierCampaigns.loadStats();
-      alert('Campagne supprimée');
+      console.log(`[Campaign] Deleting ${id}...`);
+      
+      // 🔥 APPEL API RÉEL pour supprimer en base de données
+      const response = await BrandiaAPI.Supplier.deleteCampaign(id);
+      
+      if (response.success) {
+        // Suppression locale seulement après succès API
+        this.state.campaigns = this.state.campaigns.filter(c => c.id !== id);
+        this.renderList();
+        this.loadStats();
+        this.showToast('Campagne supprimée définitivement', 'success');
+        console.log(`[Campaign] Deleted successfully: ${id}`);
+      } else {
+        throw new Error(response.message || 'Erreur lors de la suppression');
+      }
     } catch (error) {
-      alert('Erreur lors de la suppression');
+      console.error('[Campaign] Delete error:', error);
+      this.showToast('Erreur: ' + error.message, 'error');
     }
   },
 
-  handleMedia: (event) => {
+  handleMedia: function(event) {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -420,7 +443,7 @@ window.SupplierCampaigns = {
     }
   },
 
-  updatePreview: () => {
+  updatePreview: function() {
     const headline = document.querySelector('[name="headline"]')?.value || 'Votre titre';
     const desc = document.querySelector('[name="description"]')?.value || 'Description';
     const cta = document.querySelector('[name="cta_text"]')?.value || 'Voir l\'offre';
@@ -434,28 +457,38 @@ window.SupplierCampaigns = {
     if (previewCta) previewCta.textContent = cta;
   },
 
-  // Utilitaires
-  formatPrice: (amount) => {
+  // ==========================================
+  // UTILITAIRES
+  // ==========================================
+  formatPrice: function(amount) {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount || 0);
   },
 
-  formatDate: (dateString) => {
+  formatDate: function(dateString) {
     if (!dateString) return '--';
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     });
+  },
+
+  showToast: function(message, type = 'success') {
+    if (window.DashboardApp?.showToast) {
+      window.DashboardApp.showToast(message, type);
+    } else {
+      alert(message);
+    }
   }
 };
 
 // ============================================
 // FONCTIONS GLOBALES EXPOSÉES
 // ============================================
-window.openCampaignModal = () => {
+window.openCampaignModal = function() {
   console.log('[Global] openCampaignModal called');
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.openModal();
@@ -465,13 +498,13 @@ window.openCampaignModal = () => {
   }
 };
 
-window.saveCampaign = () => {
+window.saveCampaign = function() {
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.save();
   }
 };
 
-window.closeModal = (modalId) => {
+window.closeModal = function(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.add('hidden');
@@ -479,45 +512,45 @@ window.closeModal = (modalId) => {
   }
 };
 
-window.toggleCampaignStatus = (id, status) => {
+window.toggleCampaignStatus = function(id, status) {
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.toggleStatus(id, status);
   }
 };
 
-window.deleteCampaign = (id) => {
+window.deleteCampaign = function(id) {
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.deleteCampaign(id);
   }
 };
 
-window.handleCampaignMedia = (e) => {
+window.handleCampaignMedia = function(e) {
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.handleMedia(e);
   }
 };
 
-window.updateAdPreview = () => {
+window.updateAdPreview = function() {
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.updatePreview();
   }
 };
 
-window.toggleMediaType = (type) => {
+window.toggleMediaType = function(type) {
   const input = document.getElementById('campaign-media');
   if (input) input.accept = type === 'video' ? 'video/mp4' : 'image/*';
 };
 
-window.handleCtaType = (type) => {
+window.handleCtaType = function(type) {
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.handleCtaType(type);
   }
 };
 
-window.updateCtaLink = () => {
+window.updateCtaLink = function() {
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.updateCtaLink();
   }
 };
 
-console.log('[SupplierCampaigns] Module loaded successfully');
+console.log('[SupplierCampaigns] Module loaded successfully v3.0');
