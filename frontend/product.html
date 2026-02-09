@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    /* [Styles identiques à avant - je les mets pas pour alléger] */
+    /* Styles publicité */
     .brandia-ad-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
     .brandia-ad-overlay.active { display: flex; }
     .brandia-ad-container { position: relative; width: 100%; max-width: 600px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); animation: adSlideIn 0.4s ease-out; }
@@ -37,18 +37,12 @@
     @media (max-width: 640px) { .brandia-ad-container { max-width: 100%; margin: 10px; } .brandia-ad-media, .brandia-ad-video { height: 200px; } }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    
+    /* Debug caché par défaut */
+    #debug-panel { display: none !important; }
   </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen">
-
-  <!-- ========================================== -->
-  <!-- DEBUG PANEL (Temporaire - à supprimer après) -->
-  <!-- ========================================== -->
-  <div id="debug-panel" class="fixed top-20 right-4 bg-black/80 text-green-400 p-4 rounded-lg text-xs font-mono z-50 max-w-xs hidden">
-    <h4 class="text-white font-bold mb-2">🔍 DEBUG</h4>
-    <div id="debug-content">Chargement...</div>
-  </div>
-  <button onclick="toggleDebug()" class="fixed top-20 right-4 z-50 bg-slate-800 text-white px-3 py-1 rounded text-xs">🐛 Debug</button>
 
   <!-- ========================================== -->
   <!-- HEADER -->
@@ -344,127 +338,86 @@
   <script src="assets/js/brandia-ads.js"></script>
   
   <script>
-    // ==========================================
-    // DEBUG PANEL
-    // ==========================================
-    function toggleDebug() {
-      const panel = document.getElementById('debug-panel');
-      panel.classList.toggle('hidden');
-    }
-
-    function logDebug(msg, data) {
-      console.log(msg, data);
-      const content = document.getElementById('debug-content');
-      if (content) {
-        content.innerHTML += `<div class="mb-1 border-b border-slate-700 pb-1">${msg}: ${JSON.stringify(data)}</div>`;
-      }
-    }
-
     window.currentProduct = null;
 
     // ==========================================
-    // CHARGEMENT PRODUIT AVEC DEBUG
+    // CHARGEMENT PRODUIT
     // ==========================================
     async function loadProduct() {
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('id');
       
-      logDebug('Product ID from URL', productId);
-      
       if (!productId) {
-        showError('ID produit manquant dans l\'URL');
+        showError('ID produit manquant');
         return;
       }
 
       try {
-        logDebug('Calling API', 'getByIdWithPromotion(' + productId + ')');
         const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
         
-        logDebug('API Response', {
-          success: response.success,
-          hasData: !!response.data,
-          keys: response.data ? Object.keys(response.data) : null
-        });
-
         if (!response.success) {
           throw new Error(response.message || 'Produit non trouvé');
         }
         
-        // 🔥 CORRECTION : Gérer différentes structures de réponse
-        let productData = response.data?.product || response.data;
-        
-        logDebug('Raw product data', productData);
-        logDebug('Product keys', Object.keys(productData));
-        logDebug('supplier_id value', productData.supplier_id);
-        logDebug('supplier object', productData.supplier);
-
+        const productData = response.data?.product || response.data;
         if (!productData) {
           throw new Error('Données produit vides');
         }
 
-        // 🔥 CORRECTION : Extraire supplier_id de différentes sources possibles
-        const supplierId = productData.supplier_id || 
-                          productData.supplier?.id || 
-                          productData.supplier_id_fk ||
-                          null;
-
-        logDebug('Extracted supplier_id', supplierId);
-
+        // 🔥 CORRECTION : Normaliser le stock (stock_quantity vs stock)
+        productData.stock = productData.stock_quantity || productData.stock || 0;
+        
         // EXPOSER POUR LA PUBLICITÉ
         window.currentProduct = {
           id: productData.id,
-          supplier_id: supplierId,
+          supplier_id: productData.supplier_id || null,
           name: productData.name,
           category_id: productData.category_id,
           stock: productData.stock
         };
         
-        logDebug('window.currentProduct set', window.currentProduct);
+        console.log('[Product] Loaded:', window.currentProduct);
 
         renderProduct(productData);
         
-        // Déclencher publicité après rendu
+        // Déclencher publicité
         setTimeout(() => {
           triggerAdCheck();
         }, 1500);
 
       } catch (err) {
-        logDebug('ERROR', err.message);
+        console.error('[Product] Error:', err);
         showError(err.message);
       }
     }
 
     // ==========================================
-    // DÉCLENCHEMENT PUBLICITÉ AVEC DEBUG
+    // DÉCLENCHEMENT PUBLICITÉ
     // ==========================================
     function triggerAdCheck() {
-      logDebug('=== AD CHECK ===', {
-        currentProduct: window.currentProduct,
-        brandiaAdsExists: !!window.brandiaAds
+      console.log('[AdCheck]', {
+        supplier_id: window.currentProduct?.supplier_id,
+        brandiaAds: !!window.brandiaAds
       });
       
       if (!window.currentProduct?.supplier_id) {
-        logDebug('❌ BLOCKED - No supplier_id', window.currentProduct);
+        console.warn('[AdCheck] No supplier_id');
         return;
       }
       
       if (!window.brandiaAds) {
-        logDebug('❌ BLOCKED - brandiaAds not loaded', null);
+        console.warn('[AdCheck] brandiaAds not ready, retrying...');
         setTimeout(triggerAdCheck, 1000);
         return;
       }
       
       const sessionKey = `ad_seen_${window.currentProduct.supplier_id}_${window.currentProduct.id}`;
       if (sessionStorage.getItem(sessionKey)) {
-        logDebug('❌ BLOCKED - Already seen this session', sessionKey);
+        console.log('[AdCheck] Already seen this session');
         return;
       }
       
-      logDebug('✅ TRIGGERING AD', {
-        productId: window.currentProduct.id,
-        supplierId: window.currentProduct.supplier_id
-      });
-      
+      console.log('[AdCheck] Triggering ad...');
       window.brandiaAds.checkAndShow(
         window.currentProduct.id, 
         window.currentProduct.supplier_id
@@ -472,29 +425,25 @@
     }
 
     // ==========================================
-    // RENDU PRODUIT (CORRIGÉ POUR SUPPLIER)
+    // RENDU PRODUIT (CORRIGÉ STOCK)
     // ==========================================
     function renderProduct(product) {
       const container = document.getElementById('product-container');
       
-      // 🔥 CORRECTION : Extraire toutes les données possibles
-      const hasPromo = product.has_promotion || product.promotion || product.discount > 0;
+      // 🔥 CORRECTION : Utiliser product.stock (normalisé)
+      const stock = product.stock || 0;
+      const hasStock = stock > 0;
+      
+      const hasPromo = product.has_promotion || product.promotion;
       const finalPrice = parseFloat(product.final_price || product.price || 0);
       const originalPrice = hasPromo ? parseFloat(product.base_price || product.price || 0) : null;
       const discount = hasPromo && originalPrice ? Math.round((1 - finalPrice/originalPrice) * 100) : 0;
       
       const mainImage = product.main_image_url || product.image || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800';
       
-      // 🔥 CORRECTION : Extraire supplier de toutes les sources possibles
-      const supplierId = product.supplier_id || product.supplier?.id || null;
-      const supplierName = product.supplier?.company_name || 
-                          product.supplier?.name || 
-                          product.brand_name || 
-                          product.supplier_name ||
-                          'Marque partenaire';
-      const supplierLogo = product.supplier?.logo_url || null;
-      
-      logDebug('Rendering with supplier', { supplierId, supplierName });
+      const supplierId = product.supplier_id || null;
+      const supplierName = product.supplier_company || product.supplier_name || product.brand_name || 'Marque partenaire';
+      const supplierLogo = product.supplier_logo || null;
 
       container.innerHTML = `
         <!-- Galerie -->
@@ -514,7 +463,7 @@
 
         <!-- Infos -->
         <div class="space-y-6">
-          <!-- Marque avec lien -->
+          <!-- Marque -->
           <div class="flex items-center gap-3">
             ${supplierLogo ? `
               <img src="${supplierLogo}" class="w-10 h-10 rounded-full object-cover border border-slate-700 bg-slate-800" onerror="this.style.display='none'">
@@ -525,9 +474,7 @@
                 <a href="brand.html?id=${supplierId}" class="text-pink-400 hover:text-pink-300 font-medium transition">
                   ${supplierName}
                 </a>
-              ` : `
-                <span class="text-slate-300 font-medium">${supplierName}</span>
-              `}
+              ` : `<span class="text-slate-300 font-medium">${supplierName}</span>`}
             </div>
           </div>
 
@@ -546,36 +493,36 @@
           </div>
 
           <p class="text-slate-300 leading-relaxed">
-            ${product.description || 'Aucune description disponible pour ce produit.'}
+            ${product.description || 'Aucune description disponible.'}
           </p>
 
-          <!-- Stock avec couleur dynamique -->
-          <div class="flex items-center gap-2 ${product.stock > 0 ? 'text-emerald-400' : 'text-red-400'}">
-            <i class="fas ${product.stock > 0 ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+          <!-- 🔥 CORRECTION : Stock avec bonne variable -->
+          <div class="flex items-center gap-2 ${hasStock ? 'text-emerald-400' : 'text-red-400'}">
+            <i class="fas ${hasStock ? 'fa-check-circle' : 'fa-times-circle'}"></i>
             <span class="font-medium">
-              ${product.stock > 0 ? `En stock (${product.stock} disponibles)` : 'Rupture de stock'}
+              ${hasStock ? `En stock (${stock} disponibles)` : 'Rupture de stock'}
             </span>
           </div>
 
           <!-- Actions -->
           <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-800">
             <div class="flex items-center border border-slate-700 rounded-xl overflow-hidden bg-slate-800">
-              <button onclick="updateQuantity(-1)" class="px-4 py-3 hover:bg-slate-700 transition text-slate-400">
+              <button onclick="updateQuantity(-1)" class="px-4 py-3 hover:bg-slate-700 transition text-slate-400" ${!hasStock ? 'disabled' : ''}>
                 <i class="fas fa-minus"></i>
               </button>
-              <input type="number" id="quantity" value="1" min="1" max="${product.stock || 1}" 
+              <input type="number" id="quantity" value="1" min="1" max="${stock}" 
                      class="w-16 text-center bg-transparent border-x border-slate-700 py-3 text-white font-medium focus:outline-none"
-                     ${product.stock <= 0 ? 'disabled' : ''}>
-              <button onclick="updateQuantity(1)" class="px-4 py-3 hover:bg-slate-700 transition text-slate-400" ${product.stock <= 0 ? 'disabled' : ''}>
+                     ${!hasStock ? 'disabled' : ''}>
+              <button onclick="updateQuantity(1)" class="px-4 py-3 hover:bg-slate-700 transition text-slate-400" ${!hasStock ? 'disabled' : ''}>
                 <i class="fas fa-plus"></i>
               </button>
             </div>
 
             <button onclick="addToCart(${product.id})" 
                     class="flex-1 bg-gradient-to-r from-pink-500 to-violet-600 hover:from-pink-600 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-xl transition transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg shadow-pink-500/25"
-                    ${product.stock <= 0 ? 'disabled' : ''}>
+                    ${!hasStock ? 'disabled' : ''}>
               <i class="fas fa-shopping-cart"></i>
-              <span>${product.stock > 0 ? 'Ajouter au panier' : 'Indisponible'}</span>
+              <span>${hasStock ? 'Ajouter au panier' : 'Indisponible'}</span>
             </button>
 
             <button class="p-3 border border-slate-700 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-pink-500 bg-slate-800/50">
@@ -595,8 +542,7 @@
           </div>
 
           <div class="text-xs text-slate-500 pt-4 border-t border-slate-800">
-            Réf: BRD-${String(product.id).padStart(6, '0')} 
-            ${supplierId ? `| Fournisseur ID: ${supplierId}` : ''}
+            Réf: BRD-${String(product.id).padStart(6, '0')}
           </div>
         </div>
       `;
@@ -628,7 +574,7 @@
           base_price: parseFloat(p.base_price || p.price),
           has_promotion: p.has_promotion || false,
           main_image_url: p.main_image_url || p.image,
-          stock: p.stock
+          stock: p.stock_quantity || p.stock || 0
         }, qty);
         
         showToast('Produit ajouté au panier !', 'success');
