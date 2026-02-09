@@ -219,7 +219,7 @@
             </div>
             <div>
               <h3 class="font-semibold text-neutral-100">Prix justes</h3>
-              <p class="text-neutral-400 text-sm"> les meilleurs prix pour les marques et clients.</p>
+              <p class="text-neutral-400 text-sm">Commission réduite de 15%, les meilleurs prix pour les marques et clients.</p>
             </div>
           </div>
         </div>
@@ -498,16 +498,74 @@ function formatPrice(price, currency = 'EUR') {
 }
 
 function getFlagEmoji(countryCode) {
-  const flags = { 
-    'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'BE': '🇧🇪', 'PT': '🇵🇹', 
-    'AT': '🇦🇹', 'IE': '🇮🇪', 'FI': '🇫🇮', 'SE': '🇸🇪', 'DK': '🇩🇰', 'NO': '🇳🇴', 'PL': '🇵🇱',
-    'CZ': '🇨🇿', 'HU': '🇭🇺', 'RO': '🇷🇴', 'BG': '🇧🇬', 'HR': '🇭🇷', 'SI': '🇸🇮', 'SK': '🇸🇰',
-    'GB': '🇬🇧', 'CH': '🇨🇭', 'US': '🇺🇸', 'CA': '🇨🇦', 'BR': '🇧🇷', 'MX': '🇲🇽', 'AR': '🇦🇷',
-    'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'SG': '🇸🇬', 'AU': '🇦🇺', 'NZ': '🇳🇿', 'IN': '🇮🇳',
-    'TN': '🇹🇳', 'DZ': '🇩🇿', 'MA': '🇲🇦', 'EG': '🇪🇬', 'ZA': '🇿🇦', 'NG': '🇳🇬', 'KE': '🇰🇪',
-    'AE': '🇦🇪', 'SA': '🇸🇦', 'QA': '🇶🇦', 'KW': '🇰🇼', 'IL': '🇮🇱', 'TR': '🇹🇷', 'RU': '🇷🇺',
-    'UA': '🇺🇦', 'ID': '🇮🇩', 'MY': '🇲🇾', 'TH': '🇹🇭', 'VN': '🇻🇳', 'PH': '🇵🇭'
-  };
+  const COUNTRY_FLAGS = {
+  'AF': '🇦🇫', 'AL': '🇦🇱', 'DZ': '🇩🇿', 'AS': '🇦🇸', 'AD': '🇦🇩', 'AO': '🇦🇴',
+  'AI': '🇦🇮', 'AQ': '🇦🇶', 'AG': '🇦🇬', 'AR': '🇦🇷', 'AM': '🇦🇲', 'AW': '🇦🇼',
+  'AU': '🇦🇺', 'AT': '🇦🇹', 'AZ': '🇦🇿',
+
+  'BS': '🇧🇸', 'BH': '🇧🇭', 'BD': '🇧🇩', 'BB': '🇧🇧', 'BY': '🇧🇾', 'BE': '🇧🇪',
+  'BZ': '🇧🇿', 'BJ': '🇧🇯', 'BM': '🇧🇲', 'BT': '🇧🇹', 'BO': '🇧🇴', 'BA': '🇧🇦',
+  'BW': '🇧🇼', 'BR': '🇧🇷', 'BN': '🇧🇳', 'BG': '🇧🇬', 'BF': '🇧🇫', 'BI': '🇧🇮',
+
+  'KH': '🇰🇭', 'CM': '🇨🇲', 'CA': '🇨🇦', 'CV': '🇨🇻', 'KY': '🇰🇾', 'CF': '🇨🇫',
+  'TD': '🇹🇩', 'CL': '🇨🇱', 'CN': '🇨🇳', 'CO': '🇨🇴', 'KM': '🇰🇲', 'CG': '🇨🇬',
+  'CD': '🇨🇩', 'CR': '🇨🇷', 'CI': '🇨🇮', 'HR': '🇭🇷', 'CU': '🇨🇺', 'CY': '🇨🇾',
+  'CZ': '🇨🇿',
+
+  'DK': '🇩🇰', 'DJ': '🇩🇯', 'DM': '🇩🇲', 'DO': '🇩🇴',
+
+  'EC': '🇪🇨', 'EG': '🇪🇬', 'SV': '🇸🇻', 'GQ': '🇬🇶', 'ER': '🇪🇷', 'EE': '🇪🇪',
+  'SZ': '🇸🇿', 'ET': '🇪🇹',
+
+  'FI': '🇫🇮', 'FR': '🇫🇷', 'GA': '🇬🇦', 'GM': '🇬🇲', 'GE': '🇬🇪', 'DE': '🇩🇪',
+  'GH': '🇬🇭', 'GR': '🇬🇷', 'GD': '🇬🇩', 'GT': '🇬🇹', 'GN': '🇬🇳', 'GW': '🇬🇼',
+  'GY': '🇬🇾',
+
+  'HT': '🇭🇹', 'HN': '🇭🇳', 'HU': '🇭🇺',
+
+  'IS': '🇮🇸', 'IN': '🇮🇳', 'ID': '🇮🇩', 'IR': '🇮🇷', 'IQ': '🇮🇶', 'IE': '🇮🇪',
+  'IL': '🇮🇱', 'IT': '🇮🇹',
+
+  'JM': '🇯🇲', 'JP': '🇯🇵', 'JO': '🇯🇴',
+
+  'KZ': '🇰🇿', 'KE': '🇰🇪', 'KI': '🇰🇮', 'KP': '🇰🇵', 'KR': '🇰🇷', 'KW': '🇰🇼',
+  'KG': '🇰🇬',
+
+  'LA': '🇱🇦', 'LV': '🇱🇻', 'LB': '🇱🇧', 'LS': '🇱🇸', 'LR': '🇱🇷', 'LY': '🇱🇾',
+  'LI': '🇱🇮', 'LT': '🇱🇹', 'LU': '🇱🇺',
+
+  'MG': '🇲🇬', 'MW': '🇲🇼', 'MY': '🇲🇾', 'MV': '🇲🇻', 'ML': '🇲🇱', 'MT': '🇲🇹',
+  'MA': '🇲🇦', 'MU': '🇲🇺', 'MX': '🇲🇽', 'MD': '🇲🇩', 'MC': '🇲🇨', 'MN': '🇲🇳',
+  'ME': '🇲🇪', 'MZ': '🇲🇿', 'MM': '🇲🇲',
+
+  'NA': '🇳🇦', 'NP': '🇳🇵', 'NL': '🇳🇱', 'NZ': '🇳🇿', 'NI': '🇳🇮', 'NE': '🇳🇪',
+  'NG': '🇳🇬', 'MK': '🇲🇰', 'NO': '🇳🇴',
+
+  'OM': '🇴🇲',
+
+  'PK': '🇵🇰', 'PA': '🇵🇦', 'PG': '🇵🇬', 'PY': '🇵🇾', 'PE': '🇵🇪', 'PH': '🇵🇭',
+  'PL': '🇵🇱', 'PT': '🇵🇹',
+
+  'QA': '🇶🇦',
+
+  'RO': '🇷🇴', 'RU': '🇷🇺', 'RW': '🇷🇼',
+
+  'SA': '🇸🇦', 'SN': '🇸🇳', 'RS': '🇷🇸', 'SG': '🇸🇬', 'SK': '🇸🇰', 'SI': '🇸🇮',
+  'ZA': '🇿🇦', 'ES': '🇪🇸', 'LK': '🇱🇰', 'SD': '🇸🇩', 'SE': '🇸🇪', 'CH': '🇨🇭',
+  'SY': '🇸🇾',
+
+  'TW': '🇹🇼', 'TJ': '🇹🇯', 'TZ': '🇹🇿', 'TH': '🇹🇭', 'TN': '🇹🇳', 'TR': '🇹🇷',
+  'TM': '🇹🇲',
+
+  'UA': '🇺🇦', 'AE': '🇦🇪', 'GB': '🇬🇧', 'US': '🇺🇸', 'UY': '🇺🇾', 'UZ': '🇺🇿',
+
+  'VE': '🇻🇪', 'VN': '🇻🇳',
+
+  'YE': '🇾🇪',
+
+  'ZM': '🇿🇲', 'ZW': '🇿🇼'
+};
+
   return flags[countryCode] || '🏳️';
 }
 
@@ -620,35 +678,135 @@ function initCountrySelector() {
   
   // 28 pays complets
   const countries = {
+  'AF': { name: 'Afghanistan', currency: 'AFN' },
+  'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
+  'AL': { name: 'Albanie', currency: 'ALL' },
   'DZ': { name: 'Algérie', currency: 'DZD' },
   'DE': { name: 'Allemagne', currency: 'EUR' },
+  'AD': { name: 'Andorre', currency: 'EUR' },
+  'AO': { name: 'Angola', currency: 'AOA' },
+  'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
   'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
+  'AR': { name: 'Argentine', currency: 'ARS' },
+  'AM': { name: 'Arménie', currency: 'AMD' },
   'AU': { name: 'Australie', currency: 'AUD' },
   'AT': { name: 'Autriche', currency: 'EUR' },
+  'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
+
+  'BS': { name: 'Bahamas', currency: 'BSD' },
+  'BH': { name: 'Bahreïn', currency: 'BHD' },
+  'BD': { name: 'Bangladesh', currency: 'BDT' },
+  'BB': { name: 'Barbade', currency: 'BBD' },
   'BE': { name: 'Belgique', currency: 'EUR' },
+  'BZ': { name: 'Belize', currency: 'BZD' },
+  'BJ': { name: 'Bénin', currency: 'XOF' },
+  'BT': { name: 'Bhoutan', currency: 'BTN' },
+  'BY': { name: 'Biélorussie', currency: 'BYN' },
+  'BO': { name: 'Bolivie', currency: 'BOB' },
+  'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
+  'BW': { name: 'Botswana', currency: 'BWP' },
   'BR': { name: 'Brésil', currency: 'BRL' },
+  'BN': { name: 'Brunei', currency: 'BND' },
+  'BG': { name: 'Bulgarie', currency: 'BGN' },
+  'BF': { name: 'Burkina Faso', currency: 'XOF' },
+  'BI': { name: 'Burundi', currency: 'BIF' },
+
+  'KH': { name: 'Cambodge', currency: 'KHR' },
+  'CM': { name: 'Cameroun', currency: 'XAF' },
   'CA': { name: 'Canada', currency: 'CAD' },
+  'CV': { name: 'Cap-Vert', currency: 'CVE' },
+  'CL': { name: 'Chili', currency: 'CLP' },
   'CN': { name: 'Chine', currency: 'CNY' },
+  'CY': { name: 'Chypre', currency: 'EUR' },
+  'CO': { name: 'Colombie', currency: 'COP' },
+  'KM': { name: 'Comores', currency: 'KMF' },
+  'CG': { name: 'Congo', currency: 'XAF' },
+  'CD': { name: 'Congo (RDC)', currency: 'CDF' },
   'KR': { name: 'Corée du Sud', currency: 'KRW' },
+  'CR': { name: 'Costa Rica', currency: 'CRC' },
+  'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+  'HR': { name: 'Croatie', currency: 'EUR' },
+  'CU': { name: 'Cuba', currency: 'CUP' },
+
+  'DK': { name: 'Danemark', currency: 'DKK' },
+  'DJ': { name: 'Djibouti', currency: 'DJF' },
+  'DO': { name: 'République dominicaine', currency: 'DOP' },
+
   'EG': { name: 'Égypte', currency: 'EGP' },
   'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
+  'EC': { name: 'Équateur', currency: 'USD' },
+  'ER': { name: 'Érythrée', currency: 'ERN' },
   'ES': { name: 'Espagne', currency: 'EUR' },
+  'EE': { name: 'Estonie', currency: 'EUR' },
   'US': { name: 'États-Unis', currency: 'USD' },
+  'ET': { name: 'Éthiopie', currency: 'ETB' },
+
   'FI': { name: 'Finlande', currency: 'EUR' },
   'FR': { name: 'France', currency: 'EUR' },
+
+  'GA': { name: 'Gabon', currency: 'XAF' },
+  'GM': { name: 'Gambie', currency: 'GMD' },
+  'GE': { name: 'Géorgie', currency: 'GEL' },
+  'GH': { name: 'Ghana', currency: 'GHS' },
+  'GR': { name: 'Grèce', currency: 'EUR' },
+  'GT': { name: 'Guatemala', currency: 'GTQ' },
+  'GN': { name: 'Guinée', currency: 'GNF' },
+
+  'HT': { name: 'Haïti', currency: 'HTG' },
+  'HN': { name: 'Honduras', currency: 'HNL' },
+  'HU': { name: 'Hongrie', currency: 'HUF' },
+
+  'IN': { name: 'Inde', currency: 'INR' },
+  'ID': { name: 'Indonésie', currency: 'IDR' },
+  'IQ': { name: 'Irak', currency: 'IQD' },
+  'IR': { name: 'Iran', currency: 'IRR' },
   'IE': { name: 'Irlande', currency: 'EUR' },
+  'IS': { name: 'Islande', currency: 'ISK' },
+  'IL': { name: 'Israël', currency: 'ILS' },
   'IT': { name: 'Italie', currency: 'EUR' },
+
   'JP': { name: 'Japon', currency: 'JPY' },
+  'JO': { name: 'Jordanie', currency: 'JOD' },
+
+  'KE': { name: 'Kenya', currency: 'KES' },
   'KW': { name: 'Koweït', currency: 'KWD' },
+
+  'LB': { name: 'Liban', currency: 'LBP' },
+  'LY': { name: 'Libye', currency: 'LYD' },
+  'LU': { name: 'Luxembourg', currency: 'EUR' },
+
+  'MY': { name: 'Malaisie', currency: 'MYR' },
   'MA': { name: 'Maroc', currency: 'MAD' },
+  'MX': { name: 'Mexique', currency: 'MXN' },
+
   'NL': { name: 'Pays-Bas', currency: 'EUR' },
+  'NG': { name: 'Nigéria', currency: 'NGN' },
+  'NO': { name: 'Norvège', currency: 'NOK' },
+
+  'PK': { name: 'Pakistan', currency: 'PKR' },
+  'PE': { name: 'Pérou', currency: 'PEN' },
+  'PH': { name: 'Philippines', currency: 'PHP' },
+  'PL': { name: 'Pologne', currency: 'PLN' },
   'PT': { name: 'Portugal', currency: 'EUR' },
+
   'QA': { name: 'Qatar', currency: 'QAR' },
+
   'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+  'RO': { name: 'Roumanie', currency: 'RON' },
+  'RU': { name: 'Russie', currency: 'RUB' },
+
   'SG': { name: 'Singapour', currency: 'SGD' },
+  'SE': { name: 'Suède', currency: 'SEK' },
   'CH': { name: 'Suisse', currency: 'CHF' },
-  'TN': { name: 'Tunisie', currency: 'TND' }
+
+  'TN': { name: 'Tunisie', currency: 'TND' },
+  'TR': { name: 'Turquie', currency: 'TRY' },
+
+  'UA': { name: 'Ukraine', currency: 'UAH' },
+
+  'VN': { name: 'Vietnam', currency: 'VND' }
 };
+
   
   const savedCountry = localStorage.getItem('country') || 'FR';
   selector.innerHTML = '';

@@ -1,12 +1,14 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE (Publicité) - CORRIGÉ v3.0
+// SUPPLIER CAMPAIGNS MODULE (Publicité) - CORRIGÉ v3.1
 // ============================================
 
 window.SupplierCampaigns = {
   state: {
     campaigns: [],
     products: [],
-    chart: null
+    chart: null,
+    currentMediaType: 'image',
+    uploadedMedia: null
   },
 
   init: async function() {
@@ -95,7 +97,8 @@ window.SupplierCampaigns = {
       <div class="p-6 flex items-center gap-4 hover:bg-slate-800/30 transition-colors border-b border-slate-800 last:border-0">
         <div class="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
           ${c.media_type === 'video' 
-            ? `<div class="absolute inset-0 flex items-center justify-center bg-black/50"><i class="fas fa-play-circle text-white text-2xl"></i></div>`
+            ? `<div class="absolute inset-0 flex items-center justify-center bg-black/50"><i class="fas fa-play-circle text-white text-2xl"></i></div>
+               ${c.media_url ? `<video src="${c.media_url}" class="w-full h-full object-cover" muted></video>` : ''}`
             : `<img src="${c.media_url || 'https://via.placeholder.com/100'}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/100'">`
           }
         </div>
@@ -191,6 +194,10 @@ window.SupplierCampaigns = {
       return;
     }
     
+    // Reset state
+    this.state.currentMediaType = 'image';
+    this.state.uploadedMedia = null;
+    
     // Reset form
     const form = document.getElementById('campaign-form');
     if (form) form.reset();
@@ -198,13 +205,8 @@ window.SupplierCampaigns = {
     const linkValue = document.getElementById('cta-link-value');
     if (linkValue) linkValue.value = '';
     
-    const preview = document.getElementById('campaign-media-preview');
-    const placeholder = document.getElementById('campaign-media-placeholder');
-    if (preview) {
-      preview.src = '';
-      preview.classList.add('hidden');
-    }
-    if (placeholder) placeholder.classList.remove('hidden');
+    // Reset media preview
+    this.resetMediaPreview();
     
     // Charger les produits
     const targetList = document.getElementById('target-products-list');
@@ -256,6 +258,127 @@ window.SupplierCampaigns = {
     console.log('[Campaigns] Modal opened successfully');
   },
 
+  // ==========================================
+  // 🔥 CORRECTION CRITIQUE : Gestion média
+  // ==========================================
+  resetMediaPreview: function() {
+    const dropzone = document.getElementById('campaign-dropzone');
+    const placeholder = document.getElementById('campaign-media-placeholder');
+    
+    // Supprimer anciens éléments preview
+    const oldPreview = dropzone.querySelector('.media-preview-container');
+    if (oldPreview) oldPreview.remove();
+    
+    if (placeholder) placeholder.classList.remove('hidden');
+    
+    this.state.uploadedMedia = null;
+  },
+
+  handleMedia: function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const maxSize = this.state.currentMediaType === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    
+    if (file.size > maxSize) {
+      alert(`Le fichier ne doit pas dépasser ${this.state.currentMediaType === 'video' ? '50MB' : '5MB'}`);
+      return;
+    }
+    
+    const dropzone = document.getElementById('campaign-dropzone');
+    const placeholder = document.getElementById('campaign-media-placeholder');
+    
+    if (!dropzone) return;
+    
+    // Cacher le placeholder
+    if (placeholder) placeholder.classList.add('hidden');
+    
+    // Supprimer ancien preview
+    const oldPreview = dropzone.querySelector('.media-preview-container');
+    if (oldPreview) oldPreview.remove();
+    
+    // Créer le conteneur de preview
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'media-preview-container relative w-full h-48 flex items-center justify-center';
+    
+    const url = URL.createObjectURL(file);
+    
+    if (this.state.currentMediaType === 'video' || file.type.startsWith('video/')) {
+      // 🔥 CRÉATION ÉLÉMENT VIDÉO CORRECTE
+      const video = document.createElement('video');
+      video.src = url;
+      video.controls = true;
+      video.muted = true;
+      video.className = 'max-h-full max-w-full rounded-lg shadow-lg';
+      video.style.maxHeight = '200px';
+      
+      // Gestion erreur chargement
+      video.onerror = () => {
+        console.error('[Campaigns] Video load error');
+        previewContainer.innerHTML = '<div class="text-red-400"><i class="fas fa-exclamation-circle text-2xl"></i><p class="text-sm mt-2">Erreur chargement vidéo</p></div>';
+      };
+      
+      // Gestion succès
+      video.onloadeddata = () => {
+        console.log('[Campaigns] Video loaded successfully');
+      };
+      
+      previewContainer.appendChild(video);
+      
+      // Stocker pour upload
+      this.state.uploadedMedia = {
+        type: 'video',
+        file: file,
+        previewUrl: url
+      };
+      
+    } else {
+      // Image
+      const img = document.createElement('img');
+      img.src = url;
+      img.className = 'max-h-full max-w-full rounded-lg shadow-lg object-cover';
+      img.style.maxHeight = '200px';
+      
+      img.onerror = () => {
+        previewContainer.innerHTML = '<div class="text-red-400"><i class="fas fa-exclamation-circle text-2xl"></i><p class="text-sm mt-2">Erreur chargement image</p></div>';
+      };
+      
+      previewContainer.appendChild(img);
+      
+      this.state.uploadedMedia = {
+        type: 'image',
+        file: file,
+        previewUrl: url
+      };
+    }
+    
+    dropzone.appendChild(previewContainer);
+    
+    // Bouton supprimer
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors';
+    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    removeBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.resetMediaPreview();
+      document.getElementById('campaign-media').value = '';
+    };
+    previewContainer.appendChild(removeBtn);
+  },
+
+  toggleMediaType: function(type) {
+    this.state.currentMediaType = type;
+    this.resetMediaPreview();
+    document.getElementById('campaign-media').value = '';
+    
+    // Mettre à jour l'accept du input file
+    const input = document.getElementById('campaign-media');
+    if (input) {
+      input.accept = type === 'video' ? 'video/mp4,video/webm' : 'image/*';
+    }
+  },
+
   handleCtaType: function(type) {
     const productSelect = document.getElementById('cta-product-select');
     const externalUrl = document.getElementById('cta-external-url');
@@ -301,6 +424,80 @@ window.SupplierCampaigns = {
     }
   },
 
+  // ==========================================
+  // UPLOAD CLOUDINARY (Image & Vidéo)
+  // ==========================================
+  uploadMediaToCloudinary: async function() {
+    if (!this.state.uploadedMedia) {
+      throw new Error('Aucun média sélectionné');
+    }
+
+    const { file, type } = this.state.uploadedMedia;
+    
+    // Vérifier durée vidéo si c'est une vidéo
+    if (type === 'video') {
+      const isValidDuration = await this.checkVideoDuration(file);
+      if (!isValidDuration) {
+        throw new Error('La vidéo ne doit pas dépasser 15 secondes');
+      }
+    }
+
+    const formData = new FormData();
+    formData.append(type === 'video' ? 'video' : 'image', file);
+
+    try {
+      window.DashboardApp?.showLoading(true);
+      
+      const endpoint = type === 'video' 
+        ? '/supplier/upload-video' 
+        : '/supplier/upload-image';
+      
+      const response = await fetch(`${BrandiaAPI.config.apiURL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        return {
+          url: result.data.url,
+          type: type
+        };
+      } else {
+        throw new Error(result.message || 'Erreur upload');
+      }
+    } catch (error) {
+      console.error('[Campaigns] Upload error:', error);
+      throw error;
+    } finally {
+      window.DashboardApp?.showLoading(false);
+    }
+  },
+
+  checkVideoDuration: function(file) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        const duration = video.duration;
+        console.log(`[Campaigns] Video duration: ${duration}s`);
+        resolve(duration <= 15);
+      };
+      
+      video.onerror = () => {
+        resolve(false);
+      };
+      
+      video.src = URL.createObjectURL(file);
+    });
+  },
+
   save: async function() {
     const form = document.getElementById('campaign-form');
     if (!form) {
@@ -319,11 +516,19 @@ window.SupplierCampaigns = {
       return;
     }
 
-    // Gérer l'image
+    // Upload média si présent
     let mediaUrl = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800';
-    const preview = document.getElementById('campaign-media-preview');
-    if (preview && !preview.classList.contains('hidden') && preview.src && preview.src.startsWith('http')) {
-      mediaUrl = preview.src;
+    let mediaType = this.state.currentMediaType;
+    
+    if (this.state.uploadedMedia) {
+      try {
+        const uploadResult = await this.uploadMediaToCloudinary();
+        mediaUrl = uploadResult.url;
+        mediaType = uploadResult.type;
+      } catch (error) {
+        alert('Erreur upload média: ' + error.message);
+        return;
+      }
     }
 
     // Lien CTA
@@ -338,7 +543,7 @@ window.SupplierCampaigns = {
       description: formData.get('description') || '',
       cta_text: formData.get('cta_text') || 'Voir l\'offre',
       cta_link: ctaLink,
-      media_type: formData.get('media_type') || 'image',
+      media_type: mediaType,
       media_url: mediaUrl,
       target_products: targetProducts,
       start_date: formData.get('start_date'),
@@ -352,16 +557,17 @@ window.SupplierCampaigns = {
       console.log('[Campaign] Response:', response);
       
       if (response.success) {
-        alert('Campagne créée avec succès !');
+        this.showToast('Campagne créée avec succès !', 'success');
         this.closeModal();
         form.reset();
+        this.resetMediaPreview();
         this.loadCampaigns();
       } else {
-        alert('Erreur: ' + (response.message || 'Inconnue'));
+        throw new Error(response.message || 'Erreur inconnue');
       }
     } catch (error) {
       console.error('[Campaign] Error:', error);
-      alert('Erreur réseau: ' + error.message);
+      this.showToast('Erreur: ' + error.message, 'error');
     }
   },
 
@@ -371,15 +577,14 @@ window.SupplierCampaigns = {
       modal.classList.add('hidden');
       document.body.style.overflow = '';
     }
+    this.resetMediaPreview();
   },
 
   toggleStatus: async function(id, newStatus) {
     try {
-      // Appel API pour mettre à jour le statut
       const response = await BrandiaAPI.Supplier.updateCampaign(id, { status: newStatus });
       
       if (response.success) {
-        // Mettre à jour localement
         const campaign = this.state.campaigns.find(c => c.id === id);
         if (campaign) {
           campaign.status = newStatus;
@@ -395,20 +600,15 @@ window.SupplierCampaigns = {
     }
   },
 
-  // ==========================================
-  // 🔴 CORRECTION CRITIQUE : SUPPRESSION API
-  // ==========================================
   deleteCampaign: async function(id) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ? Cette action est irréversible.')) return;
     
     try {
       console.log(`[Campaign] Deleting ${id}...`);
       
-      // 🔥 APPEL API RÉEL pour supprimer en base de données
       const response = await BrandiaAPI.Supplier.deleteCampaign(id);
       
       if (response.success) {
-        // Suppression locale seulement après succès API
         this.state.campaigns = this.state.campaigns.filter(c => c.id !== id);
         this.renderList();
         this.loadStats();
@@ -420,26 +620,6 @@ window.SupplierCampaigns = {
     } catch (error) {
       console.error('[Campaign] Delete error:', error);
       this.showToast('Erreur: ' + error.message, 'error');
-    }
-  },
-
-  handleMedia: function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    if (file.size > 50 * 1024 * 1024) {
-      alert('Le fichier ne doit pas dépasser 50MB');
-      return;
-    }
-    
-    const preview = document.getElementById('campaign-media-preview');
-    const placeholder = document.getElementById('campaign-media-placeholder');
-    
-    if (preview && placeholder) {
-      const url = URL.createObjectURL(file);
-      preview.src = url;
-      preview.classList.remove('hidden');
-      placeholder.classList.add('hidden');
     }
   },
 
@@ -537,8 +717,9 @@ window.updateAdPreview = function() {
 };
 
 window.toggleMediaType = function(type) {
-  const input = document.getElementById('campaign-media');
-  if (input) input.accept = type === 'video' ? 'video/mp4' : 'image/*';
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.toggleMediaType(type);
+  }
 };
 
 window.handleCtaType = function(type) {
@@ -553,4 +734,4 @@ window.updateCtaLink = function() {
   }
 };
 
-console.log('[SupplierCampaigns] Module loaded successfully v3.0');
+console.log('[SupplierCampaigns] Module loaded successfully v3.1');
