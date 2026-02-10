@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER PRODUCTS MODULE - Complet v3.0
+// SUPPLIER PRODUCTS MODULE - Complet v3.1 CORRIGÉ
 // ============================================
 
 window.SupplierProducts = {
@@ -53,7 +53,6 @@ window.SupplierProducts = {
   },
 
   setupEventListeners: function() {
-    // Recherche en temps réel
     const searchInput = document.getElementById('product-search');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
@@ -109,7 +108,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // RENDU DES PRODUITS (CRITIQUE - MANQUANT)
+  // RENDU DES PRODUITS
   // ==========================================
   renderProducts: function() {
     const container = document.getElementById('products-grid');
@@ -118,7 +117,6 @@ window.SupplierProducts = {
       return;
     }
 
-    // Filtrer les produits
     let filtered = this.state.products.filter(p => {
       const matchSearch = !this.state.filters.search || 
         (p.name && p.name.toLowerCase().includes(this.state.filters.search)) ||
@@ -134,12 +132,10 @@ window.SupplierProducts = {
       return matchSearch && matchCategory && matchStatus;
     });
 
-    // Pagination
     const totalPages = Math.ceil(filtered.length / this.state.itemsPerPage) || 1;
     const start = (this.state.currentPage - 1) * this.state.itemsPerPage;
     const paginated = filtered.slice(start, start + this.state.itemsPerPage);
 
-    // Rendu
     if (paginated.length === 0) {
       container.innerHTML = `
         <div class="col-span-full text-center py-12 text-slate-500">
@@ -155,8 +151,12 @@ window.SupplierProducts = {
       container.innerHTML = paginated.map(p => this.renderProductCard(p)).join('');
     }
 
-    // Pagination
     this.renderPagination(totalPages, filtered.length);
+  },
+
+  // 🔥 CORRECTION : Alias pour compatibilité
+  renderList: function() {
+    this.renderProducts();
   },
 
   renderProductCard: function(p) {
@@ -175,7 +175,7 @@ window.SupplierProducts = {
                onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
           
           <div class="absolute top-2 right-2 flex gap-2">
-            <button onclick="SupplierProducts.toggleStatus(${p.id})" 
+            <button onclick="SupplierProducts.toggleStatus(${p.id}, ${isActive})" 
                     class="w-8 h-8 rounded-full ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'} 
                            flex items-center justify-center hover:scale-110 transition-transform"
                     title="${isActive ? 'Actif' : 'Inactif'}">
@@ -253,49 +253,38 @@ window.SupplierProducts = {
     this.renderProducts();
   },
 
- toggleStatus: async function(productId, currentStatus) {
+  // 🔥 CORRECTION : toggleStatus corrigé
+  toggleStatus: async function(productId, currentStatus) {
     try {
-        const newStatus = !currentStatus;
-        console.log(`[Products] Toggle status ${productId}: ${currentStatus} → ${newStatus}`);
-        
-        // 🔥 CORRECTION : Ne PAS inclure stock dans la mise à jour
-        const updateData = { is_active: newStatus };
-        
-        // Appel API
-        const response = await BrandiaAPI.Supplier.updateProduct(productId, updateData);
-        
-        if (!response.success) {
-            throw new Error(response.message || 'Erreur mise à jour');
-        }
+      const newStatus = !currentStatus;
+      console.log(`[Products] Toggle status ${productId}: ${currentStatus} → ${newStatus}`);
+      
+      // 🔥 CORRECTION : Ne PAS inclure stock dans la mise à jour
+      const updateData = { is_active: newStatus };
+      
+      const response = await BrandiaAPI.Supplier.updateProduct(productId, updateData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Erreur mise à jour');
+      }
 
-        // Mettre à jour localement
-        const product = this.state.products.find(p => p.id === productId);
-        if (product) {
-            product.is_active = newStatus;
-        }
+      // Mettre à jour localement
+      const product = this.state.products.find(p => p.id === productId);
+      if (product) {
+        product.is_active = newStatus;
+      }
 
-        // 🔥 CORRECTION : Utiliser SupplierProducts au lieu de this
-        SupplierProducts.renderList();
-        
-        // Notification
-        if (typeof SupplierProducts.showToast === 'function') {
-            SupplierProducts.showToast(
-                newStatus ? 'Produit activé' : 'Produit désactivé', 
-                'success'
-            );
-        }
+      // 🔥 CORRECTION : Utiliser this.renderProducts() (pas this.renderList)
+      this.renderProducts();
+      
+      this.showToast(newStatus ? 'Produit activé' : 'Produit désactivé', 'success');
 
     } catch (error) {
-        console.error('[Products] Toggle status error:', error);
-        
-        if (typeof SupplierProducts.showToast === 'function') {
-            SupplierProducts.showToast('Erreur: ' + error.message, 'error');
-        }
-        
-        // Re-render pour remettre le toggle dans son état original
-        SupplierProducts.renderList();
+      console.error('[Products] Toggle status error:', error);
+      this.showToast('Erreur: ' + error.message, 'error');
+      this.renderProducts(); // Re-render pour remettre l'état original
     }
-},
+  },
 
   deleteProduct: async function(productId) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) return;
@@ -373,7 +362,6 @@ window.SupplierProducts = {
       is_active: true
     };
 
-    // Validation
     if (!data.name || data.name.length < 2) {
       return alert('Le nom du produit doit contenir au moins 2 caractères');
     }
@@ -408,7 +396,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // UPLOAD IMAGE
+  // UPLOAD IMAGE (CORRIGÉ)
   // ==========================================
   handleImageSelect: async function(event) {
     const file = event.target.files[0];
@@ -422,33 +410,41 @@ window.SupplierProducts = {
       window.DashboardApp?.showLoading(true);
       
       const formData = new FormData();
-      formData.append('image', file);
+      // 🔥 CORRECTION : Utiliser 'media' comme fieldname pour correspondre au backend
+      formData.append('media', file);
 
       const response = await fetch(`${BrandiaAPI.config.apiURL}/supplier/upload-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
+          // 🔥 NE PAS mettre Content-Type, le navigateur le fait automatiquement
         },
         body: formData
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Upload] Server error:', errorText);
+        throw new Error(`Erreur serveur: ${response.status}`);
+      }
+
       const result = await response.json();
 
       if (result.success) {
-        this.state.uploadedImage = { url: result.data.url };
+        this.state.uploadedImage = { url: result.data?.url || result.data };
         const preview = document.getElementById('image-preview');
         const container = document.getElementById('image-preview-container');
         
-        preview.src = result.data.url;
+        preview.src = this.state.uploadedImage.url;
         container.classList.remove('hidden');
         
         this.showToast('Image uploadée', 'success');
       } else {
-        throw new Error(result.message);
+        throw new Error(result.message || 'Erreur upload');
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      this.showToast('Erreur upload image', 'error');
+      console.error('[Upload] Error:', error);
+      this.showToast('Erreur upload image: ' + error.message, 'error');
     } finally {
       window.DashboardApp?.showLoading(false);
     }
@@ -482,28 +478,35 @@ window.SupplierProducts = {
         throw new Error('Fichier CSV vide ou invalide');
       }
 
-      const headers = lines[0].split(';').map(h => h.trim().toLowerCase());
+      // 🔥 CORRECTION : Accepter ; et , comme séparateur
+      const firstLine = lines[0];
+      const separator = firstLine.includes(';') ? ';' : ',';
+      
+      const headers = firstLine.split(separator).map(h => h.trim().toLowerCase());
       const required = ['name', 'price'];
       const missing = required.filter(r => !headers.includes(r));
       
       if (missing.length > 0) {
-        throw new Error(`Colonnes manquantes: ${missing.join(', ')}`);
+        throw new Error(`Colonnes manquantes: ${missing.join(', ')}. Headers trouvés: ${headers.join(', ')}`);
       }
 
       const products = [];
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(';');
+        const values = lines[i].split(separator);
         const product = {};
         
         headers.forEach((h, idx) => {
           product[h] = values[idx]?.trim();
         });
 
+        // 🔥 CORRECTION : Gérer 'stock' ou 'stock_quantity'
+        const stockValue = parseInt(product.stock) || parseInt(product.stock_quantity) || 10;
+
         products.push({
           name: product.name,
           description: product.description || '',
           price: parseFloat(product.price) || 0,
-          stock_quantity: parseInt(product.stock) || 10,
+          stock_quantity: stockValue,
           category_id: parseInt(product.category_id) || null,
           is_active: true
         });
