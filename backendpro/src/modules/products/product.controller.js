@@ -1,96 +1,112 @@
 // ============================================
-// PRODUCT CONTROLLER - Logique CRUD Produits (AVEC PROMOTIONS)
+// PRODUCT CONTROLLER - Backend API
 // ============================================
 
-const ProductModel = require('./product.model');
-const logger = require('../../utils/logger');
-
-// Générer un slug à partir du nom
-const generateSlug = (name) => {
-    return name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') + '-' + Date.now();
-};
+const db = require('../../config/db');
 
 const ProductController = {
-    // Liste des produits (public) - VERSION CLASSIQUE (sans promo pour compatibilité)
-    list: async (req, res) => {
+    
+    // 🔥 Liste tous les produits (avec filtres)
+    getAll: async (req, res) => {
         try {
-            const { category, search, limit, offset } = req.query;
+            const { category, search, limit = 20, offset = 0 } = req.query;
             
-            console.log('[CONTROLLER] Query params reçus:', req.query);
-            console.log('[CONTROLLER] Category reçue:', category);
+            let sql = `
+                SELECT 
+                    p.*,
+                    c.name as category_name,
+                    u.first_name as supplier_name,
+                    s.company_name as brand_name
+                FROM products p
+                LEFT JOIN categories c ON p.category_id = c.id
+                LEFT JOIN users u ON p.supplier_id = u.id
+                LEFT JOIN suppliers s ON u.id = s.user_id
+                WHERE (p.is_active = true OR p.is_active IS NULL)
+            `;
+            
+            const params = [];
+            let paramCount = 0;
 
-            const products = await ProductModel.findAll({
-                category,
-                search,
-                limit: parseInt(limit) || 20,
-                offset: parseInt(offset) || 0
-            });
+            if (category) {
+                paramCount++;
+                sql += ` AND (c.slug = $${paramCount} OR c.id = $${paramCount})`;
+                params.push(category);
+            }
 
-            console.log('[CONTROLLER] Nombre produits retournés:', products.length);
+            if (search) {
+                paramCount++;
+                sql += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount})`;
+                params.push(`%${search}%`);
+            }
+
+            sql += ` ORDER BY p.created_at DESC LIMIT $${++paramCount} OFFSET $${++paramCount}`;
+            params.push(parseInt(limit), parseInt(offset));
+
+            const result = await db.query(sql, params);
 
             res.json({
                 success: true,
-                count: products.length,
-                data: { products }
+                count: result.rows.length,
+                data: result.rows
             });
 
         } catch (error) {
-            logger.error('❌ Erreur liste produits:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            console.error('[ProductController] getAll error:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    // ==========================================
-    // NOUVEAU: Liste avec promotions intégrées
-    // ==========================================
-    listWithPromotions: async (req, res) => {
+    // 🔥 Produits en vedette
+    getFeatured: async (req, res) => {
         try {
-            const { category, search, limit, offset } = req.query;
-            
-            console.log('[CONTROLLER] listWithPromotions - params:', req.query);
-
-            const products = await ProductModel.findAllWithPromotions({
-                category,
-                search,
-                limit: parseInt(limit) || 20,
-                offset: parseInt(offset) || 0
-            });
-
-            // Calculer stats des promotions
-            const promoCount = products.filter(p => p.has_promotion).length;
-            
-            console.log(`[CONTROLLER] ${products.length} produits, ${promoCount} en promotion`);
+            const result = await db.query(`
+                SELECT 
+                    p.*,
+                    c.name as category_name,
+                    u.first_name as supplier_name,
+                    s.company_name as brand_name
+                FROM products p
+                LEFT JOIN categories c ON p.category_id = c.id
+                LEFT JOIN users u ON p.supplier_id = u.id
+                LEFT JOIN suppliers s ON u.id = s.user_id
+                WHERE (p.is_active = true OR p.is_active IS NULL)
+                ORDER BY p.created_at DESC
+                LIMIT 8
+            `);
 
             res.json({
                 success: true,
-                count: products.length,
-                promo_count: promoCount,
-                data: { products }
+                count: result.rows.length,
+                data: result.rows
             });
 
         } catch (error) {
-            logger.error('❌ Erreur liste produits avec promotions:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            console.error('[ProductController] getFeatured error:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    // Détail d'un produit (public) - VERSION CLASSIQUE
-    detail: async (req, res) => {
+    // 🔥 Détail d'un produit
+    getById: async (req, res) => {
         try {
             const { id } = req.params;
-            
-            const product = await ProductModel.findById(id);
-            
-            if (!product) {
+
+            const result = await db.query(`
+                SELECT 
+                    p.*,
+                    c.name as category_name,
+                    u.first_name as supplier_name,
+                    s.company_name as brand_name,
+                    s.logo_url as supplier_logo,
+                    s.description as supplier_description
+                FROM products p
+                LEFT JOIN categories c ON p.category_id = c.id
+                LEFT JOIN users u ON p.supplier_id = u.id
+                LEFT JOIN suppliers s ON u.id = s.user_id
+                WHERE p.id = $1 AND (p.is_active = true OR p.is_active IS NULL)
+            `, [id]);
+
+            if (result.rows.length === 0) {
                 return res.status(404).json({
                     success: false,
                     message: 'Produit non trouvé'
@@ -99,197 +115,108 @@ const ProductController = {
 
             res.json({
                 success: true,
-                data: { product }
+                data: result.rows[0]
             });
 
         } catch (error) {
-            logger.error('❌ Erreur détail produit:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            console.error('[ProductController] getById error:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    // ==========================================
-    // NOUVEAU: Détail avec promotion
-    // ==========================================
-    detailWithPromotion: async (req, res) => {
-        try {
-            const { id } = req.params;
-            
-            const product = await ProductModel.findByIdWithPromotion(id);
-            
-            if (!product) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Produit non trouvé'
-                });
-            }
-
-            res.json({
-                success: true,
-                data: { product }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur détail produit avec promotion:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
-    },
-
-    // Détail par slug (public)
-    detailBySlug: async (req, res) => {
-        try {
-            const { slug } = req.params;
-            
-            const product = await ProductModel.findBySlug(slug);
-            
-            if (!product) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Produit non trouvé'
-                });
-            }
-
-            res.json({
-                success: true,
-                data: { product }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur détail produit:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
-    },
-
-    // Créer un produit (fournisseur uniquement)
+    // 🔥 Créer un produit (fournisseur)
     create: async (req, res) => {
         try {
-            if (req.user.role !== 'supplier') {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Accès réservé aux fournisseurs'
-                });
-            }
+            const userId = req.user.userId;
+            const { name, description, price, stock_quantity, category_id, main_image_url } = req.body;
 
-            const {
-                name, description, short_description, price,
-                compare_price, stock_quantity, category_id,
-                main_image_url, category_slug, available_countries
-            } = req.body;
-
-            if (!name || !price || !category_slug) {
+            // Validation
+            if (!name || !price) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Nom, prix et catégorie sont requis'
+                    message: 'Nom et prix sont requis'
                 });
             }
 
-            const supplier_id = req.user.id;
-            const slug = generateSlug(name);
-
-            const product = await ProductModel.create({
-                supplier_id,
-                name,
-                slug,
-                description,
-                short_description,
-                price,
-                compare_price,
-                stock_quantity: stock_quantity || 0,
-                category_id,
-                main_image_url,
-                category_slug,
-                available_countries: available_countries ? JSON.stringify(available_countries) : null
-            });
-
-            logger.info(`✅ Produit créé: ${name} par fournisseur ${supplier_id}`);
+            const result = await db.query(`
+                INSERT INTO products 
+                (supplier_id, name, description, price, stock_quantity, category_id, main_image_url, is_active, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW())
+                RETURNING *
+            `, [userId, name, description, price, stock_quantity || 0, category_id, main_image_url]);
 
             res.status(201).json({
                 success: true,
-                message: 'Produit créé avec succès',
-                data: { product }
+                message: 'Produit créé',
+                data: result.rows[0]
             });
 
         } catch (error) {
-            logger.error('❌ Erreur création produit:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            console.error('[ProductController] create error:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    // Mettre à jour un produit (fournisseur uniquement)
+    // 🔥 Modifier un produit
     update: async (req, res) => {
         try {
+            const userId = req.user.userId;
             const { id } = req.params;
-            const updates = req.body;
+            const { name, description, price, stock_quantity, category_id, main_image_url, is_active } = req.body;
 
-            const existing = await ProductModel.findById(id);
-            if (!existing) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Produit non trouvé'
-                });
-            }
+            // Vérifier que le produit appartient au fournisseur
+            const checkResult = await db.query(
+                'SELECT id FROM products WHERE id = $1 AND supplier_id = $2',
+                [id, userId]
+            );
 
-            if (existing.supplier_id !== req.user.id) {
+            if (checkResult.rows.length === 0) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Vous ne pouvez modifier que vos propres produits'
+                    message: 'Produit non trouvé ou non autorisé'
                 });
             }
 
-            const product = await ProductModel.update(id, updates);
-
-            logger.info(`✅ Produit mis à jour: ${id}`);
+            const result = await db.query(`
+                UPDATE products 
+                SET name = $1, description = $2, price = $3, stock_quantity = $4,
+                    category_id = $5, main_image_url = $6, is_active = $7, updated_at = NOW()
+                WHERE id = $8 AND supplier_id = $9
+                RETURNING *
+            `, [name, description, price, stock_quantity, category_id, main_image_url, is_active, id, userId]);
 
             res.json({
                 success: true,
                 message: 'Produit mis à jour',
-                data: { product }
+                data: result.rows[0]
             });
 
         } catch (error) {
-            logger.error('❌ Erreur mise à jour produit:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            console.error('[ProductController] update error:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    // Supprimer un produit (fournisseur uniquement)
-    delete: async (req, res) => {
+    // 🔥 Supprimer un produit
+    remove: async (req, res) => {
         try {
+            const userId = req.user.userId;
             const { id } = req.params;
 
-            const existing = await ProductModel.findById(id);
-            if (!existing) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Produit non trouvé'
-                });
-            }
+            // Vérifier que le produit appartient au fournisseur
+            const checkResult = await db.query(
+                'SELECT id FROM products WHERE id = $1 AND supplier_id = $2',
+                [id, userId]
+            );
 
-            if (existing.supplier_id !== req.user.id) {
+            if (checkResult.rows.length === 0) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Vous ne pouvez supprimer que vos propres produits'
+                    message: 'Produit non trouvé ou non autorisé'
                 });
             }
 
-            await ProductModel.delete(id);
-
-            logger.info(`✅ Produit supprimé: ${id}`);
+            await db.query('DELETE FROM products WHERE id = $1', [id]);
 
             res.json({
                 success: true,
@@ -297,61 +224,25 @@ const ProductController = {
             });
 
         } catch (error) {
-            logger.error('❌ Erreur suppression produit:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
+            console.error('[ProductController] remove error:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    // Produits en vedette (public) - VERSION CLASSIQUE
-    featured: async (req, res) => {
-        try {
-            const { limit } = req.query;
-            
-            const products = await ProductModel.findFeatured(parseInt(limit) || 8);
-
-            res.json({
-                success: true,
-                count: products.length,
-                data: { products }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur produits en vedette:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
+    // 🔥 Méthodes pour promotions (placeholders si pas encore implémentées)
+    getAllWithPromotions: async (req, res) => {
+        // Fallback sur getAll pour l'instant
+        return ProductController.getAll(req, res);
     },
 
-    // ==========================================
-    // NOUVEAU: Produits en vedette avec promotions
-    // ==========================================
-    featuredWithPromotions: async (req, res) => {
-        try {
-            const { limit } = req.query;
-            
-            const products = await ProductModel.findFeaturedWithPromotions(parseInt(limit) || 8);
-            
-            const promoCount = products.filter(p => p.has_promotion).length;
+    getFeaturedWithPromotions: async (req, res) => {
+        // Fallback sur getFeatured pour l'instant
+        return ProductController.getFeatured(req, res);
+    },
 
-            res.json({
-                success: true,
-                count: products.length,
-                promo_count: promoCount,
-                data: { products }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur produits en vedette avec promotions:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
+    getByIdWithPromotion: async (req, res) => {
+        // Fallback sur getById pour l'instant
+        return ProductController.getById(req, res);
     }
 };
 
