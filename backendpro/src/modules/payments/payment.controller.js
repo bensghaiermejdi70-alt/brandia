@@ -3,186 +3,193 @@
 // ============================================
 
 const stripe = require('../../config/stripe');
+const db = require('../../config/db');
 const logger = require('../../utils/logger');
 
 const PaymentController = {
-    // Créer un compte Stripe Connect pour un fournisseur
-    createConnectAccount: async (req, res) => {
-        try {
-            const { email, country = 'FR' } = req.body;
-
-            const account = await stripe.accounts.create({
-                type: 'express',
-                country: country,
-                email: email,
-                capabilities: {
-                    card_payments: { requested: true },
-                    transfers: { requested: true }
-                },
-                business_type: 'individual',
-                settings: {
-                    payouts: {
-                        schedule: { interval: 'manual' }
-                    }
-                }
-            });
-
-            logger.info(`✅ Compte Stripe Connect créé: ${account.id}`);
-
-            res.json({
-                success: true,
-                data: { accountId: account.id, type: 'express' }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur création compte Stripe:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-
-    // Générer un lien d'onboarding pour le fournisseur
-    createOnboardingLink: async (req, res) => {
-        try {
-            const { accountId } = req.body;
-
-            const accountLink = await stripe.accountLinks.create({
-                account: accountId,
-                refresh_url: `${process.env.FRONTEND_URL}/supplier/onboarding/refresh`,
-                return_url: `${process.env.FRONTEND_URL}/supplier/onboarding/success`,
-                type: 'account_onboarding'
-            });
-
-            res.json({ success: true, data: { url: accountLink.url } });
-
-        } catch (error) {
-            logger.error('❌ Erreur lien onboarding:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-
-    // Créer un paiement (avec ou sans split selon le compte fournisseur)
-    createPaymentIntent: async (req, res) => {
-        try {
-            const { 
-                amount, 
-                currency = 'eur', 
-                supplierAccountId, 
-                platformFeePercent = 15,
-                customerEmail,
-                metadata = {}
-            } = req.body;
-
-            const platformFee = Math.round(amount * platformFeePercent / 100);
-            const supplierAmount = amount - platformFee;
-
-            let paymentIntentData = {
-                amount: amount * 100,
-                currency: currency,
-                automatic_payment_methods: { enabled: true },
-                receipt_email: customerEmail,
-                metadata: {
-                    ...metadata,
-                    platform: 'brandia',
-                    platform_fee: platformFee,
-                    supplier_amount: supplierAmount
-                }
-            };
-
-            // Si supplierAccountId fourni ET valide, on fait le split
-            if (supplierAccountId) {
-                try {
-                    // Vérifier si le compte peut recevoir des transferts
-                    const account = await stripe.accounts.retrieve(supplierAccountId);
-                    
-                    if (account.capabilities?.transfers === 'active') {
-                        // Split paiement activé
-                        paymentIntentData.transfer_data = {
-                            destination: supplierAccountId,
-                            amount: supplierAmount * 100
-                        };
-                        paymentIntentData.application_fee_amount = platformFee * 100;
-                        
-                        logger.info(`✅ Split paiement activé pour ${supplierAccountId}`);
-                    } else {
-                        logger.warn(`⚠️ Compte ${supplierAccountId} pas encore prêt pour les transferts`);
-                    }
-                } catch (err) {
-                    logger.warn(`⚠️ Compte ${supplierAccountId} invalide ou non vérifié: ${err.message}`);
-                }
-            }
-
-            const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
-
-            logger.info(`✅ PaymentIntent créé: ${paymentIntent.id} | Montant: ${amount}€ | Commission: ${platformFee}€`);
-
-            res.json({
-                success: true,
-                data: {
-                    clientSecret: paymentIntent.client_secret,
-                    paymentIntentId: paymentIntent.id,
-                    amount: amount,
-                    platformFee: platformFee,
-                    supplierAmount: supplierAmount,
-                    splitEnabled: !!paymentIntentData.transfer_data
-                }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur création paiement:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-
-    // Vérifier le statut d'un paiement
-    getPaymentStatus: async (req, res) => {
-        try {
-            const { paymentIntentId } = req.params;
-            const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-            res.json({
-                success: true,
-                data: {
-                    id: paymentIntent.id,
-                    status: paymentIntent.status,
-                    amount: paymentIntent.amount / 100,
-                    currency: paymentIntent.currency,
-                    created: new Date(paymentIntent.created * 1000)
-                }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur récupération statut:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-
-    // Webhook Stripe
+    
+    // 🔥 Webhook Stripe (public)
     webhook: async (req, res) => {
         const sig = req.headers['stripe-signature'];
+        const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
         let event;
 
         try {
-            event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+            event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
         } catch (err) {
-            logger.error(`❌ Webhook invalide: ${err.message}`);
+            logger.error(`Webhook Error: ${err.message}`);
             return res.status(400).send(`Webhook Error: ${err.message}`);
         }
 
+        // Gérer les événements
         switch (event.type) {
             case 'payment_intent.succeeded':
-                logger.info(`✅ Paiement réussi: ${event.data.object.id}`);
+                const paymentIntent = event.data.object;
+                logger.info(`PaymentIntent was successful! ${paymentIntent.id}`);
+                // Mettre à jour la commande comme payée
                 break;
-            case 'payment_intent.payment_failed':
-                logger.error(`❌ Paiement échoué: ${event.data.object.id}`);
-                break;
+            
             case 'account.updated':
-                logger.info(`📝 Compte mis à jour: ${event.data.object.id}`);
+                const account = event.data.object;
+                logger.info(`Connect account updated: ${account.id}`);
                 break;
+            
             default:
-                logger.info(`ℹ️ Événement: ${event.type}`);
+                logger.info(`Unhandled event type ${event.type}`);
         }
 
         res.json({ received: true });
+    },
+
+    // 🔥 Créer un compte Connect pour le fournisseur
+    createConnectAccount: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+
+            // Vérifier si le fournisseur a déjà un compte
+            const supplierResult = await db.query(
+                'SELECT stripe_account_id FROM suppliers WHERE user_id = $1',
+                [userId]
+            );
+
+            if (supplierResult.rows[0]?.stripe_account_id) {
+                return res.json({
+                    success: true,
+                    message: 'Compte déjà existant',
+                    account_id: supplierResult.rows[0].stripe_account_id
+                });
+            }
+
+            // Créer le compte Connect Express
+            const account = await stripe.accounts.create({
+                type: 'express',
+                country: 'FR',
+                capabilities: {
+                    card_payments: { requested: true },
+                    transfers: { requested: true }
+                }
+            });
+
+            // Sauvegarder l'ID du compte
+            await db.query(
+                'UPDATE suppliers SET stripe_account_id = $1, stripe_account_status = $2 WHERE user_id = $3',
+                [account.id, 'pending', userId]
+            );
+
+            res.json({
+                success: true,
+                account_id: account.id
+            });
+
+        } catch (error) {
+            logger.error('[Payment] Create Connect account error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    // 🔥 Lien onboarding Stripe Connect
+    getOnboardingLink: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+
+            const supplierResult = await db.query(
+                'SELECT stripe_account_id FROM suppliers WHERE user_id = $1',
+                [userId]
+            );
+
+            if (!supplierResult.rows[0]?.stripe_account_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Compte Connect non créé'
+                });
+            }
+
+            const accountLink = await stripe.accountLinks.create({
+                account: supplierResult.rows[0].stripe_account_id,
+                refresh_url: `${process.env.FRONTEND_URL}/supplier/dashboard?stripe=refresh`,
+                return_url: `${process.env.FRONTEND_URL}/supplier/dashboard?stripe=success`,
+                type: 'account_onboarding'
+            });
+
+            res.json({
+                success: true,
+                url: accountLink.url
+            });
+
+        } catch (error) {
+            logger.error('[Payment] Onboarding link error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    // 🔥 Créer un PaymentIntent
+    createPaymentIntent: async (req, res) => {
+        try {
+            const { amount, currency = 'eur', order_id } = req.body;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: Math.round(amount * 100), // Convertir en centimes
+                currency: currency,
+                automatic_payment_methods: { enabled: true },
+                metadata: {
+                    order_id: order_id?.toString(),
+                    user_id: req.user.userId.toString()
+                }
+            });
+
+            res.json({
+                success: true,
+                client_secret: paymentIntent.client_secret,
+                payment_intent_id: paymentIntent.id
+            });
+
+        } catch (error) {
+            logger.error('[Payment] Create intent error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    // 🔥 Statut d'un paiement
+    getPaymentStatus: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const paymentIntent = await stripe.paymentIntents.retrieve(id);
+
+            res.json({
+                success: true,
+                status: paymentIntent.status,
+                amount: paymentIntent.amount / 100,
+                currency: paymentIntent.currency
+            });
+
+        } catch (error) {
+            logger.error('[Payment] Get status error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    // 🔥 Confirmer un paiement (webhook ou manuel)
+    confirmPayment: async (req, res) => {
+        try {
+            const { payment_intent_id, order_id } = req.body;
+
+            // Mettre à jour la commande comme payée
+            await db.query(
+                "UPDATE orders SET status = 'paid', payment_status = 'paid', paid_at = NOW() WHERE id = $1",
+                [order_id]
+            );
+
+            res.json({
+                success: true,
+                message: 'Paiement confirmé'
+            });
+
+        } catch (error) {
+            logger.error('[Payment] Confirm error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
     }
 };
 
