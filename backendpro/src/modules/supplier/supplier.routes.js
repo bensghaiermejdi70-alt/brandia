@@ -1,31 +1,20 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - Complet et Corrigé v3.6
+// SUPPLIER ROUTES - Complet et Corrigé v3.7
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-// 🔥 Import des middlewares AVANT toute utilisation
+// 🔥 Import des middlewares (nouvelle structure)
 const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
-
-// 🔥 Import du contrôleur avec toutes les méthodes
 const supplierController = require('./supplier.controller');
 
 console.log('[Supplier Routes] Loading...');
-console.log('[Supplier Routes] Controller type:', typeof supplierController);
-console.log('[Supplier Routes] Controller keys:', Object.keys(supplierController));
+console.log('[Supplier Routes] Controller methods:', Object.keys(supplierController));
 
 // ============================================
 // MIDDLEWARES - Auth + Role fournisseur
 // ============================================
-// 🔥 Vérification que ce sont bien des fonctions
-if (typeof authenticate !== 'function' || typeof requireRole !== 'function') {
-  console.error('[Supplier Routes] ERROR: Middlewares are not functions!');
-  console.error('authenticate:', typeof authenticate);
-  console.error('requireRole:', typeof requireRole);
-  throw new Error('Middlewares import failed');
-}
-
 router.use(authenticate);
 router.use(requireRole('supplier'));
 

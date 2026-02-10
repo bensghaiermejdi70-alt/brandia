@@ -192,6 +192,11 @@ const AuthController = {
         }
     },
 
+    // 🔥 AJOUTÉ : Alias pour compatibilité avec index.js
+    refreshToken: async (req, res) => {
+        return AuthController.refresh(req, res);
+    },
+
     // Profil utilisateur connecté
     me: async (req, res) => {
         try {
@@ -211,6 +216,30 @@ const AuthController = {
 
         } catch (error) {
             logger.error('❌ Erreur profil:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur serveur'
+            });
+        }
+    },
+
+    // 🔥 AJOUTÉ : Alias pour compatibilité avec index.js
+    getMe: async (req, res) => {
+        return AuthController.me(req, res);
+    },
+
+    // 🔥 AJOUTÉ : Déconnexion
+    logout: async (req, res) => {
+        try {
+            logger.info(`✅ Déconnexion: ${req.user.userId}`);
+            
+            res.json({
+                success: true,
+                message: 'Déconnexion réussie'
+            });
+
+        } catch (error) {
+            logger.error('❌ Erreur déconnexion:', error);
             res.status(500).json({
                 success: false,
                 message: 'Erreur serveur'

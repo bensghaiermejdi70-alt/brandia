@@ -90,7 +90,7 @@ const requireRole = (role) => {
     };
 };
 
-// 🔥 Export des deux fonctions (compatibilité avec supplier.routes.js)
+// 🔥 Export des deux fonctions
 module.exports = {
     authenticate,
     requireRole

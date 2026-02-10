@@ -5,8 +5,11 @@
 const express = require('express');
 const router = express.Router();
 
-// Import des routes
-const authRoutes = require('../modules/auth/auth.routes');
+// 🔥 CORRECTION : Import du middleware avec nouvelle structure
+const { authenticate } = require('../middlewares/auth.middleware');
+
+// Import des contrôleurs et routes
+const authController = require('../modules/auth/auth.controller');
 const productRoutes = require('../modules/products/product.routes');
 const paymentRoutes = require('../modules/payments/payment.routes');
 const orderRoutes = require('../modules/orders/order.routes');
@@ -275,9 +278,21 @@ router.post('/public/promotions/validate', async (req, res) => {
 });
 
 // ============================================
+// AUTH ROUTES (directement dans index.js)
+// ============================================
+
+// Publiques
+router.post('/auth/register', authController.register);
+router.post('/auth/login', authController.login);
+router.post('/auth/refresh', authController.refreshToken);
+
+// Protégées - 🔥 CORRECTION : utilise authenticate du nouveau middleware
+router.get('/auth/me', authenticate, authController.getMe);
+router.post('/auth/logout', authenticate, authController.logout);
+
+// ============================================
 // ROUTES API (protégées ou spécifiques)
 // ============================================
-router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
