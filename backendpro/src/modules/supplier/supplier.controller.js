@@ -1,5 +1,5 @@
 // ============================================
-// SUPPLIER CONTROLLER - Complet et Corrigé v3.0
+// SUPPLIER CONTROLLER - Complet et Corrigé v3.1
 // ============================================
 
 const db = require('../../config/db');
@@ -44,14 +44,14 @@ class SupplierController {
   async createProduct(req, res) {
     try {
       const supplierId = req.user.id;
-      const { name, price, stock, description, category_id } = req.body;
+      const { name, price, stock_quantity, description, category_id } = req.body;
 
       const result = await db.query(
         `INSERT INTO products 
-         (supplier_id, name, price, stock, description, category_id, is_active)
+         (supplier_id, name, price, stock_quantity, description, category_id, is_active)
          VALUES ($1, $2, $3, $4, $5, $6, true)
          RETURNING *`,
-        [supplierId, name, price, stock, description, category_id]
+        [supplierId, name, price, stock_quantity, description, category_id]
       );
 
       res.json({ success: true, data: result.rows[0] });
@@ -63,81 +63,115 @@ class SupplierController {
 
   async updateProduct(req, res) {
     try {
-        const supplierId = req.user.id;
-        const { id } = req.params;
-        
-        console.log('[UpdateProduct] Raw body received:', req.body);
-        
-        // 🔥 CORRECTION : Whitelist strict des champs autorisés
-        const allowedFields = {
-            name: req.body.name,
-            price: req.body.price,
-            stock_quantity: req.body.stock_quantity,
-            description: req.body.description,
-            category_id: req.body.category_id,
-            is_active: req.body.is_active,
-            main_image_url: req.body.main_image_url
-        };
+      const supplierId = req.user.id;
+      const { id } = req.params;
+      
+      console.log('[UpdateProduct] Raw body received:', req.body);
+      
+      // Whitelist strict des champs autorisés
+      const allowedFields = {
+        name: req.body.name,
+        price: req.body.price,
+        stock_quantity: req.body.stock_quantity,
+        description: req.body.description,
+        category_id: req.body.category_id,
+        is_active: req.body.is_active,
+        main_image_url: req.body.main_image_url
+      };
 
-        // Filtrer les undefined ET les null
-        const updates = {};
-        for (const [key, value] of Object.entries(allowedFields)) {
-            if (value !== undefined && value !== null) {
-                updates[key] = value;
-            }
+      // Filtrer les undefined ET les null
+      const updates = {};
+      for (const [key, value] of Object.entries(allowedFields)) {
+        if (value !== undefined && value !== null) {
+          updates[key] = value;
         }
+      }
 
-        console.log('[UpdateProduct] Filtered updates:', updates);
+      console.log('[UpdateProduct] Filtered updates:', updates);
 
-        if (Object.keys(updates).length === 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Aucun champ valide à mettre à jour' 
-            });
-        }
-
-        // Vérifier qu'aucun champ 'stock' ne traîne
-        if (updates.stock !== undefined) {
-            console.error('[UpdateProduct] ERROR: stock field detected, removing');
-            delete updates.stock;
-        }
-
-        const fields = Object.keys(updates);
-        const values = Object.values(updates);
-        
-        const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
-        
-        const sql = `
-            UPDATE products 
-            SET ${setClause}, updated_at = NOW()
-            WHERE id = $${fields.length + 1} AND supplier_id = $${fields.length + 2}
-            RETURNING *
-        `;
-        
-        values.push(id, supplierId);
-
-        console.log('[UpdateProduct] Final SQL:', sql);
-        console.log('[UpdateProduct] Final values:', values);
-
-        const result = await db.query(sql, values);
-
-        if (!result.rows.length) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Produit non trouvé ou non autorisé' 
-            });
-        }
-
-        res.json({ success: true, data: result.rows[0] });
-        
-    } catch (error) {
-        console.error('[UpdateProduct] Error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Aucun champ valide à mettre à jour' 
         });
+      }
+
+      // Vérifier qu'aucun champ 'stock' ne traîne
+      if (updates.stock !== undefined) {
+        console.error('[UpdateProduct] ERROR: stock field detected, removing');
+        delete updates.stock;
+      }
+
+      const fields = Object.keys(updates);
+      const values = Object.values(updates);
+      
+      const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
+      
+      const sql = `
+        UPDATE products 
+        SET ${setClause}, updated_at = NOW()
+        WHERE id = $${fields.length + 1} AND supplier_id = $${fields.length + 2}
+        RETURNING *
+      `;
+      
+      values.push(id, supplierId);
+
+      console.log('[UpdateProduct] Final SQL:', sql);
+      console.log('[UpdateProduct] Final values:', values);
+
+      const result = await db.query(sql, values);
+
+      if (!result.rows.length) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Produit non trouvé ou non autorisé' 
+        });
+      }
+
+      res.json({ success: true, data: result.rows[0] });
+      
+    } catch (error) {
+      console.error('[UpdateProduct] Error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
     }
-}
+  }
+
+  // 🔥 CORRECTION : Méthode deleteProduct manquante
+  async deleteProduct(req, res) {
+    try {
+      const supplierId = req.user.id;
+      const { id } = req.params;
+
+      const result = await db.query(
+        'DELETE FROM products WHERE id = $1 AND supplier_id = $2 RETURNING id, name',
+        [id, supplierId]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Produit non trouvé ou non autorisé' 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Produit supprimé',
+        data: result.rows[0]
+      });
+      
+    } catch (error) {
+      console.error('[Delete Product] Error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
   /* ================= COMMANDES ================= */
 
   async getOrders(req, res) {
@@ -145,17 +179,17 @@ class SupplierController {
       const supplierId = req.user.id;
       const { status } = req.query;
 
-      let query = 'SELECT * FROM orders WHERE supplier_id = $1';
+      let sql = 'SELECT * FROM orders WHERE supplier_id = $1';
       const params = [supplierId];
 
       if (status && status !== 'all') {
-        query += ' AND status = $2';
+        sql += ' AND status = $2';
         params.push(status);
       }
 
-      query += ' ORDER BY created_at DESC';
+      sql += ' ORDER BY created_at DESC';
 
-      const result = await db.query(query, params);
+      const result = await db.query(sql, params);
       res.json({ success: true, data: result.rows });
     } catch (error) {
       console.error('[Get Orders] Error:', error);
@@ -289,7 +323,7 @@ class SupplierController {
          SET name=$1, type=$2, value=$3, code=$4, max_usage=$5,
              start_date=$6, end_date=$7, updated_at=NOW()
          WHERE id=$8 AND supplier_id=$9
-         RETURNING         *`,
+         RETURNING *`,
         [name, type, value, code, max_usage, start_date, end_date, id, supplierId]
       );
 
@@ -597,34 +631,42 @@ module.exports = {
   controller,
   uploadMiddleware: upload.single('media'),
 
+  // Produits
   getProducts: controller.getProducts.bind(controller),
   createProduct: controller.createProduct.bind(controller),
   updateProduct: controller.updateProduct.bind(controller),
-  deleteProduct: controller.deleteProduct.bind(controller),
+  deleteProduct: controller.deleteProduct.bind(controller), // 🔥 CORRECTION : Ajouté
 
+  // Commandes
   getOrders: controller.getOrders.bind(controller),
   getOrderById: controller.getOrderById.bind(controller),
   updateOrderStatus: controller.updateOrderStatus.bind(controller),
 
+  // Paiements
   getPayments: controller.getPayments.bind(controller),
   requestPayout: controller.requestPayout.bind(controller),
 
+  // Promotions
   getPromotions: controller.getPromotions.bind(controller),
   createPromotion: controller.createPromotion.bind(controller),
   updatePromotion: controller.updatePromotion.bind(controller),
   deletePromotion: controller.deletePromotion.bind(controller),
 
+  // Campagnes
   getCampaigns: controller.getCampaigns.bind(controller),
   createCampaign: controller.createCampaign.bind(controller),
   updateCampaign: controller.updateCampaign.bind(controller),
   deleteCampaign: controller.deleteCampaign.bind(controller),
 
+  // Public
   getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
   trackCampaignClick: controller.trackCampaignClick.bind(controller),
   trackCampaignView: controller.trackCampaignView.bind(controller),
 
+  // Uploads
   uploadImage: controller.uploadImage.bind(controller),
   uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller),
 
+  // Stats
   getStats: controller.getStats.bind(controller)
 };
