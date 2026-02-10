@@ -1,5 +1,6 @@
 // ============================================
-// SUPPLIER CONTROLLER - Complet et Corrigé v3.1
+// SUPPLIER CONTROLLER - Complet et Corrigé v3.2
+// Correction : Gestion des commandes avec structure API cohérente
 // ============================================
 
 const db = require('../../config/db');
@@ -139,7 +140,6 @@ class SupplierController {
     }
   }
 
-  // 🔥 CORRECTION : Méthode deleteProduct manquante
   async deleteProduct(req, res) {
     try {
       const supplierId = req.user.id;
@@ -172,25 +172,109 @@ class SupplierController {
     }
   }
 
-  /* ================= COMMANDES ================= */
+  /* ================= COMMANDES - CORRIGÉ ================= */
 
   async getOrders(req, res) {
     try {
-      const supplierId = req.user.id;
+      // 🔥 CORRECTION : Récupérer l'ID du fournisseur depuis la table suppliers
+      const userId = req.user.id;
+      
+      // D'abord, récupérer le supplier_id à partir du user_id
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
       const { status } = req.query;
 
-      let sql = 'SELECT * FROM orders WHERE supplier_id = $1';
+      console.log(`[Get Orders] Supplier ID: ${supplierId}, Filter: ${status || 'all'}`);
+
+      // 🔥 CORRECTION : Requête SQL corrigée avec jointure et filtrage
+      let sql = `
+        SELECT DISTINCT o.*, 
+          json_agg(json_build_object(
+            'id', oi.id,
+            'product_id', oi.product_id,
+            'product_name', oi.product_name,
+            'product_sku', oi.product_sku,
+            'product_image_url', oi.product_image_url,
+            'quantity', oi.quantity,
+            'unit_price', oi.unit_price,
+            'total_price', oi.total_price,
+            'supplier_amount', oi.supplier_amount,
+            'commission_amount', oi.commission_amount,
+            'vat_rate', oi.vat_rate,
+            'fulfillment_status', oi.fulfillment_status
+          ) ORDER BY oi.id) as items
+        FROM orders o
+        INNER JOIN order_items oi ON o.id = oi.order_id
+        WHERE oi.supplier_id = $1
+      `;
+      
       const params = [supplierId];
 
+      // 🔥 CORRECTION : Logique de filtrage par statut améliorée
       if (status && status !== 'all') {
-        sql += ' AND status = $2';
-        params.push(status);
+        if (status === 'pending') {
+          // À préparer = commandes payées mais pas encore expédiées
+          sql += ` AND (o.status = 'pending' OR o.status IS NULL OR o.status = 'paid')`;
+        } else if (status === 'shipped') {
+          sql += ` AND o.status = 'shipped'`;
+        } else if (status === 'delivered') {
+          sql += ` AND o.status = 'delivered'`;
+        } else if (status === 'cancelled') {
+          sql += ` AND o.status = 'cancelled'`;
+        }
       }
 
-      sql += ' ORDER BY created_at DESC';
+      sql += ` GROUP BY o.id ORDER BY o.created_at DESC`;
+
+      console.log('[Get Orders] SQL:', sql);
+      console.log('[Get Orders] Params:', params);
 
       const result = await db.query(sql, params);
-      res.json({ success: true, data: result.rows });
+      
+      // 🔥 CORRECTION : Calculer les counts pour les badges
+      const countsResult = await db.query(`
+        SELECT 
+          COUNT(DISTINCT o.id) as all_count,
+          COUNT(DISTINCT CASE WHEN (o.status = 'pending' OR o.status IS NULL OR o.status = 'paid') THEN o.id END) as pending_count,
+          COUNT(DISTINCT CASE WHEN o.status = 'shipped' THEN o.id END) as shipped_count,
+          COUNT(DISTINCT CASE WHEN o.status = 'delivered' THEN o.id END) as delivered_count,
+          COUNT(DISTINCT CASE WHEN o.status = 'cancelled' THEN o.id END) as cancelled_count
+        FROM orders o
+        INNER JOIN order_items oi ON o.id = oi.order_id
+        WHERE oi.supplier_id = $1
+      `, [supplierId]);
+
+      const counts = countsResult.rows[0];
+      
+      console.log(`[Get Orders] Found ${result.rows.length} orders`);
+      console.log('[Get Orders] Counts:', counts);
+
+      // 🔥 CORRECTION : Structure de réponse cohérente avec le frontend
+      res.json({ 
+        success: true, 
+        data: { 
+          orders: result.rows,
+          counts: {
+            all: parseInt(counts.all_count) || 0,
+            pending: parseInt(counts.pending_count) || 0,
+            shipped: parseInt(counts.shipped_count) || 0,
+            delivered: parseInt(counts.delivered_count) || 0,
+            cancelled: parseInt(counts.cancelled_count) || 0
+          }
+        } 
+      });
+      
     } catch (error) {
       console.error('[Get Orders] Error:', error);
       res.status(500).json({ success: false, message: error.message });
@@ -199,16 +283,50 @@ class SupplierController {
 
   async getOrderById(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
       const { id } = req.params;
 
-      const result = await db.query(
-        'SELECT * FROM orders WHERE id = $1 AND supplier_id = $2',
-        [id, supplierId]
+      // Récupérer le supplier_id
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
       );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      const result = await db.query(`
+        SELECT o.*, 
+          json_agg(json_build_object(
+            'id', oi.id,
+            'product_id', oi.product_id,
+            'product_name', oi.product_name,
+            'product_sku', oi.product_sku,
+            'product_image_url', oi.product_image_url,
+            'quantity', oi.quantity,
+            'unit_price', oi.unit_price,
+            'total_price', oi.total_price,
+            'supplier_amount', oi.supplier_amount,
+            'commission_amount', oi.commission_amount,
+            'vat_rate', oi.vat_rate
+          ) ORDER BY oi.id) as items
+        FROM orders o
+        INNER JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.id = $1 AND oi.supplier_id = $2
+        GROUP BY o.id
+      `, [id, supplierId]);
 
       if (!result.rows.length) {
-        return res.status(404).json({ success: false, message: 'Commande non trouvée' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Commande non trouvée ou non autorisée' 
+        });
       }
 
       res.json({ success: true, data: result.rows[0] });
@@ -220,16 +338,45 @@ class SupplierController {
 
   async updateOrderStatus(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
       const { id } = req.params;
       const { status } = req.body;
+
+      // Récupérer le supplier_id
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      // Vérifier que la commande contient des produits de ce fournisseur
+      const checkResult = await db.query(`
+        SELECT 1 FROM order_items 
+        WHERE order_id = $1 AND supplier_id = $2 
+        LIMIT 1
+      `, [id, supplierId]);
+
+      if (checkResult.rows.length === 0) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Commande non autorisée' 
+        });
+      }
 
       const result = await db.query(
         `UPDATE orders 
          SET status = $1, updated_at = NOW()
-         WHERE id = $2 AND supplier_id = $3
+         WHERE id = $2
          RETURNING *`,
-        [status, id, supplierId]
+        [status, id]
       );
 
       if (!result.rows.length) {
@@ -600,18 +747,38 @@ class SupplierController {
 
   async getStats(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      // Récupérer le supplier_id
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
 
       const [sales, orders, products] = await Promise.all([
-        db.query('SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE supplier_id=$1', [supplierId]),
-        db.query('SELECT COUNT(*) FROM orders WHERE supplier_id=$1', [supplierId]),
-        db.query('SELECT COUNT(*) FROM products WHERE supplier_id=$1 AND is_active=true', [supplierId])
+        db.query(`
+          SELECT COALESCE(SUM(oi.total_price), 0) as total 
+          FROM order_items oi
+          JOIN orders o ON oi.order_id = o.id
+          WHERE oi.supplier_id = $1 AND o.status NOT IN ('cancelled', 'refunded')
+        `, [supplierId]),
+        db.query('SELECT COUNT(DISTINCT order_id) FROM order_items WHERE supplier_id = $1', [supplierId]),
+        db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1 AND is_active = true', [userId])
       ]);
 
       res.json({
         success: true,
         data: {
-          totalSales: Number(sales.rows[0].coalesce),
+          totalSales: Number(sales.rows[0].total),
           totalOrders: Number(orders.rows[0].count),
           activeProducts: Number(products.rows[0].count)
         }
@@ -635,7 +802,7 @@ module.exports = {
   getProducts: controller.getProducts.bind(controller),
   createProduct: controller.createProduct.bind(controller),
   updateProduct: controller.updateProduct.bind(controller),
-  deleteProduct: controller.deleteProduct.bind(controller), // 🔥 CORRECTION : Ajouté
+  deleteProduct: controller.deleteProduct.bind(controller),
 
   // Commandes
   getOrders: controller.getOrders.bind(controller),
