@@ -326,9 +326,33 @@
     getOrderById: async (id) => await apiFetch(`/supplier/orders/${id}`),
     updateOrderStatus: async (orderId, status) => await apiFetch(`/supplier/orders/${orderId}/status`, { method:'PUT', body:JSON.stringify({status}) }),
 
-    // Payments
-    getPayments: async () => await apiFetch('/supplier/payments'),
-    requestPayout: async (amount) => await apiFetch('/supplier/payouts', { method:'POST', body:JSON.stringify({amount}) }),
+      // Paiements (ajoutez ces méthodes dans SupplierAPI)
+  getPayments: async () => {
+    try {
+      return await apiFetch('/supplier/payments');
+    } catch (error) {
+      return { 
+        success: false, 
+        data: { balance: { available: 0, pending: 0, total: 0 }, transactions: [] },
+        message: error.message 
+      };
+    }
+  },
+  
+  requestPayout: async (amount) => {
+    return await apiFetch('/supplier/payouts', {
+      method: 'POST',
+      body: JSON.stringify({ amount })
+    });
+  },
+  
+  getPayouts: async () => {
+    try {
+      return await apiFetch('/supplier/payouts');
+    } catch (error) {
+      return { success: false, data: [], message: error.message };
+    }
+  },
 
     // Campaigns (CORRIGÉ - AJOUT DES MANQUANTS)
     getCampaigns: async () => await apiFetch('/supplier/campaigns'),

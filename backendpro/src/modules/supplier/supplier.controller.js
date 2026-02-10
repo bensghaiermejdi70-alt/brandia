@@ -431,16 +431,89 @@ class SupplierController {
     }
   }
 
-  /* ================= PAIEMENTS ================= */
+    /* ================= PAIEMENTS - CORRIGÉ v3.5 ================= */
 
   async getPayments(req, res) {
     try {
-      const supplierId = req.user.id;
-      const result = await db.query(
-        'SELECT * FROM payments WHERE supplier_id = $1 ORDER BY created_at DESC',
-        [supplierId]
+      const userId = req.user.id;
+      
+      // Récupérer le supplier_id
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
       );
-      res.json({ success: true, data: result.rows });
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      // 🔥 Récupérer le solde depuis la vue
+      const balanceResult = await db.query(`
+        SELECT available_balance, pending_balance, total_earnings
+        FROM supplier_balance_view
+        WHERE supplier_id = $1
+      `, [supplierId]);
+
+      const balance = balanceResult.rows[0] || {
+        available_balance: 0,
+        pending_balance: 0,
+        total_earnings: 0
+      };
+
+      // 🔥 Récupérer les transactions (30 derniers jours par défaut)
+      const transactionsResult = await db.query(`
+        SELECT 
+          sp.id,
+          sp.order_id,
+          sp.order_number,
+          sp.amount as total_amount,
+          sp.supplier_amount as amount,
+          sp.commission_amount,
+          sp.description,
+          sp.status,
+          sp.created_at,
+          sp.available_at,
+          sp.paid_at,
+          o.order_number as order_ref
+        FROM supplier_payments sp
+        LEFT JOIN orders o ON sp.order_id = o.id
+        WHERE sp.supplier_id = $1
+        ORDER BY sp.created_at DESC
+        LIMIT 100
+      `, [supplierId]);
+
+      // Formater les transactions pour le frontend
+      const transactions = transactionsResult.rows.map(t => ({
+        id: t.id,
+        order_id: t.order_id,
+        order_number: t.order_number || t.order_ref || `ORD-${t.id}`,
+        description: t.description || `Vente commande #${t.order_ref || t.id}`,
+        amount: parseFloat(t.amount),
+        commission: parseFloat(t.commission_amount) || 0,
+        total: parseFloat(t.total_amount),
+        status: t.status,
+        created_at: t.created_at,
+        available_at: t.available_at,
+        paid_at: t.paid_at
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          balance: {
+            available: parseFloat(balance.available_balance) || 0,
+            pending: parseFloat(balance.pending_balance) || 0,
+            total: parseFloat(balance.total_earnings) || 0
+          },
+          transactions: transactions
+        }
+      });
+
     } catch (error) {
       console.error('[Get Payments] Error:', error);
       res.status(500).json({ success: false, message: error.message });
@@ -449,17 +522,134 @@ class SupplierController {
 
   async requestPayout(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
       const { amount } = req.body;
 
-      await db.query(
-        'INSERT INTO payouts (supplier_id, amount, status) VALUES ($1, $2, $3)',
-        [supplierId, amount, 'pending']
-      );
+      if (!amount || isNaN(amount) || amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Montant invalide'
+        });
+      }
 
-      res.json({ success: true, message: 'Demande de paiement envoyée' });
+      // Récupérer le supplier_id
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      // Vérifier le solde disponible
+      const balanceResult = await db.query(`
+        SELECT COALESCE(SUM(supplier_amount), 0) as available
+        FROM supplier_payments
+        WHERE supplier_id = $1 AND status = 'available'
+      `, [supplierId]);
+
+      const available = parseFloat(balanceResult.rows[0].available) || 0;
+
+      if (parseFloat(amount) > available) {
+        return res.status(400).json({
+          success: false,
+          message: `Solde insuffisant. Disponible: ${available}€`
+        });
+      }
+
+      // Créer la demande de paiement
+      const payoutResult = await db.query(`
+        INSERT INTO payouts (supplier_id, amount, status, created_at)
+        VALUES ($1, $2, 'pending', NOW())
+        RETURNING *
+      `, [supplierId, amount]);
+
+      const payout = payoutResult.rows[0];
+
+      // Marquer les paiements comme "en cours de versement"
+      // On prend les plus anciens d'abord (FIFO)
+      await db.query(`
+        UPDATE supplier_payments
+        SET status = 'payout_requested', payout_id = $1
+        WHERE supplier_id = $2 
+          AND status = 'available'
+          AND id IN (
+            SELECT id FROM supplier_payments
+            WHERE supplier_id = $2 AND status = 'available'
+            ORDER BY created_at ASC
+            LIMIT (
+              SELECT COUNT(*) FROM supplier_payments
+              WHERE supplier_id = $2 AND status = 'available'
+              AND supplier_amount <= $3
+            )
+          )
+      `, [payout.id, supplierId, amount]);
+
+      res.json({
+        success: true,
+        message: 'Demande de virement créée',
+        data: {
+          payout_id: payout.id,
+          amount: parseFloat(amount),
+          status: 'pending',
+          estimated_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() // +2 jours
+        }
+      });
+
     } catch (error) {
       console.error('[Request Payout] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async getPayouts(req, res) {
+    try {
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      const result = await db.query(`
+        SELECT 
+          p.*,
+          json_agg(
+            json_build_object(
+              'id', sp.id,
+              'order_number', sp.order_number,
+              'amount', sp.supplier_amount
+            )
+          ) as payments
+        FROM payouts p
+        LEFT JOIN supplier_payments sp ON sp.payout_id = p.id
+        WHERE p.supplier_id = $1
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+      `, [supplierId]);
+
+      res.json({
+        success: true,
+        data: result.rows
+      });
+
+    } catch (error) {
+      console.error('[Get Payouts] Error:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
