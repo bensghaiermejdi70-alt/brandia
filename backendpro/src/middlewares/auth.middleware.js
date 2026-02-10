@@ -11,7 +11,8 @@ if (!JWT_SECRET) {
     console.error('❌ JWT_SECRET non défini !');
 }
 
-const authMiddleware = (req, res, next) => {
+// 🔥 Middleware principal d'authentification
+const authenticate = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         
@@ -62,4 +63,35 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-module.exports = authMiddleware;
+// 🔥 Middleware de vérification de rôle
+const requireRole = (role) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Non authentifié'
+            });
+        }
+        
+        // Admin peut tout faire
+        if (req.user.role === 'admin') {
+            return next();
+        }
+        
+        // Vérifier le rôle spécifique
+        if (req.user.role !== role) {
+            return res.status(403).json({
+                success: false,
+                message: `Accès réservé aux ${role}s`
+            });
+        }
+        
+        next();
+    };
+};
+
+// 🔥 Export des deux fonctions (compatibilité avec supplier.routes.js)
+module.exports = {
+    authenticate,
+    requireRole
+};

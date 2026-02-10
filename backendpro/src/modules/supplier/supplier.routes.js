@@ -1,101 +1,81 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - Complet et Corrigé v3.5
+// SUPPLIER ROUTES - Complet et Corrigé v3.6
 // ============================================
 
 const express = require('express');
 const router = express.Router();
+
+// 🔥 Import des middlewares AVANT toute utilisation
 const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
 
-// 🔥 CORRECTION : Importation correcte du contrôleur
-const { 
-  getStats,
-  getProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  getOrders,
-  getOrderById,
-  updateOrderStatus,
-  getPayments,
-  requestPayout,
-  getPayouts,
-  getPromotions,
-  createPromotion,
-  updatePromotion,
-  deletePromotion,
-  getCampaigns,
-  createCampaign,
-  updateCampaign,
-  deleteCampaign,
-  uploadImage,
-  uploadCampaignVideo,
-  uploadMiddleware
-} = require('./supplier.controller');
+// 🔥 Import du contrôleur avec toutes les méthodes
+const supplierController = require('./supplier.controller');
 
 console.log('[Supplier Routes] Loading...');
-
-// Debug - Vérifier les fonctions importées
-console.log('[Supplier Routes] Imported functions:', {
-  getStats: typeof getStats,
-  getProducts: typeof getProducts,
-  getOrders: typeof getOrders,
-  getPayments: typeof getPayments,
-  requestPayout: typeof requestPayout
-});
+console.log('[Supplier Routes] Controller type:', typeof supplierController);
+console.log('[Supplier Routes] Controller keys:', Object.keys(supplierController));
 
 // ============================================
 // MIDDLEWARES - Auth + Role fournisseur
 // ============================================
+// 🔥 Vérification que ce sont bien des fonctions
+if (typeof authenticate !== 'function' || typeof requireRole !== 'function') {
+  console.error('[Supplier Routes] ERROR: Middlewares are not functions!');
+  console.error('authenticate:', typeof authenticate);
+  console.error('requireRole:', typeof requireRole);
+  throw new Error('Middlewares import failed');
+}
+
 router.use(authenticate);
 router.use(requireRole('supplier'));
 
 // ============================================
 // STATS & DASHBOARD
 // ============================================
-router.get('/stats', getStats);
+router.get('/stats', supplierController.getStats);
 
 // ============================================
 // PRODUITS
 // ============================================
-router.get('/products', getProducts);
-router.post('/products', createProduct);
-router.put('/products/:id', updateProduct);
-router.delete('/products/:id', deleteProduct);
+router.get('/products', supplierController.getProducts);
+router.post('/products', supplierController.createProduct);
+router.put('/products/:id', supplierController.updateProduct);
+router.delete('/products/:id', supplierController.deleteProduct);
 
 // ============================================
 // COMMANDES
 // ============================================
-router.get('/orders', getOrders);
-router.get('/orders/:id', getOrderById);
-router.put('/orders/:id/status', updateOrderStatus);
+router.get('/orders', supplierController.getOrders);
+router.get('/orders/:id', supplierController.getOrderById);
+router.put('/orders/:id/status', supplierController.updateOrderStatus);
 
 // ============================================
 // PAIEMENTS & VIREMENTS
 // ============================================
-router.get('/payments', getPayments);
-router.post('/payouts', requestPayout);
-router.get('/payouts', getPayouts);
+router.get('/payments', supplierController.getPayments);
+router.post('/payouts', supplierController.requestPayout);
+router.get('/payouts', supplierController.getPayouts);
 
 // ============================================
 // PROMOTIONS
 // ============================================
-router.get('/promotions', getPromotions);
-router.post('/promotions', createPromotion);
-router.put('/promotions/:id', updatePromotion);
-router.delete('/promotions/:id', deletePromotion);
+router.get('/promotions', supplierController.getPromotions);
+router.post('/promotions', supplierController.createPromotion);
+router.put('/promotions/:id', supplierController.updatePromotion);
+router.delete('/promotions/:id', supplierController.deletePromotion);
 
 // ============================================
 // CAMPAGNES PUBLICITAIRES
 // ============================================
-router.get('/campaigns', getCampaigns);
-router.post('/campaigns', createCampaign);
-router.put('/campaigns/:id', updateCampaign);
-router.delete('/campaigns/:id', deleteCampaign);
+router.get('/campaigns', supplierController.getCampaigns);
+router.post('/campaigns', supplierController.createCampaign);
+router.put('/campaigns/:id', supplierController.updateCampaign);
+router.delete('/campaigns/:id', supplierController.deleteCampaign);
 
 // ============================================
 // UPLOADS (Cloudinary)
 // ============================================
-router.post('/upload-image', uploadMiddleware, uploadImage);
-router.post('/upload-video', uploadMiddleware, uploadCampaignVideo);
+router.post('/upload-image', supplierController.uploadMiddleware, supplierController.uploadImage);
+router.post('/upload-video', supplierController.uploadMiddleware, supplierController.uploadCampaignVideo);
 
 module.exports = router;
