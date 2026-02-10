@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CONTROLLER - Complet et Corrigé v3.4
-// Correction : Utilisation de jsonb_agg au lieu de json_agg pour le tri
+// SUPPLIER CONTROLLER - Complet et Corrigé v3.5
+// Correction : Suppression du DISTINCT qui cause l'erreur JSON
 // ============================================
 
 const db = require('../../config/db');
@@ -169,7 +169,7 @@ class SupplierController {
     }
   }
 
-  /* ================= COMMANDES - CORRIGÉ v3.4 ================= */
+  /* ================= COMMANDES - CORRIGÉ v3.5 ================= */
 
   async getOrders(req, res) {
     try {
@@ -193,10 +193,62 @@ class SupplierController {
 
       console.log(`[Get Orders] Supplier ID: ${supplierId}, Filter: ${status || 'all'}`);
 
-      // 🔥 CORRECTION v3.4 : Utilisation de jsonb_agg avec cast explicite pour le tri
-      // jsonb supporte l'ordre, json non
-      let sql = `
-        SELECT DISTINCT o.*, 
+      // 🔥 CORRECTION v3.5 : Approche en deux étapes pour éviter DISTINCT + JSON
+      // Étape 1 : Récupérer les IDs des commandes uniques
+      let orderIdsSql = `
+        SELECT DISTINCT o.id
+        FROM orders o
+        INNER JOIN order_items oi ON o.id = oi.order_id
+        WHERE oi.supplier_id = $1
+      `;
+      
+      const params = [supplierId];
+
+      if (status && status !== 'all') {
+        if (status === 'pending') {
+          orderIdsSql += ` AND (o.status = 'pending' OR o.status IS NULL OR o.status = 'paid')`;
+        } else if (status === 'shipped') {
+          orderIdsSql += ` AND o.status = 'shipped'`;
+        } else if (status === 'delivered') {
+          orderIdsSql += ` AND o.status = 'delivered'`;
+        } else if (status === 'cancelled') {
+          orderIdsSql += ` AND o.status = 'cancelled'`;
+        }
+      }
+
+      orderIdsSql += ` ORDER BY o.id DESC`;
+
+      const orderIdsResult = await db.query(orderIdsSql, params);
+      const orderIds = orderIdsResult.rows.map(r => r.id);
+
+      console.log(`[Get Orders] Found ${orderIds.length} order IDs`);
+
+      if (orderIds.length === 0) {
+        // Aucune commande trouvée, retourner vide
+        const countsResult = await db.query(`
+          SELECT 
+            0 as all_count,
+            0 as pending_count,
+            0 as shipped_count,
+            0 as delivered_count,
+            0 as cancelled_count
+        `);
+        
+        return res.json({ 
+          success: true, 
+          data: { 
+            orders: [],
+            counts: {
+              all: 0, pending: 0, shipped: 0, delivered: 0, cancelled: 0
+            }
+          } 
+        });
+      }
+
+      // Étape 2 : Récupérer les détails des commandes avec leurs items
+      // Utiliser ANY avec un tableau d'IDs
+      const ordersSql = `
+        SELECT o.*, 
           COALESCE(
             (
               SELECT jsonb_agg(
@@ -221,33 +273,13 @@ class SupplierController {
             '[]'::jsonb
           )::json as items
         FROM orders o
-        INNER JOIN order_items oi ON o.id = oi.order_id
-        WHERE oi.supplier_id = $1
+        WHERE o.id = ANY($2)
+        ORDER BY o.created_at DESC
       `;
-      
-      const params = [supplierId];
 
-      // Filtrage par statut
-      if (status && status !== 'all') {
-        if (status === 'pending') {
-          sql += ` AND (o.status = 'pending' OR o.status IS NULL OR o.status = 'paid')`;
-        } else if (status === 'shipped') {
-          sql += ` AND o.status = 'shipped'`;
-        } else if (status === 'delivered') {
-          sql += ` AND o.status = 'delivered'`;
-        } else if (status === 'cancelled') {
-          sql += ` AND o.status = 'cancelled'`;
-        }
-      }
+      const ordersResult = await db.query(ordersSql, [supplierId, orderIds]);
 
-      sql += ` ORDER BY o.created_at DESC`;
-
-      console.log('[Get Orders] SQL:', sql);
-      console.log('[Get Orders] Params:', params);
-
-      const result = await db.query(sql, params);
-      
-      // Calculer les counts pour les badges
+      // Étape 3 : Calculer les counts pour les badges
       const countsResult = await db.query(`
         SELECT 
           COUNT(DISTINCT o.id) as all_count,
@@ -262,13 +294,13 @@ class SupplierController {
 
       const counts = countsResult.rows[0];
       
-      console.log(`[Get Orders] Found ${result.rows.length} orders`);
+      console.log(`[Get Orders] Returning ${ordersResult.rows.length} orders`);
       console.log('[Get Orders] Counts:', counts);
 
       res.json({ 
         success: true, 
         data: { 
-          orders: result.rows,
+          orders: ordersResult.rows,
           counts: {
             all: parseInt(counts.all_count) || 0,
             pending: parseInt(counts.pending_count) || 0,
@@ -304,7 +336,7 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CORRECTION v3.4 : Même correction avec jsonb_agg
+      // 🔥 CORRECTION v3.5 : Même approche sans DISTINCT
       const result = await db.query(`
         SELECT o.*, 
           COALESCE(
@@ -779,7 +811,7 @@ class SupplierController {
           JOIN orders o ON oi.order_id = o.id
           WHERE oi.supplier_id = $1 AND o.status NOT IN ('cancelled', 'refunded')
         `, [supplierId]),
-        db.query('SELECT COUNT(DISTINCT order_id) FROM order_items WHERE supplier_id = $1', [supplierId]),
+               db.query('SELECT COUNT(DISTINCT order_id) FROM order_items WHERE supplier_id = $1', [supplierId]),
         db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1 AND is_active = true', [userId])
       ]);
 
