@@ -1,47 +1,43 @@
 // ============================================
-// PRODUCT ROUTES - API Produits (AVEC PROMOTIONS)
+// PRODUCT ROUTES - Routes produits
 // ============================================
 
 const express = require('express');
 const router = express.Router();
-const ProductController = require('./product.controller');
-const authMiddleware = require('../../middlewares/auth.middleware');
 
-// ==========================================
+// 🔥 CORRECTION : Import du middleware avec la nouvelle structure
+const { authenticate } = require('../../middlewares/auth.middleware');
+const productController = require('./product.controller');
+
+// ============================================
 // ROUTES PUBLIQUES (sans auth)
-// ==========================================
+// ============================================
 
-// Liste classique (compatibilité)
-router.get('/', ProductController.list);
+// Liste tous les produits
+router.get('/', productController.getAll);
 
-// ==========================================
-// NOUVEAU: Routes avec promotions intégrées
-// ==========================================
-router.get('/with-promotions', ProductController.listWithPromotions);
-router.get('/featured-with-promotions', ProductController.featuredWithPromotions);
-router.get('/:id/with-promotion', ProductController.detailWithPromotion);
+// Produits en vedette
+router.get('/featured', productController.getFeatured);
 
-// Produits en vedette (classique)
-router.get('/featured', ProductController.featured);
+// Produits avec promotions
+router.get('/with-promotions', productController.getAllWithPromotions);
+router.get('/featured-with-promotions', productController.getFeaturedWithPromotions);
 
-// Détail par ID (classique)
-router.get('/:id', ProductController.detail);
+// Détail d'un produit
+router.get('/:id', productController.getById);
+router.get('/:id/with-promotion', productController.getByIdWithPromotion);
 
-// Détail par slug
-router.get('/slug/:slug', ProductController.detailBySlug);
-
-// ==========================================
-// ROUTES PROTÉGÉES (fournisseurs)
-// ==========================================
-router.use(authMiddleware);
+// ============================================
+// ROUTES PROTÉGÉES (avec auth)
+// ============================================
 
 // Créer un produit (fournisseur uniquement)
-router.post('/', ProductController.create);
+router.post('/', authenticate, productController.create);
 
-// Mettre à jour un produit
-router.put('/:id', ProductController.update);
+// Modifier un produit
+router.put('/:id', authenticate, productController.update);
 
 // Supprimer un produit
-router.delete('/:id', ProductController.delete);
+router.delete('/:id', authenticate, productController.remove);
 
 module.exports = router;
