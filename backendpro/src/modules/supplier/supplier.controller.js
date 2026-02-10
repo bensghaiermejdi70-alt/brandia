@@ -66,7 +66,9 @@ class SupplierController {
         const supplierId = req.user.id;
         const { id } = req.params;
         
-        // 🔥 CORRECTION : Whitelist des champs autorisés
+        console.log('[UpdateProduct] Raw body received:', req.body);
+        
+        // 🔥 CORRECTION : Whitelist strict des champs autorisés
         const allowedFields = {
             name: req.body.name,
             price: req.body.price,
@@ -77,19 +79,27 @@ class SupplierController {
             main_image_url: req.body.main_image_url
         };
 
-        // Filtrer les undefined
+        // Filtrer les undefined ET les null
         const updates = {};
         for (const [key, value] of Object.entries(allowedFields)) {
-            if (value !== undefined) updates[key] = value;
+            if (value !== undefined && value !== null) {
+                updates[key] = value;
+            }
         }
 
-        console.log('[UpdateProduct] Clean updates:', updates);
+        console.log('[UpdateProduct] Filtered updates:', updates);
 
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({ 
                 success: false, 
                 message: 'Aucun champ valide à mettre à jour' 
             });
+        }
+
+        // Vérifier qu'aucun champ 'stock' ne traîne
+        if (updates.stock !== undefined) {
+            console.error('[UpdateProduct] ERROR: stock field detected, removing');
+            delete updates.stock;
         }
 
         const fields = Object.keys(updates);
@@ -105,6 +115,9 @@ class SupplierController {
         `;
         
         values.push(id, supplierId);
+
+        console.log('[UpdateProduct] Final SQL:', sql);
+        console.log('[UpdateProduct] Final values:', values);
 
         const result = await db.query(sql, values);
 

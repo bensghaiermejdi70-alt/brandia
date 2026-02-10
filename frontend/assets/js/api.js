@@ -287,19 +287,29 @@
     },
     createProduct: async (data) => await apiFetch('/supplier/products', { method:'POST', body:JSON.stringify(data) }),
     updateProduct: async (id, data) => {
-    // 🔥 CORRECTION : Filtrer les champs non autorisés
+    // 🔥 CORRECTION STRICTE : N'accepter QUE les champs valides
     const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active', 'category_id'];
     
     const cleanData = {};
-    for (const [key, value] of Object.entries(data)) {
-        if (allowedFields.includes(key)) {
-            cleanData[key] = value;
-        } else {
-            console.warn(`[API] Field "${key}" filtered out - not allowed`);
+    for (const key of allowedFields) {
+        if (data[key] !== undefined) {
+            cleanData[key] = data[key];
         }
     }
     
-    console.log('[API] updateProduct clean data:', cleanData);
+    // 🔥 CORRECTION : Si on reçoit 'stock', le convertir en 'stock_quantity'
+    if (data.stock !== undefined && cleanData.stock_quantity === undefined) {
+        cleanData.stock_quantity = data.stock;
+    }
+    
+    // Supprimer tout champ qui contient 'stock' mais n'est pas 'stock_quantity'
+    for (const key of Object.keys(cleanData)) {
+        if (key.includes('stock') && key !== 'stock_quantity') {
+            delete cleanData[key];
+        }
+    }
+    
+    console.log('[API] updateProduct FINAL clean data:', cleanData);
     
     return await apiFetch(`/supplier/products/${id}`, {
         method: 'PUT',
