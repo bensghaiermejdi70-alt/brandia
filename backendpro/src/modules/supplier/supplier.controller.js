@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CONTROLLER - Complet et Corrigé v3.2
-// Correction : Gestion des commandes avec structure API cohérente
+// SUPPLIER CONTROLLER - Complet et Corrigé v3.4
+// Correction : Utilisation de jsonb_agg au lieu de json_agg pour le tri
 // ============================================
 
 const db = require('../../config/db');
@@ -69,7 +69,6 @@ class SupplierController {
       
       console.log('[UpdateProduct] Raw body received:', req.body);
       
-      // Whitelist strict des champs autorisés
       const allowedFields = {
         name: req.body.name,
         price: req.body.price,
@@ -80,7 +79,6 @@ class SupplierController {
         main_image_url: req.body.main_image_url
       };
 
-      // Filtrer les undefined ET les null
       const updates = {};
       for (const [key, value] of Object.entries(allowedFields)) {
         if (value !== undefined && value !== null) {
@@ -97,7 +95,6 @@ class SupplierController {
         });
       }
 
-      // Vérifier qu'aucun champ 'stock' ne traîne
       if (updates.stock !== undefined) {
         console.error('[UpdateProduct] ERROR: stock field detected, removing');
         delete updates.stock;
@@ -172,14 +169,13 @@ class SupplierController {
     }
   }
 
-  /* ================= COMMANDES - CORRIGÉ ================= */
+  /* ================= COMMANDES - CORRIGÉ v3.4 ================= */
 
   async getOrders(req, res) {
     try {
-      // 🔥 CORRECTION : Récupérer l'ID du fournisseur depuis la table suppliers
       const userId = req.user.id;
       
-      // D'abord, récupérer le supplier_id à partir du user_id
+      // Récupérer le supplier_id à partir du user_id
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
@@ -197,23 +193,33 @@ class SupplierController {
 
       console.log(`[Get Orders] Supplier ID: ${supplierId}, Filter: ${status || 'all'}`);
 
-      // 🔥 CORRECTION : Requête SQL corrigée avec jointure et filtrage
+      // 🔥 CORRECTION v3.4 : Utilisation de jsonb_agg avec cast explicite pour le tri
+      // jsonb supporte l'ordre, json non
       let sql = `
         SELECT DISTINCT o.*, 
-          json_agg(json_build_object(
-            'id', oi.id,
-            'product_id', oi.product_id,
-            'product_name', oi.product_name,
-            'product_sku', oi.product_sku,
-            'product_image_url', oi.product_image_url,
-            'quantity', oi.quantity,
-            'unit_price', oi.unit_price,
-            'total_price', oi.total_price,
-            'supplier_amount', oi.supplier_amount,
-            'commission_amount', oi.commission_amount,
-            'vat_rate', oi.vat_rate,
-            'fulfillment_status', oi.fulfillment_status
-          ) ORDER BY oi.id) as items
+          COALESCE(
+            (
+              SELECT jsonb_agg(
+                jsonb_build_object(
+                  'id', oi2.id,
+                  'product_id', oi2.product_id,
+                  'product_name', oi2.product_name,
+                  'product_sku', oi2.product_sku,
+                  'product_image_url', oi2.product_image_url,
+                  'quantity', oi2.quantity,
+                  'unit_price', oi2.unit_price,
+                  'total_price', oi2.total_price,
+                  'supplier_amount', oi2.supplier_amount,
+                  'commission_amount', oi2.commission_amount,
+                  'vat_rate', oi2.vat_rate,
+                  'fulfillment_status', oi2.fulfillment_status
+                ) ORDER BY oi2.id
+              )
+              FROM order_items oi2
+              WHERE oi2.order_id = o.id AND oi2.supplier_id = $1
+            ),
+            '[]'::jsonb
+          )::json as items
         FROM orders o
         INNER JOIN order_items oi ON o.id = oi.order_id
         WHERE oi.supplier_id = $1
@@ -221,10 +227,9 @@ class SupplierController {
       
       const params = [supplierId];
 
-      // 🔥 CORRECTION : Logique de filtrage par statut améliorée
+      // Filtrage par statut
       if (status && status !== 'all') {
         if (status === 'pending') {
-          // À préparer = commandes payées mais pas encore expédiées
           sql += ` AND (o.status = 'pending' OR o.status IS NULL OR o.status = 'paid')`;
         } else if (status === 'shipped') {
           sql += ` AND o.status = 'shipped'`;
@@ -235,14 +240,14 @@ class SupplierController {
         }
       }
 
-      sql += ` GROUP BY o.id ORDER BY o.created_at DESC`;
+      sql += ` ORDER BY o.created_at DESC`;
 
       console.log('[Get Orders] SQL:', sql);
       console.log('[Get Orders] Params:', params);
 
       const result = await db.query(sql, params);
       
-      // 🔥 CORRECTION : Calculer les counts pour les badges
+      // Calculer les counts pour les badges
       const countsResult = await db.query(`
         SELECT 
           COUNT(DISTINCT o.id) as all_count,
@@ -260,7 +265,6 @@ class SupplierController {
       console.log(`[Get Orders] Found ${result.rows.length} orders`);
       console.log('[Get Orders] Counts:', counts);
 
-      // 🔥 CORRECTION : Structure de réponse cohérente avec le frontend
       res.json({ 
         success: true, 
         data: { 
@@ -286,7 +290,6 @@ class SupplierController {
       const userId = req.user.id;
       const { id } = req.params;
 
-      // Récupérer le supplier_id
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
@@ -301,25 +304,33 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
+      // 🔥 CORRECTION v3.4 : Même correction avec jsonb_agg
       const result = await db.query(`
         SELECT o.*, 
-          json_agg(json_build_object(
-            'id', oi.id,
-            'product_id', oi.product_id,
-            'product_name', oi.product_name,
-            'product_sku', oi.product_sku,
-            'product_image_url', oi.product_image_url,
-            'quantity', oi.quantity,
-            'unit_price', oi.unit_price,
-            'total_price', oi.total_price,
-            'supplier_amount', oi.supplier_amount,
-            'commission_amount', oi.commission_amount,
-            'vat_rate', oi.vat_rate
-          ) ORDER BY oi.id) as items
+          COALESCE(
+            (
+              SELECT jsonb_agg(
+                jsonb_build_object(
+                  'id', oi2.id,
+                  'product_id', oi2.product_id,
+                  'product_name', oi2.product_name,
+                  'product_sku', oi2.product_sku,
+                  'product_image_url', oi2.product_image_url,
+                  'quantity', oi2.quantity,
+                  'unit_price', oi2.unit_price,
+                  'total_price', oi2.total_price,
+                  'supplier_amount', oi2.supplier_amount,
+                  'commission_amount', oi2.commission_amount,
+                  'vat_rate', oi2.vat_rate
+                ) ORDER BY oi2.id
+              )
+              FROM order_items oi2
+              WHERE oi2.order_id = o.id AND oi2.supplier_id = $2
+            ),
+            '[]'::jsonb
+          )::json as items
         FROM orders o
-        INNER JOIN order_items oi ON o.id = oi.order_id
-        WHERE o.id = $1 AND oi.supplier_id = $2
-        GROUP BY o.id
+        WHERE o.id = $1
       `, [id, supplierId]);
 
       if (!result.rows.length) {
@@ -342,7 +353,6 @@ class SupplierController {
       const { id } = req.params;
       const { status } = req.body;
 
-      // Récupérer le supplier_id
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
@@ -357,7 +367,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Vérifier que la commande contient des produits de ce fournisseur
       const checkResult = await db.query(`
         SELECT 1 FROM order_items 
         WHERE order_id = $1 AND supplier_id = $2 
@@ -749,7 +758,6 @@ class SupplierController {
     try {
       const userId = req.user.id;
       
-      // Récupérer le supplier_id
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
