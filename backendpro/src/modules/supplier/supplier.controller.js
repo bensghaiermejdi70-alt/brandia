@@ -1020,50 +1020,46 @@ class SupplierController {
   }
 }
 
-/* ================= EXPORT ================= */
+//* ================= EXPORT ================= */
 
 const controller = new SupplierController();
 
 module.exports = {
-  controller,
+  // Middleware
   uploadMiddleware: upload.single('media'),
-
+  
+  // Stats
+  getStats: controller.getStats.bind(controller),
+  
   // Produits
   getProducts: controller.getProducts.bind(controller),
   createProduct: controller.createProduct.bind(controller),
   updateProduct: controller.updateProduct.bind(controller),
   deleteProduct: controller.deleteProduct.bind(controller),
-
+  
   // Commandes
   getOrders: controller.getOrders.bind(controller),
   getOrderById: controller.getOrderById.bind(controller),
   updateOrderStatus: controller.updateOrderStatus.bind(controller),
-
-  // Paiements
+  
+  // 🔥 AJOUTÉ : Paiements
   getPayments: controller.getPayments.bind(controller),
   requestPayout: controller.requestPayout.bind(controller),
-
+  getPayouts: controller.getPayouts.bind(controller),
+  
   // Promotions
   getPromotions: controller.getPromotions.bind(controller),
   createPromotion: controller.createPromotion.bind(controller),
   updatePromotion: controller.updatePromotion.bind(controller),
   deletePromotion: controller.deletePromotion.bind(controller),
-
+  
   // Campagnes
   getCampaigns: controller.getCampaigns.bind(controller),
   createCampaign: controller.createCampaign.bind(controller),
   updateCampaign: controller.updateCampaign.bind(controller),
   deleteCampaign: controller.deleteCampaign.bind(controller),
-
-  // Public
-  getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
-  trackCampaignClick: controller.trackCampaignClick.bind(controller),
-  trackCampaignView: controller.trackCampaignView.bind(controller),
-
+  
   // Uploads
   uploadImage: controller.uploadImage.bind(controller),
-  uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller),
-
-  // Stats
-  getStats: controller.getStats.bind(controller)
+  uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller)
 };
