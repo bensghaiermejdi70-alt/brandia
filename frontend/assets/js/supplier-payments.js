@@ -1,5 +1,6 @@
 // ============================================
-// SUPPLIER PAYMENTS MODULE - v2.0 Production Ready
+// SUPPLIER PAYMENTS MODULE - v2.1 CORRIGÉ
+// Correction: Gestion robuste de la réponse API
 // ============================================
 
 window.SupplierPayments = {
@@ -20,13 +21,11 @@ window.SupplierPayments = {
   },
 
   setupEventListeners: () => {
-    // Bouton de demande de virement
     const payoutBtn = document.getElementById('btn-request-payout');
     if (payoutBtn) {
       payoutBtn.addEventListener('click', SupplierPayments.requestPayout);
     }
 
-    // Bouton d'export
     const exportBtn = document.getElementById('btn-export-transactions');
     if (exportBtn) {
       exportBtn.addEventListener('click', SupplierPayments.export);
@@ -48,19 +47,19 @@ window.SupplierPayments = {
       const response = await window.BrandiaAPI.Supplier.getPayments();
       console.log('[Payments] API Response:', response);
 
-      if (!response.success) {
-        throw new Error(response.message || 'Erreur de chargement');
-      }
-
+      // 🔥 CORRECTION: Gestion flexible de la structure réponse
       const data = response.data || {};
       
+      // Gestion du solde (plusieurs formats possibles)
+      const balanceData = data.balance || {};
       SupplierPayments.state.balance = {
-        available: parseFloat(data.balance?.available) || 0,
-        pending: parseFloat(data.balance?.pending) || 0,
-        total: parseFloat(data.balance?.total) || 0
+        available: parseFloat(balanceData.available) || parseFloat(balanceData.available_balance) || 0,
+        pending: parseFloat(balanceData.pending) || parseFloat(balanceData.pending_balance) || 0,
+        total: parseFloat(balanceData.total) || parseFloat(balanceData.total_earnings) || 0
       };
       
-      SupplierPayments.state.transactions = data.transactions || [];
+      // Gestion des transactions
+      SupplierPayments.state.transactions = Array.isArray(data.transactions) ? data.transactions : [];
       
       console.log('[Payments] Balance:', SupplierPayments.state.balance);
       console.log('[Payments] Transactions:', SupplierPayments.state.transactions.length);
@@ -129,7 +128,7 @@ window.SupplierPayments = {
         cancelled: { label: 'Annulé', class: 'bg-red-500/20 text-red-400 border-red-500/30' }
       };
       
-      const status = statusConfig[t.status] || { label: t.status, class: 'bg-slate-500/20 text-slate-400' };
+      const status = statusConfig[t.status] || { label: t.status || 'Inconnu', class: 'bg-slate-500/20 text-slate-400' };
 
       return `
         <tr class="border-b border-slate-800 last:border-0 hover:bg-slate-800/30 transition-colors">
@@ -210,12 +209,10 @@ window.SupplierPayments = {
         DashboardApp.showToast('Demande de virement envoyée avec succès !', 'success');
       }
       
-      // Recharger les données
       await SupplierPayments.loadPayments();
       
-      // Afficher les détails du virement
       if (response.data) {
-        alert(`Virement demandé:\nMontant: ${SupplierPayments.formatPrice(response.data.amount)}\nStatut: En traitement\nDate estimée: ${new Date(response.data.estimated_date).toLocaleDateString('fr-FR')}`);
+        alert(`Virement demandé:\nMontant: ${SupplierPayments.formatPrice(response.data.amount)}\nStatut: En traitement`);
       }
 
     } catch (error) {
@@ -238,7 +235,6 @@ window.SupplierPayments = {
       return;
     }
 
-    // Export CSV avec BOM pour Excel
     const BOM = '\uFEFF';
     const csv = [
       ['Date', 'Description', 'Commande', 'Montant', 'Commission', 'Net', 'Statut'].join(';'),
@@ -246,9 +242,9 @@ window.SupplierPayments = {
         t.created_at ? new Date(t.created_at).toLocaleDateString('fr-FR') : '-',
         `"${(t.description || 'Vente').replace(/"/g, '""')}"`,
         t.order_number || '-',
-        t.total?.toFixed(2)?.replace('.', ',') || '0,00',
-        t.commission?.toFixed(2)?.replace('.', ',') || '0,00',
-        t.amount?.toFixed(2)?.replace('.', ',') || '0,00',
+        (t.total || t.amount || 0).toFixed(2).replace('.', ','),
+        (t.commission || t.commission_amount || 0).toFixed(2).replace('.', ','),
+        (t.amount || t.supplier_amount || 0).toFixed(2).replace('.', ','),
         t.status
       ].join(';'))
     ].join('\n');
@@ -277,7 +273,7 @@ window.SupplierPayments = {
   }
 };
 
-console.log('[SupplierPayments] Module loaded v2.0');
+console.log('[SupplierPayments] Module loaded v2.1');
 
 // Exposer globalement
 window.requestPayout = () => SupplierPayments.requestPayout();

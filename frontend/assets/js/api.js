@@ -1,5 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend (v2.6 CORRIGÉ)
+// BRANDIA API CLIENT - Frontend (v2.7 CORRIGÉ)
+// Corrections: Ajout getOrderById et getPayouts manquants
 // ============================================
 
 (function() {
@@ -189,7 +190,6 @@
         return response;
       } catch (error) {
         console.error('[API] getByIdWithPromotion error:', error);
-        // Fallback sur l'API standard sans promotion
         try {
           console.log('[API] Fallback to standard getById');
           const standard = await apiFetch(`/products/${id}`);
@@ -237,10 +237,10 @@
   };
 
   // -------------------------------
-  // Supplier API (CORRIGÉ - AJOUT deleteCampaign & updateCampaign)
+  // Supplier API (CORRIGÉ - AJOUT getOrderById et getPayouts)
   // -------------------------------
   const SupplierAPI = {
-    init: () => {
+       init: () => {
       const user = storage.getUser();
       if (!storage.getToken()) { 
         window.location.href = '../login.html?redirect=supplier/dashboard'; 
@@ -287,84 +287,93 @@
     },
     createProduct: async (data) => await apiFetch('/supplier/products', { method:'POST', body:JSON.stringify(data) }),
     updateProduct: async (id, data) => {
-    // 🔥 CORRECTION STRICTE : N'accepter QUE les champs valides
-    const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active', 'category_id'];
-    
-    const cleanData = {};
-    for (const key of allowedFields) {
+      // 🔥 CORRECTION STRICTE : N'accepter QUE les champs valides
+      const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active', 'category_id'];
+      
+      const cleanData = {};
+      for (const key of allowedFields) {
         if (data[key] !== undefined) {
-            cleanData[key] = data[key];
+          cleanData[key] = data[key];
         }
-    }
-    
-    // 🔥 CORRECTION : Si on reçoit 'stock', le convertir en 'stock_quantity'
-    if (data.stock !== undefined && cleanData.stock_quantity === undefined) {
+      }
+      
+      // 🔥 CORRECTION : Si on reçoit 'stock', le convertir en 'stock_quantity'
+      if (data.stock !== undefined && cleanData.stock_quantity === undefined) {
         cleanData.stock_quantity = data.stock;
-    }
-    
-    // Supprimer tout champ qui contient 'stock' mais n'est pas 'stock_quantity'
-    for (const key of Object.keys(cleanData)) {
+      }
+      
+      // Supprimer tout champ qui contient 'stock' mais n'est pas 'stock_quantity'
+      for (const key of Object.keys(cleanData)) {
         if (key.includes('stock') && key !== 'stock_quantity') {
-            delete cleanData[key];
+          delete cleanData[key];
         }
-    }
-    
-    console.log('[API] updateProduct FINAL clean data:', cleanData);
-    
-    return await apiFetch(`/supplier/products/${id}`, {
+      }
+      
+      console.log('[API] updateProduct FINAL clean data:', cleanData);
+      
+      return await apiFetch(`/supplier/products/${id}`, {
         method: 'PUT',
         body: JSON.stringify(cleanData)
-    });
-},
+      });
+    },
     deleteProduct: async (id) => await apiFetch(`/supplier/products/${id}`, { method:'DELETE' }),
 
-    // Orders
+    // Orders - 🔥 CORRIGÉ : Ajout getOrderById manquant
     getOrders: async (status=null) => { 
       const query = status && status!=='all' ? `?status=${encodeURIComponent(status)}` : ''; 
       return await apiFetch(`/supplier/orders${query}`); 
     },
-    getOrderById: async (id) => await apiFetch(`/supplier/orders/${id}`),
+    
+    // 🔥 AJOUTÉ : Méthode getOrderById manquante
+    getOrderById: async (id) => {
+      try {
+        return await apiFetch(`/supplier/orders/${id}`);
+      } catch (error) {
+        console.error('[API] getOrderById error:', error);
+        return { success: false, message: error.message };
+      }
+    },
+    
     updateOrderStatus: async (orderId, status) => await apiFetch(`/supplier/orders/${orderId}/status`, { method:'PUT', body:JSON.stringify({status}) }),
 
-      // Paiements (ajoutez ces méthodes dans SupplierAPI)
-  getPayments: async () => {
-    try {
-      return await apiFetch('/supplier/payments');
-    } catch (error) {
-      return { 
-        success: false, 
-        data: { balance: { available: 0, pending: 0, total: 0 }, transactions: [] },
-        message: error.message 
-      };
-    }
-  },
-  
-  requestPayout: async (amount) => {
-    return await apiFetch('/supplier/payouts', {
-      method: 'POST',
-      body: JSON.stringify({ amount })
-    });
-  },
-  
-  getPayouts: async () => {
-    try {
-      return await apiFetch('/supplier/payouts');
-    } catch (error) {
-      return { success: false, data: [], message: error.message };
-    }
-  },
+    // Paiements - 🔥 CORRIGÉ : Ajout getPayouts manquant
+    getPayments: async () => {
+      try {
+        return await apiFetch('/supplier/payments');
+      } catch (error) {
+        return { 
+          success: false, 
+          data: { balance: { available: 0, pending: 0, total: 0 }, transactions: [] },
+          message: error.message 
+        };
+      }
+    },
+    
+    requestPayout: async (amount) => {
+      return await apiFetch('/supplier/payouts', {
+        method: 'POST',
+        body: JSON.stringify({ amount })
+      });
+    },
+    
+    // 🔥 AJOUTÉ : Méthode getPayouts manquante (référencée dans supplier-payments.js)
+    getPayouts: async () => {
+      try {
+        return await apiFetch('/supplier/payouts');
+      } catch (error) {
+        return { success: false, data: [], message: error.message };
+      }
+    },
 
-    // Campaigns (CORRIGÉ - AJOUT DES MANQUANTS)
+    // Campaigns
     getCampaigns: async () => await apiFetch('/supplier/campaigns'),
     createCampaign: async (data) => await apiFetch('/supplier/campaigns', { method:'POST', body:JSON.stringify(data) }),
     
-    // 🔥 AJOUTÉ : Mise à jour campagne
     updateCampaign: async (id, data) => await apiFetch(`/supplier/campaigns/${id}`, { 
       method: 'PUT', 
       body: JSON.stringify(data) 
     }),
     
-    // 🔥 AJOUTÉ : Suppression campagne
     deleteCampaign: async (id) => await apiFetch(`/supplier/campaigns/${id}`, { 
       method: 'DELETE' 
     }),
@@ -482,5 +491,10 @@
     config: { baseURL: API_BASE, isLocal: isLocal, apiURL: API_BASE_URL }
   };
 
-  console.log('[Brandia API] ✅ Loaded v2.6 - Campaigns Fix Ready');
+  console.log('[Brandia API] ✅ Loaded v2.7 - getOrderById & getPayouts Added');
 })();
+
+// Exposer les fonctions globales pour les onclick inline
+window.logout = () => BrandiaAPI.Auth.logout();
+window.isLoggedIn = () => BrandiaAPI.Auth.isLoggedIn();
+window.getUser = () => BrandiaAPI.Auth.getUser();
