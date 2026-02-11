@@ -858,16 +858,35 @@ function initFilters() {
 
 // ✅ CORRIGÉ : Fonction updateCategory complètement réécrite
 function updateCategory(slug) {
-  console.log('[updateCategory] Appel avec slug:', slug);
+  console.log('[updateCategory] Slug reçu:', slug);
   
-  // ✅ Normaliser le slug
-  const cleanSlug = (!slug || slug === 'null' || slug === 'undefined' || slug === '') ? null : slug;
-  
-  console.log('[updateCategory] Clean slug:', cleanSlug);
+  // Nettoyer
+  const cleanSlug = (!slug || slug === 'null' || slug === 'undefined') ? null : slug;
   
   // Mettre à jour l'état
   CatalogueApp.state.filters.category = cleanSlug;
+  
+  // Mettre à jour l'UI
+  document.querySelectorAll('input[name="category"]').forEach(radio => {
+    const label = radio.closest('label');
+    const isChecked = radio.value === cleanSlug;
+    radio.checked = isChecked;
+    label?.classList.toggle('bg-neutral-700/30', isChecked);
+  });
+  
+  // Recharger
+  console.log('[updateCategory] Rechargement avec:', cleanSlug);
+  CatalogueApp.loadProducts();
+  
+  // URL
+  if (cleanSlug) {
+    window.history.replaceState({}, '', `?category=${cleanSlug}`);
+  } else {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+  
   updatePageTitle();
+}
   
   // Mettre à jour visuellement les radios
   document.querySelectorAll('input[name="category"]').forEach(radio => {
