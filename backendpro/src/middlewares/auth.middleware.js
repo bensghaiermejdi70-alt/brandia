@@ -1,5 +1,5 @@
 // ============================================
-// AUTH MIDDLEWARE - Vérification JWT
+// AUTH MIDDLEWARE - Vérification JWT (CORRIGÉ)
 // ============================================
 
 const jwt = require('jsonwebtoken');
@@ -11,7 +11,7 @@ if (!JWT_SECRET) {
     console.error('❌ JWT_SECRET non défini !');
 }
 
-// 🔥 Middleware principal d'authentification
+// 🔥 Middleware principal d'authentification - DOIT être une fonction
 const authenticate = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
@@ -63,7 +63,7 @@ const authenticate = (req, res, next) => {
     }
 };
 
-// 🔥 Middleware de vérification de rôle
+// 🔥 Middleware de vérification de rôle - DOIT être une fonction
 const requireRole = (role) => {
     return (req, res, next) => {
         if (!req.user) {
@@ -90,7 +90,7 @@ const requireRole = (role) => {
     };
 };
 
-// 🔥 Export des deux fonctions
+// 🔥 Export CORRECT: objet avec les deux fonctions
 module.exports = {
     authenticate,
     requireRole
