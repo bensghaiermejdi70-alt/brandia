@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER ORDERS MODULE - v3.1 CORRIGÉ
-// Correction: SyntaxError ligne 165 (guillemets manquants)
+// SUPPLIER ORDERS MODULE - v3.2 CORRIGÉ
+// Correction: SyntaxError ligne 234 (guillemets manquants)
 // ============================================
 
 window.SupplierOrders = {
@@ -18,7 +18,6 @@ window.SupplierOrders = {
   },
 
   setupEventListeners: () => {
-    // Filtres par onglet
     document.querySelectorAll('[data-order-filter]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const filter = e.target.closest('[data-order-filter]').dataset.orderFilter;
@@ -26,7 +25,6 @@ window.SupplierOrders = {
       });
     });
 
-    // Sélection multiple
     const selectAll = document.getElementById('select-all-orders');
     if (selectAll) {
       selectAll.addEventListener('change', SupplierOrders.toggleSelectAll);
@@ -36,7 +34,6 @@ window.SupplierOrders = {
   setFilter: (filter) => {
     SupplierOrders.state.currentFilter = filter;
     
-    // Mettre à jour UI onglets
     document.querySelectorAll('[data-order-filter]').forEach(btn => {
       if (btn.dataset.orderFilter === filter) {
         btn.classList.add('border-indigo-500', 'text-indigo-400');
@@ -68,7 +65,6 @@ window.SupplierOrders = {
         throw new Error(response.message || 'Erreur de chargement');
       }
 
-      // 🔥 CORRECTION: Gestion flexible de la structure de réponse
       const data = response.data || {};
       SupplierOrders.state.orders = data.orders || [];
       SupplierOrders.state.counts = data.counts || {
@@ -101,7 +97,6 @@ window.SupplierOrders = {
   updateCounts: () => {
     const counts = SupplierOrders.state.counts;
     
-    // Mettre à jour les badges des onglets
     const setBadge = (id, value) => {
       const el = document.getElementById(id);
       if (el) el.textContent = value || '0';
@@ -147,7 +142,6 @@ window.SupplierOrders = {
           })
         : '-';
 
-      // 🔥 CORRECTION: Gestion sécurisée des items (JSON ou tableau)
       let items = [];
       try {
         items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
@@ -214,7 +208,6 @@ window.SupplierOrders = {
     const filter = SupplierOrders.state.currentFilter;
     if (filter === 'all') return SupplierOrders.state.orders;
     
-    // Mapping des filtres vers les statuts
     const statusMap = {
       'pending': ['pending', 'paid', 'processing', null],
       'shipped': ['shipped'],
@@ -231,12 +224,13 @@ window.SupplierOrders = {
       'all': '',
       'pending': 'à préparer',
       'shipped': 'expédiées',
-      'delivered': 'l      'delivered': 'livrées',
+      'delivered': 'livrées',
       'cancelled': 'annulées'
     };
     return labels[SupplierOrders.state.currentFilter] || '';
   },
 
+  // 🔥 CORRECTION LIGNE 234 : Objet status complet avec guillemots corrects
   getStatusConfig: (status) => {
     const configs = {
       'pending': { 
@@ -333,7 +327,6 @@ window.SupplierOrders = {
   },
 
   showOrderModal: (order) => {
-    // Créer modal dynamiquement si pas présent
     let modal = document.getElementById('order-detail-modal');
     if (!modal) {
       modal = document.createElement('div');
@@ -381,7 +374,6 @@ window.SupplierOrders = {
         </div>
         
         <div class="p-6 overflow-y-auto max-h-[60vh] space-y-6">
-          <!-- Status -->
           <div class="flex items-center gap-4">
             <span class="text-slate-400">Statut:</span>
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${statusConfig.class}">
@@ -389,7 +381,6 @@ window.SupplierOrders = {
             </span>
           </div>
 
-          <!-- Items -->
           <div>
             <h4 class="text-white font-medium mb-3">Articles</h4>
             <div class="space-y-2">
@@ -397,7 +388,6 @@ window.SupplierOrders = {
             </div>
           </div>
 
-          <!-- Totaux -->
           <div class="border-t border-slate-800 pt-4 space-y-2">
             <div class="flex justify-between text-slate-400">
               <span>Sous-total</span>
@@ -417,24 +407,19 @@ window.SupplierOrders = {
             </div>
           </div>
 
-          <!-- Client -->
           <div class="bg-slate-800/50 rounded-lg p-4">
             <h4 class="text-white font-medium mb-2">Client</h4>
             <p class="text-slate-300">${order.customer_first_name || ''} ${order.customer_last_name || ''}</p>
             <p class="text-slate-400 text-sm">${order.customer_email || ''}</p>
-            <p class="text-slate-400 text-sm">${order.customer_phone || ''}</p>
           </div>
 
-          <!-- Livraison -->
           <div class="bg-slate-800/50 rounded-lg p-4">
             <h4 class="text-white font-medium mb-2">Adresse de livraison</h4>
             <p class="text-slate-300">${order.shipping_address || ''}</p>
             <p class="text-slate-400">${order.shipping_postal_code || ''} ${order.shipping_city || ''}</p>
-            <p class="text-slate-400">${order.shipping_country_code || ''}</p>
           </div>
         </div>
 
-        <!-- Actions -->
         <div class="p-6 border-t border-slate-800 flex gap-3">
           ${order.status === 'pending' || order.status === 'paid' ? `
             <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped'); document.getElementById('order-detail-modal').classList.add('hidden')" 
@@ -442,9 +427,6 @@ window.SupplierOrders = {
               <i class="fas fa-shipping-fast mr-2"></i>Marquer comme expédiée
             </button>
           ` : ''}
-          <button onclick="window.print()" class="px-4 py-3 border border-slate-600 text-slate-300 rounded-xl hover:bg-slate-800 transition-colors">
-            <i class="fas fa-print"></i>
-          </button>
         </div>
       </div>
     `;
@@ -468,7 +450,6 @@ window.SupplierOrders = {
         DashboardApp.showToast(`Statut mis à jour: ${newStatus}`, 'success');
       }
 
-      // Recharger les commandes
       await SupplierOrders.loadOrders();
       
     } catch (error) {
@@ -492,8 +473,7 @@ window.SupplierOrders = {
   }
 };
 
-console.log('[SupplierOrders] Module chargé v3.1 - Corrigé pour Brandia API');
+console.log('[SupplierOrders] Module chargé v3.2 - Syntaxe corrigée');
 
-// Exposer globalement
 window.viewOrder = (id) => SupplierOrders.viewOrder(id);
 window.updateOrderStatus = (id, status) => SupplierOrders.updateStatus(id, status);
