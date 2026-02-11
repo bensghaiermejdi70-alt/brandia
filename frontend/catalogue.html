@@ -454,14 +454,13 @@ window.CatalogueApp = {
   },
 
   // ✅ CORRIGÉ : Nettoyage complet de la catégorie
-  loadProducts: async () => {
+    loadProducts: async () => {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement des produits...</p></div>';
 
     // Nettoyage complet du paramètre category
     let category = CatalogueApp.state.filters.category;
     
-    // ✅ Double vérification : null, undefined, 'null', 'undefined', ''
     if (!category || category === 'null' || category === 'undefined' || category === '') {
       category = null;
     }
@@ -480,11 +479,21 @@ window.CatalogueApp = {
       console.log('[CatalogueApp] Réponse API:', response);
 
       if (response.success) {
-        CatalogueApp.state.allProducts = response.data.products || [];
+        // 🔥 CORRECTION : Gérer les deux formats de réponse possibles
+        // Format 1: response.data.products (attendu)
+        // Format 2: response.data (array direct, comme dans les logs)
+        const products = response.data?.products || 
+                        (Array.isArray(response.data) ? response.data : []) ||
+                        [];
+        
+        console.log('[CatalogueApp] Produits extraits:', products.length);
+        
+        CatalogueApp.state.allProducts = products;
         CatalogueApp.applyFilters();
         
-        if (response.data.promo_count > 0) {
-          console.log(`[CatalogueApp] ${response.data.promo_count} produits en promotion`);
+        if (response.data?.promo_count > 0 || products.some(p => p.has_promotion)) {
+          const promoCount = products.filter(p => p.has_promotion).length;
+          console.log(`[CatalogueApp] ${promoCount} produits en promotion`);
         }
       } else {
         throw new Error(response.message);
@@ -496,7 +505,11 @@ window.CatalogueApp = {
       try {
         const fallback = await BrandiaAPI.Products.getAll({ limit: 100 });
         if (fallback.success) {
-          CatalogueApp.state.allProducts = fallback.data.products || [];
+          // 🔥 Même correction pour le fallback
+          const products = fallback.data?.products || 
+                          (Array.isArray(fallback.data) ? fallback.data : []) ||
+                          [];
+          CatalogueApp.state.allProducts = products;
           CatalogueApp.applyFilters();
         }
       } catch (fallbackError) {
@@ -513,7 +526,6 @@ window.CatalogueApp = {
       }
     }
   },
-
   applyFilters: () => {
     let products = [...CatalogueApp.state.allProducts];
     const f = CatalogueApp.state.filters;
