@@ -1,6 +1,6 @@
 // ============================================
-// PUBLIC PRODUCTS - v2.1 CORRIGÉ
-// Affichage boutique client avec promotions
+// PUBLIC PRODUCTS - v2.2 CORRIGÉ (Option B)
+// Désactivation sur catalogue.html si CatalogueApp existe
 // ============================================
 
 window.PublicProducts = {
@@ -21,18 +21,17 @@ window.PublicProducts = {
             PublicProducts.state.categories = window.BRANDIA_CATEGORIES;
         }
         
-        // 🔥 CORRECTION: Détecter quel container existe et charger en conséquence
+        // Détecter quel container existe et charger en conséquence
         const hasFeatured = document.getElementById('featured-products-grid');
         const hasProducts = document.getElementById('products-grid');
-        const hasCatalogue = document.getElementById('products-container'); // ID de catalogue.html
         
-        console.log('[PublicProducts] Containers détectés:', { hasFeatured, hasProducts, hasCatalogue });
+        console.log('[PublicProducts] Containers détectés:', { hasFeatured, hasProducts });
         
         if (hasFeatured) {
             await PublicProducts.loadFeaturedProducts();
         }
         
-        if (hasProducts || hasCatalogue) {
+        if (hasProducts) {
             await PublicProducts.loadAllProducts();
         }
     },
@@ -71,7 +70,6 @@ window.PublicProducts = {
         try {
             PublicProducts.showLoading(true);
             
-            // Nettoyage robuste du paramètre category
             let cleanCategory = category;
             if (cleanCategory === 'null' || cleanCategory === 'undefined' || cleanCategory === 'false' || cleanCategory === '') {
                 cleanCategory = null;
@@ -91,12 +89,8 @@ window.PublicProducts = {
             if (response.success) {
                 const products = response.data?.products || response.data || [];
                 PublicProducts.state.products = products;
-                
-                // 🔥 CORRECTION: Essayer les deux IDs possibles
-                const containerId = document.getElementById('products-grid') ? 'products-grid' : 'products-container';
-                PublicProducts.renderProductGrid(containerId, products);
-                
-                console.log(`[PublicProducts] ${products.length} produits chargés dans #${containerId}`);
+                PublicProducts.renderProductGrid('products-grid', products);
+                console.log(`[PublicProducts] ${products.length} produits chargés`);
                 PublicProducts.updateCategoryTitle(cleanCategory);
             } else {
                 throw new Error(response.message);
@@ -104,15 +98,13 @@ window.PublicProducts = {
         } catch (error) {
             console.error('[PublicProducts] Erreur chargement produits:', error);
             
-            // Fallback
             try {
                 const fallback = await BrandiaAPI.Products.getAll({ 
                     category: PublicProducts.state.currentCategory 
                 });
                 if (fallback.success) {
                     const products = fallback.data?.products || fallback.data || [];
-                    const containerId = document.getElementById('products-grid') ? 'products-grid' : 'products-container';
-                    PublicProducts.renderProductGrid(containerId, products);
+                    PublicProducts.renderProductGrid('products-grid', products);
                 }
             } catch (e) {
                 console.error('[PublicProducts] Fallback failed:', e);
@@ -214,7 +206,6 @@ window.PublicProducts = {
             </div>
         ` : '';
 
-        // 🔥 CORRECTION: URL image sans espace
         const imageUrl = (product.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80').trim();
 
         return `
@@ -324,7 +315,6 @@ window.PublicProducts = {
                     supplier_id: product.supplier_id
                 });
             } else {
-                // Fallback: panier manuel
                 let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
                 const existing = cart.find(item => item.id == productId);
                 
@@ -407,7 +397,7 @@ window.PublicProducts = {
 };
 
 // ==========================================
-// INITIALISATION AUTO - CORRIGÉE
+// INITIALISATION AUTO - CORRIGÉE (Option B)
 // ==========================================
 
 function initPublicProducts() {
@@ -418,18 +408,27 @@ function initPublicProducts() {
         return;
     }
     
-    console.log('[PublicProducts] Initialisation auto détectée');
+    console.log('[PublicProducts] Vérification initialisation...');
     
-    // 🔥 CORRECTION: Vérifier TOUS les containers possibles
+    // 🔥 CORRECTION CRITIQUE (Option B) : Ne pas s'activer sur catalogue.html
+    // catalogue.html utilise CatalogueApp qui gère déjà tout
+    const hasCatalogueApp = typeof window.CatalogueApp !== 'undefined';
+    const hasProductsContainer = document.getElementById('products-container');
+    
+    if (hasCatalogueApp && hasProductsContainer) {
+        console.log('[PublicProducts] CatalogueApp détecté sur catalogue.html, désactivation');
+        return;
+    }
+    
+    // Détecter les containers que PublicProducts doit gérer
     const hasFeatured = document.getElementById('featured-products-grid');
     const hasProducts = document.getElementById('products-grid');
-    const hasCatalogue = document.getElementById('products-container');
     
-    if (hasFeatured || hasProducts || hasCatalogue) {
-        console.log('[PublicProducts] Container produit détecté, lancement...');
+    if (hasFeatured || hasProducts) {
+        console.log('[PublicProducts] Container détecté, lancement...');
         PublicProducts.init();
     } else {
-        console.log('[PublicProducts] Aucun container produit trouvé sur cette page');
+        console.log('[PublicProducts] Aucun container à gérer sur cette page');
     }
 }
 
@@ -440,4 +439,4 @@ if (document.readyState === 'loading') {
     initPublicProducts();
 }
 
-console.log('[PublicProducts] Module v2.1 chargé');
+console.log('[PublicProducts] Module v2.2 chargé (Option B)');
