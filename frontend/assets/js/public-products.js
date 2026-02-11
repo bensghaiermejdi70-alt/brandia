@@ -1,5 +1,6 @@
 // ============================================
-// PUBLIC PRODUCTS - Affichage boutique client avec promotions
+// PUBLIC PRODUCTS - v2.1 CORRIGÉ
+// Affichage boutique client avec promotions
 // ============================================
 
 window.PublicProducts = {
@@ -20,7 +21,20 @@ window.PublicProducts = {
             PublicProducts.state.categories = window.BRANDIA_CATEGORIES;
         }
         
-        await PublicProducts.loadFeaturedProducts();
+        // 🔥 CORRECTION: Détecter quel container existe et charger en conséquence
+        const hasFeatured = document.getElementById('featured-products-grid');
+        const hasProducts = document.getElementById('products-grid');
+        const hasCatalogue = document.getElementById('products-container'); // ID de catalogue.html
+        
+        console.log('[PublicProducts] Containers détectés:', { hasFeatured, hasProducts, hasCatalogue });
+        
+        if (hasFeatured) {
+            await PublicProducts.loadFeaturedProducts();
+        }
+        
+        if (hasProducts || hasCatalogue) {
+            await PublicProducts.loadAllProducts();
+        }
     },
 
     // ==========================================
@@ -30,22 +44,18 @@ window.PublicProducts = {
         try {
             PublicProducts.showLoading(true);
             
-            // ✅ CORRECTION: Vérifier que la méthode existe avant d'appeler
             let response;
             if (BrandiaAPI.Products.getFeaturedWithPromotions) {
                 response = await BrandiaAPI.Products.getFeaturedWithPromotions();
             } else {
-                // Fallback sur getFeatured classique
-                console.log('[PublicProducts] getFeaturedWithPromotions non disponible, fallback sur getFeatured');
                 response = await BrandiaAPI.Products.getFeatured();
             }
             
             if (response.success) {
-                // ✅ CORRECTION: Gérer les deux formats de réponse
                 const products = response.data?.products || response.data || [];
                 PublicProducts.state.products = products;
                 PublicProducts.renderProductGrid('featured-products-grid', products);
-                console.log(`[PublicProducts] ${products.length} produits chargés`);
+                console.log(`[PublicProducts] ${products.length} produits featured chargés`);
             } else {
                 throw new Error(response.message);
             }
@@ -61,9 +71,9 @@ window.PublicProducts = {
         try {
             PublicProducts.showLoading(true);
             
-            // ✅ CORRECTION: Nettoyage robuste du paramètre category
+            // Nettoyage robuste du paramètre category
             let cleanCategory = category;
-            if (cleanCategory === 'null' || cleanCategory === 'undefined' || cleanCategory === 'false') {
+            if (cleanCategory === 'null' || cleanCategory === 'undefined' || cleanCategory === 'false' || cleanCategory === '') {
                 cleanCategory = null;
             }
             PublicProducts.state.currentCategory = cleanCategory;
@@ -71,7 +81,6 @@ window.PublicProducts = {
             const params = {};
             if (cleanCategory) params.category = cleanCategory;
             
-            // ✅ CORRECTION: Vérifier que la méthode existe
             let response;
             if (BrandiaAPI.Products.getAllWithPromotions) {
                 response = await BrandiaAPI.Products.getAllWithPromotions(params);
@@ -82,20 +91,31 @@ window.PublicProducts = {
             if (response.success) {
                 const products = response.data?.products || response.data || [];
                 PublicProducts.state.products = products;
-                PublicProducts.renderProductGrid('products-grid', products);
+                
+                // 🔥 CORRECTION: Essayer les deux IDs possibles
+                const containerId = document.getElementById('products-grid') ? 'products-grid' : 'products-container';
+                PublicProducts.renderProductGrid(containerId, products);
+                
+                console.log(`[PublicProducts] ${products.length} produits chargés dans #${containerId}`);
                 PublicProducts.updateCategoryTitle(cleanCategory);
             } else {
                 throw new Error(response.message);
             }
         } catch (error) {
             console.error('[PublicProducts] Erreur chargement produits:', error);
+            
             // Fallback
-            const fallback = await BrandiaAPI.Products.getAll({ 
-                category: PublicProducts.state.currentCategory 
-            });
-            if (fallback.success) {
-                const products = fallback.data?.products || fallback.data || [];
-                PublicProducts.renderProductGrid('products-grid', products);
+            try {
+                const fallback = await BrandiaAPI.Products.getAll({ 
+                    category: PublicProducts.state.currentCategory 
+                });
+                if (fallback.success) {
+                    const products = fallback.data?.products || fallback.data || [];
+                    const containerId = document.getElementById('products-grid') ? 'products-grid' : 'products-container';
+                    PublicProducts.renderProductGrid(containerId, products);
+                }
+            } catch (e) {
+                console.error('[PublicProducts] Fallback failed:', e);
             }
         } finally {
             PublicProducts.showLoading(false);
@@ -134,7 +154,6 @@ window.PublicProducts = {
     },
 
     renderProductCard: (product) => {
-        // ✅ CORRECTION: Vérification robuste des valeurs
         const hasPromo = product.has_promotion === true || 
                         (product.final_price && product.final_price < product.price) || 
                         product.promo_id;
@@ -158,7 +177,7 @@ window.PublicProducts = {
             </div>
         ` : '';
 
-        const stockBadge = product.stock_quantity < 5 ? `
+        const stockBadge = (product.stock_quantity !== undefined && product.stock_quantity < 5) ? `
             <div class="absolute top-3 right-3 z-10">
                 <span class="bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded">
                     ${product.stock_quantity === 0 ? 'Rupture' : 'Stock faible'}
@@ -192,16 +211,11 @@ window.PublicProducts = {
                         Jusqu'au ${new Date(product.promo_end_date).toLocaleDateString('fr-FR')}
                     </div>
                 ` : ''}
-                ${product.promo_code ? `
-                    <div class="text-xs font-mono text-emerald-400 mt-1">
-                        Code: ${product.promo_code}
-                    </div>
-                ` : ''}
             </div>
         ` : '';
 
-        // ✅ CORRECTION: Image sans espace dans l'URL
-        const imageUrl = product.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
+        // 🔥 CORRECTION: URL image sans espace
+        const imageUrl = (product.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80').trim();
 
         return `
             <div class="group relative bg-slate-800 rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 border border-slate-700 hover:border-indigo-500/50">
@@ -280,7 +294,6 @@ window.PublicProducts = {
     // ==========================================
     addToCart: async (productId) => {
         try {
-            // ✅ CORRECTION: Vérifier que getByIdWithPromotion existe
             let response;
             if (BrandiaAPI.Products.getByIdWithPromotion) {
                 response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
@@ -298,7 +311,6 @@ window.PublicProducts = {
                 throw new Error('Données produit manquantes');
             }
             
-            // ✅ CORRECTION: Vérifier que Cart.add existe
             if (BrandiaAPI.Cart && BrandiaAPI.Cart.add) {
                 BrandiaAPI.Cart.add({
                     id: product.id,
@@ -374,7 +386,6 @@ window.PublicProducts = {
     },
 
     showToast: (message, type = 'info') => {
-        // ✅ CORRECTION: Vérifier DashboardApp avant d'utiliser
         if (window.DashboardApp && DashboardApp.showToast) {
             DashboardApp.showToast(message, type);
         } else {
@@ -395,12 +406,9 @@ window.PublicProducts = {
     }
 };
 
-// ✅ CORRECTION: Vérifier que le DOM est prêt et que BrandiaAPI existe
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPublicProducts);
-} else {
-    initPublicProducts();
-}
+// ==========================================
+// INITIALISATION AUTO - CORRIGÉE
+// ==========================================
 
 function initPublicProducts() {
     // Vérifier que BrandiaAPI est chargé
@@ -410,10 +418,26 @@ function initPublicProducts() {
         return;
     }
     
-    if (document.getElementById('featured-products-grid') || 
-        document.getElementById('products-grid')) {
+    console.log('[PublicProducts] Initialisation auto détectée');
+    
+    // 🔥 CORRECTION: Vérifier TOUS les containers possibles
+    const hasFeatured = document.getElementById('featured-products-grid');
+    const hasProducts = document.getElementById('products-grid');
+    const hasCatalogue = document.getElementById('products-container');
+    
+    if (hasFeatured || hasProducts || hasCatalogue) {
+        console.log('[PublicProducts] Container produit détecté, lancement...');
         PublicProducts.init();
+    } else {
+        console.log('[PublicProducts] Aucun container produit trouvé sur cette page');
     }
 }
 
-console.log('[PublicProducts] Module chargé');
+// Lancer l'initialisation
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPublicProducts);
+} else {
+    initPublicProducts();
+}
+
+console.log('[PublicProducts] Module v2.1 chargé');
