@@ -566,18 +566,100 @@ window.CatalogueApp = {
     }
   },
 
-  togglePromoOnly: () => {
-    const checkbox = document.getElementById('promo-only');
-    CatalogueApp.state.filters.promoOnly = checkbox.checked;
-    CatalogueApp.applyFilters();
-  },
+  t// ==========================================
+// DANS CatalogueApp - Ajouter ces méthodes
+// ==========================================
 
-  sortProducts: () => {
-    const select = document.getElementById('sort-select');
-    CatalogueApp.state.sortBy = select.value;
-    CatalogueApp.applyFilters();
-  }
-};
+togglePromoOnly: () => {
+    const checkbox = document.getElementById('promo-only');
+    const isChecked = checkbox.checked;
+    
+    console.log('[CatalogueApp] Toggle promo only:', isChecked);
+    
+    CatalogueApp.state.filters.promoOnly = isChecked;
+    
+    // 🔥 Si promo_only activé, recharger depuis API avec paramètre
+    if (isChecked) {
+        CatalogueApp.loadProductsWithPromoFilter();
+    } else {
+        // Sinon, recharger tous les produits normalement
+        CatalogueApp.loadProducts();
+    }
+},
+
+// 🔥 Nouvelle méthode pour charger avec filtre promo
+loadProductsWithPromoFilter: async () => {
+    const container = document.getElementById('products-container');
+    container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement des promotions...</p></div>';
+
+    try {
+        const params = {
+            promo_only: true,
+            limit: 100
+        };
+
+        // Garder le filtre catégorie si actif
+        if (CatalogueApp.state.filters.category) {
+            params.category = CatalogueApp.state.filters.category;
+        }
+
+        const response = await BrandiaAPI.Products.getAllWithPromotions(params);
+
+        console.log('[CatalogueApp] Promo filter response:', response);
+
+        if (response.success) {
+            const products = response.data?.products || [];
+            
+            console.log(`[CatalogueApp] ${products.length} produits dont ${response.promo_count} en promo`);
+            
+            CatalogueApp.state.allProducts = products;
+            
+            // Appliquer les autres filtres (recherche, prix) mais pas promo
+            let filtered = [...products];
+            
+            // Filtre recherche
+            if (CatalogueApp.state.filters.search) {
+                const search = CatalogueApp.state.filters.search.toLowerCase();
+                filtered = filtered.filter(p => 
+                    p.name?.toLowerCase().includes(search) ||
+                    p.description?.toLowerCase().includes(search)
+                );
+            }
+            
+            // Filtre prix
+            if (CatalogueApp.state.filters.minPrice) {
+                filtered = filtered.filter(p => p.final_price >= CatalogueApp.state.filters.minPrice);
+            }
+            if (CatalogueApp.state.filters.maxPrice) {
+                filtered = filtered.filter(p => p.final_price <= CatalogueApp.state.filters.maxPrice);
+            }
+            
+            // Tri
+            filtered = CatalogueApp.sortProductsList(filtered);
+            
+            CatalogueApp.renderProducts(filtered);
+            
+            // Mettre à jour le compteur
+            const resultsCount = document.getElementById('results-count');
+            const promoCount = filtered.filter(p => p.has_promotion).length;
+            resultsCount.textContent = `${filtered.length} produit(s) trouvé(s) dont ${promoCount} en promotion`;
+        } else {
+            throw new Error(response.message);
+        }
+
+    } catch (error) {
+        console.error('[CatalogueApp] Erreur chargement promos:', error);
+        container.innerHTML = `
+            <div class="col-span-full text-center text-red-400 py-12">
+                <i class="fas fa-exclamation-circle text-3xl mb-4"></i>
+                <p>Erreur lors du chargement des promotions</p>
+                <button onclick="CatalogueApp.togglePromoOnly()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500">
+                    Réessayer
+                </button>
+            </div>
+        `;
+    }
+},
 
 // ==========================================
 // FONCTIONS UTILITAIRES
