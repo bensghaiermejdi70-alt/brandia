@@ -234,34 +234,196 @@ const BRANDIA_CATEGORIES = [
 // CONFIGURATION PAYS (28 pays)
 // ==========================================
 const COUNTRIES = {
-  'TN': { name: 'Tunisie', currency: 'TND' },
-  'FR': { name: 'France', currency: 'EUR' },
-  'DE': { name: 'Allemagne', currency: 'EUR' },
-  'IT': { name: 'Italie', currency: 'EUR' },
-  'ES': { name: 'Espagne', currency: 'EUR' },
-  'PT': { name: 'Portugal', currency: 'EUR' },
-  'BE': { name: 'Belgique', currency: 'EUR' },
-  'NL': { name: 'Pays-Bas', currency: 'EUR' },
-  'CH': { name: 'Suisse', currency: 'CHF' },
-  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-  'US': { name: 'États-Unis', currency: 'USD' },
-  'CA': { name: 'Canada', currency: 'CAD' },
-  'MA': { name: 'Maroc', currency: 'MAD' },
-  'DZ': { name: 'Algérie', currency: 'DZD' },
-  'LY': { name: 'Libye', currency: 'LYD' },
-  'EG': { name: 'Égypte', currency: 'EGP' },
-  'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
-  'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
-  'QA': { name: 'Qatar', currency: 'QAR' },
-  'TR': { name: 'Turquie', currency: 'TRY' },
-  'CI': { name: 'Côte d\'Ivoire', currency: 'XOF' },
-  'SN': { name: 'Sénégal', currency: 'XOF' },
-  'CM': { name: 'Cameroun', currency: 'XOF' },
-  'GA': { name: 'Gabon', currency: 'XOF' },
-  'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
-  'NG': { name: 'Nigeria', currency: 'NGN' },
-  'KE': { name: 'Kenya', currency: 'KES' },
-  'GH': { name: 'Ghana', currency: 'GHS' }
+  'AF': { name: 'Afghanistan', currency: 'AFN' },
+      'AL': { name: 'Albanie', currency: 'ALL' },
+      'DZ': { name: 'Algérie', currency: 'DZD' },
+      'AD': { name: 'Andorre', currency: 'EUR' },
+      'AO': { name: 'Angola', currency: 'AOA' },
+      'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
+      'AR': { name: 'Argentine', currency: 'ARS' },
+      'AM': { name: 'Arménie', currency: 'AMD' },
+      'AU': { name: 'Australie', currency: 'AUD' },
+      'AT': { name: 'Autriche', currency: 'EUR' },
+      'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
+      'BS': { name: 'Bahamas', currency: 'BSD' },
+      'BH': { name: 'Bahreïn', currency: 'BHD' },
+      'BD': { name: 'Bangladesh', currency: 'BDT' },
+      'BB': { name: 'Barbade', currency: 'BBD' },
+      'BY': { name: 'Biélorussie', currency: 'BYN' },
+      'BE': { name: 'Belgique', currency: 'EUR' },
+      'BZ': { name: 'Belize', currency: 'BZD' },
+      'BJ': { name: 'Bénin', currency: 'XOF' },
+      'BT': { name: 'Bhoutan', currency: 'BTN' },
+      'BO': { name: 'Bolivie', currency: 'BOB' },
+      'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
+      'BW': { name: 'Botswana', currency: 'BWP' },
+      'BR': { name: 'Brésil', currency: 'BRL' },
+      'BN': { name: 'Brunei', currency: 'BND' },
+      'BG': { name: 'Bulgarie', currency: 'BGN' },
+      'BF': { name: 'Burkina Faso', currency: 'XOF' },
+      'BI': { name: 'Burundi', currency: 'BIF' },
+      'CV': { name: 'Cap-Vert', currency: 'CVE' },
+      'KH': { name: 'Cambodge', currency: 'KHR' },
+      'CM': { name: 'Cameroun', currency: 'XAF' },
+      'CA': { name: 'Canada', currency: 'CAD' },
+      'CF': { name: 'Centrafrique', currency: 'XAF' },
+      'TD': { name: 'Tchad', currency: 'XAF' },
+      'CL': { name: 'Chili', currency: 'CLP' },
+      'CN': { name: 'Chine', currency: 'CNY' },
+      'CO': { name: 'Colombie', currency: 'COP' },
+      'KM': { name: 'Comores', currency: 'KMF' },
+      'CG': { name: 'Congo', currency: 'XAF' },
+      'CD': { name: 'Congo (RDC)', currency: 'CDF' },
+      'CR': { name: 'Costa Rica', currency: 'CRC' },
+      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+      'HR': { name: 'Croatie', currency: 'EUR' },
+      'CU': { name: 'Cuba', currency: 'CUP' },
+      'CY': { name: 'Chypre', currency: 'EUR' },
+      'CZ': { name: 'République tchèque', currency: 'CZK' },
+      'DK': { name: 'Danemark', currency: 'DKK' },
+      'DJ': { name: 'Djibouti', currency: 'DJF' },
+      'DM': { name: 'Dominique', currency: 'XCD' },
+      'DO': { name: 'République dominicaine', currency: 'DOP' },
+      'EC': { name: 'Équateur', currency: 'USD' },
+      'EG': { name: 'Égypte', currency: 'EGP' },
+      'SV': { name: 'Salvador', currency: 'USD' },
+      'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
+      'ER': { name: 'Érythrée', currency: 'ERN' },
+      'EE': { name: 'Estonie', currency: 'EUR' },
+      'ET': { name: 'Éthiopie', currency: 'ETB' },
+      'FJ': { name: 'Fidji', currency: 'FJD' },
+      'FI': { name: 'Finlande', currency: 'EUR' },
+      'FR': { name: 'France', currency: 'EUR' },
+      'GA': { name: 'Gabon', currency: 'XAF' },
+      'GM': { name: 'Gambie', currency: 'GMD' },
+      'GE': { name: 'Géorgie', currency: 'GEL' },
+      'DE': { name: 'Allemagne', currency: 'EUR' },
+      'GH': { name: 'Ghana', currency: 'GHS' },
+      'GR': { name: 'Grèce', currency: 'EUR' },
+      'GD': { name: 'Grenade', currency: 'XCD' },
+      'GT': { name: 'Guatemala', currency: 'GTQ' },
+      'GN': { name: 'Guinée', currency: 'GNF' },
+      'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
+      'GY': { name: 'Guyana', currency: 'GYD' },
+      'HT': { name: 'Haïti', currency: 'HTG' },
+      'HN': { name: 'Honduras', currency: 'HNL' },
+      'HU': { name: 'Hongrie', currency: 'HUF' },
+      'IS': { name: 'Islande', currency: 'ISK' },
+      'IN': { name: 'Inde', currency: 'INR' },
+      'ID': { name: 'Indonésie', currency: 'IDR' },
+      'IR': { name: 'Iran', currency: 'IRR' },
+      'IQ': { name: 'Irak', currency: 'IQD' },
+      'IE': { name: 'Irlande', currency: 'EUR' },
+      'IL': { name: 'Israël', currency: 'ILS' },
+      'IT': { name: 'Italie', currency: 'EUR' },
+      'JM': { name: 'Jamaïque', currency: 'JMD' },
+      'JP': { name: 'Japon', currency: 'JPY' },
+      'JO': { name: 'Jordanie', currency: 'JOD' },
+      'KZ': { name: 'Kazakhstan', currency: 'KZT' },
+      'KE': { name: 'Kenya', currency: 'KES' },
+      'KI': { name: 'Kiribati', currency: 'AUD' },
+      'KP': { name: 'Corée du Nord', currency: 'KPW' },
+      'KR': { name: 'Corée du Sud', currency: 'KRW' },
+      'KW': { name: 'Koweït', currency: 'KWD' },
+      'KG': { name: 'Kirghizistan', currency: 'KGS' },
+      'LA': { name: 'Laos', currency: 'LAK' },
+      'LV': { name: 'Lettonie', currency: 'EUR' },
+      'LB': { name: 'Liban', currency: 'LBP' },
+      'LS': { name: 'Lesotho', currency: 'LSL' },
+      'LR': { name: 'Libéria', currency: 'LRD' },
+      'LY': { name: 'Libye', currency: 'LYD' },
+      'LI': { name: 'Liechtenstein', currency: 'CHF' },
+      'LT': { name: 'Lituanie', currency: 'EUR' },
+      'LU': { name: 'Luxembourg', currency: 'EUR' },
+      'MG': { name: 'Madagascar', currency: 'MGA' },
+      'MW': { name: 'Malawi', currency: 'MWK' },
+      'MY': { name: 'Malaisie', currency: 'MYR' },
+      'MV': { name: 'Maldives', currency: 'MVR' },
+      'ML': { name: 'Mali', currency: 'XOF' },
+      'MT': { name: 'Malte', currency: 'EUR' },
+      'MH': { name: 'Îles Marshall', currency: 'USD' },
+      'MR': { name: 'Mauritanie', currency: 'MRO' },
+      'MU': { name: 'Maurice', currency: 'MUR' },
+      'MX': { name: 'Mexique', currency: 'MXN' },
+      'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
+      'MD': { name: 'Moldavie', currency: 'MDL' },
+      'MC': { name: 'Monaco', currency: 'EUR' },
+      'MN': { name: 'Mongolie', currency: 'MNT' },
+      'ME': { name: 'Monténégro', currency: 'EUR' },
+      'MA': { name: 'Maroc', currency: 'MAD' },
+      'MZ': { name: 'Mozambique', currency: 'MZN' },
+      'MM': { name: 'Myanmar', currency: 'MMK' },
+      'NA': { name: 'Namibie', currency: 'NAD' },
+      'NR': { name: 'Nauru', currency: 'AUD' },
+      'NP': { name: 'Népal', currency: 'NPR' },
+      'NL': { name: 'Pays-Bas', currency: 'EUR' },
+      'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
+      'NI': { name: 'Nicaragua', currency: 'NIO' },
+      'NE': { name: 'Niger', currency: 'XOF' },
+      'NG': { name: 'Nigéria', currency: 'NGN' },
+      'NO': { name: 'Norvège', currency: 'NOK' },
+      'OM': { name: 'Oman', currency: 'OMR' },
+      'PK': { name: 'Pakistan', currency: 'PKR' },
+      'PW': { name: 'Palaos', currency: 'USD' },
+      'PA': { name: 'Panama', currency: 'PAB' },
+      'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
+      'PY': { name: 'Paraguay', currency: 'PYG' },
+      'PE': { name: 'Pérou', currency: 'PEN' },
+      'PH': { name: 'Philippines', currency: 'PHP' },
+      'PL': { name: 'Pologne', currency: 'PLN' },
+      'PT': { name: 'Portugal', currency: 'EUR' },
+      'QA': { name: 'Qatar', currency: 'QAR' },
+      'RO': { name: 'Roumanie', currency: 'RON' },
+      'RU': { name: 'Russie', currency: 'RUB' },
+      'RW': { name: 'Rwanda', currency: 'RWF' },
+      'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
+      'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
+      'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
+      'WS': { name: 'Samoa', currency: 'WST' },
+      'SM': { name: 'Saint-Marin', currency: 'EUR' },
+      'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
+      'SA': { name: 'Arabie saoudite', currency: 'SAR' },
+      'SN': { name: 'Sénégal', currency: 'XOF' },
+      'RS': { name: 'Serbie', currency: 'RSD' },
+      'SC': { name: 'Seychelles', currency: 'SCR' },
+      'SL': { name: 'Sierra Leone', currency: 'SLL' },
+      'SG': { name: 'Singapour', currency: 'SGD' },
+      'SK': { name: 'Slovaquie', currency: 'EUR' },
+      'SI': { name: 'Slovénie', currency: 'EUR' },
+      'SB': { name: 'Îles Salomon', currency: 'SBD' },
+      'SO': { name: 'Somalie', currency: 'SOS' },
+      'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
+      'ES': { name: 'Espagne', currency: 'EUR' },
+      'LK': { name: 'Sri Lanka', currency: 'LKR' },
+      'SD': { name: 'Soudan', currency: 'SDG' },
+      'SR': { name: 'Suriname', currency: 'SRD' },
+      'SE': { name: 'Suède', currency: 'SEK' },
+      'CH': { name: 'Suisse', currency: 'CHF' },
+      'SY': { name: 'Syrie', currency: 'SYP' },
+      'TW': { name: 'Taïwan', currency: 'TWD' },
+      'TJ': { name: 'Tadjikistan', currency: 'TJS' },
+      'TZ': { name: 'Tanzanie', currency: 'TZS' },
+      'TH': { name: 'Thaïlande', currency: 'THB' },
+      'TL': { name: 'Timor oriental', currency: 'USD' },
+      'TG': { name: 'Togo', currency: 'XOF' },
+      'TO': { name: 'Tonga', currency: 'TOP' },
+      'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
+      'TN': { name: 'Tunisie', currency: 'TND' },
+      'TR': { name: 'Turquie', currency: 'TRY' },
+      'TM': { name: 'Turkménistan', currency: 'TMT' },
+      'UG': { name: 'Ouganda', currency: 'UGX' },
+      'UA': { name: 'Ukraine', currency: 'UAH' },
+      'AE': { name: 'Émirats arabes unis', currency: 'AED' },
+      'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+      'US': { name: 'États-Unis', currency: 'USD' },
+      'UY': { name: 'Uruguay', currency: 'UYU' },
+      'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
+      'VU': { name: 'Vanuatu', currency: 'VUV' },
+      'VE': { name: 'Venezuela', currency: 'VES' },
+      'VN': { name: 'Viêt Nam', currency: 'VND' },
+      'YE': { name: 'Yémen', currency: 'YER' },
+      'ZM': { name: 'Zambie', currency: 'ZMW' },
+      'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
 };
 
 // ==========================================
@@ -415,7 +577,6 @@ window.CatalogueApp = {
       }
     });
   },
-
   renderProducts: (products) => {
     const container = document.getElementById('products-container');
     const resultsCount = document.getElementById('results-count');
@@ -565,12 +726,11 @@ window.CatalogueApp = {
       showToast('Erreur lors de l\'ajout', 'error');
     }
   },
-
-  t// ==========================================
-// DANS CatalogueApp - Ajouter ces méthodes
-// ==========================================
-
-togglePromoOnly: () => {
+  // ==========================================
+  // 🔥 CORRECTION: Virgule ajoutée avant togglePromoOnly
+  // ==========================================
+  
+  togglePromoOnly: () => {
     const checkbox = document.getElementById('promo-only');
     const isChecked = checkbox.checked;
     
@@ -578,99 +738,150 @@ togglePromoOnly: () => {
     
     CatalogueApp.state.filters.promoOnly = isChecked;
     
-    // 🔥 Si promo_only activé, recharger depuis API avec paramètre
+    // Si promo_only activé, recharger depuis API avec paramètre
     if (isChecked) {
-        CatalogueApp.loadProductsWithPromoFilter();
+      CatalogueApp.loadProductsWithPromoFilter();
     } else {
-        // Sinon, recharger tous les produits normalement
-        CatalogueApp.loadProducts();
+      // Sinon, recharger tous les produits normalement
+      CatalogueApp.loadProducts();
     }
-},
+  },
 
-// 🔥 Nouvelle méthode pour charger avec filtre promo
-loadProductsWithPromoFilter: async () => {
+  // 🔥 Nouvelle méthode pour charger avec filtre promo
+  loadProductsWithPromoFilter: async () => {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement des promotions...</p></div>';
 
     try {
-        const params = {
-            promo_only: true,
-            limit: 100
-        };
+      const params = {
+        promo_only: true,
+        limit: 100
+      };
 
-        // Garder le filtre catégorie si actif
-        if (CatalogueApp.state.filters.category) {
-            params.category = CatalogueApp.state.filters.category;
+      // Garder le filtre catégorie si actif
+      if (CatalogueApp.state.filters.category) {
+        params.category = CatalogueApp.state.filters.category;
+      }
+
+      const response = await BrandiaAPI.Products.getAllWithPromotions(params);
+
+      console.log('[CatalogueApp] Promo filter response:', response);
+
+      if (response.success) {
+        const products = response.data?.products || [];
+        
+        console.log(`[CatalogueApp] ${products.length} produits dont ${response.promo_count} en promo`);
+        
+        CatalogueApp.state.allProducts = products;
+        
+        // Appliquer les autres filtres (recherche, prix) mais pas promo
+        let filtered = [...products];
+        
+        // Filtre recherche
+        if (CatalogueApp.state.filters.search) {
+          const search = CatalogueApp.state.filters.search.toLowerCase();
+          filtered = filtered.filter(p => 
+            p.name?.toLowerCase().includes(search) ||
+            p.description?.toLowerCase().includes(search)
+          );
         }
-
-        const response = await BrandiaAPI.Products.getAllWithPromotions(params);
-
-        console.log('[CatalogueApp] Promo filter response:', response);
-
-        if (response.success) {
-            const products = response.data?.products || [];
-            
-            console.log(`[CatalogueApp] ${products.length} produits dont ${response.promo_count} en promo`);
-            
-            CatalogueApp.state.allProducts = products;
-            
-            // Appliquer les autres filtres (recherche, prix) mais pas promo
-            let filtered = [...products];
-            
-            // Filtre recherche
-            if (CatalogueApp.state.filters.search) {
-                const search = CatalogueApp.state.filters.search.toLowerCase();
-                filtered = filtered.filter(p => 
-                    p.name?.toLowerCase().includes(search) ||
-                    p.description?.toLowerCase().includes(search)
-                );
-            }
-            
-            // Filtre prix
-            if (CatalogueApp.state.filters.minPrice) {
-                filtered = filtered.filter(p => p.final_price >= CatalogueApp.state.filters.minPrice);
-            }
-            if (CatalogueApp.state.filters.maxPrice) {
-                filtered = filtered.filter(p => p.final_price <= CatalogueApp.state.filters.maxPrice);
-            }
-            
-            // Tri
-            filtered = CatalogueApp.sortProductsList(filtered);
-            
-            CatalogueApp.renderProducts(filtered);
-            
-            // Mettre à jour le compteur
-            const resultsCount = document.getElementById('results-count');
-            const promoCount = filtered.filter(p => p.has_promotion).length;
-            resultsCount.textContent = `${filtered.length} produit(s) trouvé(s) dont ${promoCount} en promotion`;
-        } else {
-            throw new Error(response.message);
+        
+        // Filtre prix
+        if (CatalogueApp.state.filters.minPrice) {
+          filtered = filtered.filter(p => p.final_price >= CatalogueApp.state.filters.minPrice);
         }
+        if (CatalogueApp.state.filters.maxPrice) {
+          filtered = filtered.filter(p => p.final_price <= CatalogueApp.state.filters.maxPrice);
+        }
+        
+        // Tri
+        filtered = CatalogueApp.sortProductsList(filtered);
+        
+        CatalogueApp.renderProducts(filtered);
+        
+        // Mettre à jour le compteur
+        const resultsCount = document.getElementById('results-count');
+        const promoCount = filtered.filter(p => p.has_promotion).length;
+        resultsCount.textContent = `${filtered.length} produit(s) trouvé(s) dont ${promoCount} en promotion`;
+      } else {
+        throw new Error(response.message);
+      }
 
     } catch (error) {
-        console.error('[CatalogueApp] Erreur chargement promos:', error);
-        container.innerHTML = `
-            <div class="col-span-full text-center text-red-400 py-12">
-                <i class="fas fa-exclamation-circle text-3xl mb-4"></i>
-                <p>Erreur lors du chargement des promotions</p>
-                <button onclick="CatalogueApp.togglePromoOnly()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500">
-                    Réessayer
-                </button>
-            </div>
-        `;
+      console.error('[CatalogueApp] Erreur chargement promos:', error);
+      container.innerHTML = `
+        <div class="col-span-full text-center text-red-400 py-12">
+          <i class="fas fa-exclamation-circle text-3xl mb-4"></i>
+          <p>Erreur lors du chargement des promotions</p>
+          <button onclick="CatalogueApp.togglePromoOnly()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500">
+            Réessayer
+          </button>
+        </div>
+      `;
     }
-},
+  },
 
+  sortProducts: () => {
+    const select = document.getElementById('sort-select');
+    CatalogueApp.state.sortBy = select.value;
+    CatalogueApp.applyFilters();
+  }
+};
 // ==========================================
 // FONCTIONS UTILITAIRES
 // ==========================================
 function getFlagEmoji(countryCode) {
   const flags = { 
-    'TN': '🇹🇳', 'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'PT': '🇵🇹',
-    'BE': '🇧🇪', 'NL': '🇳🇱', 'CH': '🇨🇭', 'GB': '🇬🇧', 'US': '🇺🇸', 'CA': '🇨🇦',
-    'MA': '🇲🇦', 'DZ': '🇩🇿', 'LY': '🇱🇾', 'EG': '🇪🇬', 'SA': '🇸🇦', 'AE': '🇦🇪',
-    'QA': '🇶🇦', 'TR': '🇹🇷', 'CI': '🇨🇮', 'SN': '🇸🇳', 'CM': '🇨🇲', 'GA': '🇬🇦',
-    'ZA': '🇿🇦', 'NG': '🇳🇬', 'KE': '🇰🇪', 'GH': '🇬🇭'
+    "AF": "🇦🇫", "AX": "🇦🇽", "AL": "🇦🇱", "DZ": "🇩🇿", "AS": "🇦🇸",
+  "AD": "🇦🇩", "AO": "🇦🇴", "AI": "🇦🇮", "AQ": "🇦🇶", "AG": "🇦🇬",
+  "AR": "🇦🇷", "AM": "🇦🇲", "AW": "🇦🇼", "AU": "🇦🇺", "AT": "🇦🇹",
+  "AZ": "🇦🇿", "BS": "🇧🇸", "BH": "🇧🇭", "BD": "🇧🇩", "BB": "🇧🇧",
+  "BY": "🇧🇾", "BE": "🇧🇪", "BZ": "🇧🇿", "BJ": "🇧🇯", "BM": "🇧🇲",
+  "BT": "🇧🇹", "BO": "🇧🇴", "BQ": "🇧🇶", "BA": "🇧🇦", "BW": "🇧🇼",
+  "BV": "🇧🇻", "BR": "🇧🇷", "IO": "🇮🇴", "VG": "🇻🇬", "BN": "🇧🇳",
+  "BG": "🇧🇬", "BF": "🇧🇫", "BI": "🇧🇮", "CV": "🇨🇻", "KH": "🇰🇭",
+  "CM": "🇨🇲", "CA": "🇨🇦", "KY": "🇰🇾", "CF": "🇨🇫", "TD": "🇹🇩",
+  "CL": "🇨🇱", "CN": "🇨🇳", "CX": "🇨🇽", "CC": "🇨🇨", "CO": "🇨🇴",
+  "KM": "🇰🇲", "CG": "🇨🇬", "CD": "🇨🇩", "CK": "🇨🇰", "CR": "🇨🇷",
+  "CI": "🇨🇮", "HR": "🇭🇷", "CU": "🇨🇺", "CW": "🇨🇼", "CY": "🇨🇾",
+  "CZ": "🇨🇿", "DK": "🇩🇰", "DJ": "🇩🇯", "DM": "🇩🇲", "DO": "🇩🇴",
+  "EC": "🇪🇨", "EG": "🇪🇬", "SV": "🇸🇻", "GQ": "🇬🇶", "ER": "🇪🇷",
+  "EE": "🇪🇪", "ET": "🇪🇹", "FK": "🇫🇰", "FO": "🇫🇴", "FJ": "🇫🇯",
+  "FI": "🇫🇮", "FR": "🇫🇷", "GF": "🇬🇫", "PF": "🇵🇫", "TF": "🇹🇫",
+  "GA": "🇬🇦", "GM": "🇬🇲", "GE": "🇬🇪", "DE": "🇩🇪", "GH": "🇬🇭",
+  "GI": "🇬🇮", "GR": "🇬🇷", "GL": "🇬🇱", "GD": "🇬🇩", "GP": "🇬🇵",
+  "GU": "🇬🇺", "GT": "🇬🇹", "GG": "🇬🇬", "GN": "🇬🇳", "GW": "🇬🇼",
+  "GY": "🇬🇾", "HT": "🇭🇹", "HM": "🇭🇲", "VA": "🇻🇦", "HN": "🇭🇳",
+  "HK": "🇭🇰", "HU": "🇭🇺", "IS": "🇮🇸", "IN": "🇮🇳", "ID": "🇮🇩",
+  "IR": "🇮🇷", "IQ": "🇮🇶", "IE": "🇮🇪", "IM": "🇮🇲", "IL": "🇮🇱",
+  "IT": "🇮🇹", "JM": "🇯🇲", "JP": "🇯🇵", "JE": "🇯🇪", "JO": "🇯🇴",
+  "KZ": "🇰🇿", "KE": "🇰🇪", "KI": "🇰🇮", "KP": "🇰🇵", "KR": "🇰🇷",
+  "KW": "🇰🇼", "KG": "🇰🇬", "LA": "🇱🇦", "LV": "🇱🇻", "LB": "🇱🇧",
+  "LS": "🇱🇸", "LR": "🇱🇷", "LY": "🇱🇾", "LI": "🇱🇮", "LT": "🇱🇹",
+  "LU": "🇱🇺", "MO": "🇲🇴", "MK": "🇲🇰", "MG": "🇲🇬", "MW": "🇲🇼",
+  "MY": "🇲🇾", "MV": "🇲🇻", "ML": "🇲🇱", "MT": "🇲🇹", "MH": "🇲🇭",
+  "MQ": "🇲🇶", "MR": "🇲🇷", "MU": "🇲🇺", "YT": "🇾🇹", "MX": "🇲🇽",
+  "FM": "🇫🇲", "MD": "🇲🇩", "MC": "🇲🇨", "MN": "🇲🇳", "ME": "🇲🇪",
+  "MS": "🇲🇸", "MA": "🇲🇦", "MZ": "🇲🇿", "MM": "🇲🇲", "NA": "🇳🇦",
+  "NR": "🇳🇷", "NP": "🇳🇵", "NL": "🇳🇱", "NC": "🇳🇨", "NZ": "🇳🇿",
+  "NI": "🇳🇮", "NE": "🇳🇪", "NG": "🇳🇬", "NU": "🇳🇺", "NF": "🇳🇫",
+  "MP": "🇲🇵", "NO": "🇳🇴", "OM": "🇴🇲", "PK": "🇵🇰", "PW": "🇵🇼",
+  "PS": "🇵🇸", "PA": "🇵🇦", "PG": "🇵🇬", "PY": "🇵🇾", "PE": "🇵🇪",
+  "PH": "🇵🇭", "PN": "🇵🇳", "PL": "🇵🇱", "PT": "🇵🇹", "PR": "🇵🇷",
+  "QA": "🇶🇦", "RE": "🇷🇪", "RO": "🇷🇴", "RU": "🇷🇺", "RW": "🇷🇼",
+  "BL": "🇧🇱", "SH": "🇸🇭", "KN": "🇰🇳", "LC": "🇱🇨", "MF": "🇲🇫",
+  "PM": "🇵🇲", "VC": "🇻🇨", "WS": "🇼🇸", "SM": "🇸🇲", "ST": "🇸🇹",
+  "SA": "🇸🇦", "SN": "🇸🇳", "RS": "🇷🇸", "SC": "🇸🇨", "SL": "🇸🇱",
+  "SG": "🇸🇬", "SX": "🇸🇽", "SK": "🇸🇰", "SI": "🇸🇮", "SB": "🇸🇧",
+  "SO": "🇸🇴", "ZA": "🇿🇦", "GS": "🇬🇸", "SS": "🇸🇸", "ES": "🇪🇸",
+  "LK": "🇱🇰", "SD": "🇸🇩", "SR": "🇸🇷", "SJ": "🇸🇯", "SE": "🇸🇪",
+  "CH": "🇨🇭", "SY": "🇸🇾", "TW": "🇹🇼", "TJ": "🇹🇯", "TZ": "🇹🇿",
+  "TH": "🇹🇭", "TL": "🇹🇱", "TG": "🇹🇬", "TK": "🇹🇰", "TO": "🇹🇴",
+  "TT": "🇹🇹", "TN": "🇹🇳", "TR": "🇹🇷", "TM": "🇹🇲", "TC": "🇹🇨",
+  "TV": "🇹🇻", "UG": "🇺🇬", "UA": "🇺🇦", "AE": "🇦🇪", "GB": "🇬🇧",
+  "US": "🇺🇸", "UM": "🇺🇲", "UY": "🇺🇾", "UZ": "🇺🇿", "VU": "🇻🇺",
+  "VE": "🇻🇪", "VN": "🇻🇳", "VI": "🇻🇮", "WF": "🇼🇫", "EH": "🇪🇭",
+  "YE": "🇾🇪", "ZM": "🇿🇲", "ZW": "🇿🇼"
   };
   return flags[countryCode] || '🏳️';
 }
@@ -821,6 +1032,7 @@ function updateCategory(slug) {
     }
   }
 }
+
 function initSearch() {
   const searchInput = document.getElementById('search-input');
   const mobileSearch = document.getElementById('mobile-search');
