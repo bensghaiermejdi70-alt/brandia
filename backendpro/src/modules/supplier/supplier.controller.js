@@ -431,15 +431,13 @@ class SupplierController {
     }
   }
 
-    /* ================= PAIEMENTS - CORRIGÉ v3.5 ================= */
-
+    
     /* ================= PAIEMENTS - CORRIGÉ v3.6 ================= */
 
-  async getPayments(req, res) {
+   async getPayments(req, res) {
     try {
       const userId = req.user.id;
       
-      // Récupérer le supplier_id
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
@@ -454,7 +452,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CORRECTION : Récupérer le solde depuis la vue
       const balanceResult = await db.query(`
         SELECT available_balance, pending_balance, total_earnings
         FROM supplier_balance_view
@@ -467,12 +464,11 @@ class SupplierController {
         total_earnings: 0
       };
 
-      // 🔥 CORRECTION : Récupérer les transactions avec JOIN sur orders pour order_number
       const transactionsResult = await db.query(`
         SELECT 
           sp.id,
           sp.order_id,
-          o.order_number as order_number,  // ✅ CORRIGÉ : o.order_number au lieu de sp.order_number
+          o.order_number as order_number,
           sp.amount as total_amount,
           sp.supplier_amount as amount,
           sp.commission_amount,
@@ -482,18 +478,17 @@ class SupplierController {
           sp.available_at,
           sp.paid_at
         FROM supplier_payments sp
-        LEFT JOIN orders o ON sp.order_id = o.id  // ✅ AJOUTÉ : JOIN avec table orders
+        LEFT JOIN orders o ON sp.order_id = o.id
         WHERE sp.supplier_id = $1
         ORDER BY sp.created_at DESC
         LIMIT 100
       `, [supplierId]);
 
-      // Formater les transactions pour le frontend
       const transactions = transactionsResult.rows.map(t => ({
         id: t.id,
         order_id: t.order_id,
-        order_number: t.order_number || `ORD-${t.order_id}`,  // Fallback si null
-        description: t.description || `Vente commande #${t.order_number || t.order_id}`,
+        order_number: t.order_number || 'ORD-' + t.order_id,
+        description: t.description || 'Vente commande #' + (t.order_number || t.order_id),
         amount: parseFloat(t.amount),
         commission: parseFloat(t.commission_amount) || 0,
         total: parseFloat(t.total_amount),
