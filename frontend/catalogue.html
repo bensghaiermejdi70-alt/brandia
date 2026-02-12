@@ -836,31 +836,45 @@ function initFilters() {
   const urlParams = new URLSearchParams(window.location.search);
   let rawCategory = urlParams.get('category');
   
-  // Nettoyer 'null', 'undefined', '' en string
-  if (rawCategory === 'null' || rawCategory === 'undefined' || rawCategory === '') {
+  // Nettoyer les valeurs invalides
+  if (!rawCategory || rawCategory === 'null' || rawCategory === 'undefined' || rawCategory === 'all' || rawCategory === '') {
     rawCategory = null;
   }
   
   CatalogueApp.state.filters.category = rawCategory;
   
-  updatePageTitle();
-
-  // Injecter catégories dans le filtre latéral
+  console.log('[initFilters] Catégorie initiale:', rawCategory);
+  
+  // Injecter catégories dans le filtre latéral avec état initial
   const container = document.getElementById('filter-categories');
   if (container) {
-    container.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-      <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-2 rounded transition ${CatalogueApp.state.filters.category === cat.slug ? 'bg-neutral-700/30' : ''}">
-        <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom category-radio" ${CatalogueApp.state.filters.category === cat.slug ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
-        <span class="text-sm text-neutral-300">${cat.name}</span>
+    container.innerHTML = BRANDIA_CATEGORIES.map(cat => {
+      const isSelected = rawCategory === cat.slug;
+      return `
+        <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-2 rounded transition ${isSelected ? 'bg-neutral-700/30' : ''}">
+          <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom category-radio" ${isSelected ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
+          <span class="text-sm text-neutral-300">${cat.name}</span>
+        </label>
+      `;
+    }).join('');
+    
+    // Ajouter option "Toutes les catégories" en premier
+    const allSelected = rawCategory === null;
+    const allOption = `
+      <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-700/50 p-2 rounded transition ${allSelected ? 'bg-neutral-700/30' : ''}">
+        <input type="radio" name="category" value="" class="checkbox-custom category-radio" ${allSelected ? 'checked' : ''} onchange="updateCategory(null)">
+        <span class="text-sm text-neutral-300 font-medium">Toutes les catégories</span>
       </label>
-    `).join('');
+      <div class="border-t border-neutral-700 my-2"></div>
+    `;
+    container.innerHTML = allOption + container.innerHTML;
   }
 
-  // Dropdown header
+  // Dropdown header (inchangé)
   const dropdown = document.getElementById('dropdown-categories-list');
   if (dropdown) {
     dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-      <a href="catalogue.html?category=${cat.slug}" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
+      <a href="catalogue.html?category=${encodeURIComponent(cat.slug)}" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
         <div class="w-8 h-8 bg-gradient-to-br ${cat.gradient} rounded-lg flex items-center justify-center flex-shrink-0">
           <i class="fas ${cat.icon} text-white text-xs"></i>
         </div>
@@ -869,36 +883,62 @@ function initFilters() {
     `).join('');
   }
 }
-
 // ✅ FONCTION UNIQUE ET CORRIGÉE
 function updateCategory(slug) {
   console.log('[updateCategory] Slug reçu:', slug);
   
-  // Nettoyer
-  const cleanSlug = (!slug || slug === 'null' || slug === 'undefined') ? null : slug;
-  
-  // Mettre à jour l'état
-  CatalogueApp.state.filters.category = cleanSlug;
-  
-  // Mettre à jour l'UI
-  document.querySelectorAll('input[name="category"]').forEach(radio => {
-    const label = radio.closest('label');
-    const isChecked = radio.value === cleanSlug;
-    radio.checked = isChecked;
-    label?.classList.toggle('bg-neutral-700/30', isChecked);
-  });
-  
-  // Recharger
-  console.log('[updateCategory] Rechargement avec:', cleanSlug);
-  CatalogueApp.loadProducts();
-  
-  // URL
-  if (cleanSlug) {
-    window.history.replaceState({}, '', `?category=${cleanSlug}`);
-  } else {
-    window.history.replaceState({}, '', window.location.pathname);
+  // Nettoyer le slug (null, undefined, 'null', 'undefined', 'all' → null)
+  let cleanSlug = slug;
+  if (!slug || slug === 'null' || slug === 'undefined' || slug === 'all' || slug === '') {
+    cleanSlug = null;
   }
   
+  console.log('[updateCategory] Clean slug:', cleanSlug);
+  
+  // Mettre à jour l'état de l'application
+  CatalogueApp.state.filters.category = cleanSlug;
+  
+  // Mettre à jour l'UI des radios
+  document.querySelectorAll('input[name="category"]').forEach(radio => {
+    const label = radio.closest('label');
+    if (!label) return;
+    
+    if (cleanSlug === null) {
+      // Aucune catégorie sélectionnée = "Toutes"
+      radio.checked = false;
+      label.classList.remove('bg-neutral-700/30');
+    } else {
+      // Une catégorie spécifique
+      const isMatch = radio.value === cleanSlug;
+      radio.checked = isMatch;
+      label.classList.toggle('bg-neutral-700/30', isMatch);
+    }
+  });
+  
+  // Forcer le rechargement depuis l'API
+  console.log('[updateCategory] Rechargement API avec category:', cleanSlug);
+  CatalogueApp.loadProducts();
+  
+  // Mettre à jour l'URL sans recharger la page
+  if (cleanSlug) {
+    window.history.replaceState({}, '', `?category=${encodeURIComponent(cleanSlug)}`);
+    document.title = `${BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug)?.name || 'Catalogue'} - Brandia`;
+  } else {
+    window.history.replaceState({}, '', window.location.pathname);
+    document.title = 'Catalogue - Brandia';
+  }
+  
+  // Mettre à jour le titre de la page
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle) {
+    if (cleanSlug) {
+      const cat = BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug);
+      pageTitle.textContent = cat?.name || 'Catalogue';
+    } else {
+      pageTitle.textContent = 'Catalogue';
+    }
+  }
+}
   updatePageTitle();
 }
 
