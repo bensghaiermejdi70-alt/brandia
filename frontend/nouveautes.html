@@ -4,15 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nouveautés - Brandia</title>
+  <meta name="description" content="Découvrez les derniers produits ajoutés sur Brandia - La marketplace des marques officielles">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="assets/js/api.js"></script>
   <style>
     body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
     .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.3); }
+    .skeleton { background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; }
+    @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .dropdown-container { position: relative; }
+    .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 0; padding-top: 10px; z-index: 50; }
+    .dropdown-container:hover .dropdown-menu, .dropdown-menu:hover { display: block; }
+    .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; color: white; font-weight: 500; z-index: 1000; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    .promo-badge { animation: pulse-red 2s infinite; }
+    @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } }
+    .new-badge { animation: pulse-emerald 2s infinite; }
+    @keyframes pulse-emerald { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } }
   </style>
 </head>
 <body>
 
+<!-- HEADER COMPLET -->
 <header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
   <nav class="container flex items-center justify-between px-4 py-3">
     <a href="index.html" class="flex items-center space-x-3">
@@ -21,44 +41,489 @@
       </div>
       <span class="font-bold text-lg text-neutral-100">Brandia</span>
     </a>
-    <a href="index.html" class="text-neutral-300 hover:text-white text-sm">← Retour à l'accueil</a>
+    
+    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
+      <a href="index.html" class="hover:text-white transition">Accueil</a>
+      <a href="catalogue.html" class="hover:text-white transition">Catalogue</a>
+      <a href="nouveautes.html" class="text-indigo-400 font-medium">Nouveautés</a>
+      <a href="offres.html" class="hover:text-white transition">Offres</a>
+      
+      <div class="dropdown-container">
+        <div class="dropdown-trigger hover:text-white flex items-center space-x-1 transition cursor-pointer py-2">
+          <span>Catégories</span>
+          <i class="fas fa-chevron-down text-xs"></i>
+        </div>
+        <div class="dropdown-menu w-80 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 py-2 max-h-[70vh] overflow-y-auto">
+          <div id="dropdown-categories-list">
+            <div class="text-neutral-500 text-xs px-4 py-2">Chargement...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
+        <option value="">Chargement...</option>
+      </select>
+
+      <select id="langSwitch" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none">
+        <option value="fr">🇫🇷 FR</option>
+        <option value="en">🇬🇧 EN</option>
+      </select>
+
+      <div id="auth-buttons" class="flex items-center space-x-2">
+        <a href="login.html" class="text-sm text-neutral-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-neutral-800 transition">Connexion</a>
+        <a href="register.html" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition">S'inscrire</a>
+      </div>
+      
+      <!-- Menu client connecté -->
+      <div id="user-menu" class="hidden items-center space-x-3">
+        <span id="user-name" class="text-sm text-neutral-300"></span>
+        <button onclick="BrandiaAPI.Auth.logout()" class="text-sm text-red-400 hover:text-red-300">Déconnexion</button>
+      </div>
+
+      <!-- Menu fournisseur connecté -->
+      <div id="supplier-menu" class="hidden items-center space-x-3">
+        <a href="supplier/dashboard.html" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg transition text-sm border border-emerald-500/30">
+          <i class="fas fa-chart-line"></i>
+          <span>Dashboard</span>
+        </a>
+        <span id="supplier-name" class="text-sm text-neutral-300"></span>
+        <button onclick="BrandiaAPI.Auth.logout()" class="text-sm text-red-400 hover:text-red-300">Déconnexion</button>
+      </div>
+
+      <a href="panier.html" class="relative">
+        <i class="fas fa-shopping-bag text-neutral-300"></i>
+        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white hidden">0</span>
+      </a>
+    </div>
   </nav>
 </header>
 
+<!-- CONTENU PRINCIPAL -->
 <section class="py-16">
-  <div class="container text-center">
-    <h1 class="text-4xl font-bold text-white mb-4">Nouveautés</h1>
-    <p class="text-neutral-400 text-lg mb-12">Découvrez nos derniers produits ajoutés</p>
+  <div class="container px-4">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-white mb-4">Nouveautés</h1>
+      <p class="text-neutral-400 text-lg mb-2">Découvrez nos derniers produits ajoutés</p>
+      <p class="text-sm text-neutral-500" id="results-info">Chargement...</p>
+    </div>
     
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4" id="new-products">
-      <!-- Produits générés dynamiquement -->
+    <!-- Loading State -->
+    <div id="loading-state" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div class="skeleton h-64 rounded-lg col-span-2 md:col-span-4 lg:col-span-6"></div>
+      <div class="skeleton h-64 rounded-lg"></div>
+      <div class="skeleton h-64 rounded-lg"></div>
+      <div class="skeleton h-64 rounded-lg"></div>
+      <div class="skeleton h-64 rounded-lg"></div>
+      <div class="skeleton h-64 rounded-lg"></div>
+      <div class="skeleton h-64 rounded-lg"></div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden text-center py-16">
+      <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
+      <h3 class="text-xl font-semibold text-white mb-2">Erreur de chargement</h3>
+      <p class="text-neutral-400 mb-4">Impossible de charger les nouveautés</p>
+      <button onclick="loadNewProducts()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+        <i class="fas fa-redo mr-2"></i>Réessayer
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-16">
+      <i class="fas fa-box-open text-neutral-600 text-4xl mb-4"></i>
+      <h3 class="text-xl font-semibold text-white mb-2">Aucune nouveauté</h3>
+      <p class="text-neutral-400 mb-4">Revenez plus tard pour découvrir nos nouveaux produits</p>
+      <a href="catalogue.html" class="inline-block px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+        Voir le catalogue
+      </a>
+    </div>
+
+    <!-- Grille Produits -->
+    <div id="products-grid" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <!-- Injecté dynamiquement -->
     </div>
   </div>
 </section>
 
-<script src="assets/js/api.js"></script>
-<script>
-  const newProducts = [
-    { id: 1, name: 'Sérum Vitaminé C', price: 39.90, image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400' },
-    { id: 2, name: 'Montre Connectée Pro', price: 199.00, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400' },
-    { id: 3, name: 'Sac Éco-Responsable', price: 89.50, image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400' },
-    { id: 4, name: 'Enceinte Portable 360°', price: 79.99, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400' },
-    { id: 5, name: 'Bougie Artisanale', price: 29.90, image: 'https://images.unsplash.com/photo-1602825267689-1b0f7eb22c00?w=400' },
-    { id: 6, name: 'Baskets Édition Limitée', price: 149.00, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400' }
-  ];
+<!-- FOOTER -->
+<footer class="border-t border-neutral-800 py-10 bg-neutral-900">
+  <div class="container px-4">
+    <div class="grid md:grid-cols-4 gap-8 mb-8">
+      <div>
+        <div class="flex items-center space-x-2 mb-4">
+          <div class="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
+            <i class="fas fa-store text-white text-xs"></i>
+          </div>
+          <span class="font-bold text-neutral-100">Brandia</span>
+        </div>
+        <p class="text-neutral-500 text-sm">La marketplace des marques officielles.</p>
+      </div>
+      <div>
+        <h4 class="font-semibold text-neutral-100 mb-3">Acheter</h4>
+        <ul class="space-y-2 text-sm text-neutral-400">
+          <li><a href="catalogue.html" class="hover:text-indigo-400 transition">Catalogue</a></li>
+          <li><a href="nouveautes.html" class="hover:text-indigo-400 transition">Nouveautés</a></li>
+          <li><a href="offres.html" class="hover:text-indigo-400 transition">Offres</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold text-neutral-100 mb-3">Vendre</h4>
+        <ul class="space-y-2 text-sm text-neutral-400">
+          <li><a href="register.html?type=supplier" class="hover:text-indigo-400 transition">Devenir vendeur</a></li>
+          <li><a href="supplier/dashboard.html" class="hover:text-indigo-400 transition">Espace fournisseur</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold text-neutral-100 mb-3">Aide</h4>
+        <ul class="space-y-2 text-sm text-neutral-400">
+          <li><a href="contact.html" class="hover:text-indigo-400 transition">Contact</a></li>
+          <li><a href="faq.html" class="hover:text-indigo-400 transition">FAQ</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-neutral-800 pt-8 text-center text-neutral-500 text-sm">
+      © 2026 Brandia – Marketplace officielle des marques
+    </div>
+  </div>
+</footer>
 
-  document.getElementById('new-products').innerHTML = newProducts.map(p => `
-    <a href="product.html?id=${p.id}" class="group bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition">
-      <div class="aspect-square overflow-hidden">
-        <img src="${p.image}" class="w-full h-full object-cover group-hover:scale-105 transition">
+<div id="toast" class="toast"></div>
+
+<!-- SCRIPTS -->
+<script>
+// ==========================================
+// CONFIGURATION
+// ==========================================
+const BRANDIA_CATEGORIES = [
+  { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
+  { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
+  { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'from-red-500 to-pink-600' },
+  { slug: 'soins-capillaires', name: 'Soins capillaires', icon: 'fa-cut', gradient: 'from-amber-500 to-orange-600' },
+  { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', gradient: 'from-emerald-500 to-teal-600' },
+  { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', gradient: 'from-blue-500 to-cyan-600' },
+  { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', gradient: 'from-yellow-500 to-amber-600' },
+  { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', gradient: 'from-orange-500 to-red-600' },
+  { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', gradient: 'from-green-500 to-emerald-600' },
+  { slug: 'high-tech-mobile', name: 'High-tech', icon: 'fa-mobile-alt', gradient: 'from-indigo-500 to-blue-600' },
+  { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', gradient: 'from-violet-500 to-purple-600' },
+  { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', gradient: 'from-orange-500 to-red-500' }
+];
+
+const COUNTRIES = {
+  'TN': { name: 'Tunisie', currency: 'TND' },
+  'FR': { name: 'France', currency: 'EUR' },
+  'DE': { name: 'Allemagne', currency: 'EUR' },
+  'IT': { name: 'Italie', currency: 'EUR' },
+  'ES': { name: 'Espagne', currency: 'EUR' },
+  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+  'US': { name: 'États-Unis', currency: 'USD' },
+  'CA': { name: 'Canada', currency: 'CAD' },
+  'MA': { name: 'Maroc', currency: 'MAD' },
+  'DZ': { name: 'Algérie', currency: 'DZD' },
+  'BE': { name: 'Belgique', currency: 'EUR' },
+  'CH': { name: 'Suisse', currency: 'CHF' },
+  'PT': { name: 'Portugal', currency: 'EUR' },
+  'NL': { name: 'Pays-Bas', currency: 'EUR' },
+  'LU': { name: 'Luxembourg', currency: 'EUR' }
+};
+
+// ==========================================
+// UTILITAIRES
+// ==========================================
+function getFlagEmoji(countryCode) {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt());
+  return String.fromCodePoint(...codePoints);
+}
+
+function formatPrice(price, currency = 'EUR') {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency }).format(price);
+}
+
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = `toast ${type} show`;
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function isNewProduct(createdAt) {
+  if (!createdAt) return false;
+  const productDate = new Date(createdAt);
+  const now = new Date();
+  const diffDays = Math.floor((now - productDate) / (1000 * 60 * 60 * 24));
+  return diffDays <= 7; // Considéré "nouveau" si ajouté dans les 7 derniers jours
+}
+
+// ==========================================
+// CHARGEMENT DES NOUVEAUTÉS (DYNAMIQUE)
+// ==========================================
+async function loadNewProducts() {
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const emptyState = document.getElementById('empty-state');
+  const productsGrid = document.getElementById('products-grid');
+  const resultsInfo = document.getElementById('results-info');
+
+  // Reset states
+  loadingState.classList.remove('hidden');
+  errorState.classList.add('hidden');
+  emptyState.classList.add('hidden');
+  productsGrid.classList.add('hidden');
+
+  try {
+    // 🔥 CHARGEMENT DYNAMIQUE VIA API
+    let response;
+    
+    // Essayer d'abord avec promotions
+    try {
+      response = await BrandiaAPI.Products.getAllWithPromotions({ limit: 24, sort: 'newest' });
+    } catch (e) {
+      console.log('[Nouveautés] Fallback sans promotions');
+      response = await BrandiaAPI.Products.getAll({ limit: 24 });
+    }
+
+    console.log('[Nouveautés] API Response:', response);
+
+    if (!response.success) {
+      throw new Error(response.message || 'Erreur API');
+    }
+
+    const allProducts = response.data?.products || response.data || [];
+    
+    // 🔥 FILTRER LES VRAIES NOUVEAUTÉS (7 derniers jours)
+    // Ou si pas assez, prendre les 12 plus récents
+    let newProducts = allProducts.filter(p => isNewProduct(p.created_at));
+    
+    if (newProducts.length < 6) {
+      // Pas assez de vraies nouveautés, prendre les plus récents
+      newProducts = allProducts
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 12);
+    }
+
+    console.log(`[Nouveautés] ${newProducts.length} produits trouvés`);
+
+    if (newProducts.length === 0) {
+      loadingState.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      resultsInfo.textContent = 'Aucun produit récent';
+      return;
+    }
+
+    // Rendu
+    renderProducts(newProducts);
+    
+    // Mise à jour info
+    const newCount = newProducts.filter(p => isNewProduct(p.created_at)).length;
+    resultsInfo.textContent = `${newProducts.length} produit(s) dont ${newCount} nouveauté(s) cette semaine`;
+
+    loadingState.classList.add('hidden');
+    productsGrid.classList.remove('hidden');
+
+  } catch (error) {
+    console.error('[Nouveautés] Erreur:', error);
+    loadingState.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    resultsInfo.textContent = 'Erreur de chargement';
+  }
+}
+
+function renderProducts(products) {
+  const grid = document.getElementById('products-grid');
+  
+  grid.innerHTML = products.map((p, index) => {
+    const isNew = isNewProduct(p.created_at);
+    const hasPromo = p.has_promotion || (p.final_price && p.final_price < p.price);
+    const finalPrice = parseFloat(p.final_price || p.price || 0);
+    const originalPrice = parseFloat(p.original_price || p.price || 0);
+    
+    const imageUrl = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
+    
+    // Badges
+    let badges = '';
+    if (isNew) {
+      badges += `<span class="new-badge absolute top-2 left-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">NEW</span>`;
+    }
+    if (hasPromo) {
+      const discount = Math.round(((originalPrice - finalPrice) / originalPrice) * 100);
+      badges += `<span class="promo-badge absolute ${isNew ? 'top-8' : 'top-2'} left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">-${discount}%</span>`;
+    }
+    
+    // Prix
+    const priceDisplay = hasPromo 
+      ? `<span class="text-lg font-bold text-emerald-400">${formatPrice(finalPrice)}</span>
+         <span class="text-sm text-neutral-500 line-through ml-2">${formatPrice(originalPrice)}</span>`
+      : `<span class="text-lg font-bold text-white">${formatPrice(finalPrice)}</span>`;
+
+    return `
+      <div class="product-card bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition fade-in" style="animation-delay: ${index * 0.05}s">
+        <a href="product.html?id=${p.id}" class="block relative">
+          <div class="aspect-square overflow-hidden bg-neutral-900">
+            <img src="${imageUrl}" alt="${p.name}" 
+                 class="w-full h-full object-cover hover:scale-105 transition duration-500"
+                 onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
+            ${badges}
+          </div>
+        </a>
+        <div class="p-3">
+          <p class="text-xs text-indigo-400 mb-1">${p.category_name || 'Catégorie'}</p>
+          <h3 class="text-sm font-medium text-white mb-1 line-clamp-2 hover:text-indigo-400 transition cursor-pointer" 
+              onclick="window.location.href='product.html?id=${p.id}'">${p.name}</h3>
+          <p class="text-xs text-neutral-500 mb-2">${p.supplier_company || p.supplier_name || 'Marque'}</p>
+          
+          <div class="flex items-center justify-between mb-3">
+            <div>${priceDisplay}</div>
+          </div>
+          
+          <div class="flex gap-2">
+            <button onclick="addToCart(${p.id})" 
+                    class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-sm transition flex items-center justify-center gap-2">
+              <i class="fas fa-cart-plus"></i>
+              <span>Ajouter</span>
+            </button>
+            <a href="product.html?id=${p.id}" 
+               class="px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded text-sm transition flex items-center justify-center">
+              <i class="fas fa-eye"></i>
+            </a>
+          </div>
+          
+          ${isNew ? `<p class="text-xs text-emerald-400 mt-2"><i class="fas fa-clock mr-1"></i>Ajouté ${formatDate(p.created_at)}</p>` : ''}
+        </div>
       </div>
-      <div class="p-3">
-        <span class="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded">NEW</span>
-        <p class="text-sm text-neutral-300 mt-2 truncate">${p.name}</p>
-        <p class="text-lg font-bold text-indigo-400">${p.price.toFixed(2)} €</p>
+    `;
+  }).join('');
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return "aujourd'hui";
+  if (diffDays === 1) return "hier";
+  if (diffDays < 7) return `il y a ${diffDays} jours`;
+  return date.toLocaleDateString('fr-FR');
+}
+
+// ==========================================
+// PANIER
+// ==========================================
+async function addToCart(productId) {
+  try {
+    const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
+    if (!response.success) throw new Error('Produit non trouvé');
+    
+    const product = response.data.product || response.data;
+    
+    BrandiaAPI.Cart.add({
+      id: product.id,
+      name: product.name,
+      price: parseFloat(product.final_price || product.price),
+      original_price: parseFloat(product.price),
+      has_promotion: product.has_promotion || false,
+      main_image_url: product.main_image_url,
+      quantity: 1
+    });
+    
+    showToast('Produit ajouté au panier !', 'success');
+    BrandiaAPI.Cart.updateBadge();
+    
+  } catch (error) {
+    console.error('[Nouveautés] Erreur ajout panier:', error);
+    showToast('Erreur lors de l\'ajout', 'error');
+  }
+}
+
+// ==========================================
+// HEADER & NAVIGATION
+// ==========================================
+function initCountrySelector() {
+  const selector = document.getElementById('countrySelector');
+  if (!selector) return;
+  
+  const savedCountry = localStorage.getItem('country') || 'FR';
+  selector.innerHTML = '';
+  
+  Object.entries(COUNTRIES)
+    .sort((a, b) => a[1].name.localeCompare(b[1].name, 'fr'))
+    .forEach(([code, country]) => {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = `${getFlagEmoji(code)} ${country.name}`;
+      if (code === savedCountry) option.selected = true;
+      selector.appendChild(option);
+    });
+  
+  selector.addEventListener('change', (e) => {
+    localStorage.setItem('country', e.target.value);
+    localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
+  });
+}
+
+function initCategoriesDropdown() {
+  const dropdown = document.getElementById('dropdown-categories-list');
+  if (!dropdown) return;
+  
+  dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
+    <a href="catalogue.html?category=${cat.slug}" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
+      <div class="w-8 h-8 bg-gradient-to-br ${cat.gradient} rounded-lg flex items-center justify-center flex-shrink-0">
+        <i class="fas ${cat.icon} text-white text-xs"></i>
       </div>
+      <span class="font-medium truncate">${cat.name}</span>
     </a>
   `).join('');
+}
+
+function initAuth() {
+  if (typeof BrandiaAPI === 'undefined') return;
+  
+  const user = BrandiaAPI.Auth.getUser();
+  const authButtons = document.getElementById('auth-buttons');
+  const userMenu = document.getElementById('user-menu');
+  const supplierMenu = document.getElementById('supplier-menu');
+  
+  authButtons?.classList.add('hidden');
+  userMenu?.classList.add('hidden');
+  supplierMenu?.classList.add('hidden');
+  authButtons?.classList.remove('flex');
+  userMenu?.classList.remove('flex');
+  supplierMenu?.classList.remove('flex');
+  
+  if (user && user.email) {
+    if (user.role === 'supplier') {
+      supplierMenu?.classList.remove('hidden');
+      supplierMenu?.classList.add('flex');
+      const supplierName = document.getElementById('supplier-name');
+      if (supplierName) supplierName.textContent = user.first_name || user.email;
+    } else {
+      userMenu?.classList.remove('hidden');
+      userMenu?.classList.add('flex');
+      const userName = document.getElementById('user-name');
+      if (userName) userName.textContent = user.first_name || user.email;
+    }
+  } else {
+    authButtons?.classList.remove('hidden');
+    authButtons?.classList.add('flex');
+  }
+}
+
+// ==========================================
+// INITIALISATION
+// ==========================================
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('✅ Brandia Nouveautés chargé');
+  initCountrySelector();
+  initCategoriesDropdown();
+  initAuth();
+  BrandiaAPI.Cart.updateBadge();
+  await loadNewProducts();
+});
 </script>
 
 </body>
