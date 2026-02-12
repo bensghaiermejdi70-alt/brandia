@@ -275,7 +275,7 @@ const COUNTRIES = {
       'CG': { name: 'Congo', currency: 'XAF' },
       'CD': { name: 'Congo (RDC)', currency: 'CDF' },
       'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+      'CI': { name: 'Côte d\'Ivoire', currency: 'XOF' },
       'HR': { name: 'Croatie', currency: 'EUR' },
       'CU': { name: 'Cuba', currency: 'CUP' },
       'CY': { name: 'Chypre', currency: 'EUR' },
@@ -453,8 +453,7 @@ window.CatalogueApp = {
     updateCartBadge();
   },
 
-  // ✅ CORRIGÉ : Nettoyage complet de la catégorie
-    loadProducts: async () => {
+  loadProducts: async () => {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-2"></i><p class="text-neutral-500">Chargement des produits...</p></div>';
 
@@ -479,9 +478,7 @@ window.CatalogueApp = {
       console.log('[CatalogueApp] Réponse API:', response);
 
       if (response.success) {
-        // 🔥 CORRECTION : Gérer les deux formats de réponse possibles
-        // Format 1: response.data.products (attendu)
-        // Format 2: response.data (array direct, comme dans les logs)
+        // Gérer les deux formats de réponse possibles
         const products = response.data?.products || 
                         (Array.isArray(response.data) ? response.data : []) ||
                         [];
@@ -505,7 +502,6 @@ window.CatalogueApp = {
       try {
         const fallback = await BrandiaAPI.Products.getAll({ limit: 100 });
         if (fallback.success) {
-          // 🔥 Même correction pour le fallback
           const products = fallback.data?.products || 
                           (Array.isArray(fallback.data) ? fallback.data : []) ||
                           [];
@@ -526,6 +522,7 @@ window.CatalogueApp = {
       }
     }
   },
+
   applyFilters: () => {
     let products = [...CatalogueApp.state.allProducts];
     const f = CatalogueApp.state.filters;
@@ -756,14 +753,32 @@ window.CatalogueApp = {
 // ==========================================
 function getFlagEmoji(countryCode) {
   const flags = { 
-    'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'BE': '🇧🇪', 'PT': '🇵🇹', 
-    'AT': '🇦🇹', 'IE': '🇮🇪', 'FI': '🇫🇮', 'SE': '🇸🇪', 'DK': '🇩🇰', 'NO': '🇳🇴', 'PL': '🇵🇱',
-    'CZ': '🇨🇿', 'HU': '🇭🇺', 'RO': '🇷🇴', 'BG': '🇧🇬', 'HR': '🇭🇷', 'SI': '🇸🇮', 'SK': '🇸🇰',
-    'GB': '🇬🇧', 'CH': '🇨🇭', 'US': '🇺🇸', 'CA': '🇨🇦', 'BR': '🇧🇷', 'MX': '🇲🇽', 'AR': '🇦🇷',
-    'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'SG': '🇸🇬', 'AU': '🇦🇺', 'NZ': '🇳🇿', 'IN': '🇮🇳',
-    'TN': '🇹🇳', 'DZ': '🇩🇿', 'MA': '🇲🇦', 'EG': '🇪🇬', 'ZA': '🇿🇦', 'NG': '🇳🇬', 'KE': '🇰🇪',
-    'AE': '🇦🇪', 'SA': '🇸🇦', 'QA': '🇶🇦', 'KW': '🇰🇼', 'IL': '🇮🇱', 'TR': '🇹🇷', 'RU': '🇷🇺',
-    'UA': '🇺🇦', 'ID': '🇮🇩', 'MY': '🇲🇾', 'TH': '🇹🇭', 'VN': '🇻🇳', 'PH': '🇵🇭'
+    'AF': '🇦🇫', 'AL': '🇦🇱', 'DZ': '🇩🇿', 'AS': '🇦🇸', 'AD': '🇦🇩', 'AO': '🇦🇴', 'AI': '🇦🇮', 'AQ': '🇦🇶',
+    'AG': '🇦🇬', 'AR': '🇦🇷', 'AM': '🇦🇲', 'AW': '🇦🇼', 'AU': '🇦🇺', 'AT': '🇦🇹', 'AZ': '🇦🇿', 'BS': '🇧🇸',
+    'BH': '🇧🇭', 'BD': '🇧🇩', 'BB': '🇧🇧', 'BY': '🇧🇾', 'BE': '🇧🇪', 'BZ': '🇧🇿', 'BJ': '🇧🇯', 'BM': '🇧🇲',
+    'BT': '🇧🇹', 'BO': '🇧🇴', 'BA': '🇧🇦', 'BW': '🇧🇼', 'BR': '🇧🇷', 'BN': '🇧🇳', 'BG': '🇧🇬', 'BF': '🇧🇫',
+    'BI': '🇧🇮', 'KH': '🇰🇭', 'CM': '🇨🇲', 'CA': '🇨🇦', 'CV': '🇨🇻', 'KY': '🇰🇾', 'CF': '🇨🇫', 'TD': '🇹🇩',
+    'CL': '🇨🇱', 'CN': '🇨🇳', 'CX': '🇨🇽', 'CC': '🇨🇨', 'CO': '🇨🇴', 'KM': '🇰🇲', 'CG': '🇨🇬', 'CD': '🇨🇩',
+    'CR': '🇨🇷', 'CI': '🇨🇮', 'HR': '🇭🇷', 'CU': '🇨🇺', 'CY': '🇨🇾', 'CZ': '🇨🇿', 'DK': '🇩🇰', 'DJ': '🇩🇯',
+    'DM': '🇩🇲', 'DO': '🇩🇴', 'EC': '🇪🇨', 'EG': '🇪🇬', 'SV': '🇸🇻', 'GQ': '🇬🇶', 'ER': '🇪🇷', 'EE': '🇪🇪',
+    'ET': '🇪🇹', 'FJ': '🇫🇯', 'FI': '🇫🇮', 'FR': '🇫🇷', 'GA': '🇬🇦', 'GM': '🇬🇲', 'GE': '🇬🇪', 'DE': '🇩🇪',
+    'GH': '🇬🇭', 'GR': '🇬🇷', 'GD': '🇬🇩', 'GT': '🇬🇹', 'GN': '🇬🇳', 'GW': '🇬🇼', 'GY': '🇬🇾', 'HT': '🇭🇹',
+    'HN': '🇭🇳', 'HU': '🇭🇺', 'IS': '🇮🇸', 'IN': '🇮🇳', 'ID': '🇮🇩', 'IR': '🇮🇷', 'IQ': '🇮🇶', 'IE': '🇮🇪',
+    'IL': '🇮🇱', 'IT': '🇮🇹', 'JM': '🇯🇲', 'JP': '🇯🇵', 'JO': '🇯🇴', 'KZ': '🇰🇿', 'KE': '🇰🇪', 'KI': '🇰🇮',
+    'KP': '🇰🇵', 'KR': '🇰🇷', 'KW': '🇰🇼', 'KG': '🇰🇬', 'LA': '🇱🇦', 'LV': '🇱🇻', 'LB': '🇱🇧', 'LS': '🇱🇸',
+    'LR': '🇱🇷', 'LY': '🇱🇾', 'LI': '🇱🇮', 'LT': '🇱🇹', 'LU': '🇱🇺', 'MK': '🇲🇰', 'MG': '🇲🇬', 'MW': '🇲🇼',
+    'MY': '🇲🇾', 'MV': '🇲🇻', 'ML': '🇲🇱', 'MT': '🇲🇹', 'MH': '🇲🇭', 'MR': '🇲🇷', 'MU': '🇲🇺', 'MX': '🇲🇽',
+    'FM': '🇫🇲', 'MD': '🇲🇩', 'MC': '🇲🇨', 'MN': '🇲🇳', 'ME': '🇲🇪', 'MA': '🇲🇦', 'MZ': '🇲🇿', 'MM': '🇲🇲',
+    'NA': '🇳🇦', 'NR': '🇳🇷', 'NP': '🇳🇵', 'NL': '🇳🇱', 'NZ': '🇳🇿', 'NI': '🇳🇮', 'NE': '🇳🇪', 'NG': '🇳🇬',
+    'NO': '🇳🇴', 'OM': '🇴🇲', 'PK': '🇵🇰', 'PW': '🇵🇼', 'PA': '🇵🇦', 'PG': '🇵🇬', 'PY': '🇵🇾', 'PE': '🇵🇪',
+    'PH': '🇵🇭', 'PL': '🇵🇱', 'PT': '🇵🇹', 'QA': '🇶🇦', 'RO': '🇷🇴', 'RU': '🇷🇺', 'RW': '🇷🇼', 'KN': '🇰🇳',
+    'LC': '🇱🇨', 'VC': '🇻🇨', 'WS': '🇼🇸', 'SM': '🇸🇲', 'ST': '🇸🇹', 'SA': '🇸🇦', 'SN': '🇸🇳', 'RS': '🇷🇸',
+    'SC': '🇸🇨', 'SL': '🇸🇱', 'SG': '🇸🇬', 'SK': '🇸🇰', 'SI': '🇸🇮', 'SB': '🇸🇧', 'SO': '🇸🇴', 'ZA': '🇿🇦',
+    'ES': '🇪🇸', 'LK': '🇱🇰', 'SD': '🇸🇩', 'SR': '🇸🇷', 'SZ': '🇸🇿', 'SE': '🇸🇪', 'CH': '🇨🇭', 'SY': '🇸🇾',
+    'TW': '🇹🇼', 'TJ': '🇹🇯', 'TZ': '🇹🇿', 'TH': '🇹🇭', 'TL': '🇹🇱', 'TG': '🇹🇬', 'TO': '🇹🇴', 'TT': '🇹🇹',
+    'TN': '🇹🇳', 'TR': '🇹🇷', 'TM': '🇹🇲', 'UG': '🇺🇬', 'UA': '🇺🇦', 'AE': '🇦🇪', 'GB': '🇬🇧', 'US': '🇺🇸',
+    'UY': '🇺🇾', 'UZ': '🇺🇿', 'VU': '🇻🇺', 'VE': '🇻🇪', 'VN': '🇻🇳', 'YE': '🇾🇪', 'ZM': '🇿🇲', 'ZW': '🇿🇼',
+    'MO': '🇲🇴', 'HK': '🇭🇰', 'CX': '🇨🇽', 'CC': '🇨🇨', 'NF': '🇳🇫'
   };
   return flags[countryCode] || '🏳️';
 }
@@ -817,12 +832,11 @@ function initCountrySelector() {
   });
 }
 
-// ✅ CORRIGÉ : Nettoyage complet de la catégorie au chargement
 function initFilters() {
   const urlParams = new URLSearchParams(window.location.search);
   let rawCategory = urlParams.get('category');
   
-  // ✅ Nettoyer 'null', 'undefined', '' en string
+  // Nettoyer 'null', 'undefined', '' en string
   if (rawCategory === 'null' || rawCategory === 'undefined' || rawCategory === '') {
     rawCategory = null;
   }
@@ -856,7 +870,7 @@ function initFilters() {
   }
 }
 
-// ✅ CORRIGÉ : Fonction updateCategory complètement réécrite
+// ✅ FONCTION UNIQUE ET CORRIGÉE
 function updateCategory(slug) {
   console.log('[updateCategory] Slug reçu:', slug);
   
@@ -886,30 +900,6 @@ function updateCategory(slug) {
   }
   
   updatePageTitle();
-}
-  
-  // Mettre à jour visuellement les radios
-  document.querySelectorAll('input[name="category"]').forEach(radio => {
-    const label = radio.closest('label');
-    if (radio.value === cleanSlug) {
-      radio.checked = true;
-      label?.classList.add('bg-neutral-700/30');
-    } else {
-      radio.checked = false;
-      label?.classList.remove('bg-neutral-700/30');
-    }
-  });
-  
-  // ✅ Forcer rechargement avec la bonne catégorie
-  console.log('[updateCategory] Rechargement des produits...');
-  CatalogueApp.loadProducts();
-  
-  // Mettre à jour URL sans recharger
-  if (cleanSlug) {
-    window.history.replaceState({}, '', `?category=${cleanSlug}`);
-  } else {
-    window.history.replaceState({}, '', window.location.pathname);
-  }
 }
 
 function initSearch() {

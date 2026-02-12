@@ -1248,6 +1248,8 @@
     }, 100);
   });
 
+ <!-- REMPLACER la fin du fichier (à partir de la ligne ~1290) par : -->
+
   // Charger stats overview
   async function loadOverviewStats() {
     try {
@@ -1291,62 +1293,179 @@
     }).format(amount || 0);
   }
 
-  <script>
-function initSalesChart(data) {
-  const ctx = document.getElementById('salesChart');
-  if (!ctx) return;
+  // ✅ FONCTION MANQUANTE AJOUTÉE
+  function initSalesChart(data) {
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) return;
 
-  // ✅ Détruire le graphique existant
-  if (window.salesChartInstance) {
-    window.salesChartInstance.destroy();
-    window.salesChartInstance = null;
-  }
+    // Détruire le graphique existant
+    if (window.salesChartInstance) {
+      window.salesChartInstance.destroy();
+      window.salesChartInstance = null;
+    }
 
-  // ✅ Recréer proprement le canvas
-  const parent = ctx.parentElement;
-  const newCanvas = document.createElement('canvas');
-  newCanvas.id = 'salesChart';
-  parent.innerHTML = '';
-  parent.appendChild(newCanvas);
+    // Recréer proprement le canvas
+    const parent = ctx.parentElement;
+    const newCanvas = document.createElement('canvas');
+    newCanvas.id = 'salesChart';
+    parent.innerHTML = '';
+    parent.appendChild(newCanvas);
 
-  // ✅ Créer le nouveau graphique
-  window.salesChartInstance = new Chart(newCanvas, {
-    type: 'line',
-    data: {
-      labels: (data && data.length)
-        ? data.map(d => d.date)
-        : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-      datasets: [{
-        label: 'Ventes (€)',
-        data: (data && data.length)
-          ? data.map(d => d.amount)
-          : [0, 0, 0, 0, 0, 0, 0],
-        borderColor: '#6366f1',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
+    // Créer le nouveau graphique
+    window.salesChartInstance = new Chart(newCanvas, {
+      type: 'line',
+      data: {
+        labels: (data && data.length)
+          ? data.map(d => d.date)
+          : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+        datasets: [{
+          label: 'Ventes (€)',
+          data: (data && data.length)
+            ? data.map(d => d.amount)
+            : [0, 0, 0, 0, 0, 0, 0],
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          fill: true,
+          tension: 0.4
+        }]
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(148, 163, 184, 0.1)' },
-          ticks: { color: '#94a3b8' }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
         },
-        x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+            ticks: { color: '#94a3b8' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94a3b8' }
+          }
         }
       }
+    });
+  }
+
+  // ✅ FONCTION filterOrders AJOUTÉE (manquante pour les onglets)
+  window.filterOrders = function(filter) {
+    if (window.SupplierOrders && SupplierOrders.setFilter) {
+      SupplierOrders.setFilter(filter);
+    } else {
+      console.error('[Dashboard] SupplierOrders non disponible');
+      showToast('Erreur: Module commandes non chargé', 'error');
     }
-  });
-}
+  };
+
+  // Fonctions utilitaires globales
+  window.openProductModal = function() {
+    if (window.SupplierProducts && SupplierProducts.openModal) {
+      SupplierProducts.openModal();
+    } else {
+      openModal('product-modal');
+    }
+  };
+
+  window.saveCampaign = function() {
+    if (window.SupplierCampaigns && SupplierCampaigns.save) {
+      SupplierCampaigns.save();
+    } else {
+      console.error('[Dashboard] SupplierCampaigns non disponible');
+      showToast('Erreur: Module campagnes non chargé', 'error');
+    }
+  };
+
+  window.handleCampaignMedia = function(event) {
+    if (window.SupplierCampaigns && SupplierCampaigns.handleMediaSelect) {
+      SupplierCampaigns.handleMediaSelect(event);
+    }
+  };
+
+  window.toggleMediaType = function(type) {
+    if (window.SupplierCampaigns && SupplierCampaigns.toggleMediaType) {
+      SupplierCampaigns.toggleMediaType(type);
+    }
+  };
+
+  window.handleCtaType = function(type) {
+    if (window.SupplierCampaigns && SupplierCampaigns.handleCtaType) {
+      SupplierCampaigns.handleCtaType(type);
+    }
+  };
+
+  window.requestPayout = function() {
+    if (window.SupplierPayments && SupplierPayments.requestPayout) {
+      SupplierPayments.requestPayout();
+    } else {
+      console.error('[Dashboard] SupplierPayments non disponible');
+      showToast('Erreur: Module paiements non chargé', 'error');
+    }
+  };
+
+  window.exportTransactions = function() {
+    if (window.SupplierPayments && SupplierPayments.exportTransactions) {
+      SupplierPayments.exportTransactions();
+    } else {
+      showToast('Fonctionnalité en développement', 'info');
+    }
+  };
+
+  window.importProducts = function() {
+    if (window.SupplierProducts && SupplierProducts.importCSV) {
+      SupplierProducts.importCSV();
+    } else {
+      showToast('Fonctionnalité en développement', 'info');
+    }
+  };
+
+  window.quickAction = function() {
+    const actions = ['products', 'orders', 'advertising'];
+    const current = localStorage.getItem('dashboard_last_section') || 'overview';
+    const next = actions[(actions.indexOf(current) + 1) % actions.length] || 'products';
+    navigate(next);
+  };
+
+  window.showNotifications = function() {
+    showToast('Pas de nouvelles notifications', 'info');
+  };
+
+  window.editBrand = function() {
+    showToast('Fonctionnalité en développement', 'info');
+  };
+
+  window.viewPublicProfile = function() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.id) {
+      window.open(`../brand.html?id=${user.id}`, '_blank');
+    }
+  };
+
+  window.handleLogoUpload = function(event) {
+    showToast('Upload logo en développement', 'info');
+  };
+
+  window.updateAnalyticsPeriod = function(period) {
+    document.querySelectorAll('.analytics-period').forEach(btn => {
+      btn.classList.remove('bg-indigo-600', 'text-white');
+      btn.classList.add('bg-slate-800', 'text-slate-300');
+    });
+    const activeBtn = document.querySelector(`[data-period="${period}"]`);
+    if (activeBtn) {
+      activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+      activeBtn.classList.add('bg-indigo-600', 'text-white');
+    }
+    showToast(`Période: ${period} jours`, 'info');
+  };
+
+  window.updateSalesChart = function() {
+    const period = document.getElementById('sales-period')?.value || '7';
+    showToast(`Mise à jour graphique: ${period} jours`, 'info');
+  };
+
+})();
 </script>
 
 </body>

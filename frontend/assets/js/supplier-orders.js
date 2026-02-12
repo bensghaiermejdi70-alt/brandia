@@ -1,8 +1,8 @@
 // ============================================
-// SUPPLIER ORDERS MODULE - v3.3 CORRIGÉ & AMÉLIORÉ
-// - Correction compteur statuts
-// - Design amélioré
-// - Animations et UX
+// SUPPLIER ORDERS MODULE - v3.4 CORRIGÉ & AMÉLIORÉ
+// - Correction parsing JSON robuste
+// - Gestion des différents formats de données
+// - Logs améliorés pour debugging
 // ============================================
 
 window.SupplierOrders = {
@@ -15,7 +15,7 @@ window.SupplierOrders = {
   },
 
   init: async () => {
-    console.log('[SupplierOrders] Initializing v3.3...');
+    console.log('[SupplierOrders] Initializing v3.4...');
     SupplierOrders.setupEventListeners();
     await SupplierOrders.loadOrders();
   },
@@ -99,13 +99,13 @@ window.SupplierOrders = {
 
       const data = response.data || {};
       
-      // 🔥 CORRECTION : Normalisation des statuts
+      // ✅ CORRECTION : Normalisation des statuts
       SupplierOrders.state.orders = (data.orders || []).map(order => ({
         ...order,
         status: order.status || 'pending' // Défaut à 'pending' si null
       }));
       
-      // 🔥 CORRECTION : Recalcul correct des compteurs
+      // ✅ CORRECTION : Recalcul correct des compteurs
       const orders = SupplierOrders.state.orders;
       SupplierOrders.state.counts = {
         all: orders.length,
@@ -168,6 +168,36 @@ window.SupplierOrders = {
     animateValue('count-delivered', counts.delivered);
   },
 
+  // ✅ CORRECTION : Fonction utilitaire pour parser les items de manière robuste
+  parseItems: (rawItems) => {
+    let items = [];
+    try {
+      if (!rawItems) {
+        items = [];
+      } else if (typeof rawItems === 'string') {
+        // C'est une chaîne JSON, la parser
+        items = JSON.parse(rawItems);
+      } else if (Array.isArray(rawItems)) {
+        // C'est déjà un tableau
+        items = rawItems;
+      } else if (typeof rawItems === 'object') {
+        // C'est un objet (cas jsonb_agg), convertir en tableau si nécessaire
+        items = Object.values(rawItems);
+      }
+    } catch (e) {
+      console.warn('[SupplierOrders] Erreur parsing items:', e, 'Raw:', rawItems);
+      items = [];
+    }
+
+    // ✅ Vérification finale : s'assurer que c'est un tableau
+    if (!Array.isArray(items)) {
+      console.warn('[SupplierOrders] Items n\'est pas un tableau, conversion forcée');
+      items = [];
+    }
+
+    return items;
+  },
+
   render: () => {
     const container = document.getElementById('orders-list');
     if (!container) {
@@ -207,13 +237,8 @@ window.SupplierOrders = {
           })
         : '';
 
-      let items = [];
-      try {
-        items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
-      } catch (e) {
-        items = [];
-      }
-
+      // ✅ UTILISATION de la fonction parseItems corrigée
+      const items = SupplierOrders.parseItems(order.items);
       const firstItem = items[0] || {};
       const itemsCount = items.length;
       const totalItems = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -505,12 +530,8 @@ window.SupplierOrders = {
       document.body.appendChild(modal);
     }
 
-    let items = [];
-    try {
-      items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
-    } catch (e) {
-      items = [];
-    }
+    // ✅ UTILISATION de la fonction parseItems corrigée
+    const items = SupplierOrders.parseItems(order.items);
 
     const statusConfig = SupplierOrders.getStatusConfig(order.status);
     const canShip = ['pending', 'paid', 'processing'].includes(order.status);
@@ -540,7 +561,7 @@ window.SupplierOrders = {
       <div class="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-scaleIn">
         
         <!-- Header -->
-        <div class="p-6 border-b border-slate-700 flex justify-between items-start bg-slate-800/50">
+        <div class="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50">
           <div>
             <div class="flex items-center gap-3 mb-2">
               <h3 class="text-2xl font-bold text-white">Commande #${order.order_number || order.id}</h3>
@@ -715,7 +736,7 @@ window.SupplierOrders = {
   }
 };
 
-console.log('[SupplierOrders] Module v3.3 chargé - Design amélioré');
+console.log('[SupplierOrders] Module v3.4 chargé - Parsing JSON corrigé');
 
 // Exposer globalement
 window.viewOrder = (id) => SupplierOrders.viewOrder(id);
