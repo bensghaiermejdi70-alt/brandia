@@ -1,68 +1,66 @@
 // ============================================
-// PRODUCT CONTROLLER - Backend API
+// PRODUCT CONTROLLER - Backend API (STABLE)
 // ============================================
 
 const db = require('../../config/db');
 
 const ProductController = {
 
-    // 🔥 Liste tous les produits (avec promotions actives)
+    // ============================================
+    // 🔥 Liste tous les produits (avec filtres)
+    // ============================================
     getAll: async (req, res) => {
         try {
-            const { category, search, limit = 20, offset = 0 } = req.query;
+
+            let { category, search, limit = 20, offset = 0 } = req.query;
+
+            const limitNum = Math.min(parseInt(limit) || 20, 100);
+            const offsetNum = parseInt(offset) || 0;
 
             let sql = `
                 SELECT 
                     p.*,
                     c.name as category_name,
+                    c.slug as category_slug,
                     u.first_name as supplier_name,
-                    s.company_name as brand_name,
-
-                    pr.id as promotion_id,
-                    pr.name as promotion_name,
-                    pr.type as promotion_type,
-                    pr.value as promotion_value,
-
-                    CASE 
-                        WHEN pr.type = 'percentage' THEN ROUND(p.price - (p.price * pr.value / 100), 2)
-                        WHEN pr.type = 'fixed' THEN GREATEST(p.price - pr.value, 0)
-                        ELSE p.price
-                    END as discounted_price
-
+                    s.company_name as brand_name
                 FROM products p
                 LEFT JOIN categories c ON p.category_id = c.id
                 LEFT JOIN users u ON p.supplier_id = u.id
                 LEFT JOIN suppliers s ON u.id = s.user_id
-                LEFT JOIN promotion_products pp ON pp.product_id = p.id
-                LEFT JOIN promotions pr 
-                    ON pr.id = pp.promotion_id
-                    AND pr.status = 'active'
-                    AND CURRENT_DATE BETWEEN pr.start_date AND pr.end_date
                 WHERE (p.is_active = true OR p.is_active IS NULL)
             `;
 
             const params = [];
             let paramCount = 0;
 
+            // ✅ FILTRE CATÉGORIE (SAFE - slug uniquement)
             if (category) {
                 paramCount++;
-                sql += ` AND (c.slug = $${paramCount} OR c.id = $${paramCount})`;
+                sql += ` AND c.slug = $${paramCount}`;
                 params.push(category);
             }
 
+            // ✅ RECHERCHE (optimisée si search_vector existe)
             if (search) {
                 paramCount++;
-                sql += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount})`;
-                params.push(`%${search}%`);
+                sql += ` AND (
+                    p.search_vector @@ plainto_tsquery('simple', $${paramCount})
+                    OR p.name ILIKE $${paramCount}
+                )`;
+                params.push(search);
             }
 
-            sql += `
-                ORDER BY p.created_at DESC
-                LIMIT $${++paramCount}
-                OFFSET $${++paramCount}
-            `;
+            sql += ` ORDER BY p.created_at DESC`;
 
-            params.push(parseInt(limit), parseInt(offset));
+            // Pagination sécurisée
+            paramCount++;
+            sql += ` LIMIT $${paramCount}`;
+            params.push(limitNum);
+
+            paramCount++;
+            sql += ` OFFSET $${paramCount}`;
+            params.push(offsetNum);
 
             const result = await db.query(sql, params);
 
@@ -78,36 +76,23 @@ const ProductController = {
         }
     },
 
+
+    // ============================================
     // 🔥 Produits en vedette
+    // ============================================
     getFeatured: async (req, res) => {
         try {
+
             const result = await db.query(`
                 SELECT 
                     p.*,
                     c.name as category_name,
                     u.first_name as supplier_name,
-                    s.company_name as brand_name,
-
-                    pr.id as promotion_id,
-                    pr.name as promotion_name,
-                    pr.type as promotion_type,
-                    pr.value as promotion_value,
-
-                    CASE 
-                        WHEN pr.type = 'percentage' THEN ROUND(p.price - (p.price * pr.value / 100), 2)
-                        WHEN pr.type = 'fixed' THEN GREATEST(p.price - pr.value, 0)
-                        ELSE p.price
-                    END as discounted_price
-
+                    s.company_name as brand_name
                 FROM products p
                 LEFT JOIN categories c ON p.category_id = c.id
                 LEFT JOIN users u ON p.supplier_id = u.id
                 LEFT JOIN suppliers s ON u.id = s.user_id
-                LEFT JOIN promotion_products pp ON pp.product_id = p.id
-                LEFT JOIN promotions pr 
-                    ON pr.id = pp.promotion_id
-                    AND pr.status = 'active'
-                    AND CURRENT_DATE BETWEEN pr.start_date AND pr.end_date
                 WHERE (p.is_active = true OR p.is_active IS NULL)
                 ORDER BY p.created_at DESC
                 LIMIT 8
@@ -125,9 +110,13 @@ const ProductController = {
         }
     },
 
-    // 🔥 Détail d'un produit
+
+    // ============================================
+    // 🔥 Détail produit
+    // ============================================
     getById: async (req, res) => {
         try {
+
             const { id } = req.params;
 
             const result = await db.query(`
@@ -137,29 +126,13 @@ const ProductController = {
                     u.first_name as supplier_name,
                     s.company_name as brand_name,
                     s.logo_url as supplier_logo,
-                    s.description as supplier_description,
-
-                    pr.id as promotion_id,
-                    pr.name as promotion_name,
-                    pr.type as promotion_type,
-                    pr.value as promotion_value,
-
-                    CASE 
-                        WHEN pr.type = 'percentage' THEN ROUND(p.price - (p.price * pr.value / 100), 2)
-                        WHEN pr.type = 'fixed' THEN GREATEST(p.price - pr.value, 0)
-                        ELSE p.price
-                    END as discounted_price
-
+                    s.description as supplier_description
                 FROM products p
                 LEFT JOIN categories c ON p.category_id = c.id
                 LEFT JOIN users u ON p.supplier_id = u.id
                 LEFT JOIN suppliers s ON u.id = s.user_id
-                LEFT JOIN promotion_products pp ON pp.product_id = p.id
-                LEFT JOIN promotions pr 
-                    ON pr.id = pp.promotion_id
-                    AND pr.status = 'active'
-                    AND CURRENT_DATE BETWEEN pr.start_date AND pr.end_date
-                WHERE p.id = $1 AND (p.is_active = true OR p.is_active IS NULL)
+                WHERE p.id = $1 
+                AND (p.is_active = true OR p.is_active IS NULL)
             `, [id]);
 
             if (result.rows.length === 0) {
@@ -180,20 +153,27 @@ const ProductController = {
         }
     },
 
-    // 🔥 Créer un produit (fournisseur)
+
+    // ============================================
+    // 🔥 Create
+    // ============================================
     create: async (req, res) => {
         try {
+
             const userId = req.user.userId;
             const { name, description, price, stock_quantity, category_id, main_image_url } = req.body;
 
             if (!name || !price) {
-                return res.status(400).json({ success: false, message: 'Nom et prix sont requis' });
+                return res.status(400).json({
+                    success: false,
+                    message: 'Nom et prix sont requis'
+                });
             }
 
             const result = await db.query(`
                 INSERT INTO products 
                 (supplier_id, name, description, price, stock_quantity, category_id, main_image_url, is_active, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW())
+                VALUES ($1,$2,$3,$4,$5,$6,$7,true,NOW())
                 RETURNING *
             `, [userId, name, description, price, stock_quantity || 0, category_id, main_image_url]);
 
@@ -209,31 +189,42 @@ const ProductController = {
         }
     },
 
-    // 🔥 Modifier un produit
+
+    // ============================================
+    // 🔥 Update
+    // ============================================
     update: async (req, res) => {
         try {
+
             const userId = req.user.userId;
             const { id } = req.params;
             const { name, description, price, stock_quantity, category_id, main_image_url, is_active } = req.body;
 
-            const checkResult = await db.query(
+            const check = await db.query(
                 'SELECT id FROM products WHERE id = $1 AND supplier_id = $2',
                 [id, userId]
             );
 
-            if (checkResult.rows.length === 0) {
-                return res.status(403).json({ success: false, message: 'Produit non trouvé ou non autorisé' });
+            if (check.rows.length === 0) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Produit non autorisé'
+                });
             }
 
             const result = await db.query(`
                 UPDATE products 
-                SET name = $1, description = $2, price = $3, stock_quantity = $4,
-                    category_id = $5, main_image_url = $6, is_active = $7, updated_at = NOW()
-                WHERE id = $8 AND supplier_id = $9
+                SET name=$1, description=$2, price=$3, stock_quantity=$4,
+                    category_id=$5, main_image_url=$6, is_active=$7, updated_at=NOW()
+                WHERE id=$8 AND supplier_id=$9
                 RETURNING *
             `, [name, description, price, stock_quantity, category_id, main_image_url, is_active, id, userId]);
 
-            res.json({ success: true, message: 'Produit mis à jour', data: result.rows[0] });
+            res.json({
+                success: true,
+                message: 'Produit mis à jour',
+                data: result.rows[0]
+            });
 
         } catch (error) {
             console.error('[ProductController] update error:', error);
@@ -241,24 +232,34 @@ const ProductController = {
         }
     },
 
-    // 🔥 Supprimer un produit
+
+    // ============================================
+    // 🔥 Delete
+    // ============================================
     remove: async (req, res) => {
         try {
+
             const userId = req.user.userId;
             const { id } = req.params;
 
-            const checkResult = await db.query(
+            const check = await db.query(
                 'SELECT id FROM products WHERE id = $1 AND supplier_id = $2',
                 [id, userId]
             );
 
-            if (checkResult.rows.length === 0) {
-                return res.status(403).json({ success: false, message: 'Produit non trouvé ou non autorisé' });
+            if (check.rows.length === 0) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Produit non autorisé'
+                });
             }
 
             await db.query('DELETE FROM products WHERE id = $1', [id]);
 
-            res.json({ success: true, message: 'Produit supprimé' });
+            res.json({
+                success: true,
+                message: 'Produit supprimé'
+            });
 
         } catch (error) {
             console.error('[ProductController] remove error:', error);
@@ -266,10 +267,22 @@ const ProductController = {
         }
     },
 
-    // 🔥 Méthodes promotion placeholders
-    getAllWithPromotions: async (req, res) => ProductController.getAll(req, res),
-    getFeaturedWithPromotions: async (req, res) => ProductController.getFeatured(req, res),
-    getByIdWithPromotion: async (req, res) => ProductController.getById(req, res)
+
+    // ============================================
+    // 🔥 Promotions (fallback propre)
+    // ============================================
+    getAllWithPromotions: async (req, res) => {
+        return ProductController.getAll(req, res);
+    },
+
+    getFeaturedWithPromotions: async (req, res) => {
+        return ProductController.getFeatured(req, res);
+    },
+
+    getByIdWithPromotion: async (req, res) => {
+        return ProductController.getById(req, res);
+    }
+
 };
 
 module.exports = ProductController;
