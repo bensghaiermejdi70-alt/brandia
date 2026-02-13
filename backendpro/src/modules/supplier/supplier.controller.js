@@ -1,30 +1,15 @@
 // ============================================
-// SUPPLIER CONTROLLER - v4.3 MINIMAL (colonnes SQL corrigées)
+// SUPPLIER CONTROLLER - v4.5 (colonnes corrigées)
 // ============================================
 
-const db = require('../../config/db');
-const { uploadImage, uploadVideo } = require('../../utils/cloudinary');
-const multer = require('multer');
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Seules les images et vidéos sont autorisées'), false);
-    }
-  }
-});
+const db = require("../../config/db");
 
 class SupplierController {
 
-  /* ================= PRODUITS ================= */
+  /* ================= PAIEMENTS - v4.5 COLONNES CORRIGÉES ================= */
 
-  async getProducts(req, res) {
+  async getPayments(req, res) {
     try {
-      // 🔥 CORRECTION : Récupérer supplier_id depuis la table suppliers, pas user.id directement
       const userId = req.user.id;
       
       const supplierResult = await db.query(
@@ -33,29 +18,234 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
 
-      const result = await db.query(
-        `SELECT id, name, price, stock_quantity, main_image_url, is_active, category_id, slug
-         FROM products 
-         WHERE supplier_id = $1 
-         ORDER BY created_at DESC`,
-        [supplierId]
-      );
-      
-      // 🔥 CORRECTION : Retourner la structure attendue par le frontend
-      res.json({ 
-        success: true, 
+      // Utiliser les NOUVELLES colonnes amount et commission_amount
+      const balanceResult = await db.query(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN status = 'available' THEN amount ELSE 0 END), 0) as available_balance,
+          COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) as pending_balance,
+          COALESCE(SUM(amount), 0) as total_earnings
+        FROM supplier_payments
+        WHERE supplier_id = $1
+      `, [supplierId]);
+
+      const balance = balanceResult.rows[0] || {
+        available_balance: 0,
+        pending_balance: 0,
+        total_earnings: 0
+      };
+
+      // Toutes les colonnes existent maintenant
+      const transactionsResult = await db.query(`
+        SELECT 
+          sp.id,
+          sp.order_id,
+          sp.amount,
+          sp.commission_amount,
+          sp.supplier_amount,
+          sp.status,
+          sp.payout_id,
+          sp.stripe_transfer_id,
+          sp.created_at,
+          sp.updated_at
+        FROM supplier_payments sp
+        WHERE sp.supplier_id = $1
+        ORDER BY sp.created_at DESC
+        LIMIT 100
+      `, [supplierId]);
+
+      const transactions = transactionsResult.rows.map(t => ({
+        id: t.id,
+        order_id: t.order_id,
+        order_number: 'ORD-' + t.order_id,
+        description: 'Vente commande #' + t.order_id,
+        amount: parseFloat(t.amount) || 0,
+        commission: parseFloat(t.commission_amount) || 0,
+        net: parseFloat(t.supplier_amount) || 0,
+        status: t.status,
+        payout_id: t.payout_id,
+        stripe_transfer_id: t.stripe_transfer_id,
+        created_at: t.created_at,
+        available_at: t.status === 'available' ? t.updated_at : null,
+        paid_at: t.status === 'paid' ? t.updated_at : null
+      }));
+
+      res.json({
+        success: true,
         data: {
-          products: result.rows
+          balance: {
+            available: parseFloat(balance.available_balance) || 0,
+            pending: parseFloat(balance.pending_balance) || 0,
+            total: parseFloat(balance.total_earnings) || 0
+          },
+          transactions: transactions
         }
       });
+
+    } catch (error) {
+      console.error('[Get Payments] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async requestPayout(req, res) {
+    try {
+      const userId = req.user.id;
+      const { amount } = req.body;
+
+      if (!amount || isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ success: false, message: 'Montant invalide' });
+      }
+
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      // Utiliser la nouvelle colonne amount
+      const balanceResult = await db.query(`
+        SELECT COALESCE(SUM(amount), 0) as available
+        FROM supplier_payments
+        WHERE supplier_id = $1 AND status = 'available'
+      `, [supplierId]);
+
+      const available = parseFloat(balanceResult.rows[0].available) || 0;
+
+      if (parseFloat(amount) > available) {
+        return res.status(400).json({
+          success: false,
+          message: `Solde insuffisant. Disponible: ${available.toFixed(2)}€`
+        });
+      }
+
+      // Créer le payout
+      const payoutResult = await db.query(`
+        INSERT INTO payouts (supplier_id, amount, status, created_at)
+        VALUES ($1, $2, 'pending', NOW())
+        RETURNING id, supplier_id, amount, status, created_at
+      `, [supplierId, amount]);
+
+      const payout = payoutResult.rows[0];
+
+      // Mettre à jour supplier_payments avec le payout_id (nouvelle colonne !)
+      await db.query(`
+        UPDATE supplier_payments
+        SET status = 'payout_requested', payout_id = $1, updated_at = NOW()
+        WHERE supplier_id = $2 AND status = 'available'
+      `, [payout.id, supplierId]);
+
+      res.json({
+        success: true,
+        message: 'Demande de virement créée avec succès',
+        data: {
+          payout_id: payout.id,
+          amount: parseFloat(amount),
+          status: 'pending',
+          estimated_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        }
+      });
+
+    } catch (error) {
+      console.error('[Request Payout] Error:', error);
+      res.status(500).json({ success: false, message: 'Erreur serveur: ' + error.message });
+    }
+  }
+
+  async getPayouts(req, res) {
+    try {
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      // Récupérer les payouts avec les paiements liés (via payout_id)
+      const result = await db.query(`
+        SELECT 
+          p.*,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', sp.id,
+                'order_id', sp.order_id,
+                'amount', sp.amount,
+                'commission', sp.commission_amount,
+                'net', sp.supplier_amount
+              ) ORDER BY sp.id
+            ) FILTER (WHERE sp.id IS NOT NULL),
+            '[]'
+          ) as payments
+        FROM payouts p
+        LEFT JOIN supplier_payments sp ON sp.payout_id = p.id
+        WHERE p.supplier_id = $1
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+      `, [supplierId]);
+
+      const payouts = result.rows.map(p => ({
+        id: p.id,
+        amount: parseFloat(p.amount),
+        status: p.status,
+        stripe_payout_id: p.stripe_payout_id,
+        processed_at: p.processed_at,
+        created_at: p.created_at,
+        payments: p.payments || []
+      }));
+
+      res.json({ success: true, data: payouts });
+
+    } catch (error) {
+      console.error('[Get Payouts] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  /* ================= PRODUITS ================= */
+
+  async getProducts(req, res) {
+    try {
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      const result = await db.query(`
+        SELECT id, name, price, stock_quantity, main_image_url, is_active, category_id, slug
+        FROM products 
+        WHERE supplier_id = $1 
+        ORDER BY created_at DESC
+      `, [supplierId]);
+      
+      res.json({ 
+        success: true, 
+        data: { products: result.rows }
+      });
+      
     } catch (error) {
       console.error('[Get Products] Error:', error);
       res.status(500).json({ success: false, message: error.message });
@@ -64,7 +254,18 @@ class SupplierController {
 
   async createProduct(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
       const { name, price, stock_quantity, description, category_id } = req.body;
 
       const result = await db.query(
@@ -82,8 +283,19 @@ class SupplierController {
 
   async updateProduct(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
       const { id } = req.params;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
       
       const allowedFields = {
         name: req.body.name,
@@ -135,8 +347,19 @@ class SupplierController {
 
   async deleteProduct(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
       const { id } = req.params;
+
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
 
       const result = await db.query(
         'DELETE FROM products WHERE id = $1 AND supplier_id = $2 RETURNING id, name',
@@ -368,198 +591,23 @@ class SupplierController {
     }
   }
 
-  /* ================= PAIEMENTS - v4.3 MINIMAL ================= */
-
-  async getPayments(req, res) {
-    try {
-      const userId = req.user.id;
-      
-      const supplierResult = await db.query(
-        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
-        [userId]
-      );
-      
-      if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
-      }
-      
-      const supplierId = supplierResult.rows[0].id;
-
-      // 🔥 CORRECTION v4.3 : Requête avec SEULEMENT les colonnes de base
-      const balanceResult = await db.query(`
-        SELECT 
-          COALESCE(SUM(CASE WHEN status = 'available' THEN supplier_amount ELSE 0 END), 0) as available_balance,
-          COALESCE(SUM(CASE WHEN status = 'pending' THEN supplier_amount ELSE 0 END), 0) as pending_balance,
-          COALESCE(SUM(supplier_amount), 0) as total_earnings
-        FROM supplier_payments
-        WHERE supplier_id = $1
-      `, [supplierId]);
-
-      const balance = balanceResult.rows[0] || {
-        available_balance: 0,
-        pending_balance: 0,
-        total_earnings: 0
-      };
-
-      // 🔥 CORRECTION v4.3 : Colonnes minimales : id, order_id, supplier_amount, status, created_at
-      const transactionsResult = await db.query(`
-        SELECT 
-          sp.id,
-          sp.order_id,
-          sp.supplier_amount,
-          sp.status,
-          sp.created_at
-        FROM supplier_payments sp
-        WHERE sp.supplier_id = $1
-        ORDER BY sp.created_at DESC
-        LIMIT 100
-      `, [supplierId]);
-
-      const transactions = transactionsResult.rows.map(t => ({
-        id: t.id,
-        order_id: t.order_id,
-        order_number: 'ORD-' + t.order_id,
-        description: 'Vente commande #' + t.order_id,
-        amount: parseFloat(t.supplier_amount) || 0,
-        commission: 0,
-        total: parseFloat(t.supplier_amount) || 0,
-        status: t.status,
-        created_at: t.created_at,
-        available_at: null, // Pas dans la table
-        paid_at: t.status === 'paid' ? t.created_at : null
-      }));
-
-      res.json({
-        success: true,
-        data: {
-          balance: {
-            available: parseFloat(balance.available_balance) || 0,
-            pending: parseFloat(balance.pending_balance) || 0,
-            total: parseFloat(balance.total_earnings) || 0
-          },
-          transactions: transactions
-        }
-      });
-
-    } catch (error) {
-      console.error('[Get Payments] Error:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
-  async requestPayout(req, res) {
-    try {
-      const userId = req.user.id;
-      const { amount } = req.body;
-
-      if (!amount || isNaN(amount) || amount <= 0) {
-        return res.status(400).json({ success: false, message: 'Montant invalide' });
-      }
-
-      const supplierResult = await db.query(
-        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
-        [userId]
-      );
-      
-      if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
-      }
-      
-      const supplierId = supplierResult.rows[0].id;
-
-      const balanceResult = await db.query(`
-        SELECT COALESCE(SUM(supplier_amount), 0) as available
-        FROM supplier_payments
-        WHERE supplier_id = $1 AND status = 'available'
-      `, [supplierId]);
-
-      const available = parseFloat(balanceResult.rows[0].available) || 0;
-
-      if (parseFloat(amount) > available) {
-        return res.status(400).json({
-          success: false,
-          message: `Solde insuffisant. Disponible: ${available}€`
-        });
-      }
-
-      const payoutResult = await db.query(`
-        INSERT INTO payouts (supplier_id, amount, status, created_at)
-        VALUES ($1, $2, 'pending', NOW())
-        RETURNING *
-      `, [supplierId, amount]);
-
-      const payout = payoutResult.rows[0];
-
-      await db.query(`
-        UPDATE supplier_payments
-        SET status = 'payout_requested', payout_id = $1
-        WHERE supplier_id = $2 AND status = 'available'
-      `, [payout.id, supplierId]);
-
-      res.json({
-        success: true,
-        message: 'Demande de virement créée',
-        data: {
-          payout_id: payout.id,
-          amount: parseFloat(amount),
-          status: 'pending',
-          estimated_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      });
-
-    } catch (error) {
-      console.error('[Request Payout] Error:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
-  async getPayouts(req, res) {
-    try {
-      const userId = req.user.id;
-      
-      const supplierResult = await db.query(
-        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
-        [userId]
-      );
-      
-      if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
-      }
-      
-      const supplierId = supplierResult.rows[0].id;
-
-      const result = await db.query(`
-        SELECT 
-          p.*,
-          COALESCE(
-            json_agg(
-              json_build_object(
-                'id', sp.id,
-                'amount', sp.supplier_amount
-              ) ORDER BY sp.id
-            ) FILTER (WHERE sp.id IS NOT NULL),
-            '[]'
-          ) as payments
-        FROM payouts p
-        LEFT JOIN supplier_payments sp ON sp.payout_id = p.id
-        WHERE p.supplier_id = $1
-        GROUP BY p.id
-        ORDER BY p.created_at DESC
-      `, [supplierId]);
-
-      res.json({ success: true, data: result.rows });
-
-    } catch (error) {
-      console.error('[Get Payouts] Error:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  }
-
   /* ================= PROMOTIONS ================= */
 
   async getPromotions(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
       const result = await db.query(
         'SELECT * FROM promotions WHERE supplier_id = $1 ORDER BY created_at DESC',
         [supplierId]
@@ -573,7 +621,18 @@ class SupplierController {
 
   async createPromotion(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
       const { name, type, value, code, max_usage, start_date, end_date } = req.body;
 
       const result = await db.query(
@@ -591,7 +650,18 @@ class SupplierController {
 
   async updatePromotion(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
       const { id } = req.params;
       const { name, type, value, code, max_usage, start_date, end_date } = req.body;
 
@@ -615,7 +685,18 @@ class SupplierController {
 
   async deletePromotion(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
       const { id } = req.params;
 
       await db.query('DELETE FROM promotions WHERE id = $1 AND supplier_id = $2', [id, supplierId]);
@@ -896,48 +977,6 @@ class SupplierController {
     }
   }
 
-  /* ================= UPLOADS ================= */
-
-  async uploadImage(req, res) {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
-      }
-
-      const result = await uploadImage(req.file.buffer);
-      
-      res.json({ 
-        success: true, 
-        data: { url: result.url || result, type: 'image' } 
-      });
-    } catch (error) {
-      console.error('[Upload Image] Error:', error);
-      res.status(500).json({ success: false, message: 'Erreur upload image: ' + error.message });
-    }
-  }
-
-  async uploadCampaignVideo(req, res) {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Aucun fichier vidéo fourni' });
-      }
-
-      if (!req.file.mimetype.startsWith('video/')) {
-        return res.status(400).json({ success: false, message: 'Le fichier doit être une vidéo' });
-      }
-
-      const result = await uploadVideo(req.file.buffer);
-
-      res.json({ 
-        success: true, 
-        data: { url: result.url || result, type: 'video', thumbnailUrl: result.thumbnailUrl } 
-      });
-    } catch (error) {
-      console.error('[Upload Video] Error:', error);
-      res.status(500).json({ success: false, message: 'Erreur upload vidéo: ' + error.message });
-    }
-  }
-
   /* ================= STATS ================= */
 
   async getStats(req, res) {
@@ -963,7 +1002,7 @@ class SupplierController {
           WHERE oi.supplier_id = $1 AND o.status NOT IN ('cancelled', 'refunded')
         `, [supplierId]),
         db.query('SELECT COUNT(DISTINCT order_id) FROM order_items WHERE supplier_id = $1', [supplierId]),
-        db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1 AND is_active = true', [userId]),
+        db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1 AND is_active = true', [supplierId]),
         db.query('SELECT COUNT(*) FROM supplier_campaigns WHERE supplier_id = $1 AND status = $2', [supplierId, 'active'])
       ]);
 
@@ -988,7 +1027,6 @@ class SupplierController {
 const controller = new SupplierController();
 
 module.exports = {
-  uploadMiddleware: upload.single('media'),
   getStats: controller.getStats.bind(controller),
   getProducts: controller.getProducts.bind(controller),
   createProduct: controller.createProduct.bind(controller),
@@ -1010,7 +1048,5 @@ module.exports = {
   deleteCampaign: controller.deleteCampaign.bind(controller),
   getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
   trackCampaignClick: controller.trackCampaignClick.bind(controller),
-  trackCampaignView: controller.trackCampaignView.bind(controller),
-  uploadImage: controller.uploadImage.bind(controller),
-  uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller)
+  trackCampaignView: controller.trackCampaignView.bind(controller)
 };
