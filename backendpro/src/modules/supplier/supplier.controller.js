@@ -424,7 +424,7 @@ class SupplierController {
 
   /* ================= PAIEMENTS ================= */
 
-  async getPayments(req, res) {
+   async getPayments(req, res) {
     try {
       const userId = req.user.id;
       
@@ -442,9 +442,13 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
+      // 🔥 CORRECTION : Pas de colonne sp.amount, utiliser supplier_amount
       const balanceResult = await db.query(`
-        SELECT available_balance, pending_balance, total_earnings
-        FROM supplier_balance_view
+        SELECT 
+          COALESCE(SUM(CASE WHEN status = 'available' THEN supplier_amount ELSE 0 END), 0) as available_balance,
+          COALESCE(SUM(CASE WHEN status = 'pending' THEN supplier_amount ELSE 0 END), 0) as pending_balance,
+          COALESCE(SUM(supplier_amount), 0) as total_earnings
+        FROM supplier_payments
         WHERE supplier_id = $1
       `, [supplierId]);
 
@@ -454,12 +458,12 @@ class SupplierController {
         total_earnings: 0
       };
 
+      // 🔥 CORRECTION : Requête sans sp.amount
       const transactionsResult = await db.query(`
         SELECT 
           sp.id,
           sp.order_id,
           o.order_number as order_number,
-          sp.amount as total_amount,
           sp.supplier_amount as amount,
           sp.commission_amount,
           sp.description,
@@ -481,7 +485,7 @@ class SupplierController {
         description: t.description || 'Vente commande #' + (t.order_number || t.order_id),
         amount: parseFloat(t.amount),
         commission: parseFloat(t.commission_amount) || 0,
-        total: parseFloat(t.total_amount),
+        total: parseFloat(t.amount) + (parseFloat(t.commission_amount) || 0),
         status: t.status,
         created_at: t.created_at,
         available_at: t.available_at,
@@ -505,8 +509,7 @@ class SupplierController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
-
-  async requestPayout(req, res) {
+    async requestPayout(req, res) {
     try {
       const userId = req.user.id;
       const { amount } = req.body;
@@ -532,6 +535,7 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
+      // 🔥 CORRECTION : Utiliser supplier_amount pas amount
       const balanceResult = await db.query(`
         SELECT COALESCE(SUM(supplier_amount), 0) as available
         FROM supplier_payments
@@ -555,6 +559,7 @@ class SupplierController {
 
       const payout = payoutResult.rows[0];
 
+      // 🔥 CORRECTION : Utiliser supplier_amount
       await db.query(`
         UPDATE supplier_payments
         SET status = 'payout_requested', payout_id = $1
@@ -564,12 +569,18 @@ class SupplierController {
             SELECT id FROM supplier_payments
             WHERE supplier_id = $2 AND status = 'available'
             ORDER BY created_at ASC
-            LIMIT (
-              SELECT COUNT(*) FROM supplier_payments
-              WHERE supplier_id = $2 AND status = 'available'
-              AND supplier_amount <= $3
-            )
+            LIMIT 100
           )
+          AND (
+            SELECT COALESCE(SUM(supplier_amount), 0) 
+            FROM supplier_payments 
+            WHERE id IN (
+              SELECT id FROM supplier_payments
+              WHERE supplier_id = $2 AND status = 'available'
+              ORDER BY created_at ASC
+              LIMIT 100
+            )
+          ) <= $3
       `, [payout.id, supplierId, amount]);
 
       res.json({
@@ -588,7 +599,6 @@ class SupplierController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
-
   async getPayouts(req, res) {
     try {
       const userId = req.user.id;
