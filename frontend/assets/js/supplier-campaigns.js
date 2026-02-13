@@ -22,13 +22,56 @@ window.SupplierCampaigns = {
 
   loadProducts: async function() {
     try {
+      console.log('[Campaigns] Loading products...');
+      
+      // 🔥 CORRECTION : Attendre que BrandiaAPI soit disponible
+      if (!window.BrandiaAPI || !window.BrandiaAPI.Supplier) {
+        console.error('[Campaigns] BrandiaAPI not available');
+        this.state.products = [];
+        return;
+      }
+      
       const response = await BrandiaAPI.Supplier.getProducts();
-      // 🔥 CORRECTION : Pas d'optional chaining
-      this.state.products = (response.data && response.data.products) ? response.data.products : (response.data || []);
+      console.log('[Campaigns] Products response:', response);
+      
+      // 🔥 CORRECTION : Gestion flexible de la réponse
+      if (response.success) {
+        // Format 1: response.data.products (nouveau format corrigé)
+        // Format 2: response.data directement (ancien format)
+        // Format 3: response.data est un tableau
+        if (response.data && Array.isArray(response.data.products)) {
+          this.state.products = response.data.products;
+        } else if (Array.isArray(response.data)) {
+          this.state.products = response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          this.state.products = [response.data];
+        } else {
+          this.state.products = [];
+        }
+      } else {
+        console.error('[Campaigns] API error:', response.message);
+        this.state.products = [];
+      }
+      
       console.log('[Campaigns] Loaded products:', this.state.products.length);
+      
     } catch (error) {
-      console.error('Erreur chargement produits:', error);
+      console.error('[Campaigns] Error loading products:', error);
       this.state.products = [];
+      
+      // Afficher message d'erreur dans l'UI
+      const targetList = document.getElementById('target-products-list');
+      if (targetList) {
+        targetList.innerHTML = `
+        <div class="text-center py-4 text-red-400">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Erreur de chargement des produits
+          <button onclick="SupplierCampaigns.loadProducts()" class="ml-2 text-indigo-400 underline">
+            Réessayer
+          </button>
+        </div>
+      `;
+      }
     }
   },
 

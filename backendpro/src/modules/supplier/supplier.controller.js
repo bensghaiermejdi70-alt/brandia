@@ -24,12 +24,38 @@ class SupplierController {
 
   async getProducts(req, res) {
     try {
-      const supplierId = req.user.id;
+      // 🔥 CORRECTION : Récupérer supplier_id depuis la table suppliers, pas user.id directement
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
       const result = await db.query(
-        'SELECT * FROM products WHERE supplier_id = $1 ORDER BY created_at DESC',
+        `SELECT id, name, price, stock_quantity, main_image_url, is_active, category_id, slug
+         FROM products 
+         WHERE supplier_id = $1 
+         ORDER BY created_at DESC`,
         [supplierId]
       );
-      res.json({ success: true, data: result.rows });
+      
+      // 🔥 CORRECTION : Retourner la structure attendue par le frontend
+      res.json({ 
+        success: true, 
+        data: {
+          products: result.rows
+        }
+      });
     } catch (error) {
       console.error('[Get Products] Error:', error);
       res.status(500).json({ success: false, message: error.message });

@@ -13,6 +13,19 @@ console.log('[Supplier Routes] Loading...');
 console.log('[Supplier Routes] Controller methods:', Object.keys(supplierController));
 
 // ============================================
+// ROUTES PUBLIQUES (sans auth) - À AJOUTER
+// Ces routes doivent être AVANT le router.use(authenticate)
+// ============================================
+// Récupérer campagne active pour un produit (PUBLIC)
+router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
+
+// Tracker une vue (PUBLIC)
+router.post('/public/campaigns/view', supplierController.trackCampaignView);
+
+// Tracker un clic (PUBLIC)
+router.post('/public/campaigns/click', supplierController.trackCampaignClick);
+
+// ============================================
 // MIDDLEWARES - Auth + Role fournisseur
 // ============================================
 router.use(authenticate);
