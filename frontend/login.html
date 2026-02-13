@@ -6,6 +6,7 @@
   <title>Connexion - Brandia</title>
   <script src="https://cdn.tailwindcss.com "></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { 
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
@@ -54,18 +55,172 @@
       opacity: 0.7;
       cursor: not-allowed;
     }
+    /* Brandia Logo Styles */
+    @keyframes brandia-shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes brandia-float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    @keyframes brandia-pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    @keyframes brandia-shine {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+    .brandia-logo {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: transform 0.3s ease;
+    }
+    .brandia-logo:hover {
+      transform: scale(1.02);
+    }
+    .brandia-icon-wrap {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+    .brandia-pulse {
+      position: absolute;
+      inset: -3px;
+      border-radius: 12px;
+      border: 1px solid #e879f9;
+      opacity: 0.3;
+      animation: brandia-pulse-ring 3s ease-in-out infinite;
+    }
+    .brandia-icon-bg {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #a855f7 0%, #e879f9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px -6px rgba(168, 85, 247, 0.5);
+      transform: rotate(6deg);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .brandia-icon-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    }
+    .brandia-logo:hover .brandia-icon-bg {
+      transform: rotate(0deg) scale(1.05);
+      box-shadow: 0 12px 32px -8px rgba(168, 85, 247, 0.6);
+    }
+    .brandia-logo:hover .brandia-icon-bg::after {
+      animation: brandia-shine 0.6s ease;
+    }
+    .brandia-icon-svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+    .brandia-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ffffff 0%, #e879f9 25%, #ffffff 50%, #e879f9 75%, #ffffff 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: brandia-shimmer 4s linear infinite;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    /* Header scroll state */
+    .header-scrolled .brandia-logo {
+      transform: scale(0.9);
+    }
+    .header-scrolled .brandia-text {
+      font-size: 1.1rem;
+    }
+    /* Hero logo variant */
+    .brandia-logo--hero {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .brandia-logo--hero .brandia-icon-wrap {
+      width: 80px;
+      height: 80px;
+    }
+    .brandia-logo--hero .brandia-icon-bg {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+    }
+    .brandia-logo--hero .brandia-icon-svg {
+      width: 44px;
+      height: 44px;
+    }
+    .brandia-logo--hero .brandia-text {
+      font-size: 3rem;
+    }
+    .brandia-logo--hero .brandia-pulse {
+      inset: -8px;
+      border-radius: 28px;
+    }
+    .brandia-logo--hero .brandia-pulse:nth-child(2) {
+      display: block;
+      inset: -16px;
+      border-radius: 36px;
+      animation-delay: 0.5s;
+    }
+    .brandia-tagline {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #c084fc;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body class="flex items-center justify-center p-4 text-slate-200">
 
 <div class="w-full max-w-md fade-in">
-  <!-- Logo -->
-  <div class="text-center mb-8">
-    <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
-      <i class="fas fa-store text-white text-2xl"></i>
-    </div>
-    <h1 class="text-3xl font-bold text-white">Brandia</h1>
-    <p class="text-slate-400 text-sm mt-2">Connectez-vous à votre compte</p>
+  <!-- Logo Login -->
+  <div class="flex justify-center mb-8">
+    <a href="index.html" class="brandia-logo brandia-logo--hero">
+      <div class="brandia-icon-wrap">
+        <div class="brandia-pulse"></div>
+        <div class="brandia-pulse"></div>
+        <div class="brandia-icon-bg">
+          <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
+                  stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
+                  stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
+            <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
+            <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
+          </svg>
+        </div>
+      </div>
+      <div class="text-center">
+        <span class="brandia-text">Brandia</span>
+        <div class="brandia-tagline">Connexion</div>
+      </div>
+    </a>
   </div>
 
   <!-- ALREADY CONNECTED NOTIFICATION -->

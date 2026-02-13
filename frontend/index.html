@@ -26,6 +26,14 @@
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.success { background: #10b981; }
     .toast.error { background: #ef4444; }
+    header {
+      transition: all 0.3s ease;
+    }
+    header.header-scrolled {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      background: rgba(17, 24, 39, 0.98);
+    }
   </style>
   <!-- Brandia Logo Component Styles -->
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -444,6 +452,29 @@
 
 <div id="toast" class="toast"></div>
 <script>
+// ==========================================
+// HEADER SCROLL EFFECT - Logo rétrécit
+// ==========================================
+function initHeaderScroll() {
+  const header = document.querySelector('header');
+  const logo = document.getElementById('header-logo');
+  if (!header || !logo) return;
+  let lastScroll = 0;
+  window.addEventListener('scroll', () => {
+    const currentScroll = window.pageYOffset;
+    if (currentScroll > 100) {
+      header.classList.add('header-scrolled');
+      // Réduire le logo
+      logo.style.transform = 'scale(0.85)';
+      logo.querySelector('.brandia-text').style.fontSize = '1.1rem';
+    } else {
+      header.classList.remove('header-scrolled');
+      logo.style.transform = 'scale(1)';
+      logo.querySelector('.brandia-text').style.fontSize = '1.25rem';
+    }
+    lastScroll = currentScroll;
+  });
+}
 // ==========================================
 // CONFIGURATION CATÉGORIES
 // ==========================================
@@ -932,6 +963,7 @@ function initAuth() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('✅ Brandia chargé');
+  initHeaderScroll();
   initCountrySelector();
   loadCategories();
   await loadFeaturedProducts(); // 🔥 APPEL CRUCIAL AJOUTÉ
