@@ -586,34 +586,41 @@ async function loadFeaturedProducts() {
       const finalPrice = parseFloat(p.final_price) || parseFloat(p.price) || 0;
       const originalPrice = parseFloat(p.original_price) || parseFloat(p.price) || 0;
       const discountDisplay = p.discount_display || p.savings_display || '';
-      
       const imageUrl = p.main_image_url || p.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
-      
       return `
       <div class="bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500 transition group">
-          <div class="relative aspect-square overflow-hidden">
-              <img src="${imageUrl}" alt="${p.name}" 
-                   class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                   onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
-              ${hasPromo ? `
-                  <div class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      ${discountDisplay || '- Promo'}
-                  </div>
+        <!-- 🔥 LIEN SUR TOUTE LA ZONE IMAGE + TITRE -->
+        <a href="product.html?id=${p.id}" class="block relative aspect-square overflow-hidden">
+          <img src="${imageUrl}" alt="${p.name}"
+               class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+               onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
+          <!-- Badge promo -->
+          ${hasPromo ? `
+            <div class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+              ${discountDisplay || '- Promo'}
+            </div>
+          ` : ''}
+        </a>
+        <div class="p-4">
+          <!-- 🔥 LIEN SUR LE TITRE AUSSI -->
+          <a href="product.html?id=${p.id}" class="block">
+            <p class="text-xs text-indigo-400 mb-1">${p.category_name || p.category_slug || 'Catégorie'}</p>
+            <h3 class="font-semibold text-white mb-2 truncate hover:text-indigo-400 transition">${p.name}</h3>
+          </a>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-lg font-bold ${hasPromo ? 'text-emerald-400' : 'text-white'}">${formatPrice(finalPrice)}</span>
+              ${hasPromo && originalPrice > finalPrice ? `
+                <span class="text-sm text-neutral-500 line-through">${formatPrice(originalPrice)}</span>
               ` : ''}
-              <button onclick="addToCart(${p.id})" class="absolute bottom-3 right-3 w-10 h-10 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition">
-                  <i class="fas fa-plus"></i>
-              </button>
+            </div>
+            <!-- 🔥 BOUTON + RESTE MAIS CLIQUE PAS SUR LE LIEN -->
+            <button onclick="addToCart(${p.id}, event)" 
+                    class="w-10 h-10 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white transition z-20">
+              <i class="fas fa-plus"></i>
+            </button>
           </div>
-          <div class="p-4">
-              <p class="text-xs text-indigo-400 mb-1">${p.category_name || p.category_slug || 'Catégorie'}</p>
-              <h3 class="font-semibold text-white mb-2 truncate">${p.name}</h3>
-              <div class="flex items-center gap-2">
-                  <span class="text-lg font-bold ${hasPromo ? 'text-emerald-400' : 'text-white'}">${formatPrice(finalPrice)}</span>
-                  ${hasPromo && originalPrice > finalPrice ? `
-                      <span class="text-sm text-neutral-500 line-through">${formatPrice(originalPrice)}</span>
-                  ` : ''}
-              </div>
-          </div>
+        </div>
       </div>
       `;
     }).join('');
@@ -637,12 +644,16 @@ async function loadFeaturedProducts() {
 }
 
 async function addToCart(productId) {
+  // 🔥 Empêcher la navigation si on clique sur le bouton
+  if (arguments.length > 1 && arguments[1]) {
+    const event = arguments[1];
+    event.preventDefault();
+    event.stopPropagation();
+  }
   try {
     const response = await BrandiaAPI.Products.getById(productId);
     if (!response.success) throw new Error('Produit non trouvé');
-    
     const product = response.data.product || response.data;
-    
     BrandiaAPI.Cart.add({
       id: product.id,
       name: product.name,
@@ -652,8 +663,8 @@ async function addToCart(productId) {
       main_image_url: product.main_image_url,
       quantity: 1
     });
-    
     showToast('Produit ajouté au panier !', 'success');
+    BrandiaAPI.Cart.updateBadge(); // 🔥 Mettre à jour le badge immédiatement
   } catch (error) {
     console.error('[Home] Erreur ajout panier:', error);
     showToast('Erreur lors de l\'ajout', 'error');
