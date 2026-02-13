@@ -15,7 +15,6 @@ const paymentRoutes = require('../modules/payments/payment.routes');
 const orderRoutes = require('../modules/orders/order.routes');
 const countryRoutes = require('../modules/countries/country.routes');
 const supplierRoutes = require('../modules/supplier/supplier.routes');
-const publicRoutes = require('./public.routes');
 
 // ============================================
 // HEALTH CHECK
@@ -300,7 +299,6 @@ router.use('/orders', orderRoutes);
 router.use('/countries', countryRoutes);
 router.use('/supplier', supplierRoutes);
 // Mount public routes under /api/public
-router.use('/public', publicRoutes);
 
 // ============================================
 // Fallback produit sans promotion
