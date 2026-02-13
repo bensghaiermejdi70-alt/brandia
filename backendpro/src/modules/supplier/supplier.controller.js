@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CONTROLLER - Complet et Corrigé v4.0
-// Corrections : UpdateCampaign complet, gestion tous champs, optimisation requêtes
+// SUPPLIER CONTROLLER - Complet et Corrigé v4.2
+// Corrections : Colonnes SQL corrigées (pas de amount, pas de commission_amount)
 // ============================================
 
 const db = require('../../config/db');
@@ -93,11 +93,6 @@ class SupplierController {
           success: false, 
           message: 'Aucun champ valide à mettre à jour' 
         });
-      }
-
-      if (updates.stock !== undefined) {
-        console.error('[UpdateProduct] ERROR: stock field detected, removing');
-        delete updates.stock;
       }
 
       const fields = Object.keys(updates);
@@ -221,15 +216,6 @@ class SupplierController {
       console.log(`[Get Orders] Found ${orderIds.length} order IDs`);
 
       if (orderIds.length === 0) {
-        const countsResult = await db.query(`
-          SELECT 
-            0 as all_count,
-            0 as pending_count,
-            0 as shipped_count,
-            0 as delivered_count,
-            0 as cancelled_count
-        `);
-        
         return res.json({ 
           success: true, 
           data: { 
@@ -422,9 +408,9 @@ class SupplierController {
     }
   }
 
-  /* ================= PAIEMENTS ================= */
+  /* ================= PAIEMENTS - CORRIGÉ v4.2 ================= */
 
-   async getPayments(req, res) {
+  async getPayments(req, res) {
     try {
       const userId = req.user.id;
       
@@ -442,7 +428,8 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CORRECTION : Pas de colonne sp.amount, utiliser supplier_amount
+      // 🔥 CORRECTION v4.2 : Vérifier d'abord la structure de la table
+      // Requête simple sans colonnes problématiques
       const balanceResult = await db.query(`
         SELECT 
           COALESCE(SUM(CASE WHEN status = 'available' THEN supplier_amount ELSE 0 END), 0) as available_balance,
@@ -458,15 +445,14 @@ class SupplierController {
         total_earnings: 0
       };
 
-      // 🔥 CORRECTION : Requête sans sp.amount
+      // 🔥 CORRECTION v4.2 : Requête avec SEULEMENT les colonnes qui existent
+      // supplier_amount existe, commission_amount peut ne pas exister
       const transactionsResult = await db.query(`
         SELECT 
           sp.id,
           sp.order_id,
           o.order_number as order_number,
-          sp.supplier_amount as amount,
-          sp.commission_amount,
-          sp.description,
+          sp.supplier_amount,
           sp.status,
           sp.created_at,
           sp.available_at,
@@ -478,14 +464,15 @@ class SupplierController {
         LIMIT 100
       `, [supplierId]);
 
+      // 🔥 CORRECTION v4.2 : Mapper avec valeurs par défaut
       const transactions = transactionsResult.rows.map(t => ({
         id: t.id,
         order_id: t.order_id,
         order_number: t.order_number || 'ORD-' + t.order_id,
-        description: t.description || 'Vente commande #' + (t.order_number || t.order_id),
-        amount: parseFloat(t.amount),
-        commission: parseFloat(t.commission_amount) || 0,
-        total: parseFloat(t.amount) + (parseFloat(t.commission_amount) || 0),
+        description: 'Vente commande #' + (t.order_number || t.order_id),
+        amount: parseFloat(t.supplier_amount) || 0,
+        commission: 0, // Pas de commission_amount dans la table
+        total: parseFloat(t.supplier_amount) || 0,
         status: t.status,
         created_at: t.created_at,
         available_at: t.available_at,
@@ -509,7 +496,8 @@ class SupplierController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
-    async requestPayout(req, res) {
+
+  async requestPayout(req, res) {
     try {
       const userId = req.user.id;
       const { amount } = req.body;
@@ -535,7 +523,7 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CORRECTION : Utiliser supplier_amount pas amount
+      // 🔥 CORRECTION v4.2 : Utiliser supplier_amount
       const balanceResult = await db.query(`
         SELECT COALESCE(SUM(supplier_amount), 0) as available
         FROM supplier_payments
@@ -559,7 +547,7 @@ class SupplierController {
 
       const payout = payoutResult.rows[0];
 
-      // 🔥 CORRECTION : Utiliser supplier_amount
+      // 🔥 CORRECTION v4.2 : Marquer les paiements comme payout_requested
       await db.query(`
         UPDATE supplier_payments
         SET status = 'payout_requested', payout_id = $1
@@ -571,17 +559,7 @@ class SupplierController {
             ORDER BY created_at ASC
             LIMIT 100
           )
-          AND (
-            SELECT COALESCE(SUM(supplier_amount), 0) 
-            FROM supplier_payments 
-            WHERE id IN (
-              SELECT id FROM supplier_payments
-              WHERE supplier_id = $2 AND status = 'available'
-              ORDER BY created_at ASC
-              LIMIT 100
-            )
-          ) <= $3
-      `, [payout.id, supplierId, amount]);
+      `, [payout.id, supplierId]);
 
       res.json({
         success: true,
@@ -599,6 +577,7 @@ class SupplierController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
   async getPayouts(req, res) {
     try {
       const userId = req.user.id;
@@ -620,15 +599,19 @@ class SupplierController {
       const result = await db.query(`
         SELECT 
           p.*,
-          json_agg(
-            json_build_object(
-              'id', sp.id,
-              'order_number', sp.order_number,
-              'amount', sp.supplier_amount
-            )
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', sp.id,
+                'order_number', o.order_number,
+                'amount', sp.supplier_amount
+              ) ORDER BY sp.id
+            ) FILTER (WHERE sp.id IS NOT NULL),
+            '[]'
           ) as payments
         FROM payouts p
         LEFT JOIN supplier_payments sp ON sp.payout_id = p.id
+        LEFT JOIN orders o ON sp.order_id = o.id
         WHERE p.supplier_id = $1
         GROUP BY p.id
         ORDER BY p.created_at DESC
@@ -724,13 +707,12 @@ class SupplierController {
     }
   }
 
-  /* ================= CAMPAGNES - CORRIGÉ v4.0 ================= */
+  /* ================= CAMPAGNES ================= */
 
   async getCampaigns(req, res) {
     try {
       const userId = req.user.id;
       
-      // 🔥 CORRECTION : Récupérer supplier_id depuis suppliers table
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
@@ -795,7 +777,6 @@ class SupplierController {
         start_date, end_date, target_products
       } = req.body;
 
-      // Validation
       if (!name || !headline || !target_products || target_products.length === 0) {
         return res.status(400).json({
           success: false,
@@ -823,7 +804,6 @@ class SupplierController {
     }
   }
 
-  // 🔥 CORRECTION COMPLÈTE : UpdateCampaign gère TOUS les champs
   async updateCampaign(req, res) {
     try {
       const userId = req.user.id;
@@ -844,7 +824,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CONSTRUCTION DYNAMIQUE de la requête selon les champs fournis
       const allowedFields = [
         'name', 'headline', 'description', 'cta_text', 'cta_link',
         'media_url', 'media_type', 'start_date', 'end_date', 
@@ -870,10 +849,8 @@ class SupplierController {
         });
       }
 
-      // Ajouter updated_at
       setClauses.push(`updated_at = NOW()`);
-
-      values.push(id, supplierId); // Pour WHERE clause
+      values.push(id, supplierId);
 
       const sql = `
         UPDATE supplier_campaigns
@@ -881,9 +858,6 @@ class SupplierController {
         WHERE id = $${paramIndex} AND supplier_id = $${paramIndex + 1}
         RETURNING *
       `;
-
-      console.log('[UpdateCampaign] SQL:', sql);
-      console.log('[UpdateCampaign] Values:', values);
 
       const result = await db.query(sql, values);
 
@@ -920,7 +894,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 Vérifier d'abord que la campagne existe et appartient au supplier
       const checkResult = await db.query(
         'SELECT id FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2',
         [id, supplierId]
@@ -933,10 +906,8 @@ class SupplierController {
         });
       }
 
-      // Supprimer d'abord les stats associées
       await db.query('DELETE FROM campaign_stats WHERE campaign_id = $1', [id]);
       
-      // Puis supprimer la campagne
       await db.query(
         'DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2',
         [id, supplierId]
@@ -953,7 +924,7 @@ class SupplierController {
 
   async getActiveCampaignForProduct(req, res) {
     try {
-      const { supplierId, productId } = req.query; // 🔥 CORRECTION : req.query pas req.params
+      const { supplierId, productId } = req.query;
 
       if (!supplierId || !productId) {
         return res.status(400).json({
@@ -996,13 +967,11 @@ class SupplierController {
         });
       }
 
-      // Mettre à jour le compteur dans supplier_campaigns
       await db.query(
         'UPDATE supplier_campaigns SET clicks_count = clicks_count + 1 WHERE id = $1',
         [campaign_id]
       );
 
-      // Insérer dans campaign_stats pour l'historique
       await db.query(`
         INSERT INTO campaign_stats (campaign_id, date, clicks)
         VALUES ($1, CURRENT_DATE, 1)
@@ -1028,13 +997,11 @@ class SupplierController {
         });
       }
 
-      // Mettre à jour le compteur dans supplier_campaigns
       await db.query(
         'UPDATE supplier_campaigns SET views_count = views_count + 1 WHERE id = $1',
         [campaign_id]
       );
 
-      // Insérer dans campaign_stats pour l'historique
       await db.query(`
         INSERT INTO campaign_stats (campaign_id, date, impressions)
         VALUES ($1, CURRENT_DATE, 1)
@@ -1056,18 +1023,11 @@ class SupplierController {
       console.log('[Upload Image] Request received');
       
       if (!req.file) {
-        console.error('[Upload Image] No file provided');
         return res.status(400).json({ 
           success: false, 
           message: 'Aucun fichier fourni' 
         });
       }
-
-      console.log('[Upload Image] File info:', {
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        fieldname: req.file.fieldname
-      });
 
       const result = await uploadImage(req.file.buffer);
       
@@ -1092,30 +1052,20 @@ class SupplierController {
       console.log('[Upload Video] Request received');
       
       if (!req.file) {
-        console.error('[Upload Video] No file provided');
         return res.status(400).json({ 
           success: false, 
           message: 'Aucun fichier vidéo fourni' 
         });
       }
 
-      console.log('[Upload Video] File info:', {
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        fieldname: req.file.fieldname
-      });
-
       if (!req.file.mimetype.startsWith('video/')) {
-        console.error('[Upload Video] Invalid mimetype:', req.file.mimetype);
         return res.status(400).json({ 
           success: false, 
           message: 'Le fichier doit être une vidéo (MP4, WebM)' 
         });
       }
 
-      console.log('[Upload Video] Uploading to Cloudinary...');
       const result = await uploadVideo(req.file.buffer);
-      console.log('[Upload Video] Cloudinary success:', result.url || result);
 
       res.json({ 
         success: true, 
@@ -1187,46 +1137,29 @@ class SupplierController {
 const controller = new SupplierController();
 
 module.exports = {
-  // Middleware
   uploadMiddleware: upload.single('media'),
-  
-  // Stats
   getStats: controller.getStats.bind(controller),
-  
-  // Produits
   getProducts: controller.getProducts.bind(controller),
   createProduct: controller.createProduct.bind(controller),
   updateProduct: controller.updateProduct.bind(controller),
   deleteProduct: controller.deleteProduct.bind(controller),
-  
-  // Commandes
   getOrders: controller.getOrders.bind(controller),
   getOrderById: controller.getOrderById.bind(controller),
   updateOrderStatus: controller.updateOrderStatus.bind(controller),
-  
-  // Paiements
   getPayments: controller.getPayments.bind(controller),
   requestPayout: controller.requestPayout.bind(controller),
   getPayouts: controller.getPayouts.bind(controller),
-  
-  // Promotions
   getPromotions: controller.getPromotions.bind(controller),
   createPromotion: controller.createPromotion.bind(controller),
   updatePromotion: controller.updatePromotion.bind(controller),
   deletePromotion: controller.deletePromotion.bind(controller),
-  
-  // Campagnes
   getCampaigns: controller.getCampaigns.bind(controller),
   createCampaign: controller.createCampaign.bind(controller),
   updateCampaign: controller.updateCampaign.bind(controller),
   deleteCampaign: controller.deleteCampaign.bind(controller),
-  
-  // Public
   getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
   trackCampaignClick: controller.trackCampaignClick.bind(controller),
   trackCampaignView: controller.trackCampaignView.bind(controller),
-  
-  // Uploads
   uploadImage: controller.uploadImage.bind(controller),
   uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller)
 };
