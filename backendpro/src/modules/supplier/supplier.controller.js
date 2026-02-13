@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CONTROLLER - Complet et Corrigé v3.5
-// Correction : Suppression du DISTINCT qui cause l'erreur JSON
+// SUPPLIER CONTROLLER - Complet et Corrigé v4.0
+// Corrections : UpdateCampaign complet, gestion tous champs, optimisation requêtes
 // ============================================
 
 const db = require('../../config/db');
@@ -169,13 +169,12 @@ class SupplierController {
     }
   }
 
-  /* ================= COMMANDES - CORRIGÉ v3.5 ================= */
+  /* ================= COMMANDES ================= */
 
   async getOrders(req, res) {
     try {
       const userId = req.user.id;
       
-      // Récupérer le supplier_id à partir du user_id
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
@@ -193,8 +192,6 @@ class SupplierController {
 
       console.log(`[Get Orders] Supplier ID: ${supplierId}, Filter: ${status || 'all'}`);
 
-      // 🔥 CORRECTION v3.5 : Approche en deux étapes pour éviter DISTINCT + JSON
-      // Étape 1 : Récupérer les IDs des commandes uniques
       let orderIdsSql = `
         SELECT DISTINCT o.id
         FROM orders o
@@ -224,7 +221,6 @@ class SupplierController {
       console.log(`[Get Orders] Found ${orderIds.length} order IDs`);
 
       if (orderIds.length === 0) {
-        // Aucune commande trouvée, retourner vide
         const countsResult = await db.query(`
           SELECT 
             0 as all_count,
@@ -245,8 +241,6 @@ class SupplierController {
         });
       }
 
-      // Étape 2 : Récupérer les détails des commandes avec leurs items
-      // Utiliser ANY avec un tableau d'IDs
       const ordersSql = `
         SELECT o.*, 
           COALESCE(
@@ -279,7 +273,6 @@ class SupplierController {
 
       const ordersResult = await db.query(ordersSql, [supplierId, orderIds]);
 
-      // Étape 3 : Calculer les counts pour les badges
       const countsResult = await db.query(`
         SELECT 
           COUNT(DISTINCT o.id) as all_count,
@@ -295,7 +288,6 @@ class SupplierController {
       const counts = countsResult.rows[0];
       
       console.log(`[Get Orders] Returning ${ordersResult.rows.length} orders`);
-      console.log('[Get Orders] Counts:', counts);
 
       res.json({ 
         success: true, 
@@ -336,7 +328,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CORRECTION v3.5 : Même approche sans DISTINCT
       const result = await db.query(`
         SELECT o.*, 
           COALESCE(
@@ -431,10 +422,9 @@ class SupplierController {
     }
   }
 
-    
-    /* ================= PAIEMENTS - CORRIGÉ v3.6 ================= */
+  /* ================= PAIEMENTS ================= */
 
-   async getPayments(req, res) {
+  async getPayments(req, res) {
     try {
       const userId = req.user.id;
       
@@ -515,6 +505,7 @@ class SupplierController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
   async requestPayout(req, res) {
     try {
       const userId = req.user.id;
@@ -527,7 +518,6 @@ class SupplierController {
         });
       }
 
-      // Récupérer le supplier_id
       const supplierResult = await db.query(
         'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
         [userId]
@@ -542,7 +532,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Vérifier le solde disponible
       const balanceResult = await db.query(`
         SELECT COALESCE(SUM(supplier_amount), 0) as available
         FROM supplier_payments
@@ -558,7 +547,6 @@ class SupplierController {
         });
       }
 
-      // Créer la demande de paiement
       const payoutResult = await db.query(`
         INSERT INTO payouts (supplier_id, amount, status, created_at)
         VALUES ($1, $2, 'pending', NOW())
@@ -567,8 +555,6 @@ class SupplierController {
 
       const payout = payoutResult.rows[0];
 
-      // Marquer les paiements comme "en cours de versement"
-      // On prend les plus anciens d'abord (FIFO)
       await db.query(`
         UPDATE supplier_payments
         SET status = 'payout_requested', payout_id = $1
@@ -593,7 +579,7 @@ class SupplierController {
           payout_id: payout.id,
           amount: parseFloat(amount),
           status: 'pending',
-          estimated_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() // +2 jours
+          estimated_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
         }
       });
 
@@ -728,15 +714,46 @@ class SupplierController {
     }
   }
 
-  /* ================= CAMPAGNES ================= */
+  /* ================= CAMPAGNES - CORRIGÉ v4.0 ================= */
 
   async getCampaigns(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      // 🔥 CORRECTION : Récupérer supplier_id depuis suppliers table
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
       const result = await db.query(
-        'SELECT * FROM supplier_campaigns WHERE supplier_id = $1 ORDER BY created_at DESC',
+        `SELECT 
+          sc.*,
+          COALESCE(cs.total_views, 0) as views_count,
+          COALESCE(cs.total_clicks, 0) as clicks_count
+         FROM supplier_campaigns sc
+         LEFT JOIN (
+           SELECT 
+             campaign_id,
+             SUM(impressions) as total_views,
+             SUM(clicks) as total_clicks
+           FROM campaign_stats
+           GROUP BY campaign_id
+         ) cs ON cs.campaign_id = sc.id
+         WHERE sc.supplier_id = $1 
+         ORDER BY sc.created_at DESC`,
         [supplierId]
       );
+      
       res.json({ success: true, data: result.rows });
     } catch (error) {
       console.error('[Get Campaigns] Error:', error);
@@ -746,21 +763,44 @@ class SupplierController {
 
   async createCampaign(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+      
       const {
         name, media_url, media_type, headline,
         description, cta_text, cta_link,
         start_date, end_date, target_products
       } = req.body;
 
+      // Validation
+      if (!name || !headline || !target_products || target_products.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nom, titre et produits cibles sont obligatoires'
+        });
+      }
+
       const result = await db.query(
         `INSERT INTO supplier_campaigns
          (supplier_id, name, media_url, media_type, headline, description,
-          cta_text, cta_link, start_date, end_date, target_products, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active')
+          cta_text, cta_link, start_date, end_date, target_products, status, views_count, clicks_count)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active',0,0)
          RETURNING *`,
         [
-          supplierId, name, media_url, media_type, headline,
+          supplierId, name, media_url, media_type || 'image', headline,
           description, cta_text, cta_link,
           start_date, end_date, target_products
         ]
@@ -773,30 +813,75 @@ class SupplierController {
     }
   }
 
+  // 🔥 CORRECTION COMPLÈTE : UpdateCampaign gère TOUS les champs
   async updateCampaign(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
       const { id } = req.params;
       const updates = req.body;
 
-      const result = await db.query(
-        `UPDATE supplier_campaigns
-         SET name=$1, headline=$2, description=$3,
-             cta_text=$4, cta_link=$5,
-             start_date=$6, end_date=$7,
-             updated_at=NOW()
-         WHERE id=$8 AND supplier_id=$9
-         RETURNING *`,
-        [
-          updates.name, updates.headline, updates.description,
-          updates.cta_text, updates.cta_link,
-          updates.start_date, updates.end_date,
-          id, supplierId
-        ]
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
       );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      // 🔥 CONSTRUCTION DYNAMIQUE de la requête selon les champs fournis
+      const allowedFields = [
+        'name', 'headline', 'description', 'cta_text', 'cta_link',
+        'media_url', 'media_type', 'start_date', 'end_date', 
+        'target_products', 'status', 'budget', 'daily_budget'
+      ];
+
+      const setClauses = [];
+      const values = [];
+      let paramIndex = 1;
+
+      for (const field of allowedFields) {
+        if (updates[field] !== undefined) {
+          setClauses.push(`${field} = $${paramIndex}`);
+          values.push(updates[field]);
+          paramIndex++;
+        }
+      }
+
+      if (setClauses.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Aucun champ valide à mettre à jour'
+        });
+      }
+
+      // Ajouter updated_at
+      setClauses.push(`updated_at = NOW()`);
+
+      values.push(id, supplierId); // Pour WHERE clause
+
+      const sql = `
+        UPDATE supplier_campaigns
+        SET ${setClauses.join(', ')}
+        WHERE id = $${paramIndex} AND supplier_id = $${paramIndex + 1}
+        RETURNING *
+      `;
+
+      console.log('[UpdateCampaign] SQL:', sql);
+      console.log('[UpdateCampaign] Values:', values);
+
+      const result = await db.query(sql, values);
 
       if (!result.rows.length) {
-        return res.status(404).json({ success: false, message: 'Campagne non trouvée' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Campagne non trouvée ou non autorisée' 
+        });
       }
 
       res.json({ success: true, data: result.rows[0] });
@@ -808,15 +893,46 @@ class SupplierController {
 
   async deleteCampaign(req, res) {
     try {
-      const supplierId = req.user.id;
+      const userId = req.user.id;
       const { id } = req.params;
 
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      // 🔥 Vérifier d'abord que la campagne existe et appartient au supplier
+      const checkResult = await db.query(
+        'SELECT id FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2',
+        [id, supplierId]
+      );
+
+      if (checkResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Campagne non trouvée ou non autorisée' 
+        });
+      }
+
+      // Supprimer d'abord les stats associées
+      await db.query('DELETE FROM campaign_stats WHERE campaign_id = $1', [id]);
+      
+      // Puis supprimer la campagne
       await db.query(
         'DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2',
         [id, supplierId]
       );
 
-      res.json({ success: true, message: 'Campagne supprimée' });
+      res.json({ success: true, message: 'Campagne supprimée définitivement' });
     } catch (error) {
       console.error('[Delete Campaign] Error:', error);
       res.status(500).json({ success: false, message: error.message });
@@ -827,7 +943,14 @@ class SupplierController {
 
   async getActiveCampaignForProduct(req, res) {
     try {
-      const { supplierId, productId } = req.params;
+      const { supplierId, productId } = req.query; // 🔥 CORRECTION : req.query pas req.params
+
+      if (!supplierId || !productId) {
+        return res.status(400).json({
+          success: false,
+          message: 'supplierId et productId sont requis'
+        });
+      }
 
       const result = await db.query(
         `SELECT *
@@ -856,10 +979,26 @@ class SupplierController {
     try {
       const { campaign_id } = req.body;
 
+      if (!campaign_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'campaign_id est requis'
+        });
+      }
+
+      // Mettre à jour le compteur dans supplier_campaigns
       await db.query(
         'UPDATE supplier_campaigns SET clicks_count = clicks_count + 1 WHERE id = $1',
         [campaign_id]
       );
+
+      // Insérer dans campaign_stats pour l'historique
+      await db.query(`
+        INSERT INTO campaign_stats (campaign_id, date, clicks)
+        VALUES ($1, CURRENT_DATE, 1)
+        ON CONFLICT (campaign_id, date)
+        DO UPDATE SET clicks = campaign_stats.clicks + 1
+      `, [campaign_id]);
 
       res.json({ success: true });
     } catch (error) {
@@ -872,10 +1011,26 @@ class SupplierController {
     try {
       const { campaign_id } = req.body;
 
+      if (!campaign_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'campaign_id est requis'
+        });
+      }
+
+      // Mettre à jour le compteur dans supplier_campaigns
       await db.query(
         'UPDATE supplier_campaigns SET views_count = views_count + 1 WHERE id = $1',
         [campaign_id]
       );
+
+      // Insérer dans campaign_stats pour l'historique
+      await db.query(`
+        INSERT INTO campaign_stats (campaign_id, date, impressions)
+        VALUES ($1, CURRENT_DATE, 1)
+        ON CONFLICT (campaign_id, date)
+        DO UPDATE SET impressions = campaign_stats.impressions + 1
+      `, [campaign_id]);
 
       res.json({ success: true });
     } catch (error) {
@@ -989,15 +1144,16 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      const [sales, orders, products] = await Promise.all([
+      const [sales, orders, products, campaigns] = await Promise.all([
         db.query(`
           SELECT COALESCE(SUM(oi.total_price), 0) as total 
           FROM order_items oi
           JOIN orders o ON oi.order_id = o.id
           WHERE oi.supplier_id = $1 AND o.status NOT IN ('cancelled', 'refunded')
         `, [supplierId]),
-               db.query('SELECT COUNT(DISTINCT order_id) FROM order_items WHERE supplier_id = $1', [supplierId]),
-        db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1 AND is_active = true', [userId])
+        db.query('SELECT COUNT(DISTINCT order_id) FROM order_items WHERE supplier_id = $1', [supplierId]),
+        db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1 AND is_active = true', [userId]),
+        db.query('SELECT COUNT(*) FROM supplier_campaigns WHERE supplier_id = $1 AND status = $2', [supplierId, 'active'])
       ]);
 
       res.json({
@@ -1005,7 +1161,8 @@ class SupplierController {
         data: {
           totalSales: Number(sales.rows[0].total),
           totalOrders: Number(orders.rows[0].count),
-          activeProducts: Number(products.rows[0].count)
+          activeProducts: Number(products.rows[0].count),
+          activeCampaigns: Number(campaigns.rows[0].count)
         }
       });
     } catch (error) {
@@ -1015,7 +1172,7 @@ class SupplierController {
   }
 }
 
-//* ================= EXPORT ================= */
+/* ================= EXPORT ================= */
 
 const controller = new SupplierController();
 
@@ -1037,7 +1194,7 @@ module.exports = {
   getOrderById: controller.getOrderById.bind(controller),
   updateOrderStatus: controller.updateOrderStatus.bind(controller),
   
-  // 🔥 AJOUTÉ : Paiements
+  // Paiements
   getPayments: controller.getPayments.bind(controller),
   requestPayout: controller.requestPayout.bind(controller),
   getPayouts: controller.getPayouts.bind(controller),
@@ -1053,6 +1210,11 @@ module.exports = {
   createCampaign: controller.createCampaign.bind(controller),
   updateCampaign: controller.updateCampaign.bind(controller),
   deleteCampaign: controller.deleteCampaign.bind(controller),
+  
+  // Public
+  getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
+  trackCampaignClick: controller.trackCampaignClick.bind(controller),
+  trackCampaignView: controller.trackCampaignView.bind(controller),
   
   // Uploads
   uploadImage: controller.uploadImage.bind(controller),

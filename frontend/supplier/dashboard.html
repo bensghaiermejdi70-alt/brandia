@@ -518,6 +518,7 @@
     </section>
 
     <!-- ADVERTISING SECTION -->
+    <!-- ADVERTISING SECTION -->
     <section id="advertising" class="section space-y-6">
       <div class="flex justify-between items-start">
         <div>
@@ -894,10 +895,12 @@
 </div>
 
 <!-- Campaign Modal -->
+<!-- Campaign Modal -->
 <div id="campaign-modal" class="fixed inset-0 z-50 hidden">
   <div class="modal-backdrop absolute inset-0" onclick="closeModal('campaign-modal')"></div>
-  <div class="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
-    <div class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+  <div class="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-5xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
+    <!-- Header -->
+    <div class="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-900/50">
       <div>
         <h3 class="text-xl font-bold">Nouvelle campagne publicitaire</h3>
         <p class="text-sm text-slate-400 mt-1">Créez une publicité contextuelle pour vos produits</p>
@@ -907,121 +910,196 @@
       </button>
     </div>
 
-    <form id="campaign-form" class="space-y-6">
-      <input type="hidden" id="campaign-id" name="id">
-      <input type="hidden" name="cta_link" id="cta-link-value">
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Nom de la campagne *</label>
-          <input type="text" name="name" required placeholder="Ex: Soldes d'hiver 2026" 
-                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Type de média</label>
-          <div class="flex gap-2">
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="media_type" value="image" checked class="hidden peer" onchange="toggleMediaType('image')">
-              <div class="p-3 bg-slate-800 border border-slate-700 rounded-lg text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 transition-colors">
-                <i class="fas fa-image text-indigo-400 mb-1"></i>
-                <p class="text-xs">Image</p>
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Colonne gauche : Formulaire -->
+        <div class="space-y-6">
+          <form id="campaign-form" class="space-y-6">
+            <input type="hidden" id="campaign-id" name="id">
+            <input type="hidden" name="cta_link" id="cta-link-value">
+            <!-- Nom et Type -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-slate-400 mb-2">Nom de la campagne *</label>
+                <input type="text" name="name" required placeholder="Ex: Soldes d'hiver 2026" 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
               </div>
-            </label>
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="media_type" value="video" class="hidden peer" onchange="toggleMediaType('video')">
-              <div class="p-3 bg-slate-800 border border-slate-700 rounded-lg text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 transition-colors">
-                <i class="fas fa-video text-indigo-400 mb-1"></i>
-                <p class="text-xs">Vidéo (15s)</p>
+              <div>
+                <label class="block text-sm text-slate-400 mb-2">Type de média</label>
+                <div class="flex gap-2">
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="media_type" value="image" checked class="hidden peer" onchange="toggleMediaType('image')">
+                    <div class="p-3 bg-slate-800 border border-slate-700 rounded-lg text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 transition-colors">
+                      <i class="fas fa-image text-indigo-400 mb-1"></i>
+                      <p class="text-xs">Image</p>
+                    </div>
+                  </label>
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="media_type" value="video" class="hidden peer" onchange="toggleMediaType('video')">
+                    <div class="p-3 bg-slate-800 border border-slate-700 rounded-lg text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 transition-colors">
+                      <i class="fas fa-video text-indigo-400 mb-1"></i>
+                      <p class="text-xs">Vidéo (15s)</p>
+                    </div>
+                  </label>
+                </div>
               </div>
-            </label>
+            </div>
+            <!-- Upload Média -->
+            <div>
+              <label class="block text-sm text-slate-400 mb-2">Visuel de la campagne *</label>
+              <div class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center hover:border-indigo-500/50 transition-colors cursor-pointer relative bg-slate-800/30" onclick="document.getElementById('campaign-media').click()" id="campaign-dropzone">
+                <div id="campaign-media-placeholder">
+                  <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-3"></i>
+                  <p class="text-slate-400 text-sm">Cliquez ou glissez votre fichier ici</p>
+                  <p class="text-slate-600 text-xs mt-1">Format recommandé: 1200x800px, max 5MB (image) ou 50MB (vidéo)</p>
+                </div>
+              </div>
+              <input type="file" id="campaign-media" accept="image/*,video/mp4" class="hidden" onchange="handleCampaignMedia(event)">
+            </div>
+            <!-- Textes -->
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm text-slate-400 mb-2">Titre principal *</label>
+                <input type="text" name="headline" required maxlength="50" placeholder="Ex: Nouvelle collection -20%" 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none"
+                       oninput="updateAdPreview()">
+                <p class="text-xs text-slate-500 mt-1">Maximum 50 caractères</p>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-400 mb-2">Description courte</label>
+                <textarea name="description" rows="2" maxlength="100" placeholder="Texte complémentaire..." 
+                          class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none resize-none"
+                          oninput="updateAdPreview()"></textarea>
+                <p class="text-xs text-slate-500 mt-1">Maximum 100 caractères</p>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-slate-400 mb-2">Texte du bouton</label>
+                  <input type="text" name="cta_text" value="Voir l'offre" maxlength="20" 
+                         class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none"
+                         oninput="updateAdPreview()">
+                </div>
+                <div>
+                  <label class="block text-sm text-slate-400 mb-2">Lien de destination *</label>
+                  <select name="cta_link_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none mb-2" onchange="handleCtaType(this.value)">
+                    <option value="product">Produit spécifique</option>
+                    <option value="category">Catégorie</option>
+                    <option value="external">Lien externe</option>
+                  </select>
+                  <select id="cta-product-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
+                    <option value="">Choisir un produit...</option>
+                  </select>
+                  <input type="url" id="cta-external-url" placeholder="https://..." 
+                         class="w-full hidden bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
+                </div>
+              </div>
+            </div>
+            <!-- Ciblage -->
+            <div class="bg-slate-800/50 rounded-xl p-4 space-y-4">
+              <h4 class="font-semibold text-sm text-white flex items-center gap-2">
+                <i class="fas fa-crosshairs text-indigo-400"></i>
+                Ciblage (obligatoire)
+              </h4>
+              <p class="text-xs text-slate-400">La publicité ne s'affichera que sur les pages des produits sélectionnés</p>
+              <div>
+                <label class="block text-sm text-slate-400 mb-2">Produits concernés *</label>
+                <div id="target-products-list" class="max-h-40 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg p-2 space-y-1">
+                  <div class="text-center py-4 text-slate-500 text-sm">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Chargement des produits...
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Dates -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-slate-400 mb-2">Date de début *</label>
+                <input type="date" name="start_date" required 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-sm text-slate-400 mb-2">Date de fin *</label>
+                <input type="date" name="end_date" required 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
+              </div>
+            </div>
+          </form>
+        </div>
+        <!-- Colonne droite : Preview & Stats -->
+        <div class="space-y-6">
+          <!-- Preview temps réel -->
+          <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+            <h4 class="font-semibold text-sm text-white mb-4 flex items-center gap-2">
+              <i class="fas fa-mobile-alt text-indigo-400"></i>
+              Aperçu mobile
+            </h4>
+            <div class="relative bg-slate-900 rounded-lg overflow-hidden border border-slate-700" style="aspect-ratio: 9/16; max-height: 400px;">
+              <!-- Simulation téléphone -->
+              <div class="absolute inset-0 flex flex-col">
+                <!-- Header simulé -->
+                <div class="h-12 bg-slate-800 flex items-center px-4 gap-2">
+                  <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                  <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                </div>
+                <!-- Contenu simulé -->
+                <div class="flex-1 bg-slate-900 p-4 space-y-3">
+                  <div class="h-32 bg-slate-800 rounded-lg animate-pulse"></div>
+                  <div class="h-4 bg-slate-800 rounded w-3/4"></div>
+                  <div class="h-4 bg-slate-800 rounded w-1/2"></div>
+                </div>
+                <!-- Overlay Publicité (40% écran) -->
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent p-4" style="height: 45%;">
+                  <div class="bg-slate-800 rounded-xl p-4 border border-indigo-500/30 shadow-2xl">
+                    <div class="flex justify-between items-start mb-3">
+                      <span class="text-xs text-indigo-400 font-medium">Sponsorisé</span>
+                      <button class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="aspect-video bg-slate-700 rounded-lg mb-3 flex items-center justify-center overflow-hidden" id="ad-preview-media">
+                      <i class="fas fa-image text-slate-500 text-2xl"></i>
+                    </div>
+                    <h4 class="font-bold text-white text-sm mb-1" id="ad-preview-headline">Votre titre</h4>
+                    <p class="text-xs text-slate-400 mb-3 line-clamp-2" id="ad-preview-desc">Description de votre offre...</p>
+                    <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-medium text-white transition-colors" id="ad-preview-cta">
+                      Voir l'offre
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-3 text-center">
+              <i class="fas fa-info-circle mr-1"></i>
+              L'overlay couvre 40% de l'écran en bas
+            </p>
           </div>
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-sm text-slate-400 mb-2">Visuel de la campagne *</label>
-        <div class="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-indigo-500/50 transition-colors cursor-pointer relative" onclick="document.getElementById('campaign-media').click()" id="campaign-dropzone">
-          <div id="campaign-media-placeholder">
-            <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-3"></i>
-            <p class="text-slate-400 text-sm">Cliquez ou glissez votre fichier ici</p>
-            <p class="text-slate-600 text-xs mt-1">Format recommandé: 1200x800px, max 5MB</p>
-          </div>
-          <img id="campaign-media-preview" class="max-h-48 mx-auto rounded-lg hidden" />
-        </div>
-        <input type="file" id="campaign-media" accept="image/*,video/mp4" class="hidden" onchange="handleCampaignMedia(event)">
-      </div>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Titre principal *</label>
-          <input type="text" name="headline" required maxlength="50" placeholder="Ex: Nouvelle collection -20%" 
-                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-          <p class="text-xs text-slate-500 mt-1">Maximum 50 caractères</p>
-        </div>
-        
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Description courte</label>
-          <textarea name="description" rows="2" maxlength="100" placeholder="Texte complémentaire..." 
-                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none resize-none"></textarea>
-          <p class="text-xs text-slate-500 mt-1">Maximum 100 caractères</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm text-slate-400 mb-2">Texte du bouton</label>
-            <input type="text" name="cta_text" value="Voir l'offre" maxlength="20" 
-                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-400 mb-2">Lien de destination *</label>
-            <select name="cta_link_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none mb-2" onchange="handleCtaType(this.value)">
-              <option value="product">Produit spécifique</option>
-              <option value="category">Catégorie</option>
-              <option value="external">Lien externe</option>
-            </select>
-            <select id="cta-product-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-              <option value="">Choisir un produit...</option>
-            </select>
-            <input type="url" id="cta-external-url" placeholder="https://..." 
-                   class="w-full hidden bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-slate-800/50 rounded-xl p-4 space-y-4">
-        <h4 class="font-semibold text-sm text-white flex items-center gap-2">
-          <i class="fas fa-crosshairs text-indigo-400"></i>
-          Ciblage (obligatoire)
-        </h4>
-        <p class="text-xs text-slate-400">La publicité ne s'affichera que sur les pages des produits sélectionnés</p>
-        
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Produits concernés *</label>
-          <div id="target-products-list" class="max-h-40 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg p-2 space-y-1">
-            <div class="text-center py-4 text-slate-500 text-sm">
-              <i class="fas fa-spinner fa-spin mr-2"></i>Chargement des produits...
+          <!-- Stats rapides (visible en mode édition) -->
+          <div id="campaign-quick-stats" class="hidden bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+            <h4 class="font-semibold text-sm text-white mb-4">Performance actuelle</h4>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-white" id="modal-ad-views">0</p>
+                <p class="text-xs text-slate-400">Vues</p>
+              </div>
+              <div class="text-center">
+                <p class="text-2xl font-bold text-indigo-400" id="modal-ad-clicks">0</p>
+                <p class="text-xs text-slate-400">Clics</p>
+              </div>
+              <div class="text-center">
+                <p class="text-2xl font-bold text-emerald-400" id="modal-ad-ctr">0%</p>
+                <p class="text-xs text-slate-400">CTR</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Date de début *</label>
-          <input type="date" name="start_date" required 
-                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Date de fin *</label>
-          <input type="date" name="end_date" required 
-                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-        </div>
-      </div>
-    </form>
-
-    <div class="mt-6 pt-6 border-t border-slate-800 flex justify-end gap-3">
+    </div>
+    <!-- Footer -->
+    <div class="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-end gap-3">
       <button type="button" onclick="closeModal('campaign-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">Annuler</button>
-      <button type="button" onclick="saveCampaign()" class="btn-primary px-6 py-2.5 rounded-lg font-medium bg-gradient-to-r from-pink-500 to-rose-500">Créer la campagne</button>
+      <button type="button" onclick="saveCampaign()" class="btn-primary px-6 py-2.5 rounded-lg font-medium bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
+        Créer la campagne
+      </button>
     </div>
   </div>
 </div>
