@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brandia Logo Component</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================
+       BRANDIA LOGO COMPONENT - v1.0
+       Usage: Include styles + copy HTML structure
+       ========================================== */
+    
+    :root {
+      --brandia-primary: #a855f7;
+      --brandia-accent: #e879f9;
+      --brandia-text: #ffffff;
+      --brandia-secondary: #c084fc;
+    }
+    
+    /* Animations */
+    @keyframes brandia-shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    
+    @keyframes brandia-float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    
+    @keyframes brandia-pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    
+    @keyframes brandia-shine {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+    
+    /* Base Container */
+    .brandia-logo {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: transform 0.3s ease;
+    }
+    
+    .brandia-logo:hover {
+      transform: scale(1.02);
+    }
+    
+    /* Icon Wrapper */
+    .brandia-icon-wrap {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+    
+    /* Pulse Ring Effect */
+    .brandia-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 14px;
+      border: 1px solid var(--brandia-accent);
+      opacity: 0.3;
+      animation: brandia-pulse-ring 3s ease-in-out infinite;
+    }
+    
+    .brandia-pulse:nth-child(2) {
+      inset: -8px;
+      border-radius: 18px;
+      opacity: 0.2;
+      animation-delay: 0.5s;
+    }
+    
+    /* Icon Background */
+    .brandia-icon-bg {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--brandia-primary) 0%, var(--brandia-accent) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px -6px rgba(168, 85, 247, 0.5);
+      transform: rotate(6deg);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Shine effect on hover */
+    .brandia-icon-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: none;
+    }
+    
+    .brandia-logo:hover .brandia-icon-bg {
+      transform: rotate(0deg) scale(1.05);
+      box-shadow: 0 12px 32px -8px rgba(168, 85, 247, 0.6);
+    }
+    
+    .brandia-logo:hover .brandia-icon-bg::after {
+      animation: brandia-shine 0.6s ease;
+    }
+    
+    /* SVG Icon */
+    .brandia-icon-svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+    
+    /* Text */
+    .brandia-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(
+        90deg,
+        var(--brandia-text) 0%,
+        var(--brandia-accent) 25%,
+        var(--brandia-text) 50%,
+        var(--brandia-accent) 75%,
+        var(--brandia-text) 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: brandia-shimmer 4s linear infinite;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    
+    /* Tagline */
+    .brandia-tagline {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brandia-secondary);
+      margin-top: 2px;
+    }
+    
+    /* ==========================================
+       SIZE VARIANTS
+       ========================================== */
+    
+    /* Small (header default) */
+    .brandia-logo--sm .brandia-icon-wrap {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .brandia-logo--sm .brandia-icon-bg {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+    
+    .brandia-logo--sm .brandia-icon-svg {
+      width: 18px;
+      height: 18px;
+    }
+    
+    .brandia-logo--sm .brandia-text {
+      font-size: 1.25rem;
+    }
+    
+    .brandia-logo--sm .brandia-pulse {
+      inset: -3px;
+      border-radius: 12px;
+    }
+    
+    /* Medium (hero section) */
+    .brandia-logo--md .brandia-icon-wrap {
+      width: 60px;
+      height: 60px;
+    }
+    
+    .brandia-logo--md .brandia-icon-bg {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+    }
+    
+    .brandia-logo--md .brandia-icon-svg {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .brandia-logo--md .brandia-text {
+      font-size: 2.25rem;
+    }
+    
+    .brandia-logo--md .brandia-pulse {
+      inset: -6px;
+      border-radius: 22px;
+    }
+    
+    /* Large (splash screen) */
+    .brandia-logo--lg .brandia-icon-wrap {
+      width: 80px;
+      height: 80px;
+    }
+    
+    .brandia-logo--lg .brandia-icon-bg {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+    }
+    
+    .brandia-logo--lg .brandia-icon-svg {
+      width: 44px;
+      height: 44px;
+    }
+    
+    .brandia-logo--lg .brandia-text {
+      font-size: 3rem;
+    }
+    
+    .brandia-logo--lg .brandia-tagline {
+      font-size: 0.875rem;
+      letter-spacing: 0.3em;
+    }
+    
+    .brandia-logo--lg .brandia-pulse {
+      inset: -8px;
+      border-radius: 28px;
+    }
+    
+    .brandia-logo--lg .brandia-pulse:nth-child(2) {
+      inset: -16px;
+      border-radius: 36px;
+    }
+    
+    /* ==========================================
+       ANIMATION VARIANTS
+       ========================================== */
+    
+    /* Float animation */
+    .brandia-logo--float {
+      animation: brandia-float 4s ease-in-out infinite;
+    }
+    
+    /* No animation (static) */
+    .brandia-logo--static .brandia-text,
+    .brandia-logo--static .brandia-pulse {
+      animation: none;
+    }
+    
+    /* ==========================================
+       THEME VARIANTS
+       ========================================== */
+    
+    /* Dark theme (default) */
+    .brandia-logo--dark {
+      --brandia-primary: #a855f7;
+      --brandia-accent: #e879f9;
+      --brandia-text: #ffffff;
+      --brandia-secondary: #c084fc;
+    }
+    
+    /* Light theme */
+    .brandia-logo--light {
+      --brandia-primary: #7c3aed;
+      --brandia-accent: #db2777;
+      --brandia-text: #1f2937;
+      --brandia-secondary: #8b5cf6;
+    }
+    
+    /* Monochrome */
+    .brandia-logo--mono {
+      --brandia-primary: #6b7280;
+      --brandia-accent: #9ca3af;
+      --brandia-text: #374151;
+      --brandia-secondary: #6b7280;
+    }
+    
+    /* ==========================================
+       LAYOUT VARIANTS
+       ========================================== */
+    
+    /* Vertical (icon above text) */
+    .brandia-logo--vertical {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .brandia-logo--vertical .brandia-text-wrap {
+      text-align: center;
+    }
+    
+    /* Icon only */
+    .brandia-logo--icon-only .brandia-text-wrap {
+      display: none;
+    }
+    
+    /* Text only */
+    .brandia-logo--text-only .brandia-icon-wrap {
+      display: none;
+    }
+  </style>
+</head>
+<body style="background: #0f0f14; padding: 40px; display: flex; flex-direction: column; gap: 40px; align-items: center;">
+
+  <!-- USAGE EXAMPLES -->
+
+  <!-- 1. Header Small (default) -->
+  <a href="index.html" class="brandia-logo brandia-logo--sm brandia-logo--dark">
+    <div class="brandia-icon-wrap">
+      <div class="brandia-pulse"></div>
+      <div class="brandia-icon-bg">
+        <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
+          <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
+          <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
+        </svg>
+      </div>
+    </div>
+    <div class="brandia-text-wrap">
+      <span class="brandia-text">Brandia</span>
+    </div>
+  </a>
+
+  <!-- 2. Hero Medium with float -->
+  <a href="index.html" class="brandia-logo brandia-logo--md brandia-logo--float brandia-logo--dark">
+    <div class="brandia-icon-wrap">
+      <div class="brandia-pulse"></div>
+      <div class="brandia-pulse"></div>
+      <div class="brandia-icon-bg">
+        <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
+          <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
+          <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
+        </svg>
+      </div>
+    </div>
+    <div class="brandia-text-wrap">
+      <span class="brandia-text">Brandia</span>
+      <div class="brandia-tagline">Brand Shopping</div>
+    </div>
+  </a>
+
+  <!-- 3. Splash Large -->
+  <div class="brandia-logo brandia-logo--lg brandia-logo--float brandia-logo--dark">
+    <div class="brandia-icon-wrap">
+      <div class="brandia-pulse"></div>
+      <div class="brandia-pulse"></div>
+      <div class="brandia-icon-bg">
+        <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
+          <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
+          <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
+        </svg>
+      </div>
+    </div>
+    <div class="brandia-text-wrap">
+      <span class="brandia-text">Brandia</span>
+      <div class="brandia-tagline">La marketplace des marques</div>
+    </div>
+  </div>
+
+  <!-- 4. Icon only (favicon style) -->
+  <a href="index.html" class="brandia-logo brandia-logo--sm brandia-logo--icon-only brandia-logo--dark">
+    <div class="brandia-icon-wrap">
+      <div class="brandia-pulse"></div>
+      <div class="brandia-icon-bg">
+        <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
+                stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
+          <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
+          <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 5. Light theme example -->
+  <div style="background: white; padding: 20px; border-radius: 12px;">
+    <a href="index.html" class="brandia-logo brandia-logo--sm brandia-logo--light">
+      <div class="brandia-icon-wrap">
+        <div class="brandia-pulse"></div>
+        <div class="brandia-icon-bg">
+          <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
+                  stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
+                  stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
+            <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
+            <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
+          </svg>
+        </div>
+      </div>
+      <div class="brandia-text-wrap">
+        <span class="brandia-text">Brandia</span>
+      </div>
+    </a>
+  </div>
+
+</body>
+</html>
