@@ -1,22 +1,16 @@
 // ============================================
-// SUPPLIER CONTROLLER - Complet et Corrigé v4.2
-// Corrections : Colonnes SQL corrigées (pas de amount, pas de commission_amount)
+// SUPPLIER CONTROLLER - v4.3 MINIMAL (colonnes SQL corrigées)
 // ============================================
 
 const db = require('../../config/db');
 const { uploadImage, uploadVideo } = require('../../utils/cloudinary');
 const multer = require('multer');
 
-/* ================= MULTER CONFIG ================= */
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype.startsWith('image/') ||
-      file.mimetype.startsWith('video/')
-    ) {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
       cb(new Error('Seules les images et vidéos sont autorisées'), false);
@@ -48,10 +42,8 @@ class SupplierController {
       const { name, price, stock_quantity, description, category_id } = req.body;
 
       const result = await db.query(
-        `INSERT INTO products 
-         (supplier_id, name, price, stock_quantity, description, category_id, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, true)
-         RETURNING *`,
+        `INSERT INTO products (supplier_id, name, price, stock_quantity, description, category_id, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING *`,
         [supplierId, name, price, stock_quantity, description, category_id]
       );
 
@@ -66,8 +58,6 @@ class SupplierController {
     try {
       const supplierId = req.user.id;
       const { id } = req.params;
-      
-      console.log('[UpdateProduct] Raw body received:', req.body);
       
       const allowedFields = {
         name: req.body.name,
@@ -86,13 +76,8 @@ class SupplierController {
         }
       }
 
-      console.log('[UpdateProduct] Filtered updates:', updates);
-
       if (Object.keys(updates).length === 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Aucun champ valide à mettre à jour' 
-        });
+        return res.status(400).json({ success: false, message: 'Aucun champ valide à mettre à jour' });
       }
 
       const fields = Object.keys(updates);
@@ -101,34 +86,24 @@ class SupplierController {
       const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
       
       const sql = `
-        UPDATE products 
-        SET ${setClause}, updated_at = NOW()
+        UPDATE products SET ${setClause}, updated_at = NOW()
         WHERE id = $${fields.length + 1} AND supplier_id = $${fields.length + 2}
         RETURNING *
       `;
       
       values.push(id, supplierId);
 
-      console.log('[UpdateProduct] Final SQL:', sql);
-      console.log('[UpdateProduct] Final values:', values);
-
       const result = await db.query(sql, values);
 
       if (!result.rows.length) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Produit non trouvé ou non autorisé' 
-        });
+        return res.status(404).json({ success: false, message: 'Produit non trouvé ou non autorisé' });
       }
 
       res.json({ success: true, data: result.rows[0] });
       
     } catch (error) {
       console.error('[UpdateProduct] Error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 
@@ -143,24 +118,14 @@ class SupplierController {
       );
 
       if (!result.rows.length) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Produit non trouvé ou non autorisé' 
-        });
+        return res.status(404).json({ success: false, message: 'Produit non trouvé ou non autorisé' });
       }
 
-      res.json({ 
-        success: true, 
-        message: 'Produit supprimé',
-        data: result.rows[0]
-      });
+      res.json({ success: true, message: 'Produit supprimé', data: result.rows[0] });
       
     } catch (error) {
       console.error('[Delete Product] Error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 
@@ -176,16 +141,11 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
       const { status } = req.query;
-
-      console.log(`[Get Orders] Supplier ID: ${supplierId}, Filter: ${status || 'all'}`);
 
       let orderIdsSql = `
         SELECT DISTINCT o.id
@@ -213,17 +173,10 @@ class SupplierController {
       const orderIdsResult = await db.query(orderIdsSql, params);
       const orderIds = orderIdsResult.rows.map(r => r.id);
 
-      console.log(`[Get Orders] Found ${orderIds.length} order IDs`);
-
       if (orderIds.length === 0) {
         return res.json({ 
           success: true, 
-          data: { 
-            orders: [],
-            counts: {
-              all: 0, pending: 0, shipped: 0, delivered: 0, cancelled: 0
-            }
-          } 
+          data: { orders: [], counts: { all: 0, pending: 0, shipped: 0, delivered: 0, cancelled: 0 } } 
         });
       }
 
@@ -272,8 +225,6 @@ class SupplierController {
       `, [supplierId]);
 
       const counts = countsResult.rows[0];
-      
-      console.log(`[Get Orders] Returning ${ordersResult.rows.length} orders`);
 
       res.json({ 
         success: true, 
@@ -306,10 +257,7 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
@@ -343,10 +291,7 @@ class SupplierController {
       `, [id, supplierId]);
 
       if (!result.rows.length) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Commande non trouvée ou non autorisée' 
-        });
+        return res.status(404).json({ success: false, message: 'Commande non trouvée ou non autorisée' });
       }
 
       res.json({ success: true, data: result.rows[0] });
@@ -368,32 +313,21 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
 
       const checkResult = await db.query(`
-        SELECT 1 FROM order_items 
-        WHERE order_id = $1 AND supplier_id = $2 
-        LIMIT 1
+        SELECT 1 FROM order_items WHERE order_id = $1 AND supplier_id = $2 LIMIT 1
       `, [id, supplierId]);
 
       if (checkResult.rows.length === 0) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Commande non autorisée' 
-        });
+        return res.status(403).json({ success: false, message: 'Commande non autorisée' });
       }
 
       const result = await db.query(
-        `UPDATE orders 
-         SET status = $1, updated_at = NOW()
-         WHERE id = $2
-         RETURNING *`,
+        `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
         [status, id]
       );
 
@@ -408,7 +342,7 @@ class SupplierController {
     }
   }
 
-  /* ================= PAIEMENTS - CORRIGÉ v4.2 ================= */
+  /* ================= PAIEMENTS - v4.3 MINIMAL ================= */
 
   async getPayments(req, res) {
     try {
@@ -420,16 +354,12 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CORRECTION v4.2 : Vérifier d'abord la structure de la table
-      // Requête simple sans colonnes problématiques
+      // 🔥 CORRECTION v4.3 : Requête avec SEULEMENT les colonnes de base
       const balanceResult = await db.query(`
         SELECT 
           COALESCE(SUM(CASE WHEN status = 'available' THEN supplier_amount ELSE 0 END), 0) as available_balance,
@@ -445,38 +375,32 @@ class SupplierController {
         total_earnings: 0
       };
 
-      // 🔥 CORRECTION v4.2 : Requête avec SEULEMENT les colonnes qui existent
-      // supplier_amount existe, commission_amount peut ne pas exister
+      // 🔥 CORRECTION v4.3 : Colonnes minimales : id, order_id, supplier_amount, status, created_at
       const transactionsResult = await db.query(`
         SELECT 
           sp.id,
           sp.order_id,
-          o.order_number as order_number,
           sp.supplier_amount,
           sp.status,
-          sp.created_at,
-          sp.available_at,
-          sp.paid_at
+          sp.created_at
         FROM supplier_payments sp
-        LEFT JOIN orders o ON sp.order_id = o.id
         WHERE sp.supplier_id = $1
         ORDER BY sp.created_at DESC
         LIMIT 100
       `, [supplierId]);
 
-      // 🔥 CORRECTION v4.2 : Mapper avec valeurs par défaut
       const transactions = transactionsResult.rows.map(t => ({
         id: t.id,
         order_id: t.order_id,
-        order_number: t.order_number || 'ORD-' + t.order_id,
-        description: 'Vente commande #' + (t.order_number || t.order_id),
+        order_number: 'ORD-' + t.order_id,
+        description: 'Vente commande #' + t.order_id,
         amount: parseFloat(t.supplier_amount) || 0,
-        commission: 0, // Pas de commission_amount dans la table
+        commission: 0,
         total: parseFloat(t.supplier_amount) || 0,
         status: t.status,
         created_at: t.created_at,
-        available_at: t.available_at,
-        paid_at: t.paid_at
+        available_at: null, // Pas dans la table
+        paid_at: t.status === 'paid' ? t.created_at : null
       }));
 
       res.json({
@@ -503,10 +427,7 @@ class SupplierController {
       const { amount } = req.body;
 
       if (!amount || isNaN(amount) || amount <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Montant invalide'
-        });
+        return res.status(400).json({ success: false, message: 'Montant invalide' });
       }
 
       const supplierResult = await db.query(
@@ -515,15 +436,11 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
 
-      // 🔥 CORRECTION v4.2 : Utiliser supplier_amount
       const balanceResult = await db.query(`
         SELECT COALESCE(SUM(supplier_amount), 0) as available
         FROM supplier_payments
@@ -547,18 +464,10 @@ class SupplierController {
 
       const payout = payoutResult.rows[0];
 
-      // 🔥 CORRECTION v4.2 : Marquer les paiements comme payout_requested
       await db.query(`
         UPDATE supplier_payments
         SET status = 'payout_requested', payout_id = $1
-        WHERE supplier_id = $2 
-          AND status = 'available'
-          AND id IN (
-            SELECT id FROM supplier_payments
-            WHERE supplier_id = $2 AND status = 'available'
-            ORDER BY created_at ASC
-            LIMIT 100
-          )
+        WHERE supplier_id = $2 AND status = 'available'
       `, [payout.id, supplierId]);
 
       res.json({
@@ -588,10 +497,7 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
@@ -603,7 +509,6 @@ class SupplierController {
             json_agg(
               json_build_object(
                 'id', sp.id,
-                'order_number', o.order_number,
                 'amount', sp.supplier_amount
               ) ORDER BY sp.id
             ) FILTER (WHERE sp.id IS NOT NULL),
@@ -611,16 +516,12 @@ class SupplierController {
           ) as payments
         FROM payouts p
         LEFT JOIN supplier_payments sp ON sp.payout_id = p.id
-        LEFT JOIN orders o ON sp.order_id = o.id
         WHERE p.supplier_id = $1
         GROUP BY p.id
         ORDER BY p.created_at DESC
       `, [supplierId]);
 
-      res.json({
-        success: true,
-        data: result.rows
-      });
+      res.json({ success: true, data: result.rows });
 
     } catch (error) {
       console.error('[Get Payouts] Error:', error);
@@ -650,10 +551,8 @@ class SupplierController {
       const { name, type, value, code, max_usage, start_date, end_date } = req.body;
 
       const result = await db.query(
-        `INSERT INTO promotions
-         (supplier_id, name, type, value, code, max_usage, usage_count, status, start_date, end_date)
-         VALUES ($1,$2,$3,$4,$5,$6,0,'active',$7,$8)
-         RETURNING *`,
+        `INSERT INTO promotions (supplier_id, name, type, value, code, max_usage, usage_count, status, start_date, end_date)
+         VALUES ($1,$2,$3,$4,$5,$6,0,'active',$7,$8) RETURNING *`,
         [supplierId, name, type, value, code, max_usage, start_date, end_date]
       );
 
@@ -671,11 +570,9 @@ class SupplierController {
       const { name, type, value, code, max_usage, start_date, end_date } = req.body;
 
       const result = await db.query(
-        `UPDATE promotions
-         SET name=$1, type=$2, value=$3, code=$4, max_usage=$5,
-             start_date=$6, end_date=$7, updated_at=NOW()
-         WHERE id=$8 AND supplier_id=$9
-         RETURNING *`,
+        `UPDATE promotions SET name=$1, type=$2, value=$3, code=$4, max_usage=$5,
+         start_date=$6, end_date=$7, updated_at=NOW()
+         WHERE id=$8 AND supplier_id=$9 RETURNING *`,
         [name, type, value, code, max_usage, start_date, end_date, id, supplierId]
       );
 
@@ -695,11 +592,7 @@ class SupplierController {
       const supplierId = req.user.id;
       const { id } = req.params;
 
-      await db.query(
-        'DELETE FROM promotions WHERE id = $1 AND supplier_id = $2',
-        [id, supplierId]
-      );
-
+      await db.query('DELETE FROM promotions WHERE id = $1 AND supplier_id = $2', [id, supplierId]);
       res.json({ success: true, message: 'Promotion supprimée' });
     } catch (error) {
       console.error('[Delete Promotion] Error:', error);
@@ -719,10 +612,7 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
@@ -763,10 +653,7 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
@@ -816,10 +703,7 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
@@ -843,10 +727,7 @@ class SupplierController {
       }
 
       if (setClauses.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Aucun champ valide à mettre à jour'
-        });
+        return res.status(400).json({ success: false, message: 'Aucun champ valide à mettre à jour' });
       }
 
       setClauses.push(`updated_at = NOW()`);
@@ -862,10 +743,7 @@ class SupplierController {
       const result = await db.query(sql, values);
 
       if (!result.rows.length) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Campagne non trouvée ou non autorisée' 
-        });
+        return res.status(404).json({ success: false, message: 'Campagne non trouvée ou non autorisée' });
       }
 
       res.json({ success: true, data: result.rows[0] });
@@ -886,10 +764,7 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
@@ -900,18 +775,11 @@ class SupplierController {
       );
 
       if (checkResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Campagne non trouvée ou non autorisée' 
-        });
+        return res.status(404).json({ success: false, message: 'Campagne non trouvée ou non autorisée' });
       }
 
       await db.query('DELETE FROM campaign_stats WHERE campaign_id = $1', [id]);
-      
-      await db.query(
-        'DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2',
-        [id, supplierId]
-      );
+      await db.query('DELETE FROM supplier_campaigns WHERE id = $1 AND supplier_id = $2', [id, supplierId]);
 
       res.json({ success: true, message: 'Campagne supprimée définitivement' });
     } catch (error) {
@@ -927,29 +795,21 @@ class SupplierController {
       const { supplierId, productId } = req.query;
 
       if (!supplierId || !productId) {
-        return res.status(400).json({
-          success: false,
-          message: 'supplierId et productId sont requis'
-        });
+        return res.status(400).json({ success: false, message: 'supplierId et productId sont requis' });
       }
 
       const result = await db.query(
-        `SELECT *
-         FROM supplier_campaigns
+        `SELECT * FROM supplier_campaigns
          WHERE supplier_id = $1
            AND $2 = ANY(target_products)
            AND status = 'active'
            AND start_date <= NOW()
            AND end_date >= NOW()
-         ORDER BY created_at DESC
-         LIMIT 1`,
+         ORDER BY created_at DESC LIMIT 1`,
         [supplierId, productId]
       );
 
-      res.json({
-        success: true,
-        data: result.rows[0] || null
-      });
+      res.json({ success: true, data: result.rows[0] || null });
     } catch (error) {
       console.error('[Get Active Campaign] Error:', error);
       res.status(500).json({ success: false, message: error.message });
@@ -961,10 +821,7 @@ class SupplierController {
       const { campaign_id } = req.body;
 
       if (!campaign_id) {
-        return res.status(400).json({
-          success: false,
-          message: 'campaign_id est requis'
-        });
+        return res.status(400).json({ success: false, message: 'campaign_id est requis' });
       }
 
       await db.query(
@@ -991,10 +848,7 @@ class SupplierController {
       const { campaign_id } = req.body;
 
       if (!campaign_id) {
-        return res.status(400).json({
-          success: false,
-          message: 'campaign_id est requis'
-        });
+        return res.status(400).json({ success: false, message: 'campaign_id est requis' });
       }
 
       await db.query(
@@ -1020,67 +874,41 @@ class SupplierController {
 
   async uploadImage(req, res) {
     try {
-      console.log('[Upload Image] Request received');
-      
       if (!req.file) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Aucun fichier fourni' 
-        });
+        return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
       }
 
       const result = await uploadImage(req.file.buffer);
       
       res.json({ 
         success: true, 
-        data: { 
-          url: result.url || result,
-          type: 'image'
-        } 
+        data: { url: result.url || result, type: 'image' } 
       });
     } catch (error) {
       console.error('[Upload Image] Error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erreur upload image: ' + error.message 
-      });
+      res.status(500).json({ success: false, message: 'Erreur upload image: ' + error.message });
     }
   }
 
   async uploadCampaignVideo(req, res) {
     try {
-      console.log('[Upload Video] Request received');
-      
       if (!req.file) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Aucun fichier vidéo fourni' 
-        });
+        return res.status(400).json({ success: false, message: 'Aucun fichier vidéo fourni' });
       }
 
       if (!req.file.mimetype.startsWith('video/')) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Le fichier doit être une vidéo (MP4, WebM)' 
-        });
+        return res.status(400).json({ success: false, message: 'Le fichier doit être une vidéo' });
       }
 
       const result = await uploadVideo(req.file.buffer);
 
       res.json({ 
         success: true, 
-        data: { 
-          url: result.url || result,
-          type: 'video',
-          thumbnailUrl: result.thumbnailUrl
-        } 
+        data: { url: result.url || result, type: 'video', thumbnailUrl: result.thumbnailUrl } 
       });
     } catch (error) {
       console.error('[Upload Video] Error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erreur upload vidéo: ' + error.message 
-      });
+      res.status(500).json({ success: false, message: 'Erreur upload vidéo: ' + error.message });
     }
   }
 
@@ -1096,10 +924,7 @@ class SupplierController {
       );
       
       if (supplierResult.rows.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil fournisseur non trouvé' 
-        });
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
       const supplierId = supplierResult.rows[0].id;
