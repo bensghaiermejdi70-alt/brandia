@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE (Publicité) - v4.0 COMPLÈTEMENT CORRIGÉ
-// Ajouts : Edit campagne, stats détaillées, preview temps réel, graphique dynamique
+// SUPPLIER CAMPAIGNS MODULE (Publicité) - v4.1 CORRIGÉ
+// Corrections : Produits chargés en edit, boutons visibles, highlight sélection
 // ============================================
 
 window.SupplierCampaigns = {
@@ -10,15 +10,14 @@ window.SupplierCampaigns = {
     chart: null,
     currentMediaType: 'image',
     uploadedMedia: null,
-    editingCampaignId: null, // 🔥 AJOUT : ID campagne en cours d'édition
-    currentChartData: null   // 🔥 AJOUT : Données réelles pour le graphique
+    editingCampaignId: null,
+    currentChartData: null
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v4.0...');
+    console.log('[Campaigns] Initializing v4.1...');
     await this.loadProducts();
     await this.loadCampaigns();
-    // 🔥 CORRECTION : Ne pas charger stats globales ici, elles sont par campagne
   },
 
   loadProducts: async function() {
@@ -32,14 +31,21 @@ window.SupplierCampaigns = {
     }
   },
 
-  // 🔥 NOUVEAU : Charger une campagne spécifique pour édition
+  // 🔥 CORRIGÉ v4.1 : Chargement complet avec produits
   loadCampaignForEdit: async function(campaignId) {
     try {
       console.log(`[Campaigns] Loading campaign ${campaignId} for edit...`);
+      
+      // S'assurer que les produits sont chargés
+      if (this.state.products.length === 0) {
+        console.log('[Campaigns] Products not loaded, loading now...');
+        await this.loadProducts();
+      }
+      
       const campaign = this.state.campaigns.find(c => c.id === parseInt(campaignId));
       
       if (!campaign) {
-        throw new Error('Campagne non trouvée');
+        throw new Error('Campagne non trouvée dans la liste locale');
       }
 
       this.state.editingCampaignId = campaignId;
@@ -53,7 +59,10 @@ window.SupplierCampaigns = {
         const fields = ['name', 'headline', 'description', 'cta_text'];
         fields.forEach(field => {
           const input = form.querySelector(`[name="${field}"]`);
-          if (input && campaign[field]) input.value = campaign[field];
+          if (input && campaign[field]) {
+            input.value = campaign[field];
+            console.log(`[Campaigns] Set ${field}:`, campaign[field]);
+          }
         });
 
         // Dates
@@ -77,23 +86,145 @@ window.SupplierCampaigns = {
         const ctaLinkValue = document.getElementById('cta-link-value');
         if (ctaLinkValue) ctaLinkValue.value = campaign.cta_link || '';
 
-        // Déterminer le type de CTA
-        if (campaign.cta_link?.includes('product.html')) {
-          this.handleCtaType('product');
-          // Extraire l'ID produit et sélectionner
-          const match = campaign.cta_link.match(/id=(\d+)/);
-          if (match) {
-            const productSelect = document.getElementById('cta-product-select');
-            if (productSelect) productSelect.value = campaign.cta_link;
-          }
-        } else if (campaign.cta_link?.includes('brandia')) {
-          this.handleCtaType('category');
-        } else {
-          this.handleCtaType('external');
-          const externalUrl = document.getElementById('cta-external-url');
-          if (externalUrl) externalUrl.value = campaign.cta_link || '';
-        }
+        // Setup CTA fields
+        this.setupCtaFields(campaign.cta_link, campaign.target_products);
 
+        // 🔥 CRITIQUE : Rendre les produits avec sélection
+        this.renderProductTargets(campaign.target_products || []);
+
+        // Afficher média existant
+        this.displayExistingMedia(campaign.media_url, campaign.media_type);
+      }
+
+      // Mettre à jour UI modal pour mode edit
+      const modalTitle = document.querySelector('#campaign-modal h3');
+      if (modalTitle) modalTitle.textContent = 'Modifier la campagne';
+      
+      const modalSubtitle = document.querySelector('#campaign-modal p.text-sm');
+      if (modalSubtitle) modalSubtitle.textContent = 'Modifiez votre publicité contextuelle';
+
+      const saveBtn = document.querySelector('#campaign-modal button[onclick="saveCampaign()"]');
+      if (saveBtn) {
+        saveBtn.textContent = 'Mettre à jour la campagne';
+        saveBtn.classList.remove('from-pink-500', 'to-rose-500');
+        saveBtn.classList.add('from-indigo-500', 'to-purple-500');
+      }
+
+      // Afficher stats
+      const quickStats = document.getElementById('campaign-quick-stats');
+      if (quickStats) quickStats.classList.remove('hidden');
+      
+      const viewsEl = document.getElementById('modal-ad-views');
+      const clicksEl = document.getElementById('modal-ad-clicks');
+      const ctrEl = document.getElementById('modal-ad-ctr');
+      
+      if (viewsEl) viewsEl.textContent = (campaign.views_count || 0).toLocaleString('fr-FR');
+      if (clicksEl) clicksEl.textContent = (campaign.clicks_count || 0).toLocaleString('fr-FR');
+      const ctr = campaign.views_count > 0 
+        ? ((campaign.clicks_count / campaign.views_count) * 100).toFixed(1) 
+        : 0;
+      if (ctrEl) ctrEl.textContent = ctr + '%';
+
+      await this.loadCampaignStats(campaignId);
+      this.openModal();
+      
+    } catch (error) {
+      console.error('[Campaigns] Error loading for edit:', error);
+      this.showToast('Erreur chargement campagne: ' + error.message, 'error');
+    }
+  },
+
+  // 🔥 NOUVEAU : Rendu des produits cibles
+  renderProductTargets: function(selectedProductIds) {
+    const targetList = document.getElementById('target-products-list');
+    const productSelect = document.getElementById('cta-product-select');
+    
+    const products = this.state.products;
+    console.log('[Campaigns] Rendering', products.length, 'products, selected IDs:', selectedProductIds);
+    
+    if (products.length === 0) {
+      if (targetList) {
+        targetList.innerHTML = `
+          <div class="text-center py-4 text-amber-400">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Aucun produit disponible. Créez d'abord un produit dans la section "Produits".
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // Convertir selectedProductIds en nombres pour comparaison
+    const selectedIds = selectedProductIds.map(id => parseInt(id));
+
+    // Rendre la liste des checkboxes
+    if (targetList) {
+      targetList.innerHTML = products.map(p => {
+        const isChecked = selectedIds.includes(p.id);
+        return `
+          <label class="flex items-center gap-3 p-2 hover:bg-slate-700/50 rounded cursor-pointer border transition-all ${isChecked ? 'bg-indigo-500/10 border-indigo-500/50' : 'border-transparent hover:border-slate-600'}">
+            <input type="checkbox" name="target_products" value="${p.id}" 
+                   ${isChecked ? 'checked' : ''}
+                   class="w-4 h-4 rounded border-slate-600 text-indigo-600 bg-slate-700 focus:ring-indigo-500 focus:ring-offset-slate-800" 
+                   onchange="SupplierCampaigns.updateCtaLink();">
+            <img src="${p.main_image_url || 'https://via.placeholder.com/100'}" 
+                 class="w-10 h-10 rounded object-cover bg-slate-700 flex-shrink-0" 
+                 onerror="this.src='https://via.placeholder.com/100'">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-white truncate font-medium">${p.name || 'Produit sans nom'}</p>
+              <p class="text-xs text-slate-400">${this.formatPrice(p.price)} • Stock: ${p.stock_quantity || 0}</p>
+            </div>
+            ${isChecked ? '<i class="fas fa-check-circle text-indigo-400"></i>' : ''}
+          </label>
+        `;
+      }).join('');
+    }
+    
+    // Mettre à jour le select pour CTA
+    if (productSelect) {
+      let selectedOption = '';
+      if (selectedIds.length > 0) {
+        const selectedProduct = products.find(p => selectedIds.includes(p.id));
+        if (selectedProduct) {
+          selectedOption = `https://brandia-marketplace.netlify.app/product.html?id=${selectedProduct.id}`;
+        }
+      }
+      
+      productSelect.innerHTML = '<option value="">Choisir un produit...</option>' + 
+        products.map(p => {
+          const productUrl = `https://brandia-marketplace.netlify.app/product.html?id=${p.id}`;
+          return `<option value="${productUrl}" ${productUrl === selectedOption ? 'selected' : ''}>${p.name || 'Produit ' + p.id}</option>`;
+        }).join('');
+        
+      // Mettre à jour le lien caché
+      const ctaLinkValue = document.getElementById('cta-link-value');
+      if (ctaLinkValue && selectedOption) {
+        ctaLinkValue.value = selectedOption;
+      }
+    }
+  },
+
+  setupCtaFields: function(ctaLink, targetProducts) {
+    const linkTypeSelect = document.querySelector('[name="cta_link_type"]');
+    
+    if (!ctaLink || !linkTypeSelect) {
+      this.handleCtaType('product');
+      return;
+    }
+
+    if (ctaLink.includes('product.html')) {
+      linkTypeSelect.value = 'product';
+      this.handleCtaType('product');
+    } else if (ctaLink.includes('catalogue') || ctaLink.includes('category')) {
+      linkTypeSelect.value = 'category';
+      this.handleCtaType('category');
+    } else {
+      linkTypeSelect.value = 'external';
+      this.handleCtaType('external');
+      const externalUrl = document.getElementById('cta-external-url');
+      if (externalUrl) externalUrl.value = ctaLink;
+    }
+  },
         // Produits cibles (checkboxes)
         if (campaign.target_products && Array.isArray(campaign.target_products)) {
           const checkboxes = form.querySelectorAll('input[name="target_products"]');

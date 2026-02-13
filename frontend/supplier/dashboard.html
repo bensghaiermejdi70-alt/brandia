@@ -8,6 +8,18 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+        .campaign-actions {
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .campaign-row:hover .campaign-actions {
+          opacity: 1;
+        }
+        @media (max-width: 768px) {
+          .campaign-actions {
+            opacity: 1 !important;
+          }
+        }
     :root {
       --bg-primary: #0f172a;
       --bg-secondary: #1e293b;
