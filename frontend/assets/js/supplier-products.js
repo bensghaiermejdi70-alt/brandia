@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER PRODUCTS MODULE - v3.3 CORRIGÉ
-// Correction: Images fallback (via.placeholder.com remplacé)
+// SUPPLIER PRODUCTS MODULE - v3.2 CORRIGÉ
+// Correction: Gestion correcte de response.data.products
 // ============================================
 
 window.SupplierProducts = {
@@ -18,9 +18,6 @@ window.SupplierProducts = {
     importInProgress: false,
     uploadedImage: null
   },
-
-  // 🔥 NOUVEAU: Image fallback locale (base64) car via.placeholder.com est down
-  FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qcm9kdWl0IHNhbnMgaW1hZ2U8L3RleHQ+PC9zdmc+',
 
   BRANDIA_CATEGORIES: [
     { id: 1, slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa' },
@@ -46,8 +43,11 @@ window.SupplierProducts = {
     { id: 21, slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle' }
   ],
 
+  // ==========================================
+  // INITIALISATION
+  // ==========================================
   init: async function() {
-    console.log('[Products] Initialisation v3.3...');
+    console.log('[Products] Initialisation v3.2...');
     this.loadCategories();
     await this.loadProducts();
     this.setupEventListeners();
@@ -64,6 +64,9 @@ window.SupplierProducts = {
     }
   },
 
+  // ==========================================
+  // CHARGEMENT DES DONNÉES - CORRIGÉ
+  // ==========================================
   loadProducts: async function() {
     try {
       console.log('[Products] Chargement...');
@@ -71,13 +74,17 @@ window.SupplierProducts = {
       console.log('[Products] Réponse API:', response);
 
       if (response.success) {
+        // 🔥 CORRECTION CRITIQUE : Gérer response.data.products OU response.data directement
         let productsArray = [];
         
         if (response.data && Array.isArray(response.data)) {
+          // Si data est déjà un tableau (ancien format)
           productsArray = response.data;
         } else if (response.data && response.data.products && Array.isArray(response.data.products)) {
+          // Si data contient products (nouveau format)
           productsArray = response.data.products;
         } else if (response.data && typeof response.data === 'object') {
+          // Si data est un objet, essayer de trouver un tableau
           const possibleArrays = Object.values(response.data).filter(v => Array.isArray(v));
           if (possibleArrays.length > 0) {
             productsArray = possibleArrays[0];
@@ -120,6 +127,9 @@ window.SupplierProducts = {
     }
   },
 
+  // ==========================================
+  // RENDU DES PRODUITS
+  // ==========================================
   renderProducts: function() {
     const container = document.getElementById('products-grid');
     if (!container) {
@@ -127,6 +137,7 @@ window.SupplierProducts = {
       return;
     }
 
+    // Vérifier que products est bien un tableau
     if (!Array.isArray(this.state.products)) {
       console.error('[Products] state.products n\'est pas un tableau:', this.state.products);
       container.innerHTML = `
@@ -182,24 +193,20 @@ window.SupplierProducts = {
     this.renderProducts();
   },
 
-  // 🔥 CORRECTION: Utilisation de l'image fallback locale
   renderProductCard: function(p) {
     const category = this.state.categories.find(c => c.id === p.category_id);
     const isActive = p.is_active !== false;
     const stock = parseInt(p.stock_quantity) || 0;
     const stockClass = stock === 0 ? 'text-red-400' : stock < 5 ? 'text-amber-400' : 'text-emerald-400';
     const stockIcon = stock === 0 ? 'fa-times-circle' : stock < 5 ? 'fa-exclamation-circle' : 'fa-check-circle';
-    
-    // 🔥 CORRECTION: Image fallback avec data URI au lieu de via.placeholder.com
-    const imageUrl = p.main_image_url || this.FALLBACK_IMAGE;
 
     return `
       <div class="card rounded-xl overflow-hidden group hover:border-indigo-500/50 transition-all">
         <div class="relative aspect-square bg-slate-800 overflow-hidden">
-          <img src="${imageUrl}" 
+          <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" 
                alt="${p.name || 'Produit'}" 
                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-               onerror="this.src='${this.FALLBACK_IMAGE}'">
+               onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
           
           <div class="absolute top-2 right-2 flex gap-2">
             <button onclick="SupplierProducts.toggleStatus(${p.id}, ${isActive})" 
@@ -265,6 +272,9 @@ window.SupplierProducts = {
     if (nextBtn) nextBtn.disabled = this.state.currentPage >= totalPages;
   },
 
+  // ==========================================
+  // ACTIONS PRODUITS
+  // ==========================================
   filterProducts: function() {
     this.state.filters.category = document.getElementById('product-category-filter')?.value || '';
     this.state.filters.status = document.getElementById('product-status-filter')?.value || '';
@@ -333,6 +343,9 @@ window.SupplierProducts = {
     }
   },
 
+  // ==========================================
+  // MODAL (CREATE / EDIT)
+  // ==========================================
   openModal: function(productId = null) {
     this.state.editingId = productId;
     this.state.uploadedImage = null;
@@ -394,6 +407,9 @@ window.SupplierProducts = {
     }
   },
 
+  // ==========================================
+  // SAUVEGARDE
+  // ==========================================
   save: async function() {
     const nameInput = document.getElementById('product-name');
     const descInput = document.getElementById('product-description');
@@ -466,20 +482,18 @@ window.SupplierProducts = {
     }
   },
 
-  // 🔥 CORRECTION: Upload avec meilleure gestion d'erreurs et logs
+  // ==========================================
+  // UPLOAD IMAGE - CORRIGÉ
+  // ==========================================
   handleImageSelect: async function(event) {
     const file = event.target.files[0];
-    if (!file) {
-      console.log('[Upload] Aucun fichier sélectionné');
-      return;
-    }
-
-    console.log('[Upload] Fichier sélectionné:', file.name, file.type, file.size);
+    if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
       return alert('L\'image ne doit pas dépasser 5MB');
     }
 
+    // Vérifier le type
     if (!file.type.startsWith('image/')) {
       return alert('Veuillez sélectionner une image valide');
     }
@@ -492,35 +506,33 @@ window.SupplierProducts = {
       const formData = new FormData();
       formData.append('media', file);
 
-      const uploadUrl = BrandiaAPI.config.apiURL + '/supplier/upload-image';
-      console.log('[Upload] Envoi vers:', uploadUrl);
-      console.log('[Upload] Token présent:', !!localStorage.getItem('token'));
+      console.log('[Upload] Envoi vers:', BrandiaAPI.config.apiURL + '/supplier/upload-image');
+      console.log('[Upload] Fichier:', file.name, file.type, file.size);
 
-      const response = await fetch(uploadUrl, {
+      const response = await fetch(BrandiaAPI.config.apiURL + '/supplier/upload-image', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
-          // Pas de Content-Type ici!
         },
         body: formData
       });
 
-      console.log('[Upload] Status:', response.status, response.statusText);
+      console.log('[Upload] Status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[Upload] Erreur serveur:', errorText);
-        throw new Error(`Erreur serveur ${response.status}: ${errorText.substring(0, 200)}`);
+        console.error('[Upload] Server error:', errorText);
+        throw new Error(`Erreur serveur ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('[Upload] Réponse:', result);
+      console.log('[Upload] Résultat:', result);
 
       if (result.success) {
+        // 🔥 CORRECTION : Gérer différents formats de réponse
         const imageUrl = result.data?.url || result.data?.secure_url || result.data || result.url;
         
         if (!imageUrl) {
-          console.error('[Upload] Pas d\'URL dans la réponse:', result);
           throw new Error('URL image non trouvée dans la réponse');
         }
         
@@ -536,7 +548,7 @@ window.SupplierProducts = {
         throw new Error(result.message || 'Erreur upload');
       }
     } catch (error) {
-      console.error('[Upload] Erreur complète:', error);
+      console.error('[Upload] Error:', error);
       this.showToast('Erreur upload image: ' + error.message, 'error');
     } finally {
       if (window.DashboardApp && window.DashboardApp.showLoading) {
@@ -545,6 +557,9 @@ window.SupplierProducts = {
     }
   },
 
+  // ==========================================
+  // IMPORT CSV
+  // ==========================================
   importProducts: function() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -580,7 +595,7 @@ window.SupplierProducts = {
       const missing = required.filter(r => !headers.includes(r));
       
       if (missing.length > 0) {
-        throw new Error(`Colonnes manquantes: ${missing.join(', ')}`);
+        throw new Error(`Colonnes manquantes: ${missing.join(', ')}. Headers trouvés: ${headers.join(', ')}`);
       }
 
       const products = [];
@@ -617,16 +632,22 @@ window.SupplierProducts = {
           }
         } catch (e) {
           errors.push(`${p.name}: ${e.message}`);
+          console.error('Import error for', p.name, e);
         }
       }
 
       const message = `${success}/${products.length} produits importés`;
       const type = success === products.length ? 'success' : (success > 0 ? 'warning' : 'error');
       
+      if (errors.length > 0 && success < products.length) {
+        console.error('[Import] Erreurs:', errors);
+      }
+      
       this.showToast(message, type);
       await this.loadProducts();
       
     } catch (error) {
+      console.error('CSV import error:', error);
       this.showToast(error.message, 'error');
     } finally {
       this.state.importInProgress = false;
@@ -652,6 +673,9 @@ window.SupplierProducts = {
     URL.revokeObjectURL(url);
   },
 
+  // ==========================================
+  // UTILITAIRES
+  // ==========================================
   showToast: function(message, type = 'success') {
     if (window.DashboardApp && window.DashboardApp.showToast) {
       window.DashboardApp.showToast(message, type);
@@ -659,6 +683,7 @@ window.SupplierProducts = {
       window.showToast(message, type);
     } else {
       console.log(`[${type}] ${message}`);
+      alert(message);
     }
   },
 
@@ -678,7 +703,9 @@ window.SupplierProducts = {
   }
 };
 
-// Exposition globale
+// ==========================================
+// EXPOSITION GLOBALE
+// ==========================================
 window.openProductModal = (id) => window.SupplierProducts.openModal(id);
 window.saveProduct = () => window.SupplierProducts.save();
 window.filterProducts = () => window.SupplierProducts.filterProducts();
@@ -689,4 +716,4 @@ window.downloadCSVTemplate = () => window.SupplierProducts.downloadCSVTemplate()
 window.toggleProductStatus = (id, status) => window.SupplierProducts.toggleStatus(id, status);
 window.deleteProduct = (id) => window.SupplierProducts.deleteProduct(id);
 
-console.log('[SupplierProducts] Module v3.3 chargé - Fallback images corrigées');
+console.log('[SupplierProducts] Module v3.2 chargé avec succès');
