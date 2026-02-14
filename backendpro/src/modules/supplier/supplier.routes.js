@@ -1,45 +1,42 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - Complet et Corrigé v3.9
-// AJOUT : Middleware multer pour l'upload de fichiers
+// SUPPLIER ROUTES - v4.0 CORRECTION CRITIQUE
+// Contourne express.json() sur les routes d'upload
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 
-// Configuration multer pour l'upload de fichiers
+// Configuration multer
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB max
   },
   fileFilter: (req, file, cb) => {
-    // Accepter images et vidéos
     if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
-      cb(new Error('Type de fichier non supporté. Utilisez une image ou une vidéo.'), false);
+      cb(new Error('Type de fichier non supporté'), false);
     }
   }
 });
 
-// 🔥 Import des middlewares
+// 🔥 CORRECTION CRITIQUE : Importer les middlewares
 const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
 const supplierController = require('./supplier.controller');
 
-console.log('[Supplier Routes] Loading v3.9...');
-console.log('[Supplier Routes] Controller methods:', Object.keys(supplierController));
+console.log('[Supplier Routes] Loading v4.0...');
 
 // ============================================
 // ROUTES PUBLIQUES (sans auth)
 // ============================================
-
 router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
 router.post('/public/campaigns/view', supplierController.trackCampaignView);
 router.post('/public/campaigns/click', supplierController.trackCampaignClick);
 
 // ============================================
-// MIDDLEWARES - Auth + Role fournisseur
+// MIDDLEWARES AUTH
 // ============================================
 router.use(authenticate);
 router.use(requireRole('supplier'));
@@ -65,7 +62,7 @@ router.get('/orders/:id', supplierController.getOrderById);
 router.put('/orders/:id/status', supplierController.updateOrderStatus);
 
 // ============================================
-// PAIEMENTS & VIREMENTS
+// PAIEMENTS
 // ============================================
 router.get('/payments', supplierController.getPayments);
 router.post('/payouts', supplierController.requestPayout);
@@ -80,7 +77,7 @@ router.put('/promotions/:id', supplierController.updatePromotion);
 router.delete('/promotions/:id', supplierController.deletePromotion);
 
 // ============================================
-// CAMPAGNES PUBLICITAIRES
+// CAMPAGNES
 // ============================================
 router.get('/campaigns', supplierController.getCampaigns);
 router.post('/campaigns', supplierController.createCampaign);
@@ -88,11 +85,24 @@ router.put('/campaigns/:id', supplierController.updateCampaign);
 router.delete('/campaigns/:id', supplierController.deleteCampaign);
 
 // ============================================
-// UPLOADS - CORRIGÉ avec multer
+// UPLOADS - CORRECTION CRITIQUE v4.0
 // ============================================
-// 🔥 Utilisation de upload.single('media') pour parser le fichier
-router.post('/upload-image', upload.single('media'), supplierController.uploadImage);
-router.post('/upload-video', upload.single('media'), supplierController.uploadCampaignVideo);
+
+// 🔥 SOLUTION 1 : Désactiver express.json pour ces routes spécifiques
+// en utilisant un middleware qui vide le body déjà parsé
+const resetBodyForUpload = (req, res, next) => {
+  // Si express.json a déjà parsé le body, on le remet à undefined
+  // pour que multer re-parse correctement
+  if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    console.log('[Upload] Resetting body for multer');
+    req.body = undefined;
+  }
+  next();
+};
+
+// Routes d'upload avec le reset + multer
+router.post('/upload-image', resetBodyForUpload, upload.single('media'), supplierController.uploadImage);
+router.post('/upload-video', resetBodyForUpload, upload.single('media'), supplierController.uploadCampaignVideo);
 
 // Gestion des erreurs multer
 router.use((error, req, res, next) => {
