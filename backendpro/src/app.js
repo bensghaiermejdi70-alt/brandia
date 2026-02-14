@@ -1,4 +1,4 @@
-'// ============================================
+// ============================================
 // BRANDIA APP - Configuration Express v3.0
 // CORRECTION: Routes supplier montées UNE SEULE FOIS
 // ============================================
