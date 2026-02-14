@@ -1,4 +1,3 @@
-
 // ============================================
 // ROUTES PRINCIPALES - API Brandia v3.0
 // CORRECTION: Supplier routes retirées (déjà dans app.js)
@@ -165,5 +164,3 @@ router.use((req, res) => {
 });
 
 module.exports = router;
-
-

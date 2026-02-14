@@ -1,117 +1,77 @@
 // ============================================
-// BRANDIA APP - Configuration Express v3.0
-// CORRECTION: Routes supplier montées UNE SEULE FOIS
+// SUPPLIER ROUTES - v5.0 AVEC CLOUDINARY
+// Uploads corrigés avec multer-storage-cloudinary
 // ============================================
 
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const routes = require('./routes');
-const errorMiddleware = require('./middlewares/error.middleware');
+const router = express.Router();
 
-const app = express();
+const supplierController = require('./supplier.controller');
+const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
 
-// Sécurité
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginEmbedderPolicy: false
-}));
+console.log('[Supplier Routes] Loading v5.0 with Cloudinary...');
 
 // ============================================
-// CORS CONFIGURATION
+// ROUTES PUBLIQUES (sans auth)
 // ============================================
-
-const allowedOrigins = [
-  'https://brandia-marketplace.netlify.app',
-  'https://bensghaiermejdi70-alt.github.io',
-  'https://brandia.company',
-  'http://localhost:3000',
-  'http://localhost:5500',
-  'http://127.0.0.1:5500',
-  null
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    console.log(`[CORS] Origin: ${origin || 'no-origin'}`);
-    
-    if (!origin) {
-      console.log('[CORS] ✓ Allowed (no origin)');
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log(`[CORS] ✓ Allowed: ${origin}`);
-      callback(null, true);
-    } else {
-      console.log(`[CORS] ❌ Blocked: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
-}));
+router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
+router.post('/public/campaigns/view', supplierController.trackCampaignView);
+router.post('/public/campaigns/click', supplierController.trackCampaignClick);
 
 // ============================================
-// WEBHOOK STRIPE (raw body) - AVANT tout parsing
+// MIDDLEWARES AUTH pour routes protégées
 // ============================================
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+router.use(authenticate);
+router.use(requireRole('supplier'));
 
 // ============================================
-// ROUTES SUPPLIER (avec upload multer) - AVANT express.json()
+// STATS & DASHBOARD
 // ============================================
-// IMPORTANT: Ces routes ont leur propre parsing multipart
-const supplierRoutes = require('./modules/supplier/supplier.routes');
-app.use('/api/supplier', supplierRoutes);
+router.get('/stats', supplierController.getStats);
 
 // ============================================
-// PARSING JSON pour TOUTES les autres routes
+// PRODUITS
 // ============================================
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Logger
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin || 'no-origin'}`);
-  next();
-});
+router.get('/products', supplierController.getProducts);
+router.post('/products', supplierController.createProduct);
+router.put('/products/:id', supplierController.updateProduct);
+router.delete('/products/:id', supplierController.deleteProduct);
 
 // ============================================
-// ROUTES PRINCIPALES (index.js)
+// UPLOADS CLOUDINARY - Routes spéciales avec multer
 // ============================================
-// Note: /api/supplier est DÉJÀ monté plus haut, donc on skip dans index.js
-app.use('/api', routes);
+router.post('/upload-image', supplierController.uploadImageMiddleware.single('media'), supplierController.uploadImage);
+router.post('/upload-video', supplierController.uploadVideoMiddleware.single('media'), supplierController.uploadCampaignVideo);
 
 // ============================================
-// HEALTH CHECK (redondance sécurité)
+// COMMANDES
 // ============================================
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    service: 'brandia-api'
-  });
-});
+router.get('/orders', supplierController.getOrders);
+router.get('/orders/:id', supplierController.getOrderById);
+router.put('/orders/:id/status', supplierController.updateOrderStatus);
 
 // ============================================
-// 404 HANDLER
+// PAIEMENTS
 // ============================================
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route non trouvée',
-    path: req.path
-  });
-});
+router.get('/payments', supplierController.getPayments);
+router.post('/payouts', supplierController.requestPayout);
+router.get('/payouts', supplierController.getPayouts);
 
 // ============================================
-// ERROR HANDLER
+// PROMOTIONS
 // ============================================
-app.use(errorMiddleware);
+router.get('/promotions', supplierController.getPromotions);
+router.post('/promotions', supplierController.createPromotion);
+router.put('/promotions/:id', supplierController.updatePromotion);
+router.delete('/promotions/:id', supplierController.deletePromotion);
 
-module.exports = app;
+// ============================================
+// CAMPAGNES PUBLICITAIRES
+// ============================================
+router.get('/campaigns', supplierController.getCampaigns);
+router.post('/campaigns', supplierController.createCampaign);
+router.put('/campaigns/:id', supplierController.updateCampaign);
+router.delete('/campaigns/:id', supplierController.deleteCampaign);
+router.put('/campaigns/:id/status', supplierController.toggleCampaignStatus);
 
-
+module.exports = router;

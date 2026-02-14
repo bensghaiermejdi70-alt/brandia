@@ -213,9 +213,8 @@ window.SupplierCampaigns = {
     if (form) form.reset();
     
     // Reset UI
-    document.getElementById('campaign-media-placeholder').style.display = 'block';
-    const previewContainer = document.getElementById('campaign-preview-container');
-    if (previewContainer) previewContainer.innerHTML = '';
+    const placeholder = document.getElementById('campaign-media-placeholder');
+    if (placeholder) placeholder.style.display = 'block';
     
     // Charger liste produits pour ciblage
     this.renderTargetProductsList();
@@ -266,9 +265,8 @@ window.SupplierCampaigns = {
     const form = document.getElementById('campaign-form');
     if (form) form.reset();
     
-    document.getElementById('campaign-media-placeholder').style.display = 'block';
-    const previewContainer = document.getElementById('campaign-preview-container');
-    if (previewContainer) previewContainer.innerHTML = '';
+    const placeholder = document.getElementById('campaign-media-placeholder');
+    if (placeholder) placeholder.style.display = 'block';
     
     this.renderTargetProductsList();
     this.renderCtaProductSelect();
@@ -421,7 +419,9 @@ window.SupplierCampaigns = {
       localUrl: url
     };
     
-    document.getElementById('campaign-media-placeholder').style.display = 'none';
+    const placeholder = document.getElementById('campaign-media-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+    
     this.updatePreview();
   },
 
@@ -452,7 +452,9 @@ window.SupplierCampaigns = {
 
   removeMedia: function() {
     this.state.uploadedMedia = null;
-    document.getElementById('campaign-media-placeholder').style.display = 'block';
+    const placeholder = document.getElementById('campaign-media-placeholder');
+    if (placeholder) placeholder.style.display = 'block';
+    
     const container = document.getElementById('campaign-preview-container') || 
                       document.getElementById('campaign-dropzone');
     if (container) {
@@ -637,7 +639,7 @@ window.SupplierCampaigns = {
   updatePreview: function() {
     const headline = document.querySelector('[name="headline"]')?.value || 'Votre titre';
     const description = document.querySelector('[name="description"]')?.value || 'Description de votre offre...';
-    const ctaText = document.querySelector('[name="cta_text"]')?.value || 'Voir l\'offre';
+    const ctaText = document.querySelector('[name="cta_text"]')?.value || "Voir l'offre";
     
     const headlineEl = document.getElementById('ad-preview-headline');
     const descEl = document.getElementById('ad-preview-desc');
@@ -728,7 +730,7 @@ window.SupplierCampaigns = {
         media_type: mediaType,
         headline: headline,
         description: document.querySelector('[name="description"]')?.value || '',
-        cta_text: document.querySelector('[name="cta_text"]')?.value || 'Voir l\'offre',
+        cta_text: document.querySelector('[name="cta_text"]')?.value || "Voir l'offre",
         cta_link: ctaLink,
         target_products: targetProducts,
         start_date: startDate,
@@ -917,7 +919,6 @@ window.SupplierCampaigns = {
       window.showToast(message, type);
     } else {
       console.log('[' + type + '] ' + message);
-      alert(message);
     }
   }
 };
