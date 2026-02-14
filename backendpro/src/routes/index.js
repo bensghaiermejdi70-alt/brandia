@@ -1,11 +1,12 @@
+
 // ============================================
-// ROUTES PRINCIPALES - API Brandia
+// ROUTES PRINCIPALES - API Brandia v3.0
+// CORRECTION: Supplier routes retirées (déjà dans app.js)
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-// 🔥 CORRECTION : Import du middleware avec nouvelle structure
 const { authenticate } = require('../middlewares/auth.middleware');
 
 // Import des contrôleurs et routes
@@ -14,7 +15,6 @@ const productRoutes = require('../modules/products/product.routes');
 const paymentRoutes = require('../modules/payments/payment.routes');
 const orderRoutes = require('../modules/orders/order.routes');
 const countryRoutes = require('../modules/countries/country.routes');
-const supplierRoutes = require('../modules/supplier/supplier.routes');
 
 // ============================================
 // HEALTH CHECK
@@ -121,230 +121,21 @@ router.get('/categories', async (req, res) => {
 });
 
 // ============================================
-// DEBUG ROUTES (TEMPORAIRES)
+// AUTH ROUTES
 // ============================================
-router.get('/fix-diffuseur', async (req, res) => {
-    try {
-        const db = require('../config/db');
-        await db.query(`
-            UPDATE products 
-            SET main_image_url = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800' 
-            WHERE id = 11
-        `);
-        res.send('✅ Image du diffuseur corrigée !');
-    } catch (err) {
-        res.status(500).send('Erreur: ' + err.message);
-    }
-});
-
-router.get('/test-db', async (req, res) => {
-    try {
-        const db = require('../config/db');
-        const result = await db.query('SELECT COUNT(*) as count FROM products');
-        res.json({ 
-            success: true, 
-            count: result.rows[0].count,
-            message: 'DB OK' 
-        });
-    } catch (err) {
-        res.status(500).json({ 
-            success: false, 
-            error: err.message 
-        });
-    }
-});
-
-// ============================================
-// ROUTES PUBLIQUES - PROMOTIONS
-// ============================================
-router.get('/public/promotions/active', async (req, res) => {
-    try {
-        const db = require('../config/db');
-        
-        const result = await db.query(`
-            SELECT 
-                p.id,
-                p.name,
-                p.type,
-                p.value,
-                p.code,
-                p.applies_to,
-                p.start_date,
-                p.end_date,
-                u.first_name as supplier_name,
-                s.company_name as supplier_company,
-                s.logo_url as supplier_logo,
-                COUNT(pp.product_id) as products_count
-            FROM promotions p
-            JOIN users u ON p.supplier_id = u.id
-            LEFT JOIN suppliers s ON u.id = s.user_id
-            LEFT JOIN promotion_products pp ON p.id = pp.promotion_id
-            WHERE p.status = 'active'
-                AND p.start_date <= CURRENT_DATE 
-                AND p.end_date >= CURRENT_DATE
-                AND (p.max_usage IS NULL OR p.usage_count < p.max_usage)
-            GROUP BY p.id, u.first_name, s.company_name, s.logo_url
-            ORDER BY p.created_at DESC
-        `);
-
-        res.json({
-            success: true,
-            count: result.rows.length,
-            data: result.rows
-        });
-
-    } catch (error) {
-        console.error('[Public Promotions] Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur'
-        });
-    }
-});
-
-router.post('/public/promotions/validate', async (req, res) => {
-    try {
-        const { code, productIds, totalAmount } = req.body;
-        const db = require('../config/db');
-
-        if (!code) {
-            return res.status(400).json({ success: false, message: 'Code requis' });
-        }
-
-        const result = await db.query(`
-            SELECT *
-            FROM promotions
-            WHERE code = $1 
-            AND status = 'active'
-            AND start_date <= CURRENT_DATE 
-            AND end_date >= CURRENT_DATE
-            AND (max_usage IS NULL OR usage_count < max_usage)
-            LIMIT 1
-        `, [code.toUpperCase()]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Code promo invalide ou expiré' 
-            });
-        }
-
-        const promo = result.rows[0];
-        
-        // Vérifier applicabilité
-        let applicable = false;
-        if (promo.applies_to === 'all') {
-            applicable = true;
-        } else if (promo.applies_to === 'products' && productIds) {
-            const check = await db.query(`
-                SELECT 1 FROM promotion_products 
-                WHERE promotion_id = $1 AND product_id = ANY($2)
-                LIMIT 1
-            `, [promo.id, productIds]);
-            applicable = check.rows.length > 0;
-        }
-
-        if (!applicable) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Code non applicable à ces produits' 
-            });
-        }
-
-        // Calcul réduction
-        let discount = 0;
-        if (promo.type === 'percentage') {
-            discount = totalAmount * (promo.value / 100);
-        } else {
-            discount = Math.min(promo.value, totalAmount);
-        }
-
-        res.json({
-            success: true,
-            data: {
-                promo_id: promo.id,
-                name: promo.name,
-                type: promo.type,
-                value: promo.value,
-                discount: parseFloat(discount.toFixed(2)),
-                final_total: parseFloat((totalAmount - discount).toFixed(2))
-            }
-        });
-
-    } catch (error) {
-        console.error('[Validate Promo] Error:', error);
-        res.status(500).json({ success: false, message: 'Erreur serveur' });
-    }
-});
-
-// ============================================
-// AUTH ROUTES (directement dans index.js)
-// ============================================
-
-// Publiques
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
 router.post('/auth/refresh', authController.refresh);
-
-// Protégées - 🔥 CORRECTION : utilise authenticate du nouveau middleware
 router.get('/auth/me', authenticate, authController.me);
 router.post('/auth/logout', authenticate, authController.logout);
 
 // ============================================
-// ROUTES API (protégées ou spécifiques)
+// ROUTES API (sauf supplier déjà monté dans app.js)
 // ============================================
 router.use('/products', productRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/countries', countryRoutes);
-router.use('/supplier', supplierRoutes);
-// Mount public routes under /api/public
-
-// ============================================
-// Fallback produit sans promotion
-// ============================================
-router.get('/products/:id', async (req, res) => {
-  try {
-    const db = require('../config/db');
-    const result = await db.query(`
-      SELECT 
-        p.*,
-        c.name as category_name,
-        u.first_name as supplier_name,
-        s.company_name as brand_name,
-        s.logo_url as supplier_logo,
-        s.description as supplier_description,
-        s.country as supplier_country
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN users u ON p.supplier_id = u.id
-      LEFT JOIN suppliers s ON u.id = s.user_id
-      WHERE p.id = $1 AND (p.is_active = true OR p.is_active IS NULL)
-    `, [req.params.id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Produit non trouvé' });
-    }
-    
-    const product = result.rows[0];
-    product.supplier = {
-      name: product.brand_name || product.supplier_name,
-      company_name: product.brand_name,
-      logo_url: product.supplier_logo,
-      description: product.supplier_description,
-      country: product.supplier_country
-    };
-    
-    res.json({
-      success: true,
-      data: { product }
-    });
-    
-  } catch (error) {
-    console.error('[Product Detail] Error:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
 
 // ============================================
 // DOCUMENTATION API
@@ -357,14 +148,13 @@ router.get('/', (req, res) => {
         endpoints: {
             public: '/api/public/campaigns?supplier=X&product=Y',
             categories: '/api/categories',
-            health: '/api/health',
-            test: '/api/test-db'
+            health: '/api/health'
         }
     });
 });
 
 // ============================================
-// GESTION ERREURS 404 - DERNIER
+// GESTION ERREURS 404
 // ============================================
 router.use((req, res) => {
     res.status(404).json({
@@ -375,3 +165,5 @@ router.use((req, res) => {
 });
 
 module.exports = router;
+'''
+

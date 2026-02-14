@@ -1,6 +1,6 @@
-// ============================================
-// BRANDIA APP - Configuration Express v2.0
-// CORRECTION : Ordre middlewares pour upload
+'// ============================================
+// BRANDIA APP - Configuration Express v3.0
+// CORRECTION: Routes supplier montées UNE SEULE FOIS
 // ============================================
 
 const express = require('express');
@@ -18,7 +18,7 @@ app.use(helmet({
 }));
 
 // ============================================
-// CORS - ✅ ESPACES SUPPRIMÉS + LOGGING
+// CORS CONFIGURATION
 // ============================================
 
 const allowedOrigins = [
@@ -55,48 +55,50 @@ app.use(cors({
 }));
 
 // ============================================
-// 🔥 CORRECTION CRITIQUE : Ordre des middlewares
+// WEBHOOK STRIPE (raw body) - AVANT tout parsing
 // ============================================
-
-// 1. Webhook Stripe (raw body) - AVANT tout parsing
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
-// 2. 🔥 ROUTES SUPPLIER (avec upload multer) - AVANT express.json()
-//    Car multer a besoin du body brut, pas parsé en JSON
+// ============================================
+// ROUTES SUPPLIER (avec upload multer) - AVANT express.json()
+// ============================================
+// IMPORTANT: Ces routes ont leur propre parsing multipart
 const supplierRoutes = require('./modules/supplier/supplier.routes');
 app.use('/api/supplier', supplierRoutes);
 
-// 3. Parsing JSON pour TOUTES les autres routes
+// ============================================
+// PARSING JSON pour TOUTES les autres routes
+// ============================================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logger simple
+// Logger
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${req.headers.origin || 'no-origin'}`);
   next();
 });
 
 // ============================================
-// ROUTES PRINCIPALES (sans supplier qui est déjà monté)
+// ROUTES PRINCIPALES (index.js)
 // ============================================
+// Note: /api/supplier est DÉJÀ monté plus haut, donc on skip dans index.js
+app.use('/api', routes);
 
-// Test email (à retirer en prod)
-const testEmailRouter = require('./routes/testEmail');
-app.use('/api/test', testEmailRouter);
+// ============================================
+// HEALTH CHECK (redondance sécurité)
+// ============================================
+app.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'brandia-api'
+  });
+});
 
-// Routes principales (sauf supplier déjà monté)
-const mainRoutes = require('./routes');
-
-// 🔥 IMPORTANT : On filtre les routes pour éviter le double mount de /supplier
-app.use('/api', (req, res, next) => {
-  // Si c'est une route supplier, skip (déjà géré plus haut)
-  if (req.path.startsWith('/supplier')) {
-    return next('route'); // Skip ce router
-  }
-  next();
-}, mainRoutes);
-
-// 404
+// ============================================
+// 404 HANDLER
+// ============================================
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -105,7 +107,11 @@ app.use((req, res) => {
   });
 });
 
-// Gestion erreurs
+// ============================================
+// ERROR HANDLER
+// ============================================
 app.use(errorMiddleware);
 
 module.exports = app;
+'''
+
