@@ -1,10 +1,187 @@
 // ============================================
-// SUPPLIER CONTROLLER - v4.5 (colonnes corrigées)
+// SUPPLIER CONTROLLER - v4.6 COMPLET
+// AJOUT : Méthodes uploadImage et uploadVideo
 // ============================================
 
 const db = require("../../config/db");
 
+// Configuration Cloudinary (à mettre dans .env)
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Config Cloudinary si variables d'environnement présentes
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+}
+
 class SupplierController {
+
+  /* ================= UPLOAD - NOUVEAUTÉ V4.6 ================= */
+
+  async uploadImage(req, res) {
+    try {
+      // Vérifier si fichier présent
+      if (!req.file && !req.files?.media) {
+        return res.status(400).json({ success: false, message: 'Aucun fichier reçu' });
+      }
+
+      const file = req.file || req.files.media;
+      
+      // Vérifier type
+      if (!file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ success: false, message: 'Le fichier doit être une image' });
+      }
+
+      // Vérifier taille (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ success: false, message: 'Image trop grande (max 5MB)' });
+      }
+
+      // Si Cloudinary configuré, upload vers Cloudinary
+      if (process.env.CLOUDINARY_CLOUD_NAME) {
+        const result = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { 
+              folder: 'brandia/products',
+              resource_type: 'image',
+              transformation: [{ width: 800, height: 800, crop: 'limit' }]
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          stream.end(file.buffer);
+        });
+
+        return res.json({
+          success: true,
+          data: {
+            url: result.secure_url,
+            public_id: result.public_id,
+            width: result.width,
+            height: result.height
+          }
+        });
+      } 
+      
+      // Sinon, stockage local (fallback)
+      else {
+        const fs = require('fs');
+        const path = require('path');
+        const uploadsDir = path.join(__dirname, '../../../uploads');
+        
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        const filename = `product_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.mimetype.split('/')[1]}`;
+        const filepath = path.join(uploadsDir, filename);
+        
+        fs.writeFileSync(filepath, file.buffer);
+        
+        // URL relative (à remplacer par votre domaine)
+        const url = `/uploads/${filename}`;
+        
+        return res.json({
+          success: true,
+          data: {
+            url: url,
+            filename: filename
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('[Upload Image] Error:', error);
+      res.status(500).json({ success: false, message: 'Erreur upload: ' + error.message });
+    }
+  }
+
+  async uploadCampaignVideo(req, res) {
+    try {
+      if (!req.file && !req.files?.media) {
+        return res.status(400).json({ success: false, message: 'Aucun fichier reçu' });
+      }
+
+      const file = req.file || req.files.media;
+      
+      // Vérifier type vidéo
+      if (!file.mimetype.startsWith('video/')) {
+        return res.status(400).json({ success: false, message: 'Le fichier doit être une vidéo' });
+      }
+
+      // Vérifier taille (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        return res.status(400).json({ success: false, message: 'Vidéo trop grande (max 50MB)' });
+      }
+
+      // Vérifier durée si possible (simplifié)
+      // Note: Pour une vraie vérification de durée, il faudrait ffmpeg
+
+      if (process.env.CLOUDINARY_CLOUD_NAME) {
+        const result = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { 
+              folder: 'brandia/campaigns',
+              resource_type: 'video',
+              eager: [
+                { width: 640, height: 480, crop: 'limit', format: 'mp4' }
+              ]
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          stream.end(file.buffer);
+        });
+
+        return res.json({
+          success: true,
+          data: {
+            url: result.secure_url,
+            public_id: result.public_id,
+            duration: result.duration,
+            format: result.format
+          }
+        });
+      } else {
+        // Stockage local fallback
+        const fs = require('fs');
+        const path = require('path');
+        const uploadsDir = path.join(__dirname, '../../../uploads/videos');
+        
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        const filename = `campaign_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.mimetype.split('/')[1]}`;
+        const filepath = path.join(uploadsDir, filename);
+        
+        fs.writeFileSync(filepath, file.buffer);
+        
+        const url = `/uploads/videos/${filename}`;
+        
+        return res.json({
+          success: true,
+          data: {
+            url: url,
+            filename: filename
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('[Upload Video] Error:', error);
+      res.status(500).json({ success: false, message: 'Erreur upload vidéo: ' + error.message });
+    }
+  }
 
   /* ================= PAIEMENTS - v4.5 COLONNES CORRIGÉES ================= */
 
@@ -23,7 +200,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Utiliser les NOUVELLES colonnes amount et commission_amount
       const balanceResult = await db.query(`
         SELECT 
           COALESCE(SUM(CASE WHEN status = 'available' THEN amount ELSE 0 END), 0) as available_balance,
@@ -39,7 +215,6 @@ class SupplierController {
         total_earnings: 0
       };
 
-      // Toutes les colonnes existent maintenant
       const transactionsResult = await db.query(`
         SELECT 
           sp.id,
@@ -112,7 +287,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Utiliser la nouvelle colonne amount
       const balanceResult = await db.query(`
         SELECT COALESCE(SUM(amount), 0) as available
         FROM supplier_payments
@@ -128,7 +302,6 @@ class SupplierController {
         });
       }
 
-      // Créer le payout
       const payoutResult = await db.query(`
         INSERT INTO payouts (supplier_id, amount, status, created_at)
         VALUES ($1, $2, 'pending', NOW())
@@ -137,7 +310,6 @@ class SupplierController {
 
       const payout = payoutResult.rows[0];
 
-      // Mettre à jour supplier_payments avec le payout_id (nouvelle colonne !)
       await db.query(`
         UPDATE supplier_payments
         SET status = 'payout_requested', payout_id = $1, updated_at = NOW()
@@ -176,7 +348,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Récupérer les payouts avec les paiements liés (via payout_id)
       const result = await db.query(`
         SELECT 
           p.*,
@@ -235,7 +406,7 @@ class SupplierController {
       const supplierId = supplierResult.rows[0].id;
 
       const result = await db.query(`
-        SELECT id, name, price, stock_quantity, main_image_url, is_active, category_id, slug
+        SELECT id, name, price, stock_quantity, main_image_url, is_active, category_id, slug, description
         FROM products 
         WHERE supplier_id = $1 
         ORDER BY created_at DESC
@@ -266,12 +437,21 @@ class SupplierController {
       }
       
       const supplierId = supplierResult.rows[0].id;
-      const { name, price, stock_quantity, description, category_id } = req.body;
+      const { name, price, stock_quantity, description, category_id, main_image_url, is_active } = req.body;
+
+      // Validation
+      if (!name || name.length < 2) {
+        return res.status(400).json({ success: false, message: 'Nom trop court (min 2 caractères)' });
+      }
+
+      if (!price || isNaN(price) || price <= 0) {
+        return res.status(400).json({ success: false, message: 'Prix invalide' });
+      }
 
       const result = await db.query(
-        `INSERT INTO products (supplier_id, name, price, stock_quantity, description, category_id, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING *`,
-        [supplierId, name, price, stock_quantity, description, category_id]
+        `INSERT INTO products (supplier_id, name, price, stock_quantity, description, category_id, main_image_url, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *`,
+        [supplierId, name, price, stock_quantity || 0, description || '', category_id, main_image_url || null, is_active !== false]
       );
 
       res.json({ success: true, data: result.rows[0] });
@@ -994,7 +1174,7 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      const [sales, orders, products, campaigns] = await Promise.all([
+      const [sales, orders, products, campaigns, balance] = await Promise.all([
         db.query(`
           SELECT COALESCE(SUM(oi.total_price), 0) as total 
           FROM order_items oi
@@ -1002,8 +1182,15 @@ class SupplierController {
           WHERE oi.supplier_id = $1 AND o.status NOT IN ('cancelled', 'refunded')
         `, [supplierId]),
         db.query('SELECT COUNT(DISTINCT order_id) FROM order_items WHERE supplier_id = $1', [supplierId]),
-        db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1 AND is_active = true', [supplierId]),
-        db.query('SELECT COUNT(*) FROM supplier_campaigns WHERE supplier_id = $1 AND status = $2', [supplierId, 'active'])
+        db.query('SELECT COUNT(*) FROM products WHERE supplier_id = $1', [supplierId]),
+        db.query('SELECT COUNT(*) FROM supplier_campaigns WHERE supplier_id = $1 AND status = $2', [supplierId, 'active']),
+        db.query(`
+          SELECT 
+            COALESCE(SUM(CASE WHEN status = 'available' THEN amount ELSE 0 END), 0) as available,
+            COALESCE(SUM(amount), 0) as total
+          FROM supplier_payments
+          WHERE supplier_id = $1
+        `, [supplierId])
       ]);
 
       res.json({
@@ -1011,8 +1198,11 @@ class SupplierController {
         data: {
           totalSales: Number(sales.rows[0].total),
           totalOrders: Number(orders.rows[0].count),
-          activeProducts: Number(products.rows[0].count),
-          activeCampaigns: Number(campaigns.rows[0].count)
+          totalProducts: Number(products.rows[0].count),
+          activeProducts: Number(products.rows[0].count), // Simplifié
+          activeCampaigns: Number(campaigns.rows[0].count),
+          balance: Number(balance.rows[0].available),
+          totalEarnings: Number(balance.rows[0].total)
         }
       });
     } catch (error) {
@@ -1027,25 +1217,42 @@ class SupplierController {
 const controller = new SupplierController();
 
 module.exports = {
+  // Upload (NOUVEAU)
+  uploadImage: controller.uploadImage.bind(controller),
+  uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller),
+  
+  // Stats & Dashboard
   getStats: controller.getStats.bind(controller),
+  
+  // Produits
   getProducts: controller.getProducts.bind(controller),
   createProduct: controller.createProduct.bind(controller),
   updateProduct: controller.updateProduct.bind(controller),
   deleteProduct: controller.deleteProduct.bind(controller),
+  
+  // Commandes
   getOrders: controller.getOrders.bind(controller),
   getOrderById: controller.getOrderById.bind(controller),
   updateOrderStatus: controller.updateOrderStatus.bind(controller),
+  
+  // Paiements
   getPayments: controller.getPayments.bind(controller),
   requestPayout: controller.requestPayout.bind(controller),
   getPayouts: controller.getPayouts.bind(controller),
+  
+  // Promotions
   getPromotions: controller.getPromotions.bind(controller),
   createPromotion: controller.createPromotion.bind(controller),
   updatePromotion: controller.updatePromotion.bind(controller),
   deletePromotion: controller.deletePromotion.bind(controller),
+  
+  // Campagnes
   getCampaigns: controller.getCampaigns.bind(controller),
   createCampaign: controller.createCampaign.bind(controller),
   updateCampaign: controller.updateCampaign.bind(controller),
   deleteCampaign: controller.deleteCampaign.bind(controller),
+  
+  // Public
   getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
   trackCampaignClick: controller.trackCampaignClick.bind(controller),
   trackCampaignView: controller.trackCampaignView.bind(controller)

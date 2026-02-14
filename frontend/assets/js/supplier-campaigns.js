@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE (Publicité) - v4.4 CORRIGÉ
-// Corrections : Syntaxe compatible, pas d'optional chaining
+// SUPPLIER CAMPAIGNS MODULE (Publicité) - v4.5 CORRIGÉ
+// Corrections : Upload média, gestion réponses API, gestion erreurs
 // ============================================
 
 window.SupplierCampaigns = {
@@ -15,7 +15,7 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v4.4...');
+    console.log('[Campaigns] Initializing v4.5...');
     await this.loadProducts();
     await this.loadCampaigns();
   },
@@ -23,8 +23,22 @@ window.SupplierCampaigns = {
   loadProducts: async function() {
     try {
       const response = await BrandiaAPI.Supplier.getProducts();
-      // 🔥 CORRECTION : Pas d'optional chaining
-      this.state.products = (response.data && response.data.products) ? response.data.products : (response.data || []);
+      console.log('[Campaigns] Products response:', response);
+      
+      // 🔥 CORRECTION : Gérer différents formats de réponse
+      let productsArray = [];
+      if (response.data && Array.isArray(response.data)) {
+        productsArray = response.data;
+      } else if (response.data && response.data.products && Array.isArray(response.data.products)) {
+        productsArray = response.data.products;
+      } else if (response.data && typeof response.data === 'object') {
+        const possibleArrays = Object.values(response.data).filter(v => Array.isArray(v));
+        if (possibleArrays.length > 0) {
+          productsArray = possibleArrays[0];
+        }
+      }
+      
+      this.state.products = productsArray;
       console.log('[Campaigns] Loaded products:', this.state.products.length);
     } catch (error) {
       console.error('Erreur chargement produits:', error);
@@ -53,7 +67,6 @@ window.SupplierCampaigns = {
       if (form) {
         form.reset();
         
-        // Champs texte
         const fields = ['name', 'headline', 'description', 'cta_text'];
         for (let i = 0; i < fields.length; i++) {
           const field = fields[i];
@@ -63,7 +76,6 @@ window.SupplierCampaigns = {
           }
         }
 
-        // Dates
         const startDate = form.querySelector('[name="start_date"]');
         const endDate = form.querySelector('[name="end_date"]');
         if (startDate && campaign.start_date) {
@@ -73,28 +85,20 @@ window.SupplierCampaigns = {
           endDate.value = campaign.end_date.split('T')[0];
         }
 
-        // Type média
         this.state.currentMediaType = campaign.media_type || 'image';
         const mediaTypeInputs = form.querySelectorAll('input[name="media_type"]');
         for (let i = 0; i < mediaTypeInputs.length; i++) {
           mediaTypeInputs[i].checked = (mediaTypeInputs[i].value === this.state.currentMediaType);
         }
 
-        // Lien CTA
         const ctaLinkValue = document.getElementById('cta-link-value');
         if (ctaLinkValue) ctaLinkValue.value = campaign.cta_link || '';
 
-        // Setup CTA fields
         this.setupCtaFields(campaign.cta_link, campaign.target_products);
-
-        // Rendre les produits avec sélection
         this.renderProductTargets(campaign.target_products || []);
-
-        // Afficher média existant
         this.displayExistingMedia(campaign.media_url, campaign.media_type);
       }
 
-      // Mettre à jour UI modal pour mode edit
       const modalTitle = document.querySelector('#campaign-modal h3');
       if (modalTitle) modalTitle.textContent = 'Modifier la campagne';
       
@@ -108,7 +112,6 @@ window.SupplierCampaigns = {
         saveBtn.classList.add('from-indigo-500', 'to-purple-500');
       }
 
-      // Afficher stats
       const quickStats = document.getElementById('campaign-quick-stats');
       if (quickStats) quickStats.classList.remove('hidden');
       
@@ -146,10 +149,8 @@ window.SupplierCampaigns = {
       return;
     }
 
-    // Convertir selectedProductIds en nombres
     const selectedIds = (selectedProductIds || []).map(function(id) { return parseInt(id); });
 
-    // Rendre la liste des checkboxes
     if (targetList) {
       let html = '';
       for (let i = 0; i < products.length; i++) {
@@ -168,7 +169,6 @@ window.SupplierCampaigns = {
       targetList.innerHTML = html;
     }
     
-    // Mettre à jour le select pour CTA
     if (productSelect) {
       let selectedOption = '';
       if (selectedIds.length > 0) {
@@ -186,7 +186,6 @@ window.SupplierCampaigns = {
       }
       productSelect.innerHTML = html;
         
-      // Mettre à jour le lien caché
       const ctaLinkValue = document.getElementById('cta-link-value');
       if (ctaLinkValue && selectedOption) {
         ctaLinkValue.value = selectedOption;
@@ -275,7 +274,6 @@ window.SupplierCampaigns = {
       const campaign = this.state.campaigns.find(function(c) { return c.id === parseInt(campaignId); });
       if (!campaign) return;
 
-      // Générer données historiques (7 derniers jours)
       const today = new Date();
       const historicalData = [];
       const baseViews = Math.floor((campaign.views_count || 0) / 7);
@@ -378,7 +376,8 @@ window.SupplierCampaigns = {
   loadCampaigns: async function() {
     try {
       const response = await BrandiaAPI.Supplier.getCampaigns();
-      // 🔥 CORRECTION : Pas d'optional chaining
+      console.log('[Campaigns] Response:', response);
+      
       this.state.campaigns = response.data || [];
       console.log('[Campaigns] Loaded campaigns:', this.state.campaigns.length);
       this.renderList();
@@ -752,7 +751,9 @@ window.SupplierCampaigns = {
     }
   },
 
+  // 🔥 CORRECTION CRITIQUE : Upload média avec meilleure gestion d'erreurs
   uploadMediaToCloudinary: async function() {
+    // Si pas de nouveau fichier, retourner l'existant ou null
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
       if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl && !this.state.uploadedMedia.removeExisting) {
         return {
@@ -766,6 +767,7 @@ window.SupplierCampaigns = {
     const file = this.state.uploadedMedia.file;
     const type = this.state.uploadedMedia.type;
     
+    // Vérifier durée vidéo si nécessaire
     if (type === 'video') {
       const isValidDuration = await this.checkVideoDuration(file);
       if (!isValidDuration) {
@@ -781,28 +783,59 @@ window.SupplierCampaigns = {
         window.DashboardApp.showLoading(true);
       }
       
+      // Choisir le bon endpoint
       const endpoint = type === 'video' ? '/supplier/upload-video' : '/supplier/upload-image';
+      const fullUrl = BrandiaAPI.config.apiURL + endpoint;
       
-      console.log('[Campaigns] Uploading ' + type + ' to ' + endpoint);
-      
-      const response = await fetch(BrandiaAPI.config.apiURL + endpoint, {
+      console.log('[Campaigns] Uploading ' + type + ' to ' + fullUrl);
+      console.log('[Campaigns] File:', file.name, file.type, file.size);
+
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token')
+          // Pas de Content-Type : le navigateur le met automatiquement avec boundary
         },
         body: formData
       });
+
+      console.log('[Campaigns] Upload status:', response.status);
+
+      // Gérer les erreurs HTTP
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Campaigns] Upload error response:', errorText);
+        
+        let errorMessage = 'Erreur serveur ' + response.status;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.message) errorMessage = errorJson.message;
+        } catch(e) {
+          // Pas du JSON, utiliser le texte brut
+          if (errorText) errorMessage = errorText.substring(0, 200);
+        }
+        
+        throw new Error(errorMessage);
+      }
 
       const result = await response.json();
       console.log('[Campaigns] Upload response:', result);
 
       if (result.success) {
+        // 🔥 CORRECTION : Gérer différents formats de réponse
+        const mediaUrl = result.data?.url || result.data?.secure_url || result.data || result.url;
+        
+        if (!mediaUrl) {
+          console.error('[Campaigns] No URL in response:', result);
+          throw new Error('URL média non trouvée dans la réponse');
+        }
+        
         return {
-          url: (result.data && result.data.url) ? result.data.url : result.data,
+          url: mediaUrl,
           type: type
         };
       } else {
-        throw new Error(result.message || 'Erreur upload');
+        throw new Error(result.message || 'Erreur upload inconnue');
       }
     } catch (error) {
       console.error('[Campaigns] Upload error:', error);
@@ -857,6 +890,7 @@ window.SupplierCampaigns = {
     let mediaUrl = null;
     let mediaType = this.state.currentMediaType;
     
+    // Upload média si nouveau fichier
     if (this.state.uploadedMedia) {
       if (this.state.uploadedMedia.isNew) {
         try {
@@ -919,7 +953,10 @@ window.SupplierCampaigns = {
           throw new Error(response.message || 'Erreur lors de la mise à jour');
         }
       } else {
-        data.media_url = mediaUrl || 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800';
+        // Image par défaut si aucune upload
+        if (!data.media_url) {
+          data.media_url = 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800';
+        }
         
         response = await BrandiaAPI.Supplier.createCampaign(data);
         console.log('[Campaign] Create response:', response);
@@ -1035,7 +1072,10 @@ window.SupplierCampaigns = {
     type = type || 'success';
     if (window.DashboardApp && window.DashboardApp.showToast) {
       window.DashboardApp.showToast(message, type);
+    } else if (window.showToast) {
+      window.showToast(message, type);
     } else {
+      console.log('[' + type + '] ' + message);
       alert(message);
     }
   }
@@ -1122,4 +1162,4 @@ window.updateCtaLink = function() {
   }
 };
 
-console.log('[SupplierCampaigns] Module loaded successfully v4.4 - Syntax Compatible');
+console.log('[SupplierCampaigns] Module loaded successfully v4.5 - Upload & Error Handling Fixed');

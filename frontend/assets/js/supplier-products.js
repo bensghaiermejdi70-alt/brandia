@@ -1,5 +1,6 @@
 // ============================================
-// SUPPLIER PRODUCTS MODULE - Complet v3.1 CORRIGÉ
+// SUPPLIER PRODUCTS MODULE - v3.2 CORRIGÉ
+// Correction: Gestion correcte de response.data.products
 // ============================================
 
 window.SupplierProducts = {
@@ -46,7 +47,7 @@ window.SupplierProducts = {
   // INITIALISATION
   // ==========================================
   init: async function() {
-    console.log('[Products] Initialisation...');
+    console.log('[Products] Initialisation v3.2...');
     this.loadCategories();
     await this.loadProducts();
     this.setupEventListeners();
@@ -64,25 +65,44 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // CHARGEMENT DES DONNÉES
+  // CHARGEMENT DES DONNÉES - CORRIGÉ
   // ==========================================
   loadProducts: async function() {
     try {
       console.log('[Products] Chargement...');
       const response = await BrandiaAPI.Supplier.getProducts();
+      console.log('[Products] Réponse API:', response);
 
       if (response.success) {
-        this.state.products = response.data || [];
+        // 🔥 CORRECTION CRITIQUE : Gérer response.data.products OU response.data directement
+        let productsArray = [];
+        
+        if (response.data && Array.isArray(response.data)) {
+          // Si data est déjà un tableau (ancien format)
+          productsArray = response.data;
+        } else if (response.data && response.data.products && Array.isArray(response.data.products)) {
+          // Si data contient products (nouveau format)
+          productsArray = response.data.products;
+        } else if (response.data && typeof response.data === 'object') {
+          // Si data est un objet, essayer de trouver un tableau
+          const possibleArrays = Object.values(response.data).filter(v => Array.isArray(v));
+          if (possibleArrays.length > 0) {
+            productsArray = possibleArrays[0];
+          }
+        }
+        
+        this.state.products = productsArray;
+        console.log('[Products] Chargés:', this.state.products.length, 'produits');
+        
         this.renderProducts();
         this.updateProductCount();
-        console.log('[Products] Chargés:', this.state.products.length);
       } else {
         console.error('[Products] Erreur API:', response.message);
-        this.showError('Erreur chargement produits');
+        this.showError('Erreur chargement produits: ' + (response.message || 'Inconnue'));
       }
     } catch (error) {
       console.error('[Products] Erreur:', error);
-      this.showError('Erreur chargement produits');
+      this.showError('Erreur chargement produits: ' + error.message);
     }
   },
 
@@ -114,6 +134,21 @@ window.SupplierProducts = {
     const container = document.getElementById('products-grid');
     if (!container) {
       console.error('[Products] Container #products-grid non trouvé');
+      return;
+    }
+
+    // Vérifier que products est bien un tableau
+    if (!Array.isArray(this.state.products)) {
+      console.error('[Products] state.products n\'est pas un tableau:', this.state.products);
+      container.innerHTML = `
+        <div class="col-span-full text-center py-12 text-red-400">
+          <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+          <p>Erreur de données produits</p>
+          <button onclick="SupplierProducts.loadProducts()" class="mt-4 px-4 py-2 bg-indigo-600 rounded-lg text-white">
+            Réessayer
+          </button>
+        </div>
+      `;
       return;
     }
 
@@ -154,7 +189,6 @@ window.SupplierProducts = {
     this.renderPagination(totalPages, filtered.length);
   },
 
-  // 🔥 CORRECTION : Alias pour compatibilité
   renderList: function() {
     this.renderProducts();
   },
@@ -170,7 +204,7 @@ window.SupplierProducts = {
       <div class="card rounded-xl overflow-hidden group hover:border-indigo-500/50 transition-all">
         <div class="relative aspect-square bg-slate-800 overflow-hidden">
           <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" 
-               alt="${p.name}" 
+               alt="${p.name || 'Produit'}" 
                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
           
@@ -190,14 +224,14 @@ window.SupplierProducts = {
           <div class="flex items-start justify-between mb-2">
             <div>
               <span class="text-xs text-indigo-400 font-medium">${category?.name || 'Sans catégorie'}</span>
-              <h3 class="font-semibold text-white mt-1 line-clamp-2">${p.name}</h3>
+              <h3 class="font-semibold text-white mt-1 line-clamp-2">${p.name || 'Sans nom'}</h3>
             </div>
           </div>
 
           <p class="text-slate-400 text-sm line-clamp-2 mb-3 h-10">${p.description || 'Aucune description'}</p>
 
           <div class="flex items-center justify-between mb-4">
-            <span class="text-xl font-bold text-white">${parseFloat(p.price).toFixed(2)} €</span>
+            <span class="text-xl font-bold text-white">${parseFloat(p.price || 0).toFixed(2)} €</span>
             <span class="text-xs ${stockClass} flex items-center gap-1">
               <i class="fas ${stockIcon}"></i>
               ${stock} en stock
@@ -253,13 +287,11 @@ window.SupplierProducts = {
     this.renderProducts();
   },
 
-  // 🔥 CORRECTION : toggleStatus corrigé
   toggleStatus: async function(productId, currentStatus) {
     try {
       const newStatus = !currentStatus;
       console.log(`[Products] Toggle status ${productId}: ${currentStatus} → ${newStatus}`);
       
-      // 🔥 CORRECTION : Ne PAS inclure stock dans la mise à jour
       const updateData = { is_active: newStatus };
       
       const response = await BrandiaAPI.Supplier.updateProduct(productId, updateData);
@@ -268,21 +300,18 @@ window.SupplierProducts = {
         throw new Error(response.message || 'Erreur mise à jour');
       }
 
-      // Mettre à jour localement
       const product = this.state.products.find(p => p.id === productId);
       if (product) {
         product.is_active = newStatus;
       }
 
-      // 🔥 CORRECTION : Utiliser this.renderProducts() (pas this.renderList)
       this.renderProducts();
-      
       this.showToast(newStatus ? 'Produit activé' : 'Produit désactivé', 'success');
 
     } catch (error) {
       console.error('[Products] Toggle status error:', error);
       this.showToast('Erreur: ' + error.message, 'error');
-      this.renderProducts(); // Re-render pour remettre l'état original
+      this.renderProducts();
     }
   },
 
@@ -290,14 +319,19 @@ window.SupplierProducts = {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) return;
 
     try {
-      await BrandiaAPI.Supplier.deleteProduct(productId);
+      const response = await BrandiaAPI.Supplier.deleteProduct(productId);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Erreur suppression');
+      }
+      
       this.state.products = this.state.products.filter(p => p.id !== productId);
       this.renderProducts();
       this.updateProductCount();
       this.showToast('Produit supprimé', 'success');
     } catch (error) {
       console.error('Delete error:', error);
-      this.showToast('Erreur lors de la suppression', 'error');
+      this.showToast('Erreur lors de la suppression: ' + error.message, 'error');
     }
   },
 
@@ -305,7 +339,7 @@ window.SupplierProducts = {
     const badge = document.getElementById('product-count');
     if (badge) {
       badge.textContent = this.state.products.length;
-      badge.classList.remove('hidden');
+      badge.classList.toggle('hidden', this.state.products.length === 0);
     }
   },
 
@@ -323,41 +357,72 @@ window.SupplierProducts = {
 
     if (productId) {
       const product = this.state.products.find(p => p.id === productId);
-      if (!product) return;
+      if (!product) {
+        this.showToast('Produit non trouvé', 'error');
+        return;
+      }
 
-      title.textContent = 'Modifier le produit';
-      document.getElementById('product-name').value = product.name || '';
-      document.getElementById('product-description').value = product.description || '';
-      document.getElementById('product-price').value = product.price || '';
-      document.getElementById('product-stock').value = product.stock_quantity || 10;
-      document.getElementById('product-category-select').value = product.category_id || '';
+      if (title) title.textContent = 'Modifier le produit';
+      
+      const nameInput = document.getElementById('product-name');
+      const descInput = document.getElementById('product-description');
+      const priceInput = document.getElementById('product-price');
+      const stockInput = document.getElementById('product-stock');
+      const catInput = document.getElementById('product-category-select');
+
+      if (nameInput) nameInput.value = product.name || '';
+      if (descInput) descInput.value = product.description || '';
+      if (priceInput) priceInput.value = product.price || '';
+      if (stockInput) stockInput.value = product.stock_quantity || 10;
+      if (catInput) catInput.value = product.category_id || '';
 
       if (product.main_image_url) {
         const preview = document.getElementById('image-preview');
-        preview.src = product.main_image_url;
-        previewContainer.classList.remove('hidden');
-        this.state.uploadedImage = { url: product.main_image_url };
+        if (preview) {
+          preview.src = product.main_image_url;
+          previewContainer.classList.remove('hidden');
+          this.state.uploadedImage = { url: product.main_image_url };
+        }
       }
     } else {
-      title.textContent = 'Ajouter un produit';
-      document.getElementById('product-form')?.reset();
-      document.getElementById('product-stock').value = '10';
-      document.getElementById('product-description').value = '';
+      if (title) title.textContent = 'Ajouter un produit';
+      
+      const form = document.getElementById('product-form');
+      if (form) form.reset();
+      
+      const stockInput = document.getElementById('product-stock');
+      const descInput = document.getElementById('product-description');
+      if (stockInput) stockInput.value = '10';
+      if (descInput) descInput.value = '';
     }
 
-    window.DashboardApp?.openModal('product-modal');
+    if (window.DashboardApp && window.DashboardApp.openModal) {
+      window.DashboardApp.openModal('product-modal');
+    } else {
+      const modal = document.getElementById('product-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+    }
   },
 
   // ==========================================
   // SAUVEGARDE
   // ==========================================
   save: async function() {
+    const nameInput = document.getElementById('product-name');
+    const descInput = document.getElementById('product-description');
+    const priceInput = document.getElementById('product-price');
+    const stockInput = document.getElementById('product-stock');
+    const catInput = document.getElementById('product-category-select');
+
     const data = {
-      name: document.getElementById('product-name')?.value?.trim(),
-      description: document.getElementById('product-description')?.value?.trim() || '',
-      price: parseFloat(document.getElementById('product-price')?.value),
-      stock_quantity: parseInt(document.getElementById('product-stock')?.value) || 0,
-      category_id: parseInt(document.getElementById('product-category-select')?.value) || null,
+      name: nameInput?.value?.trim(),
+      description: descInput?.value?.trim() || '',
+      price: parseFloat(priceInput?.value),
+      stock_quantity: parseInt(stockInput?.value) || 0,
+      category_id: parseInt(catInput?.value) || null,
       main_image_url: this.state.uploadedImage?.url || null,
       is_active: true
     };
@@ -375,28 +440,50 @@ window.SupplierProducts = {
     }
 
     try {
-      window.DashboardApp?.showLoading(true);
-
-      if (this.state.editingId) {
-        await BrandiaAPI.Supplier.updateProduct(this.state.editingId, data);
-        this.showToast('Produit mis à jour', 'success');
-      } else {
-        await BrandiaAPI.Supplier.createProduct(data);
-        this.showToast('Produit créé avec succès', 'success');
+      if (window.DashboardApp && window.DashboardApp.showLoading) {
+        window.DashboardApp.showLoading(true);
       }
 
-      window.DashboardApp?.closeModal('product-modal');
+      let response;
+      if (this.state.editingId) {
+        response = await BrandiaAPI.Supplier.updateProduct(this.state.editingId, data);
+        if (response.success) {
+          this.showToast('Produit mis à jour', 'success');
+        } else {
+          throw new Error(response.message || 'Erreur mise à jour');
+        }
+      } else {
+        response = await BrandiaAPI.Supplier.createProduct(data);
+        if (response.success) {
+          this.showToast('Produit créé avec succès', 'success');
+        } else {
+          throw new Error(response.message || 'Erreur création');
+        }
+      }
+
+      if (window.DashboardApp && window.DashboardApp.closeModal) {
+        window.DashboardApp.closeModal('product-modal');
+      } else {
+        const modal = document.getElementById('product-modal');
+        if (modal) {
+          modal.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      }
+      
       await this.loadProducts();
     } catch (error) {
       console.error('Save error:', error);
       alert(error.message || 'Erreur lors de l\'enregistrement');
     } finally {
-      window.DashboardApp?.showLoading(false);
+      if (window.DashboardApp && window.DashboardApp.showLoading) {
+        window.DashboardApp.showLoading(false);
+      }
     }
   },
 
   // ==========================================
-  // UPLOAD IMAGE (CORRIGÉ)
+  // UPLOAD IMAGE - CORRIGÉ
   // ==========================================
   handleImageSelect: async function(event) {
     const file = event.target.files[0];
@@ -406,39 +493,57 @@ window.SupplierProducts = {
       return alert('L\'image ne doit pas dépasser 5MB');
     }
 
+    // Vérifier le type
+    if (!file.type.startsWith('image/')) {
+      return alert('Veuillez sélectionner une image valide');
+    }
+
     try {
-      window.DashboardApp?.showLoading(true);
+      if (window.DashboardApp && window.DashboardApp.showLoading) {
+        window.DashboardApp.showLoading(true);
+      }
       
       const formData = new FormData();
-      // 🔥 CORRECTION : Utiliser 'media' comme fieldname pour correspondre au backend
       formData.append('media', file);
 
-      const response = await fetch(`${BrandiaAPI.config.apiURL}/supplier/upload-image`, {
+      console.log('[Upload] Envoi vers:', BrandiaAPI.config.apiURL + '/supplier/upload-image');
+      console.log('[Upload] Fichier:', file.name, file.type, file.size);
+
+      const response = await fetch(BrandiaAPI.config.apiURL + '/supplier/upload-image', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
-          // 🔥 NE PAS mettre Content-Type, le navigateur le fait automatiquement
         },
         body: formData
       });
 
+      console.log('[Upload] Status:', response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[Upload] Server error:', errorText);
-        throw new Error(`Erreur serveur: ${response.status}`);
+        throw new Error(`Erreur serveur ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('[Upload] Résultat:', result);
 
       if (result.success) {
-        this.state.uploadedImage = { url: result.data?.url || result.data };
+        // 🔥 CORRECTION : Gérer différents formats de réponse
+        const imageUrl = result.data?.url || result.data?.secure_url || result.data || result.url;
+        
+        if (!imageUrl) {
+          throw new Error('URL image non trouvée dans la réponse');
+        }
+        
+        this.state.uploadedImage = { url: imageUrl };
         const preview = document.getElementById('image-preview');
         const container = document.getElementById('image-preview-container');
         
-        preview.src = this.state.uploadedImage.url;
-        container.classList.remove('hidden');
+        if (preview) preview.src = imageUrl;
+        if (container) container.classList.remove('hidden');
         
-        this.showToast('Image uploadée', 'success');
+        this.showToast('Image uploadée avec succès', 'success');
       } else {
         throw new Error(result.message || 'Erreur upload');
       }
@@ -446,7 +551,9 @@ window.SupplierProducts = {
       console.error('[Upload] Error:', error);
       this.showToast('Erreur upload image: ' + error.message, 'error');
     } finally {
-      window.DashboardApp?.showLoading(false);
+      if (window.DashboardApp && window.DashboardApp.showLoading) {
+        window.DashboardApp.showLoading(false);
+      }
     }
   },
 
@@ -469,7 +576,9 @@ window.SupplierProducts = {
     this.state.importInProgress = true;
 
     try {
-      window.DashboardApp?.showLoading(true);
+      if (window.DashboardApp && window.DashboardApp.showLoading) {
+        window.DashboardApp.showLoading(true);
+      }
       
       const text = await file.text();
       const lines = text.split('\n').filter(l => l.trim());
@@ -478,7 +587,6 @@ window.SupplierProducts = {
         throw new Error('Fichier CSV vide ou invalide');
       }
 
-      // 🔥 CORRECTION : Accepter ; et , comme séparateur
       const firstLine = lines[0];
       const separator = firstLine.includes(';') ? ';' : ',';
       
@@ -499,7 +607,6 @@ window.SupplierProducts = {
           product[h] = values[idx]?.trim();
         });
 
-        // 🔥 CORRECTION : Gérer 'stock' ou 'stock_quantity'
         const stockValue = parseInt(product.stock) || parseInt(product.stock_quantity) || 10;
 
         products.push({
@@ -513,16 +620,30 @@ window.SupplierProducts = {
       }
 
       let success = 0;
+      const errors = [];
+      
       for (const p of products) {
         try {
-          await BrandiaAPI.Supplier.createProduct(p);
-          success++;
+          const response = await BrandiaAPI.Supplier.createProduct(p);
+          if (response.success) {
+            success++;
+          } else {
+            errors.push(`${p.name}: ${response.message}`);
+          }
         } catch (e) {
+          errors.push(`${p.name}: ${e.message}`);
           console.error('Import error for', p.name, e);
         }
       }
 
-      this.showToast(`${success}/${products.length} produits importés`, success === products.length ? 'success' : 'warning');
+      const message = `${success}/${products.length} produits importés`;
+      const type = success === products.length ? 'success' : (success > 0 ? 'warning' : 'error');
+      
+      if (errors.length > 0 && success < products.length) {
+        console.error('[Import] Erreurs:', errors);
+      }
+      
+      this.showToast(message, type);
       await this.loadProducts();
       
     } catch (error) {
@@ -530,7 +651,9 @@ window.SupplierProducts = {
       this.showToast(error.message, 'error');
     } finally {
       this.state.importInProgress = false;
-      window.DashboardApp?.showLoading(false);
+      if (window.DashboardApp && window.DashboardApp.showLoading) {
+        window.DashboardApp.showLoading(false);
+      }
     }
   },
 
@@ -539,12 +662,14 @@ window.SupplierProducts = {
                      'Produit Exemple;Description du produit;29.99;10;1\n' +
                      'Second Produit;Une autre description;49.99;5;2';
     
-    const blob = new Blob([template], { type: 'text/csv' });
+    const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'template_import_produits.csv';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   },
 
@@ -552,10 +677,13 @@ window.SupplierProducts = {
   // UTILITAIRES
   // ==========================================
   showToast: function(message, type = 'success') {
-    if (window.DashboardApp?.showToast) {
+    if (window.DashboardApp && window.DashboardApp.showToast) {
       window.DashboardApp.showToast(message, type);
+    } else if (window.showToast) {
+      window.showToast(message, type);
     } else {
       console.log(`[${type}] ${message}`);
+      alert(message);
     }
   },
 
@@ -566,8 +694,8 @@ window.SupplierProducts = {
         <div class="col-span-full text-center py-12 text-red-400">
           <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
           <p>${message}</p>
-          <button onclick="SupplierProducts.loadProducts()" class="mt-4 px-4 py-2 bg-indigo-600 rounded-lg text-white">
-            Réessayer
+          <button onclick="SupplierProducts.loadProducts()" class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors">
+            <i class="fas fa-redo mr-2"></i>Réessayer
           </button>
         </div>
       `;
@@ -585,3 +713,7 @@ window.changeProductPage = (delta) => window.SupplierProducts.changeProductPage(
 window.importProducts = () => window.SupplierProducts.importProducts();
 window.handleImageSelect = (e) => window.SupplierProducts.handleImageSelect(e);
 window.downloadCSVTemplate = () => window.SupplierProducts.downloadCSVTemplate();
+window.toggleProductStatus = (id, status) => window.SupplierProducts.toggleStatus(id, status);
+window.deleteProduct = (id) => window.SupplierProducts.deleteProduct(id);
+
+console.log('[SupplierProducts] Module v3.2 chargé avec succès');

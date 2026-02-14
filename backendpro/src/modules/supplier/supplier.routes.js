@@ -1,42 +1,42 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - Complet et Corrigé v3.8
+// SUPPLIER ROUTES - Complet et Corrigé v3.9
+// AJOUT : Middleware multer pour l'upload de fichiers
 // ============================================
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+
+// Configuration multer pour l'upload de fichiers
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB max
+  },
+  fileFilter: (req, file, cb) => {
+    // Accepter images et vidéos
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Type de fichier non supporté. Utilisez une image ou une vidéo.'), false);
+    }
+  }
+});
 
 // 🔥 Import des middlewares
 const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
 const supplierController = require('./supplier.controller');
 
-console.log('[Supplier Routes] Loading...');
+console.log('[Supplier Routes] Loading v3.9...');
 console.log('[Supplier Routes] Controller methods:', Object.keys(supplierController));
 
 // ============================================
-// ROUTES PUBLIQUES (sans auth) - CORRIGÉ
+// ROUTES PUBLIQUES (sans auth)
 // ============================================
 
-// Ces routes utilisent les méthodes du controller si elles existent, sinon fallback
-router.get('/public/campaigns', (req, res, next) => {
-  if (supplierController.getActiveCampaignForProduct) {
-    return supplierController.getActiveCampaignForProduct(req, res, next);
-  }
-  res.status(501).json({ success: false, message: 'Not implemented' });
-});
-
-router.post('/public/campaigns/view', (req, res, next) => {
-  if (supplierController.trackCampaignView) {
-    return supplierController.trackCampaignView(req, res, next);
-  }
-  res.json({ success: true, message: 'Tracked (fallback)' });
-});
-
-router.post('/public/campaigns/click', (req, res, next) => {
-  if (supplierController.trackCampaignClick) {
-    return supplierController.trackCampaignClick(req, res, next);
-  }
-  res.json({ success: true, message: 'Tracked (fallback)' });
-});
+router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
+router.post('/public/campaigns/view', supplierController.trackCampaignView);
+router.post('/public/campaigns/click', supplierController.trackCampaignClick);
 
 // ============================================
 // MIDDLEWARES - Auth + Role fournisseur
@@ -88,20 +88,27 @@ router.put('/campaigns/:id', supplierController.updateCampaign);
 router.delete('/campaigns/:id', supplierController.deleteCampaign);
 
 // ============================================
-// UPLOADS - CORRIGÉ (sans uploadMiddleware)
+// UPLOADS - CORRIGÉ avec multer
 // ============================================
-router.post('/upload-image', (req, res, next) => {
-  if (supplierController.uploadImage) {
-    return supplierController.uploadImage(req, res, next);
-  }
-  res.status(501).json({ success: false, message: 'Upload not implemented' });
-});
+// 🔥 Utilisation de upload.single('media') pour parser le fichier
+router.post('/upload-image', upload.single('media'), supplierController.uploadImage);
+router.post('/upload-video', upload.single('media'), supplierController.uploadCampaignVideo);
 
-router.post('/upload-video', (req, res, next) => {
-  if (supplierController.uploadCampaignVideo) {
-    return supplierController.uploadCampaignVideo(req, res, next);
+// Gestion des erreurs multer
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Fichier trop grand (max 50MB)' 
+      });
+    }
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Erreur upload: ' + error.message 
+    });
   }
-  res.status(501).json({ success: false, message: 'Upload not implemented' });
+  next(error);
 });
 
 module.exports = router;
