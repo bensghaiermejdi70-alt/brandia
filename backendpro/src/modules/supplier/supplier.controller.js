@@ -1225,4 +1225,4 @@ module.exports = {
   uploadImageMiddleware,
   uploadVideoMiddleware
 };
-'''
+
