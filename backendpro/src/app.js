@@ -139,6 +139,96 @@ process.on('uncaughtException', (error) => {
   console.error('[Uncaught Exception]', error);
 });
 
-console.log('[App] Express app configured');
+// ============================================
+// APP.JS - v2.3 avec DEBUG
+// ============================================
+
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const path = require('path');
+
+const app = express();
+
+// Middlewares
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false
+}));
+
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// CORS
+app.use(cors({
+    origin: function(origin, callback) {
+        if (!origin) return callback(null, true);
+        return callback(null, true);
+    },
+    credentials: true
+}));
+
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ============================================
+// ROUTES AVEC DEBUG
+// ============================================
+
+console.log('[App] === LOADING ROUTES ===');
+
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// SUPPLIER ROUTES - Chargement avec try/catch
+console.log('[App] Loading /api/supplier routes...');
+try {
+    const supplierRoutes = require('./modules/supplier/supplier.routes');
+    app.use('/api/supplier', supplierRoutes);
+    console.log('[App] ✓ Supplier routes mounted at /api/supplier');
+} catch (err) {
+    console.error('[App] ✗ FAILED to load supplier routes:', err.message);
+    console.error(err.stack);
+}
+
+// INDEX ROUTES
+console.log('[App] Loading /api routes...');
+try {
+    const indexRoutes = require('./routes/index');
+    app.use('/api', indexRoutes);
+    console.log('[App] ✓ Index routes mounted at /api');
+} catch (err) {
+    console.error('[App] ✗ FAILED to load index routes:', err.message);
+}
+
+// ============================================
+// ERROR HANDLING
+// ============================================
+
+app.use((req, res, next) => {
+    console.log('[404] Not found:', req.method, req.path);
+    res.status(404).json({
+        success: false,
+        message: 'Endpoint non trouvé',
+        path: req.path
+    });
+});
+
+app.use((err, req, res, next) => {
+    console.error('[Error]', err);
+    res.status(500).json({
+        success: false,
+        message: err.message || 'Erreur serveur'
+    });
+});
+
+console.log('[App] === ROUTES LOADED ===');
 
 module.exports = app;
