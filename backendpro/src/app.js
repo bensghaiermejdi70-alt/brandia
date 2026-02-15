@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - Configuration Express Brandia v2.1
+// APP.JS - Configuration Express Brandia v2.2
 // ============================================
 
 const express = require('express');
@@ -13,13 +13,12 @@ const app = express();
 // MIDDLEWARES DE BASE
 // ============================================
 
-// Sécurité HTTP headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false
 }));
 
-// Logging simple (sans morgan)
+// Logging simple
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
@@ -60,47 +59,51 @@ app.use(cors({
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ============================================
-// ROUTES
+// ROUTES - ORDRE IMPORTANT
 // ============================================
 
 console.log('[App] Loading routes...');
 
-const indexRoutes = require('./routes/index');
-app.use('/api', indexRoutes);
-
-const supplierRoutes = require('./modules/supplier/supplier.routes');
-app.use('/api/supplier', supplierRoutes);
-
-console.log('[App] Routes loaded successfully');
-
-// ============================================
-// HEALTH CHECK
-// ============================================
-
+// 1. Health check d'abord (public)
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     status: 'OK',
     timestamp: new Date().toISOString(),
     service: 'brandia-api',
-    version: '2.1.0',
+    version: '2.2.0',
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
+// 2. Routes supplier AVANT les routes index (pour éviter conflits)
+console.log('[App] Loading supplier routes...');
+const supplierRoutes = require('./modules/supplier/supplier.routes');
+app.use('/api/supplier', supplierRoutes);
+console.log('[App] Supplier routes loaded at /api/supplier');
+
+// 3. Routes générales (auth, products, orders, payments, etc.)
+console.log('[App] Loading index routes...');
+const indexRoutes = require('./routes/index');
+app.use('/api', indexRoutes);
+console.log('[App] Index routes loaded at /api');
 
 // ============================================
 // ERROR HANDLING
 // ============================================
 
+// 404 - Route non trouvée
 app.use((req, res, next) => {
   console.log('[404] Route not found:', req.method, req.path);
   res.status(404).json({
     success: false,
     message: 'Endpoint non trouvé',
-    path: req.path
+    path: req.path,
+    method: req.method
   });
 });
 
+// 500 - Erreur serveur
 app.use((err, req, res, next) => {
   console.error('[Error]', err);
   
@@ -135,5 +138,7 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', (error) => {
   console.error('[Uncaught Exception]', error);
 });
+
+console.log('[App] Express app configured');
 
 module.exports = app;
