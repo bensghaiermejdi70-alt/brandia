@@ -1,83 +1,91 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v5.1 CORRIGÉ
+// SUPPLIER ROUTES - v5.2 CORRIGÉ
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-// Import du controller - UTILISER LE MÊME FICHIER
-const supplierController = require('./supplier.controller');
+console.log('[Supplier Routes] Loading v5.2...');
 
-console.log('[Supplier Routes] Loading v5.1...');
+// Import du controller
+let supplierController;
+try {
+    supplierController = require('./supplier.controller');
+    console.log('[Supplier Routes] Controller loaded');
+    
+    // Vérification que les méthodes existent
+    const requiredMethods = ['getStats', 'getProducts', 'createProduct', 'updateProduct', 'deleteProduct', 
+                             'getOrders', 'getOrderById', 'updateOrderStatus', 'getPayments', 'requestPayout', 
+                             'getPayouts', 'getPromotions', 'createPromotion', 'updatePromotion', 'deletePromotion',
+                             'getCampaigns', 'createCampaign', 'updateCampaign', 'deleteCampaign', 'toggleCampaignStatus',
+                             'getActiveCampaignForProduct', 'trackCampaignClick', 'trackCampaignView',
+                             'uploadImage', 'uploadCampaignVideo', 'uploadImageMiddleware', 'uploadVideoMiddleware'];
+    
+    const missing = requiredMethods.filter(m => typeof supplierController[m] !== 'function');
+    if (missing.length > 0) {
+        console.error('[Supplier Routes] MISSING methods:', missing);
+        throw new Error('Methodes manquantes dans le controller');
+    }
+    
+} catch (err) {
+    console.error('[Supplier Routes] FAILED to load controller:', err.message);
+    // Export router vide pour éviter crash
+    module.exports = router;
+    return;
+}
+
+// Import middlewares
+const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
 
 // ============================================
-// ROUTES PUBLIQUES (sans auth)
+// ROUTES PUBLIQUES
 // ============================================
 router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
 router.post('/public/campaigns/view', supplierController.trackCampaignView);
 router.post('/public/campaigns/click', supplierController.trackCampaignClick);
 
 // ============================================
-// IMPORT MIDDLEWARES AUTH
-// ============================================
-const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
-
-// ============================================
-// MIDDLEWARES AUTH pour routes protégées
+// ROUTES PROTÉGÉES
 // ============================================
 router.use(authenticate);
 router.use(requireRole('supplier'));
 
-// ============================================
-// STATS & DASHBOARD
-// ============================================
+// Stats
 router.get('/stats', supplierController.getStats);
 
-// ============================================
-// PRODUITS
-// ============================================
+// Products
 router.get('/products', supplierController.getProducts);
 router.post('/products', supplierController.createProduct);
 router.put('/products/:id', supplierController.updateProduct);
 router.delete('/products/:id', supplierController.deleteProduct);
 
-// ============================================
-// UPLOADS - Routes avec multer middleware
-// ============================================
+// Uploads
 router.post('/upload-image', supplierController.uploadImageMiddleware, supplierController.uploadImage);
 router.post('/upload-video', supplierController.uploadVideoMiddleware, supplierController.uploadCampaignVideo);
 
-// ============================================
-// COMMANDES
-// ============================================
+// Orders
 router.get('/orders', supplierController.getOrders);
 router.get('/orders/:id', supplierController.getOrderById);
 router.put('/orders/:id/status', supplierController.updateOrderStatus);
 
-// ============================================
-// PAIEMENTS
-// ============================================
+// Payments
 router.get('/payments', supplierController.getPayments);
 router.post('/payouts', supplierController.requestPayout);
 router.get('/payouts', supplierController.getPayouts);
 
-// ============================================
-// PROMOTIONS
-// ============================================
+// Promotions
 router.get('/promotions', supplierController.getPromotions);
 router.post('/promotions', supplierController.createPromotion);
 router.put('/promotions/:id', supplierController.updatePromotion);
 router.delete('/promotions/:id', supplierController.deletePromotion);
 
-// ============================================
-// CAMPAGNES PUBLICITAIRES
-// ============================================
+// Campaigns
 router.get('/campaigns', supplierController.getCampaigns);
 router.post('/campaigns', supplierController.createCampaign);
 router.put('/campaigns/:id', supplierController.updateCampaign);
 router.delete('/campaigns/:id', supplierController.deleteCampaign);
 router.put('/campaigns/:id/status', supplierController.toggleCampaignStatus);
 
-console.log('[Supplier Routes] All routes registered');
+console.log('[Supplier Routes] All routes registered successfully');
 
 module.exports = router;
