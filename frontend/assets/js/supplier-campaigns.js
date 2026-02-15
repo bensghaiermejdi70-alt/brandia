@@ -1,7 +1,6 @@
-
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.0 COMPLET
-// Toutes les méthodes: CRUD, Upload, Stats, Preview, Chart
+// SUPPLIER CAMPAIGNS MODULE - v5.1 CORRIGÉ
+// Upload Cloudinary fonctionnel
 // ============================================
 
 window.SupplierCampaigns = {
@@ -15,7 +14,6 @@ window.SupplierCampaigns = {
     currentChartData: null
   },
 
-  // Image fallback SVG base64
   FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWduZTwvdGV4dD48L3N2Zz4=',
 
   // ==========================================
@@ -23,7 +21,7 @@ window.SupplierCampaigns = {
   // ==========================================
   
   init: async function() {
-    console.log('[Campaigns] Initializing v5.0...');
+    console.log('[Campaigns] Initializing v5.1...');
     await this.loadProducts();
     await this.loadCampaigns();
     this.initChart();
@@ -39,11 +37,6 @@ window.SupplierCampaigns = {
         productsArray = response.data;
       } else if (response.data && response.data.products && Array.isArray(response.data.products)) {
         productsArray = response.data.products;
-      } else if (response.data && typeof response.data === 'object') {
-        const possibleArrays = Object.values(response.data).filter(v => Array.isArray(v));
-        if (possibleArrays.length > 0) {
-          productsArray = possibleArrays[0];
-        }
       }
       
       this.state.products = productsArray;
@@ -194,7 +187,7 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // MODAL & FORMULAIRE
+  // MODAL & FORMULAIRE - CORRIGÉ
   // ==========================================
   
   openModal: function(campaignId = null) {
@@ -212,9 +205,8 @@ window.SupplierCampaigns = {
     const form = document.getElementById('campaign-form');
     if (form) form.reset();
     
-    // Reset UI
-    const placeholder = document.getElementById('campaign-media-placeholder');
-    if (placeholder) placeholder.style.display = 'block';
+    // Reset UI upload
+    this.resetUploadUI();
     
     // Charger liste produits pour ciblage
     this.renderTargetProductsList();
@@ -223,22 +215,16 @@ window.SupplierCampaigns = {
     this.renderCtaProductSelect();
     
     if (campaignId) {
-      // Mode édition
       const campaign = this.state.campaigns.find(c => c.id === campaignId);
       if (!campaign) {
         this.showToast('Campagne non trouvée', 'error');
         return;
       }
       
-      // Remplir formulaire
       this.fillFormForEdit(campaign);
-      
-      // Afficher stats dans modal
       this.showModalStats(campaign);
     } else {
-      // Mode création
       this.hideModalStats();
-      // Dates par défaut
       const today = new Date().toISOString().split('T')[0];
       const nextMonth = new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -249,56 +235,74 @@ window.SupplierCampaigns = {
       if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
     }
     
-    // Afficher modal
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
-    // Update preview
     this.updatePreview();
   },
 
-  resetModalForCreate: function() {
-    this.state.editingCampaignId = null;
-    this.state.uploadedMedia = null;
-    this.state.currentMediaType = 'image';
+  resetUploadUI: function() {
+    // 🔥 CORRECTION CRITIQUE : Reset complet de la zone d'upload
+    const dropzone = document.getElementById('campaign-dropzone');
+    const fileInput = document.getElementById('campaign-media');
     
-    const form = document.getElementById('campaign-form');
-    if (form) form.reset();
+    if (fileInput) {
+      fileInput.value = ''; // Reset input file
+    }
     
-    const placeholder = document.getElementById('campaign-media-placeholder');
-    if (placeholder) placeholder.style.display = 'block';
-    
-    this.renderTargetProductsList();
-    this.renderCtaProductSelect();
-    this.hideModalStats();
-    
-    const today = new Date().toISOString().split('T')[0];
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    
-    const startInput = document.querySelector('[name="start_date"]');
-    const endInput = document.querySelector('[name="end_date"]');
-    if (startInput) startInput.value = today;
-    if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
-    
-    this.updatePreview();
+    if (dropzone) {
+      // Recréer le contenu initial
+      dropzone.innerHTML = `
+        <div id="campaign-media-placeholder">
+          <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-3"></i>
+          <p class="text-slate-400 text-sm">Cliquez ou glissez votre fichier ici</p>
+          <p class="text-slate-600 text-xs mt-1">Format recommandé: 1200x800px, max 5MB (image) ou 50MB (vidéo)</p>
+        </div>
+      `;
+      dropzone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+      dropzone.classList.add('border-slate-700');
+    }
   },
 
   fillFormForEdit: function(campaign) {
-    const fields = ['name', 'headline', 'description', 'cta_text', 'cta_link', 'start_date', 'end_date'];
+    const fields = ['name', 'headline', 'description', 'cta_text', 'start_date', 'end_date'];
     fields.forEach(field => {
       const input = document.querySelector(`[name="${field}"]`);
       if (input && campaign[field]) input.value = campaign[field];
     });
     
-    // Media type
+    // CTA Link
+    if (campaign.cta_link) {
+      const ctaTypeSelect = document.querySelector('[name="cta_link_type"]');
+      if (ctaTypeSelect) {
+        if (campaign.cta_link.startsWith('http')) {
+          ctaTypeSelect.value = 'external';
+          const externalInput = document.getElementById('cta-external-url');
+          if (externalInput) {
+            externalInput.value = campaign.cta_link;
+            externalInput.classList.remove('hidden');
+          }
+          const productSelect = document.getElementById('cta-product-select');
+          if (productSelect) productSelect.classList.add('hidden');
+        } else {
+          ctaTypeSelect.value = 'product';
+          const productSelect = document.getElementById('cta-product-select');
+          if (productSelect) {
+            productSelect.value = campaign.cta_link;
+            productSelect.classList.remove('hidden');
+          }
+          const externalInput = document.getElementById('cta-external-url');
+          if (externalInput) externalInput.classList.add('hidden');
+        }
+      }
+    }
+    
     if (campaign.media_type) {
       this.state.currentMediaType = campaign.media_type;
       const radio = document.querySelector(`[name="media_type"][value="${campaign.media_type}"]`);
       if (radio) radio.checked = true;
     }
     
-    // Media existant
     if (campaign.media_url) {
       this.state.uploadedMedia = {
         isNew: false,
@@ -308,7 +312,6 @@ window.SupplierCampaigns = {
       this.showMediaPreview(campaign.media_url, campaign.media_type);
     }
     
-    // Target products
     if (campaign.target_products) {
       setTimeout(() => {
         campaign.target_products.forEach(pid => {
@@ -350,26 +353,29 @@ window.SupplierCampaigns = {
       document.body.style.overflow = '';
     }
     this.state.editingCampaignId = null;
+    this.state.uploadedMedia = null;
   },
 
   // ==========================================
-  // GESTION MÉDIAS
+  // GESTION MÉDIAS - CORRIGÉ
   // ==========================================
   
-  handleMedia: function(event) {
+  handleMediaSelect: function(event) {
+    console.log('[Campaigns] File selected:', event);
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+      console.log('[Campaigns] No file selected');
+      return;
+    }
     
-    console.log('[Campaigns] File selected:', file.name, file.type, file.size);
-    
-    // Vérifications
+    console.log('[Campaigns] File details:', file.name, file.type, file.size);
+
     const maxSize = this.state.currentMediaType === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
     if (file.size > maxSize) {
       this.showToast(`Fichier trop grand (max ${this.state.currentMediaType === 'video' ? '50' : '5'}MB)`, 'error');
       return;
     }
     
-    // Vérifier type
     if (this.state.currentMediaType === 'image' && !file.type.startsWith('image/')) {
       this.showToast('Veuillez sélectionner une image', 'error');
       return;
@@ -378,8 +384,7 @@ window.SupplierCampaigns = {
       this.showToast('Veuillez sélectionner une vidéo', 'error');
       return;
     }
-    
-    // Pour vidéo, vérifier durée
+
     if (this.state.currentMediaType === 'video') {
       this.checkVideoDuration(file).then(isValid => {
         if (!isValid) {
@@ -407,11 +412,9 @@ window.SupplierCampaigns = {
   },
 
   processSelectedFile: function(file) {
-    // Preview locale
     const url = URL.createObjectURL(file);
     this.showMediaPreview(url, this.state.currentMediaType);
     
-    // Stocker pour upload
     this.state.uploadedMedia = {
       isNew: true,
       file: file,
@@ -419,53 +422,42 @@ window.SupplierCampaigns = {
       localUrl: url
     };
     
-    const placeholder = document.getElementById('campaign-media-placeholder');
-    if (placeholder) placeholder.style.display = 'none';
-    
     this.updatePreview();
   },
 
   showMediaPreview: function(url, type) {
-    const container = document.getElementById('campaign-preview-container') || 
-                      document.getElementById('campaign-dropzone');
-    if (!container) return;
+    const dropzone = document.getElementById('campaign-dropzone');
+    if (!dropzone) return;
+    
+    dropzone.classList.remove('border-slate-700');
+    dropzone.classList.add('border-indigo-500', 'bg-indigo-500/10');
     
     if (type === 'video') {
-      container.innerHTML = `
-        <video src="${url}" class="w-full h-48 object-cover rounded-lg" controls muted></video>
-        <button onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" 
-                class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600">
-          <i class="fas fa-times"></i>
-        </button>
+      dropzone.innerHTML = `
+        <div class="relative w-full">
+          <video src="${url}" class="w-full h-48 object-cover rounded-lg" controls muted></video>
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" 
+                  class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       `;
     } else {
-      container.innerHTML = `
-        <img src="${url}" class="w-full h-48 object-cover rounded-lg">
-        <button onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" 
-                class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600">
-          <i class="fas fa-times"></i>
-        </button>
+      dropzone.innerHTML = `
+        <div class="relative w-full">
+          <img src="${url}" class="w-full h-48 object-cover rounded-lg">
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" 
+                  class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       `;
     }
-    container.classList.add('relative');
   },
 
   removeMedia: function() {
     this.state.uploadedMedia = null;
-    const placeholder = document.getElementById('campaign-media-placeholder');
-    if (placeholder) placeholder.style.display = 'block';
-    
-    const container = document.getElementById('campaign-preview-container') || 
-                      document.getElementById('campaign-dropzone');
-    if (container) {
-      container.innerHTML = `
-        <div id="campaign-media-placeholder">
-          <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-3"></i>
-          <p class="text-slate-400 text-sm">Cliquez ou glissez votre fichier ici</p>
-          <p class="text-slate-600 text-xs mt-1">Format recommandé: 1200x800px, max 5MB (image) ou 50MB (vidéo)</p>
-        </div>
-      `;
-    }
+    this.resetUploadUI();
     this.updatePreview();
   },
 
@@ -473,7 +465,6 @@ window.SupplierCampaigns = {
     this.state.currentMediaType = type;
     this.removeMedia();
     
-    // Update UI
     const fileInput = document.getElementById('campaign-media');
     if (fileInput) {
       fileInput.accept = type === 'video' ? 'video/mp4,video/mov,video/webm' : 'image/*';
@@ -481,12 +472,12 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // UPLOAD CLOUDINARY
+  // UPLOAD CLOUDINARY - CORRIGÉ
   // ==========================================
   
   uploadMediaToCloudinary: async function() {
+    // Si pas de nouveau média mais média existant en édition
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
-      // Utiliser média existant
       if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
         return {
           url: this.state.uploadedMedia.existingUrl,
@@ -499,35 +490,35 @@ window.SupplierCampaigns = {
     const file = this.state.uploadedMedia.file;
     const type = this.state.uploadedMedia.type;
     
-    console.log('[Campaigns Upload] Uploading:', file.name, type);
+    console.log('[Campaigns Upload] Starting upload:', file.name, type);
 
     const formData = new FormData();
-    formData.append('media', file);
+    formData.append('media', file); // 🔥 'media' doit correspondre au nom dans multer
 
     try {
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(true);
-      }
+      this.showLoading(true);
       
       const endpoint = type === 'video' ? '/supplier/upload-video' : '/supplier/upload-image';
       const fullUrl = BrandiaAPI.config.apiURL + endpoint;
       
       console.log('[Campaigns Upload] URL:', fullUrl);
+      console.log('[Campaigns Upload] Token:', localStorage.getItem('token') ? 'Present' : 'Missing');
 
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token')
+          // Ne PAS mettre Content-Type, fetch le gère automatiquement pour FormData
         },
         body: formData
       });
 
-      console.log('[Campaigns Upload] Status:', response.status);
+      console.log('[Campaigns Upload] Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[Campaigns Upload] Server error:', errorText);
-        throw new Error('Erreur serveur ' + response.status);
+        throw new Error('Erreur serveur ' + response.status + ': ' + errorText);
       }
 
       const result = await response.json();
@@ -535,7 +526,7 @@ window.SupplierCampaigns = {
 
       if (result.success) {
         const mediaUrl = result.data?.url || result.data?.secure_url;
-        if (!mediaUrl) throw new Error('URL média non trouvée');
+        if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
         
         return { url: mediaUrl, type: type };
       } else {
@@ -545,9 +536,16 @@ window.SupplierCampaigns = {
       console.error('[Campaigns Upload] Error:', error);
       throw error;
     } finally {
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(false);
-      }
+      this.showLoading(false);
+    }
+  },
+
+  showLoading: function(show) {
+    if (window.showLoading) {
+      window.showLoading(show);
+    } else {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.toggle('hidden', !show);
     }
   },
 
@@ -570,7 +568,7 @@ window.SupplierCampaigns = {
         <label class="flex items-center gap-3 p-2 hover:bg-slate-700 rounded cursor-pointer">
           <input type="checkbox" name="target_product_${p.id}" value="${p.id}" 
                  class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500">
-          <img src="${p.main_image_url || this.FALLBACK_IMAGE}" class="w-10 h-10 rounded object-cover">
+          <img src="${p.main_image_url || this.FALLBACK_IMAGE}" class="w-10 h-10 rounded object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-white truncate">${p.name}</p>
             <p class="text-xs text-slate-500">${parseFloat(p.price).toFixed(2)} €</p>
@@ -610,32 +608,12 @@ window.SupplierCampaigns = {
         productSelect.required = true;
       }
       if (externalUrl) {
-        externalUrl.classList.add('hidden');
-        externalUrl.required = false;
+        externalInput.classList.add('hidden');
+        externalInput.required = false;
       }
     }
   },
 
-  updateCtaLink: function() {
-    const type = document.querySelector('[name="cta_link_type"]')?.value || 'product';
-    const productSelect = document.getElementById('cta-product-select');
-    const externalUrl = document.getElementById('cta-external-url');
-    const hiddenInput = document.getElementById('cta-link-value');
-    
-    let value = '';
-    if (type === 'external' && externalUrl) {
-      value = externalUrl.value;
-    } else if (productSelect) {
-      value = productSelect.value;
-    }
-    
-    if (hiddenInput) hiddenInput.value = value;
-  },
-
-  // ==========================================
-  // PREVIEW TEMPS RÉEL
-  // ==========================================
-  
   updatePreview: function() {
     const headline = document.querySelector('[name="headline"]')?.value || 'Votre titre';
     const description = document.querySelector('[name="description"]')?.value || 'Description de votre offre...';
@@ -650,7 +628,6 @@ window.SupplierCampaigns = {
     if (descEl) descEl.textContent = description;
     if (ctaEl) ctaEl.textContent = ctaText;
     
-    // Update media preview
     if (mediaEl && this.state.uploadedMedia) {
       const url = this.state.uploadedMedia.localUrl || this.state.uploadedMedia.existingUrl;
       if (this.state.currentMediaType === 'video') {
@@ -658,11 +635,13 @@ window.SupplierCampaigns = {
       } else {
         mediaEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
       }
+    } else if (mediaEl) {
+      mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-2xl"></i>';
     }
   },
 
   // ==========================================
-  // SAUVEGARDE CAMPAGNE
+  // SAUVEGARDE CAMPAGNE - CORRIGÉ
   // ==========================================
   
   save: async function() {
@@ -701,12 +680,16 @@ window.SupplierCampaigns = {
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
       
-      if (this.state.uploadedMedia) {
+      try {
         const uploadResult = await this.uploadMediaToCloudinary();
         if (uploadResult) {
           mediaUrl = uploadResult.url;
           mediaType = uploadResult.type;
         }
+      } catch (uploadError) {
+        console.error('[Campaigns] Upload failed:', uploadError);
+        this.showToast('Erreur upload: ' + uploadError.message, 'error');
+        return;
       }
       
       if (!mediaUrl && !this.state.editingCampaignId) {
@@ -739,22 +722,16 @@ window.SupplierCampaigns = {
       
       console.log('[Campaigns] Saving:', campaignData);
       
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(true);
-      }
+      this.showLoading(true);
       
       let response;
       if (this.state.editingCampaignId) {
-        // Mode édition
         response = await BrandiaAPI.Supplier.updateCampaign(this.state.editingCampaignId, campaignData);
       } else {
-        // Mode création
         response = await BrandiaAPI.Supplier.createCampaign(campaignData);
       }
       
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(false);
-      }
+      this.showLoading(false);
       
       if (response.success) {
         this.showToast(
@@ -770,9 +747,7 @@ window.SupplierCampaigns = {
     } catch (error) {
       console.error('[Campaigns] Save error:', error);
       this.showToast('Erreur: ' + error.message, 'error');
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(false);
-      }
+      this.showLoading(false);
     }
   },
 
@@ -874,7 +849,6 @@ window.SupplierCampaigns = {
   updateChart: function() {
     if (!this.state.chart) return;
     
-    // Générer données mock pour 30 derniers jours
     const labels = [];
     const viewsData = [];
     const clicksData = [];
@@ -884,7 +858,6 @@ window.SupplierCampaigns = {
       date.setDate(date.getDate() - i);
       labels.push(date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
       
-      // Simuler données basées sur les vues/clics totaux
       const totalViews = this.state.campaigns.reduce((sum, c) => sum + (c.views_count || 0), 0);
       const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (c.clicks_count || 0), 0);
       
@@ -913,9 +886,7 @@ window.SupplierCampaigns = {
 
   showToast: function(message, type) {
     type = type || 'success';
-    if (window.DashboardApp && window.DashboardApp.showToast) {
-      window.DashboardApp.showToast(message, type);
-    } else if (window.showToast) {
+    if (window.showToast) {
       window.showToast(message, type);
     } else {
       console.log('[' + type + '] ' + message);
@@ -929,7 +900,6 @@ window.SupplierCampaigns = {
 
 window.openCampaignModal = function() {
   if (window.SupplierCampaigns) {
-    window.SupplierCampaigns.resetModalForCreate();
     window.SupplierCampaigns.openModal();
   }
 };
@@ -972,7 +942,7 @@ window.editCampaign = function(id) {
 
 window.handleCampaignMedia = function(e) {
   if (window.SupplierCampaigns) {
-    window.SupplierCampaigns.handleMedia(e);
+    window.SupplierCampaigns.handleMediaSelect(e);
   }
 };
 
@@ -993,10 +963,3 @@ window.handleCtaType = function(type) {
     window.SupplierCampaigns.handleCtaType(type);
   }
 };
-
-window.updateCtaLink = function() {
-  if (window.SupplierCampaigns) {
-    window.SupplierCampaigns.updateCtaLink();
-  }
-};
-

@@ -1,6 +1,5 @@
-
 // ============================================
-// SUPPLIER CONTROLLER - v5.0 FINAL
+// SUPPLIER CONTROLLER - v5.1 CORRIGÉ
 // ============================================
 
 const db = require("../../config/db");
@@ -39,17 +38,17 @@ const videoStorage = new CloudinaryStorage({
 // Middlewares multer pour exports
 const uploadImageMiddleware = multer({ 
   storage: imageStorage, 
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 const uploadVideoMiddleware = multer({ 
   storage: videoStorage, 
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+  limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 class SupplierController {
 
-  /* ================= PAIEMENTS - v4.5 COLONNES CORRIGÉES ================= */
+  /* ================= PAIEMENTS ================= */
 
   async getPayments(req, res) {
     try {
@@ -66,7 +65,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Utiliser les NOUVELLES colonnes amount et commission_amount
       const balanceResult = await db.query(`
         SELECT 
           COALESCE(SUM(CASE WHEN status = 'available' THEN amount ELSE 0 END), 0) as available_balance,
@@ -82,7 +80,6 @@ class SupplierController {
         total_earnings: 0
       };
 
-      // Toutes les colonnes existent maintenant
       const transactionsResult = await db.query(`
         SELECT 
           sp.id,
@@ -155,7 +152,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Utiliser la nouvelle colonne amount
       const balanceResult = await db.query(`
         SELECT COALESCE(SUM(amount), 0) as available
         FROM supplier_payments
@@ -171,7 +167,6 @@ class SupplierController {
         });
       }
 
-      // Créer le payout
       const payoutResult = await db.query(`
         INSERT INTO payouts (supplier_id, amount, status, created_at)
         VALUES ($1, $2, 'pending', NOW())
@@ -180,7 +175,6 @@ class SupplierController {
 
       const payout = payoutResult.rows[0];
 
-      // Mettre à jour supplier_payments avec le payout_id (nouvelle colonne !)
       await db.query(`
         UPDATE supplier_payments
         SET status = 'payout_requested', payout_id = $1, updated_at = NOW()
@@ -219,7 +213,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Récupérer les payouts avec les paiements liés (via payout_id)
       const result = await db.query(`
         SELECT 
           p.*,
@@ -260,7 +253,7 @@ class SupplierController {
     }
   }
 
-  /* ================= UPLOADS CLOUDINARY - NOUVEAU ================= */
+  /* ================= UPLOADS CLOUDINARY ================= */
 
   async uploadImage(req, res) {
     try {
@@ -272,7 +265,6 @@ class SupplierController {
       
       console.log('[Upload Image] Fichier reçu:', req.file.originalname, '-> Cloudinary:', req.file.path);
       
-      // Multer-Cloudinary a déjà uploadé, req.file contient les infos
       const result = {
         success: true,
         data: {
@@ -348,7 +340,7 @@ class SupplierController {
       
       res.json({ 
         success: true, 
-        data: { products: result.rows }
+        data: result.rows 
       });
       
     } catch (error) {
@@ -1017,7 +1009,6 @@ class SupplierController {
       
       const supplierId = supplierResult.rows[0].id;
 
-      // Si activation, désactiver les autres campagnes actives
       if (status === 'active') {
         await db.query(
           `UPDATE supplier_campaigns SET status = 'paused', updated_at = NOW()
@@ -1175,54 +1166,39 @@ class SupplierController {
   }
 }
 
-/* ================= EXPORT ================= */
+// ============================================
+// EXPORT - CORRECTION CRITIQUE
+// ============================================
 
 const controller = new SupplierController();
 
-module.exports = {
-  // Paiements
-  getPayments: controller.getPayments.bind(controller),
-  requestPayout: controller.requestPayout.bind(controller),
-  getPayouts: controller.getPayouts.bind(controller),
-  
-  // Uploads
-  uploadImage: controller.uploadImage.bind(controller),
-  uploadCampaignVideo: controller.uploadCampaignVideo.bind(controller),
-  
-  // Produits
-  getProducts: controller.getProducts.bind(controller),
-  createProduct: controller.createProduct.bind(controller),
-  updateProduct: controller.updateProduct.bind(controller),
-  deleteProduct: controller.deleteProduct.bind(controller),
-  
-  // Commandes
-  getOrders: controller.getOrders.bind(controller),
-  getOrderById: controller.getOrderById.bind(controller),
-  updateOrderStatus: controller.updateOrderStatus.bind(controller),
-  
-  // Promotions
-  getPromotions: controller.getPromotions.bind(controller),
-  createPromotion: controller.createPromotion.bind(controller),
-  updatePromotion: controller.updatePromotion.bind(controller),
-  deletePromotion: controller.deletePromotion.bind(controller),
-  
-  // Campagnes
-  getCampaigns: controller.getCampaigns.bind(controller),
-  createCampaign: controller.createCampaign.bind(controller),
-  updateCampaign: controller.updateCampaign.bind(controller),
-  deleteCampaign: controller.deleteCampaign.bind(controller),
-  toggleCampaignStatus: controller.toggleCampaignStatus.bind(controller),
-  
-  // Public
-  getActiveCampaignForProduct: controller.getActiveCampaignForProduct.bind(controller),
-  trackCampaignClick: controller.trackCampaignClick.bind(controller),
-  trackCampaignView: controller.trackCampaignView.bind(controller),
-  
-  // Stats
-  getStats: controller.getStats.bind(controller),
-  
-  // Middlewares multer (pour les routes)
-  uploadImageMiddleware,
-  uploadVideoMiddleware
-};
+// Export des middlewares d'abord
+module.exports.uploadImageMiddleware = uploadImageMiddleware;
+module.exports.uploadVideoMiddleware = uploadVideoMiddleware;
 
+// Export des méthodes du contrôleur
+module.exports.getPayments = controller.getPayments.bind(controller);
+module.exports.requestPayout = controller.requestPayout.bind(controller);
+module.exports.getPayouts = controller.getPayouts.bind(controller);
+module.exports.uploadImage = controller.uploadImage.bind(controller);
+module.exports.uploadCampaignVideo = controller.uploadCampaignVideo.bind(controller);
+module.exports.getProducts = controller.getProducts.bind(controller);
+module.exports.createProduct = controller.createProduct.bind(controller);
+module.exports.updateProduct = controller.updateProduct.bind(controller);
+module.exports.deleteProduct = controller.deleteProduct.bind(controller);
+module.exports.getOrders = controller.getOrders.bind(controller);
+module.exports.getOrderById = controller.getOrderById.bind(controller);
+module.exports.updateOrderStatus = controller.updateOrderStatus.bind(controller);
+module.exports.getPromotions = controller.getPromotions.bind(controller);
+module.exports.createPromotion = controller.createPromotion.bind(controller);
+module.exports.updatePromotion = controller.updatePromotion.bind(controller);
+module.exports.deletePromotion = controller.deletePromotion.bind(controller);
+module.exports.getCampaigns = controller.getCampaigns.bind(controller);
+module.exports.createCampaign = controller.createCampaign.bind(controller);
+module.exports.updateCampaign = controller.updateCampaign.bind(controller);
+module.exports.deleteCampaign = controller.deleteCampaign.bind(controller);
+module.exports.toggleCampaignStatus = controller.toggleCampaignStatus.bind(controller);
+module.exports.getActiveCampaignForProduct = controller.getActiveCampaignForProduct.bind(controller);
+module.exports.trackCampaignClick = controller.trackCampaignClick.bind(controller);
+module.exports.trackCampaignView = controller.trackCampaignView.bind(controller);
+module.exports.getStats = controller.getStats.bind(controller);
