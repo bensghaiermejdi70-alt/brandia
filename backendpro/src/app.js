@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - Configuration Express Brandia v3.1
+// APP.JS - Configuration Express Brandia v3.2 CORRIGÉ
 // ============================================
 
 const express = require('express');
@@ -10,13 +10,12 @@ const path = require('path');
 const app = express();
 
 // ============================================
-// MIDDLEWARES DE BASE (appliqués à TOUTES les routes)
+// MIDDLEWARES DE BASE
 // ============================================
 
-// Sécurité HTTP headers
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: false, // Désactivé pour éviter conflits avec frontend
+    contentSecurityPolicy: false,
     hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
@@ -24,146 +23,88 @@ app.use(helmet({
     }
 }));
 
-// Logging des requêtes
+// Logging
 app.use((req, res, next) => {
-    const timestamp = new Date().toISOString();
-    const method = req.method;
-    const url = req.url;
-    const origin = req.headers.origin || 'no-origin';
-    
-    console.log(`[${timestamp}] ${method} ${url} | Origin: ${origin}`);
-    
-    // Log body pour POST/PUT en development
-    if (process.env.NODE_ENV === 'development' && ['POST', 'PUT', 'PATCH'].includes(method)) {
-        console.log('[Body]', req.body);
-    }
-    
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-// Parsing JSON et URL-encoded
+// Parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ============================================
-// CORS CONFIGURATION
-// ============================================
-
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:4000',
-    'https://brandia-marketplace.netlify.app',
-    'https://www.brandia.company',
-    'https://brandia.company'
-];
-
+// CORS
 app.use(cors({
-    origin: function(origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, etc.)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
-            callback(null, true);
-        } else {
-            console.warn('[CORS] Origin not allowed:', origin);
-            callback(null, true); // Autoriser quand même en production pour éviter les blocages
-        }
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// ============================================
-// STATIC FILES
-// ============================================
-
+// Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ============================================
-// 🔥 ROUTES - ORDRE TRÈS IMPORTANT !
+// 🔥🔥🔥 ROUTES - ORDRE CRITIQUE ! 🔥🔥🔥
 // ============================================
 
 console.log('[App] Loading routes...');
 
-// 1. Health check (toujours accessible)
+// 1. Health check (public)
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
-        timestamp: new Date().toISOString(),
-        service: 'brandia-api',
-        version: '3.1.0',
-        environment: process.env.NODE_ENV || 'production'
+        timestamp: new Date().toISOString()
     });
 });
 
-// 2. 🔥 SUPPLIER ROUTES (montées AVANT les routes générales)
-// Contient les routes publiques pour les campagnes publicitaires
+// 2. 🔥 SUPPLIER ROUTES (public campaigns FIRST - before any auth)
 const supplierRoutes = require('./modules/supplier/supplier.routes');
 app.use('/api/supplier', supplierRoutes);
-console.log('[App] ✅ Supplier routes mounted on /api/supplier');
+console.log('[App] ✅ Supplier routes mounted');
 
-// 3. 🔥 PRODUCT ROUTES (PUBLIQUES - pas d'auth middleware ici!)
+// 3. 🔥 PRODUCT ROUTES - PUBLIQUES ! PAS D'AUTH ICI !
 const productRoutes = require('./modules/products/product.routes');
 app.use('/api/products', productRoutes);
-console.log('[App] ✅ Product routes mounted on /api/products');
+console.log('[App] ✅ Product routes mounted (PUBLIC)');
 
-// 4. Routes générales (index.js)
+// 4. Other routes (index.js)
 const indexRoutes = require('./routes/index');
 app.use('/api', indexRoutes);
-console.log('[App] ✅ Index routes mounted on /api');
+console.log('[App] ✅ Index routes mounted');
 
 // ============================================
-// ERROR HANDLING - DOIT ÊTRE APRÈS TOUTES LES ROUTES
+// 🔥🔥🔥 VÉRIFICATION CRITIQUE 🔥🔥🔥
+// ============================================
+// IL NE DOIT Y AVOIR AUCUN app.use(authenticate) ICI !
+
+// ============================================
+// ERROR HANDLING
 // ============================================
 
-// 404 - Route non trouvée
 app.use((req, res) => {
-    console.log('[404] Not found:', req.method, req.path);
     res.status(404).json({
         success: false,
         message: 'Endpoint non trouvé',
-        path: req.path,
-        method: req.method
+        path: req.path
     });
 });
 
-// Gestionnaire d'erreurs global
 app.use((err, req, res, next) => {
-    console.error('[Error Handler]', err);
+    console.error('[Error]', err);
     
-    // Erreur de taille de fichier
-    if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({
-            success: false,
-            message: 'Fichier trop grand (max 5MB pour images, 50MB pour vidéos)'
-        });
+    // 🔥 DÉTECTION SPÉCIFIQUE DU PROBLÈME
+    if (err.message && err.message.includes('fournisseur')) {
+        console.error('🔥🔥🔥 ERREUR FOURNISSEUR DÉTECTÉE 🔥🔥🔥');
+        console.error('Route:', req.method, req.url);
+        console.error('User:', req.user);
     }
     
-    // Erreur JWT
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-            success: false,
-            message: 'Token invalide'
-        });
-    }
-    
-    if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({
-            success: false,
-            message: 'Token expiré'
-        });
-    }
-    
-    // Erreur par défaut
     res.status(err.status || 500).json({
         success: false,
-        message: err.message || 'Erreur serveur interne',
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+        message: err.message || 'Erreur serveur'
     });
 });
-
-console.log('[App] ✅ All middlewares and routes loaded');
 
 module.exports = app;

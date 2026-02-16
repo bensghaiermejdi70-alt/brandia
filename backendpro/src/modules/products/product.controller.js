@@ -1,575 +1,614 @@
 // ============================================
-// PRODUCT CONTROLLER - Backend API (CORRIGÉ v2.0)
-// Promotions fonctionnelles avec calcul prix réduit
+// PRODUCT CONTROLLER - v3.0 CORRIGÉ (100% PUBLIQUE)
 // ============================================
 
 const db = require('../../config/db');
 
-const ProductController = {
+class ProductController {
+  
+  // ==========================================
+  // ROUTES PUBLIQUES - AUCUNE AUTH REQUISE
+  // ==========================================
 
-    // ============================================
-    // 🔥 Liste tous les produits (avec filtres)
-    // ============================================
-    getAll: async (req, res) => {
-        try {
+  async getAll(req, res) {
+    try {
+      const { category, search, min_price, max_price, sort = 'created_at', order = 'DESC', page = 1, limit = 20 } = req.query;
 
-            let { category, search, limit = 20, offset = 0 } = req.query;
+      let whereClause = 'WHERE p.is_active = true';
+      const params = [];
+      let paramIndex = 1;
 
-            const limitNum = Math.min(parseInt(limit) || 20, 100);
-            const offsetNum = parseInt(offset) || 0;
+      if (category) {
+        whereClause += ` AND (p.category_id = $${paramIndex} OR c.slug = $${paramIndex})`;
+        params.push(category);
+        paramIndex++;
+      }
 
-            let sql = `
-                SELECT 
-                    p.*,
-                    c.name as category_name,
-                    c.slug as category_slug,
-                    u.first_name as supplier_name,
-                    s.company_name as brand_name
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN users u ON p.supplier_id = u.id
-                LEFT JOIN suppliers s ON u.id = s.user_id
-                WHERE (p.is_active = true OR p.is_active IS NULL)
-            `;
+      if (search) {
+        whereClause += ` AND (p.name ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+        params.push(`%${search}%`);
+        paramIndex++;
+      }
 
-            const params = [];
-            let paramCount = 0;
+      if (min_price) {
+        whereClause += ` AND p.price >= $${paramIndex}`;
+        params.push(min_price);
+        paramIndex++;
+      }
 
-            // ✅ FILTRE CATÉGORIE (SAFE - slug uniquement)
-            if (category) {
-                paramCount++;
-                sql += ` AND c.slug = $${paramCount}`;
-                params.push(category);
-            }
+      if (max_price) {
+        whereClause += ` AND p.price <= $${paramIndex}`;
+        params.push(max_price);
+        paramIndex++;
+      }
 
-            // ✅ RECHERCHE (optimisée si search_vector existe)
-            if (search) {
-                paramCount++;
-                sql += ` AND (
-                    p.search_vector @@ plainto_tsquery('simple', $${paramCount})
-                    OR p.name ILIKE $${paramCount}
-                )`;
-                params.push(search);
-            }
+      const countResult = await db.query(`
+        SELECT COUNT(*) as total 
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        ${whereClause}
+      `, params);
 
-            sql += ` ORDER BY p.created_at DESC`;
+      const total = parseInt(countResult.rows[0].total);
+      const offset = (parseInt(page) - 1) * parseInt(limit);
 
-            // Pagination sécurisée
-            paramCount++;
-            sql += ` LIMIT $${paramCount}`;
-            params.push(limitNum);
+      const result = await db.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.price,
+          p.compare_price,
+          p.stock_quantity,
+          p.main_image_url,
+          p.is_featured,
+          p.is_active,
+          p.rating,
+          p.reviews_count,
+          p.created_at,
+          p.supplier_id,
+          s.company_name as supplier_company,
+          s.logo_url as supplier_logo,
+          c.name as category_name,
+          c.slug as category_slug
+        FROM products p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        ${whereClause}
+        ORDER BY p.${sort} ${order}
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `, [...params, parseInt(limit), offset]);
 
-            paramCount++;
-            sql += ` OFFSET $${paramCount}`;
-            params.push(offsetNum);
-
-            const result = await db.query(sql, params);
-
-            res.json({
-                success: true,
-                count: result.rows.length,
-                data: result.rows
-            });
-
-        } catch (error) {
-            console.error('[ProductController] getAll error:', error);
-            res.status(500).json({ success: false, message: error.message });
+      res.json({
+        success: true,
+        data: {
+          products: result.rows,
+          pagination: {
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(total / parseInt(limit))
+          }
         }
-    },
+      });
 
-
-    // ============================================
-    // 🔥 Produits en vedette
-    // ============================================
-    getFeatured: async (req, res) => {
-        try {
-
-            const result = await db.query(`
-                SELECT 
-                    p.*,
-                    c.name as category_name,
-                    u.first_name as supplier_name,
-                    s.company_name as brand_name
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN users u ON p.supplier_id = u.id
-                LEFT JOIN suppliers s ON u.id = s.user_id
-                WHERE (p.is_active = true OR p.is_active IS NULL)
-                ORDER BY p.created_at DESC
-                LIMIT 8
-            `);
-
-            res.json({
-                success: true,
-                count: result.rows.length,
-                data: result.rows
-            });
-
-        } catch (error) {
-            console.error('[ProductController] getFeatured error:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-
-
-    // ============================================
-    // 🔥 Détail produit
-    // ============================================
-    getById: async (req, res) => {
-        try {
-
-            const { id } = req.params;
-
-            const result = await db.query(`
-                SELECT 
-                    p.*,
-                    c.name as category_name,
-                    u.first_name as supplier_name,
-                    s.company_name as brand_name,
-                    s.logo_url as supplier_logo,
-                    s.description as supplier_description
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN users u ON p.supplier_id = u.id
-                LEFT JOIN suppliers s ON u.id = s.user_id
-                WHERE p.id = $1 
-                AND (p.is_active = true OR p.is_active IS NULL)
-            `, [id]);
-
-            if (result.rows.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Produit non trouvé'
-                });
-            }
-
-            res.json({
-                success: true,
-                data: result.rows[0]
-            });
-
-        } catch (error) {
-            console.error('[ProductController] getById error:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-    // ============================================
-    // 🔥 Create
-    // ============================================
-    create: async (req, res) => {
-        try {
-
-            const userId = req.user.userId;
-            const { name, description, price, stock_quantity, category_id, main_image_url } = req.body;
-
-            if (!name || !price) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Nom et prix sont requis'
-                });
-            }
-
-            const result = await db.query(`
-                INSERT INTO products 
-                (supplier_id, name, description, price, stock_quantity, category_id, main_image_url, is_active, created_at)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,true,NOW())
-                RETURNING *
-            `, [userId, name, description, price, stock_quantity || 0, category_id, main_image_url]);
-
-            res.status(201).json({
-                success: true,
-                message: 'Produit créé',
-                data: result.rows[0]
-            });
-
-        } catch (error) {
-            console.error('[ProductController] create error:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-
-
-    // ============================================
-    // 🔥 Update
-    // ============================================
-    update: async (req, res) => {
-        try {
-
-            const userId = req.user.userId;
-            const { id } = req.params;
-            const { name, description, price, stock_quantity, category_id, main_image_url, is_active } = req.body;
-
-            const check = await db.query(
-                'SELECT id FROM products WHERE id = $1 AND supplier_id = $2',
-                [id, userId]
-            );
-
-            if (check.rows.length === 0) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Produit non autorisé'
-                });
-            }
-
-            const result = await db.query(`
-                UPDATE products 
-                SET name=$1, description=$2, price=$3, stock_quantity=$4,
-                    category_id=$5, main_image_url=$6, is_active=$7, updated_at=NOW()
-                WHERE id=$8 AND supplier_id=$9
-                RETURNING *
-            `, [name, description, price, stock_quantity, category_id, main_image_url, is_active, id, userId]);
-
-            res.json({
-                success: true,
-                message: 'Produit mis à jour',
-                data: result.rows[0]
-            });
-
-        } catch (error) {
-            console.error('[ProductController] update error:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-
-
-    // ============================================
-    // 🔥 Delete
-    // ============================================
-    remove: async (req, res) => {
-        try {
-
-            const userId = req.user.userId;
-            const { id } = req.params;
-
-            const check = await db.query(
-                'SELECT id FROM products WHERE id = $1 AND supplier_id = $2',
-                [id, userId]
-            );
-
-            if (check.rows.length === 0) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Produit non autorisé'
-                });
-            }
-
-            await db.query('DELETE FROM products WHERE id = $1', [id]);
-
-            res.json({
-                success: true,
-                message: 'Produit supprimé'
-            });
-
-        } catch (error) {
-            console.error('[ProductController] remove error:', error);
-            res.status(500).json({ success: false, message: error.message });
-        }
-    },
-    // ============================================
-    // 🔥 Promotions - Liste avec promotions actives (CORRIGÉ)
-    // ============================================
-    getAllWithPromotions: async (req, res) => {
-        try {
-            let { category, search, promo_only, limit = 20, offset = 0 } = req.query;
-
-            const limitNum = Math.min(parseInt(limit) || 20, 100);
-            const offsetNum = parseInt(offset) || 0;
-
-            // 🔥 Requête avec jointure promotions et calcul prix réduit
-            let sql = `
-                SELECT 
-                    p.*,
-                    c.name as category_name,
-                    c.slug as category_slug,
-                    u.first_name as supplier_name,
-                    s.company_name as brand_name,
-                    s.id as supplier_id_num,
-                    pr.id as promo_id,
-                    pr.name as promo_name,
-                    pr.type as promo_type,
-                    pr.value as promo_value,
-                    pr.code as promo_code,
-                    pr.end_date as promo_end_date,
-                    CASE 
-                        WHEN pr.id IS NOT NULL AND pr.end_date >= NOW() 
-                        THEN true 
-                        ELSE false 
-                    END as has_promotion,
-                    CASE 
-                        WHEN pr.type = 'percentage' THEN ROUND(p.price * (1 - pr.value / 100), 2)
-                        WHEN pr.type = 'fixed' THEN GREATEST(0, p.price - pr.value)
-                        ELSE p.price
-                    END as final_price
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN users u ON p.supplier_id = u.id
-                LEFT JOIN suppliers s ON u.id = s.user_id
-                LEFT JOIN promotions pr ON pr.supplier_id = u.id 
-                    AND pr.status = 'active' 
-                    AND pr.start_date <= NOW() 
-                    AND pr.end_date >= NOW()
-                    AND (pr.applies_to = 'all' OR pr.applies_to IS NULL OR pr.applies_to = '')
-                WHERE (p.is_active = true OR p.is_active IS NULL)
-            `;
-
-            const params = [];
-            let paramCount = 0;
-
-            // ✅ FILTRE CATÉGORIE
-            if (category) {
-                paramCount++;
-                sql += ` AND c.slug = $${paramCount}`;
-                params.push(category);
-            }
-
-            // ✅ FILTRE RECHERCHE
-            if (search) {
-                paramCount++;
-                sql += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount})`;
-                params.push(`%${search}%`);
-            }
-
-            // ✅ FILTRE PROMO UNIQUEMENT
-            if (promo_only === 'true' || promo_only === '1' || promo_only === true) {
-                sql += ` AND pr.id IS NOT NULL AND pr.end_date >= NOW()`;
-            }
-
-            // Tri : promos d'abord, puis plus récents
-            sql += ` ORDER BY 
-                CASE WHEN pr.id IS NOT NULL AND pr.end_date >= NOW() THEN 0 ELSE 1 END,
-                p.created_at DESC
-            `;
-
-            // Pagination
-            paramCount++;
-            sql += ` LIMIT $${paramCount}`;
-            params.push(limitNum);
-
-            paramCount++;
-            sql += ` OFFSET $${paramCount}`;
-            params.push(offsetNum);
-
-            console.log('[ProductController] getAllWithPromotions SQL:', sql);
-            console.log('[ProductController] Params:', params);
-
-            const result = await db.query(sql, params);
-
-            // Formater les données pour le frontend
-            const products = result.rows.map(p => ({
-                id: p.id,
-                name: p.name,
-                description: p.description,
-                price: parseFloat(p.price),
-                final_price: parseFloat(p.final_price),
-                base_price: parseFloat(p.price),
-                has_promotion: p.has_promotion === true,
-                promo_id: p.promo_id,
-                promo_name: p.promo_name,
-                promo_type: p.promo_type,
-                promo_value: p.promo_value,
-                promo_code: p.promo_code,
-                promo_end_date: p.promo_end_date,
-                discount_display: p.promo_type === 'percentage' ? `-${p.promo_value}%` : `-${p.promo_value}€`,
-                stock_quantity: p.stock_quantity,
-                main_image_url: p.main_image_url,
-                category_name: p.category_name,
-                category_slug: p.category_slug,
-                supplier_name: p.supplier_name,
-                supplier_company: p.brand_name || p.supplier_name,
-                created_at: p.created_at
-            }));
-
-            const promoCount = products.filter(p => p.has_promotion).length;
-
-            res.json({
-                success: true,
-                count: products.length,
-                promo_count: promoCount,
-                data: { products }
-            });
-
-        } catch (error) {
-            console.error('[ProductController] getAllWithPromotions error:', error);
-            // Fallback sur getAll en cas d'erreur
-            return ProductController.getAll(req, res);
-        }
-    },
-    // ============================================
-    // 🔥 Produits en vedette avec promotions (CORRIGÉ)
-    // ============================================
-    getFeaturedWithPromotions: async (req, res) => {
-        try {
-            const result = await db.query(`
-                SELECT 
-                    p.*,
-                    c.name as category_name,
-                    c.slug as category_slug,
-                    u.first_name as supplier_name,
-                    s.company_name as brand_name,
-                    pr.id as promo_id,
-                    pr.name as promo_name,
-                    pr.type as promo_type,
-                    pr.value as promo_value,
-                    pr.code as promo_code,
-                    pr.end_date as promo_end_date,
-                    CASE 
-                        WHEN pr.id IS NOT NULL AND pr.end_date >= NOW() 
-                        THEN true 
-                        ELSE false 
-                    END as has_promotion,
-                    CASE 
-                        WHEN pr.type = 'percentage' THEN ROUND(p.price * (1 - pr.value / 100), 2)
-                        WHEN pr.type = 'fixed' THEN GREATEST(0, p.price - pr.value)
-                        ELSE p.price
-                    END as final_price
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN users u ON p.supplier_id = u.id
-                LEFT JOIN suppliers s ON u.id = s.user_id
-                LEFT JOIN promotions pr ON pr.supplier_id = u.id 
-                    AND pr.status = 'active' 
-                    AND pr.start_date <= NOW() 
-                    AND pr.end_date >= NOW()
-                    AND (pr.applies_to = 'all' OR pr.applies_to IS NULL OR pr.applies_to = '')
-                WHERE (p.is_active = true OR p.is_active IS NULL)
-                ORDER BY 
-                    CASE WHEN pr.id IS NOT NULL AND pr.end_date >= NOW() THEN 0 ELSE 1 END,
-                    p.created_at DESC
-                LIMIT 8
-            `);
-
-            const products = result.rows.map(p => ({
-                id: p.id,
-                name: p.name,
-                description: p.description,
-                price: parseFloat(p.price),
-                final_price: parseFloat(p.final_price),
-                base_price: parseFloat(p.price),
-                has_promotion: p.has_promotion === true,
-                promo_id: p.promo_id,
-                promo_name: p.promo_name,
-                promo_type: p.promo_type,
-                promo_value: p.promo_value,
-                promo_code: p.promo_code,
-                promo_end_date: p.promo_end_date,
-                discount_display: p.promo_type === 'percentage' ? `-${p.promo_value}%` : `-${p.promo_value}€`,
-                stock_quantity: p.stock_quantity,
-                main_image_url: p.main_image_url,
-                category_name: p.category_name,
-                category_slug: p.category_slug,
-                supplier_name: p.supplier_name,
-                supplier_company: p.brand_name || p.supplier_name,
-                created_at: p.created_at
-            }));
-
-            const promoCount = products.filter(p => p.has_promotion).length;
-
-            res.json({
-                success: true,
-                count: products.length,
-                promo_count: promoCount,
-                data: { products }
-            });
-
-        } catch (error) {
-            console.error('[ProductController] getFeaturedWithPromotions error:', error);
-            return ProductController.getFeatured(req, res);
-        }
-    },
-    // ============================================
-    // 🔥 Détail produit avec promotion (CORRIGÉ)
-    // ============================================
-    getByIdWithPromotion: async (req, res) => {
-        try {
-            const { id } = req.params;
-
-            const result = await db.query(`
-                SELECT 
-                    p.*,
-                    c.name as category_name,
-                    c.slug as category_slug,
-                    u.first_name as supplier_name,
-                    s.company_name as brand_name,
-                    s.logo_url as supplier_logo,
-                    s.description as supplier_description,
-                    s.id as supplier_id_num,
-                    pr.id as promo_id,
-                    pr.name as promo_name,
-                    pr.type as promo_type,
-                    pr.value as promo_value,
-                    pr.code as promo_code,
-                    pr.end_date as promo_end_date,
-                    CASE 
-                        WHEN pr.id IS NOT NULL AND pr.end_date >= NOW() 
-                        THEN true 
-                        ELSE false 
-                    END as has_promotion,
-                    CASE 
-                        WHEN pr.type = 'percentage' THEN ROUND(p.price * (1 - pr.value / 100), 2)
-                        WHEN pr.type = 'fixed' THEN GREATEST(0, p.price - pr.value)
-                        ELSE p.price
-                    END as final_price
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN users u ON p.supplier_id = u.id
-                LEFT JOIN suppliers s ON u.id = s.user_id
-                LEFT JOIN promotions pr ON pr.supplier_id = u.id 
-                    AND pr.status = 'active' 
-                    AND pr.start_date <= NOW() 
-                    AND pr.end_date >= NOW()
-                    AND (pr.applies_to = 'all' OR pr.applies_to IS NULL OR pr.applies_to = '')
-                WHERE p.id = $1 
-                AND (p.is_active = true OR p.is_active IS NULL)
-            `, [id]);
-
-            if (result.rows.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Produit non trouvé'
-                });
-            }
-
-            const p = result.rows[0];
-            const product = {
-                id: p.id,
-                name: p.name,
-                description: p.description,
-                price: parseFloat(p.price),
-                final_price: parseFloat(p.final_price),
-                base_price: parseFloat(p.price),
-                has_promotion: p.has_promotion === true,
-                promo_id: p.promo_id,
-                promo_name: p.promo_name,
-                promo_type: p.promo_type,
-                promo_value: p.promo_value,
-                promo_code: p.promo_code,
-                promo_end_date: p.promo_end_date,
-                discount_display: p.promo_type === 'percentage' ? `-${p.promo_value}%` : `-${p.promo_value}€`,
-                stock_quantity: p.stock_quantity,
-                main_image_url: p.main_image_url,
-                category_id: p.category_id,
-                category_name: p.category_name,
-                category_slug: p.category_slug,
-                supplier_id: p.supplier_id,
-                supplier_name: p.supplier_name,
-                supplier_company: p.brand_name || p.supplier_name,
-                supplier_logo: p.supplier_logo,
-                supplier_description: p.supplier_description,
-                created_at: p.created_at,
-                updated_at: p.updated_at
-            };
-
-            res.json({
-                success: true,
-                data: { product }
-            });
-
-        } catch (error) {
-            console.error('[ProductController] getByIdWithPromotion error:', error);
-            return ProductController.getById(req, res);
-        }
+    } catch (error) {
+      console.error('[Get All Products] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
     }
+  }
 
-};
+  async getFeatured(req, res) {
+    try {
+      const result = await db.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.price,
+          p.compare_price,
+          p.main_image_url,
+          p.is_featured,
+          p.supplier_id,
+          s.company_name as supplier_company,
+          s.logo_url as supplier_logo,
+          c.name as category_name
+        FROM products p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.is_active = true AND p.is_featured = true
+        ORDER BY p.created_at DESC
+        LIMIT 8
+      `);
 
-module.exports = ProductController;
+      res.json({
+        success: true,
+        data: { products: result.rows }
+      });
+
+    } catch (error) {
+      console.error('[Get Featured] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // 🔥🔥🔥 CETTE MÉTHODE DOIT ÊTRE 100% PUBLIQUE 🔥🔥🔥
+  async getById(req, res) {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'ID produit invalide' 
+        });
+      }
+
+      // 🔥 PAS DE VÉRIFICATION DE RÔLE ICI !
+      // 🔥 PAS DE req.user REQUIRED !
+      
+      const result = await db.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.description,
+          p.short_description,
+          p.price,
+          p.compare_price,
+          p.stock_quantity,
+          p.sku,
+          p.main_image_url,
+          p.is_featured,
+          p.is_active,
+          p.rating,
+          p.reviews_count,
+          p.created_at,
+          p.vat_rate,
+          p.category_id,
+          p.slug,
+          p.supplier_id,
+          s.company_name as supplier_company,
+          s.logo_url as supplier_logo,
+          s.description as supplier_description,
+          c.name as category_name,
+          c.slug as category_slug
+        FROM products p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = $1 AND p.is_active = true
+      `, [id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Produit non trouvé' 
+        });
+      }
+
+      const product = result.rows[0];
+      
+      // Normaliser pour le frontend
+      const normalizedProduct = {
+        ...product,
+        stock: product.stock_quantity,
+        stock_quantity: product.stock_quantity,
+        image: product.main_image_url,
+        main_image_url: product.main_image_url,
+        brand_name: product.supplier_company,
+        category: product.category_name
+      };
+
+      res.json({
+        success: true,
+        data: { product: normalizedProduct }
+      });
+
+    } catch (error) {
+      console.error('[Get Product By ID] Error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erreur lors de la récupération du produit' 
+      });
+    }
+  }
+
+  // 🔥🔥🔥 CETTE MÉTHODE AUSSI DOIT ÊTRE 100% PUBLIQUE 🔥🔥🔥
+  async getByIdWithPromotion(req, res) {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'ID produit invalide' 
+        });
+      }
+
+      // 🔥 PAS DE VÉRIFICATION DE RÔLE ICI !
+
+      const productResult = await db.query(`
+        SELECT 
+          p.*,
+          s.company_name as supplier_company,
+          s.logo_url as supplier_logo,
+          c.name as category_name,
+          c.slug as category_slug
+        FROM products p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = $1 AND p.is_active = true
+      `, [id]);
+
+      if (productResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Produit non trouvé' 
+        });
+      }
+
+      const product = productResult.rows[0];
+
+      // Chercher promotion active
+      const promoResult = await db.query(`
+        SELECT * FROM promotions
+        WHERE supplier_id = $1
+          AND status = 'active'
+          AND start_date <= NOW()
+          AND end_date >= NOW()
+          AND (applies_to = 'all' OR 
+               EXISTS (SELECT 1 FROM promotion_products WHERE promotion_id = promotions.id AND product_id = $2))
+        ORDER BY created_at DESC
+        LIMIT 1
+      `, [product.supplier_id, id]);
+
+      const promotion = promoResult.rows[0] || null;
+      
+      let finalPrice = parseFloat(product.price);
+      let hasPromotion = false;
+      
+      if (promotion) {
+        hasPromotion = true;
+        if (promotion.type === 'percentage') {
+          finalPrice = finalPrice * (1 - promotion.value / 100);
+        } else if (promotion.type === 'fixed') {
+          finalPrice = Math.max(0, finalPrice - promotion.value);
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          product: {
+            ...product,
+            stock: product.stock_quantity,
+            stock_quantity: product.stock_quantity,
+            has_promotion: hasPromotion,
+            promotion: promotion,
+            final_price: finalPrice,
+            base_price: parseFloat(product.price),
+            original_price: parseFloat(product.price)
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('[Get Product With Promo] Error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  async getAllWithPromotions(req, res) {
+    try {
+      const { category, search, limit = 20 } = req.query;
+
+      let whereClause = 'WHERE p.is_active = true';
+      const params = [];
+      let paramIndex = 1;
+
+      if (category) {
+        whereClause += ` AND (p.category_id = $${paramIndex} OR c.slug = $${paramIndex})`;
+        params.push(category);
+        paramIndex++;
+      }
+
+      if (search) {
+        whereClause += ` AND (p.name ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+        params.push(`%${search}%`);
+        paramIndex++;
+      }
+
+      const result = await db.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.price,
+          p.compare_price,
+          p.stock_quantity,
+          p.main_image_url,
+          p.supplier_id,
+          s.company_name as supplier_company,
+          c.name as category_name,
+          EXISTS (
+            SELECT 1 FROM promotions 
+            WHERE supplier_id = p.supplier_id 
+            AND status = 'active' 
+            AND start_date <= NOW() 
+            AND end_date >= NOW()
+          ) as has_promotion
+        FROM products p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        ${whereClause}
+        ORDER BY p.created_at DESC
+        LIMIT $${paramIndex}
+      `, [...params, parseInt(limit)]);
+
+      const productsWithPromos = await Promise.all(result.rows.map(async (p) => {
+        if (!p.has_promotion) return { ...p, final_price: parseFloat(p.price) };
+
+        const promoResult = await db.query(`
+          SELECT * FROM promotions
+          WHERE supplier_id = $1 AND status = 'active' AND start_date <= NOW() AND end_date >= NOW()
+          ORDER BY created_at DESC LIMIT 1
+        `, [p.supplier_id]);
+
+        const promo = promoResult.rows[0];
+        let finalPrice = parseFloat(p.price);
+        
+        if (promo) {
+          if (promo.type === 'percentage') {
+            finalPrice = finalPrice * (1 - promo.value / 100);
+          } else if (promo.type === 'fixed') {
+            finalPrice = Math.max(0, finalPrice - promo.value);
+          }
+        }
+
+        return {
+          ...p,
+          promotion: promo,
+          final_price: finalPrice,
+          original_price: parseFloat(p.price)
+        };
+      }));
+
+      res.json({
+        success: true,
+        data: { products: productsWithPromos }
+      });
+
+    } catch (error) {
+      console.error('[Get All With Promotions] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async getFeaturedWithPromotions(req, res) {
+    try {
+      const result = await db.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.price,
+          p.compare_price,
+          p.main_image_url,
+          p.supplier_id,
+          s.company_name as supplier_company,
+          c.name as category_name
+        FROM products p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.is_active = true AND p.is_featured = true
+        ORDER BY p.created_at DESC
+        LIMIT 8
+      `);
+
+      const productsWithPromos = await Promise.all(result.rows.map(async (p) => {
+        const promoResult = await db.query(`
+          SELECT * FROM promotions
+          WHERE supplier_id = $1 AND status = 'active' AND start_date <= NOW() AND end_date >= NOW()
+          ORDER BY created_at DESC LIMIT 1
+        `, [p.supplier_id]);
+
+        const promo = promoResult.rows[0];
+        let finalPrice = parseFloat(p.price);
+        let hasPromo = false;
+        
+        if (promo) {
+          hasPromo = true;
+          if (promo.type === 'percentage') {
+            finalPrice = finalPrice * (1 - promo.value / 100);
+          } else if (promo.type === 'fixed') {
+            finalPrice = Math.max(0, finalPrice - promo.value);
+          }
+        }
+
+        return {
+          ...p,
+          has_promotion: hasPromo,
+          promotion: promo,
+          final_price: finalPrice,
+          original_price: parseFloat(p.price),
+          base_price: parseFloat(p.price)
+        };
+      }));
+
+      res.json({
+        success: true,
+        count: productsWithPromos.length,
+        promo_count: productsWithPromos.filter(p => p.has_promotion).length,
+        data: { products: productsWithPromos }
+      });
+
+    } catch (error) {
+      console.error('[Get Featured With Promotions] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // ==========================================
+  // ROUTES PROTÉGÉES (supplier uniquement)
+  // ==========================================
+
+  async create(req, res) {
+    try {
+      // 🔥 VÉRIFICATION EXPLICITE DU RÔLE (seulement ici!)
+      if (!req.user || req.user.role !== 'supplier') {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Accès réservé aux fournisseurs' 
+        });
+      }
+
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [req.user.id]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil fournisseur non trouvé' 
+        });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+      const { name, price, stock_quantity, description, category_id, main_image_url } = req.body;
+
+      const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const slug = `${baseSlug}-${Date.now()}`;
+
+      const result = await db.query(
+        `INSERT INTO products (supplier_id, name, price, stock_quantity, description, category_id, main_image_url, is_active, slug, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, NOW(), NOW()) RETURNING *`,
+        [supplierId, name, price, stock_quantity, description, category_id, main_image_url, slug]
+      );
+
+      res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+      console.error('[Create Product] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async update(req, res) {
+    try {
+      // 🔥 VÉRIFICATION EXPLICITE DU RÔLE (seulement ici!)
+      if (!req.user || req.user.role !== 'supplier') {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Accès réservé aux fournisseurs' 
+        });
+      }
+
+      const { id } = req.params;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [req.user.id]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      const checkResult = await db.query(
+        'SELECT id FROM products WHERE id = $1 AND supplier_id = $2',
+        [id, supplierId]
+      );
+
+      if (checkResult.rows.length === 0) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Produit non trouvé ou non autorisé' 
+        });
+      }
+
+      const allowedFields = {
+        name: req.body.name,
+        price: req.body.price,
+        stock_quantity: req.body.stock_quantity,
+        description: req.body.description,
+        category_id: req.body.category_id,
+        is_active: req.body.is_active,
+        main_image_url: req.body.main_image_url
+      };
+
+      const updates = {};
+      for (const [key, value] of Object.entries(allowedFields)) {
+        if (value !== undefined && value !== null) {
+          updates[key] = value;
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ success: false, message: 'Aucun champ à mettre à jour' });
+      }
+
+      const fields = Object.keys(updates);
+      const values = Object.values(updates);
+      
+      const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
+      
+      const sql = `
+        UPDATE products SET ${setClause}, updated_at = NOW()
+        WHERE id = $${fields.length + 1} AND supplier_id = $${fields.length + 2}
+        RETURNING *
+      `;
+      
+      values.push(id, supplierId);
+
+      const result = await db.query(sql, values);
+
+      res.json({ success: true, data: result.rows[0] });
+      
+    } catch (error) {
+      console.error('[Update Product] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async delete(req, res) {
+    try {
+      // 🔥 VÉRIFICATION EXPLICITE DU RÔLE (seulement ici!)
+      if (!req.user || req.user.role !== 'supplier') {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Accès réservé aux fournisseurs' 
+        });
+      }
+
+      const { id } = req.params;
+
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [req.user.id]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      const result = await db.query(
+        'DELETE FROM products WHERE id = $1 AND supplier_id = $2 RETURNING id, name',
+        [id, supplierId]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ success: false, message: 'Produit non trouvé ou non autorisé' });
+      }
+
+      res.json({ success: true, message: 'Produit supprimé', data: result.rows[0] });
+      
+    } catch (error) {
+      console.error('[Delete Product] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+}
+
+module.exports = new ProductController();
