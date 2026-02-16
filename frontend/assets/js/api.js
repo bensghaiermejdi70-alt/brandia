@@ -1,6 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - Frontend (v2.7 CORRIGÉ)
-// Corrections: Ajout getOrderById et getPayouts manquants
+// BRANDIA API CLIENT - Frontend (v2.8 CORRIGÉ)
+// Corrections: URL public campaigns corrigée, ajout gestion erreurs améliorée
 // ============================================
 
 (function() {
@@ -237,10 +237,10 @@
   };
 
   // -------------------------------
-  // Supplier API (CORRIGÉ - AJOUT getOrderById et getPayouts)
+  // Supplier API (CORRIGÉ - URL public campaigns)
   // -------------------------------
   const SupplierAPI = {
-       init: () => {
+    init: () => {
       const user = storage.getUser();
       if (!storage.getToken()) { 
         window.location.href = '../login.html?redirect=supplier/dashboard'; 
@@ -318,13 +318,12 @@
     },
     deleteProduct: async (id) => await apiFetch(`/supplier/products/${id}`, { method:'DELETE' }),
 
-    // Orders - 🔥 CORRIGÉ : Ajout getOrderById manquant
+    // Orders
     getOrders: async (status=null) => { 
       const query = status && status!=='all' ? `?status=${encodeURIComponent(status)}` : ''; 
       return await apiFetch(`/supplier/orders${query}`); 
     },
     
-    // 🔥 AJOUTÉ : Méthode getOrderById manquante
     getOrderById: async (id) => {
       try {
         return await apiFetch(`/supplier/orders/${id}`);
@@ -336,7 +335,7 @@
     
     updateOrderStatus: async (orderId, status) => await apiFetch(`/supplier/orders/${orderId}/status`, { method:'PUT', body:JSON.stringify({status}) }),
 
-    // Paiements - 🔥 CORRIGÉ : Ajout getPayouts manquant
+    // Paiements
     getPayments: async () => {
       try {
         return await apiFetch('/supplier/payments');
@@ -356,7 +355,6 @@
       });
     },
     
-    // 🔥 AJOUTÉ : Méthode getPayouts manquante (référencée dans supplier-payments.js)
     getPayouts: async () => {
       try {
         return await apiFetch('/supplier/payouts');
@@ -378,15 +376,43 @@
       method: 'DELETE' 
     }),
 
+    // 🔥 CORRECTION CRITIQUE: URL publique corrigée /supplier/public/campaigns
     getPublicCampaign: async (supplierId, productId) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/public/campaigns?supplier=${supplierId}&product=${productId}`, { 
+        const response = await fetch(`${API_BASE_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`, { 
           method:'GET', 
           headers:{'Accept':'application/json'} 
         });
         return await response.json();
       } catch { 
         return { success:false, data:null }; 
+      }
+    },
+
+    // 🔥 AJOUT: Tracking public (sans auth)
+    trackCampaignView: async (campaignId) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/public/campaigns/view`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaign_id: campaignId })
+        });
+        return await response.json();
+      } catch {
+        return { success: false };
+      }
+    },
+
+    trackCampaignClick: async (campaignId) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/public/campaigns/click`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaign_id: campaignId })
+        });
+        return await response.json();
+      } catch {
+        return { success: false };
       }
     }
   };
@@ -491,7 +517,7 @@
     config: { baseURL: API_BASE, isLocal: isLocal, apiURL: API_BASE_URL }
   };
 
-  console.log('[Brandia API] ✅ Loaded v2.7 - getOrderById & getPayouts Added');
+  console.log('[Brandia API] ✅ Loaded v2.8 - Public campaigns URL fixed');
 })();
 
 // Exposer les fonctions globales pour les onclick inline

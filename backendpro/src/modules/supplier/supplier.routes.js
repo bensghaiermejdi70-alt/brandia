@@ -1,35 +1,19 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v5.2 CORRIGÉ
+// SUPPLIER ROUTES - v5.3 CORRIGÉ
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v5.2...');
+console.log('[Supplier Routes] Loading v5.3...');
 
 // Import du controller
 let supplierController;
 try {
     supplierController = require('./supplier.controller');
     console.log('[Supplier Routes] Controller loaded');
-    
-    // Vérification que les méthodes existent
-    const requiredMethods = ['getStats', 'getProducts', 'createProduct', 'updateProduct', 'deleteProduct', 
-                             'getOrders', 'getOrderById', 'updateOrderStatus', 'getPayments', 'requestPayout', 
-                             'getPayouts', 'getPromotions', 'createPromotion', 'updatePromotion', 'deletePromotion',
-                             'getCampaigns', 'createCampaign', 'updateCampaign', 'deleteCampaign', 'toggleCampaignStatus',
-                             'getActiveCampaignForProduct', 'trackCampaignClick', 'trackCampaignView',
-                             'uploadImage', 'uploadCampaignVideo', 'uploadImageMiddleware', 'uploadVideoMiddleware'];
-    
-    const missing = requiredMethods.filter(m => typeof supplierController[m] !== 'function');
-    if (missing.length > 0) {
-        console.error('[Supplier Routes] MISSING methods:', missing);
-        throw new Error('Methodes manquantes dans le controller');
-    }
-    
 } catch (err) {
     console.error('[Supplier Routes] FAILED to load controller:', err.message);
-    // Export router vide pour éviter crash
     module.exports = router;
     return;
 }
@@ -38,17 +22,23 @@ try {
 const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
 
 // ============================================
-// ROUTES PUBLIQUES
+// ROUTES PUBLIQUES (doivent être AVANT le middleware auth)
 // ============================================
+
+// 🔥 IMPORTANT: Ces routes sont accessibles sans authentification
 router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
 router.post('/public/campaigns/view', supplierController.trackCampaignView);
 router.post('/public/campaigns/click', supplierController.trackCampaignClick);
 
 // ============================================
-// ROUTES PROTÉGÉES
+// MIDDLEWARES D'AUTHENTIFICATION (tout ce qui suit est protégé)
 // ============================================
 router.use(authenticate);
 router.use(requireRole('supplier'));
+
+// ============================================
+// ROUTES PROTÉGÉES FOURNISSEUR
+// ============================================
 
 // Stats
 router.get('/stats', supplierController.getStats);

@@ -1,6 +1,5 @@
 // ============================================
-// ROUTES PRINCIPALES - API Brandia v3.0
-// CORRECTION: Supplier routes retirées (déjà dans app.js)
+// ROUTES PRINCIPALES - API Brandia v3.1 CORRIGÉ
 // ============================================
 
 const express = require('express');
@@ -16,7 +15,7 @@ const orderRoutes = require('../modules/orders/order.routes');
 const countryRoutes = require('../modules/countries/country.routes');
 
 // ============================================
-// HEALTH CHECK
+// HEALTH CHECK (déjà dans app.js mais on garde pour compatibilité)
 // ============================================
 router.get('/health', (req, res) => {
     res.json({
@@ -30,68 +29,9 @@ router.get('/health', (req, res) => {
 });
 
 // ============================================
-// ROUTES PUBLIQUES - CAMPAGNES PUBLICITAIRES
+// 🔥 SUPPRIMÉ: La route /public/campaigns est maintenant dans supplier.routes.js
+// pour éviter les conflits et avoir toute la logique métier au même endroit
 // ============================================
-router.get('/public/campaigns', async (req, res) => {
-    try {
-        const { supplier, product } = req.query;
-        
-        console.log(`[Public Campaigns] Request: supplier=${supplier}, product=${product}`);
-
-        if (!supplier || !product) {
-            return res.status(400).json({
-                success: false,
-                message: 'Les paramètres supplier et product sont requis'
-            });
-        }
-
-        const db = require('../config/db');
-        
-        const result = await db.query(`
-            SELECT 
-                c.id,
-                c.name,
-                c.media_url,
-                c.media_type,
-                c.headline,
-                c.description,
-                c.cta_text,
-                c.cta_link,
-                c.start_date,
-                c.end_date
-            FROM supplier_campaigns c
-            WHERE c.supplier_id = $1
-                AND $2 = ANY(c.target_products)
-                AND c.status = 'active'
-                AND c.start_date <= NOW()
-                AND c.end_date >= NOW()
-            ORDER BY c.created_at DESC
-            LIMIT 1
-        `, [supplier, product]);
-
-        console.log(`[Public Campaigns] Found: ${result.rows.length} campaign(s)`);
-
-        if (result.rows.length === 0) {
-            return res.json({
-                success: true,
-                data: null,
-                message: 'Aucune campagne active trouvée'
-            });
-        }
-
-        res.json({
-            success: true,
-            data: result.rows[0]
-        });
-
-    } catch (error) {
-        console.error('[Public Campaigns] Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur lors de la récupération de la campagne'
-        });
-    }
-});
 
 // ============================================
 // ROUTE CATEGORIES
@@ -145,7 +85,7 @@ router.get('/', (req, res) => {
         service: 'Brandia API',
         version: '1.0.0',
         endpoints: {
-            public: '/api/public/campaigns?supplier=X&product=Y',
+            public: '/api/supplier/public/campaigns?supplier=X&product=Y',
             categories: '/api/categories',
             health: '/api/health'
         }

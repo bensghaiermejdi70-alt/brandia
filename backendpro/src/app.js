@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - Configuration Express Brandia v2.4
+// APP.JS - Configuration Express Brandia v2.5 CORRIGÉ
 // ============================================
 
 const express = require('express');
@@ -47,31 +47,32 @@ app.use(cors({
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ============================================
-// ROUTES
+// ROUTES - ORDRE IMPORTANT !
 // ============================================
 
 console.log('[App] Loading routes...');
 
-// Health check
+// 1. Health check (toujours accessible)
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
         timestamp: new Date().toISOString(),
         service: 'brandia-api',
-        version: '2.4.0'
+        version: '2.5.0'
     });
 });
 
-// Supplier routes
+// 2. 🔥 ROUTES SUPPLIER (montées AVANT les routes générales)
+// Cela permet d'avoir /api/supplier/* fonctionnel
 const supplierRoutes = require('./modules/supplier/supplier.routes');
 app.use('/api/supplier', supplierRoutes);
-console.log('[App] Supplier routes loaded');
+console.log('[App] Supplier routes mounted on /api/supplier');
 
-// Index routes (auth, products, orders, etc.)
+// 3. Routes générales (auth, products, orders, etc.)
 const indexRoutes = require('./routes/index');
 app.use('/api', indexRoutes);
-console.log('[App] Index routes loaded');
+console.log('[App] Index routes mounted on /api');
 
 // ============================================
 // ERROR HANDLING
