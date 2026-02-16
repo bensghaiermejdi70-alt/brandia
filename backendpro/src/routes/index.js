@@ -77,6 +77,41 @@ router.use('/orders', orderRoutes);
 router.use('/countries', countryRoutes);
 
 // ============================================
+// ROUTE PROMOTIONS PUBLIQUES (pour offre.html)
+// ============================================
+router.get('/public/promotions/active', async (req, res) => {
+    try {
+        const db = require('../config/db');
+        
+        const result = await db.query(`
+            SELECT 
+                p.*,
+                s.company_name as brand_name,
+                s.logo_url as brand_logo
+            FROM promotions p
+            JOIN suppliers s ON p.supplier_id = s.user_id
+            WHERE p.status = 'active'
+                AND p.start_date <= NOW()
+                AND p.end_date >= NOW()
+            ORDER BY p.created_at DESC
+            LIMIT 20
+        `);
+        
+        res.json({
+            success: true,
+            data: result.rows
+        });
+        
+    } catch (error) {
+        console.error('[Public Promotions] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du chargement des promotions'
+        });
+    }
+});
+
+// ============================================
 // DOCUMENTATION API
 // ============================================
 router.get('/', (req, res) => {

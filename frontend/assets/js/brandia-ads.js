@@ -37,10 +37,38 @@
 
       try {
         // 🔥 Récupérer le quota défini par Brandia pour cette marque
-        const response = await fetch(`${CONFIG.apiEndpoints.adSettings}?supplier=${supplierId}`);
-        const data = await response.json();
-        
-        if (data.success && data.data) {
+        const url = `${CONFIG.apiEndpoints.adSettings}?supplier=${supplierId}`;
+        const controller = new AbortController();
+        const timeout = 8000; // ms
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        let response;
+        try {
+          response = await fetch(url, { signal: controller.signal });
+        } catch (fetchErr) {
+          if (fetchErr.name === 'AbortError') {
+            console.warn(`[BrandiaAds] ad-settings fetch aborted (timeout ${timeout}ms) for supplier ${supplierId}`);
+          } else {
+            console.warn(`[BrandiaAds] ad-settings fetch failed for supplier ${supplierId}:`, fetchErr);
+          }
+          clearTimeout(timeoutId);
+          throw fetchErr;
+        }
+        clearTimeout(timeoutId);
+
+        if (!response || !response.ok) {
+          console.warn(`[BrandiaAds] ad-settings returned status ${response ? response.status : 'no response'} for supplier ${supplierId}`);
+          // Fallback sécurisé plus bas
+        }
+
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (parseErr) {
+          console.warn('[BrandiaAds] Unable to parse ad-settings JSON:', parseErr);
+        }
+
+        if (data && data.success && data.data) {
           this.quotas[supplierId] = {
             shownCount: 0,
             maxAllowed: data.data.max_ads_per_session || 1, // 🔥 QUOTA VARIABLE
@@ -58,7 +86,7 @@
             isDefault: true
           };
         }
-        
+
         console.log(`[BrandiaAds] Quota for supplier ${supplierId}: ${this.quotas[supplierId].maxAllowed} ads/session`);
         return this.quotas[supplierId];
         
