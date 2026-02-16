@@ -1,42 +1,66 @@
 // ============================================
-// ROUTES PRINCIPALES - API Brandia v3.1 CORRIGÉ
+// ROUTES PRINCIPALES - API Brandia v3.2 CORRIGÉ
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-const { authenticate } = require('../middlewares/auth.middleware');
+// ============================================
+// IMPORTS
+// ============================================
 
-// Import des contrôleurs et routes
 const authController = require('../modules/auth/auth.controller');
-const productRoutes = require('../modules/products/product.routes');
-const paymentRoutes = require('../modules/payments/payment.routes');
 const orderRoutes = require('../modules/orders/order.routes');
+const paymentRoutes = require('../modules/payments/payment.routes');
 const countryRoutes = require('../modules/countries/country.routes');
 
+// 🔥 Import du middleware (uniquement pour routes spécifiques)
+const { authenticate } = require('../middlewares/auth.middleware');
+
+console.log('[Routes Index] Loading v3.2...');
+
 // ============================================
-// HEALTH CHECK (déjà dans app.js mais on garde pour compatibilité)
+// ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
 // ============================================
+
+// Health check (déjà dans app.js mais gardé pour compatibilité)
 router.get('/health', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
         timestamp: new Date().toISOString(),
         service: 'brandia-api',
-        version: '1.0.0',
-        environment: process.env.NODE_ENV || 'development'
+        version: '3.2.0'
     });
 });
 
-// ============================================
-// 🔥 SUPPRIMÉ: La route /public/campaigns est maintenant dans supplier.routes.js
-// pour éviter les conflits et avoir toute la logique métier au même endroit
-// ============================================
+// Auth - Register/Login (publiques)
+router.post('/auth/register', async (req, res, next) => {
+    try {
+        await authController.register(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
 
-// ============================================
-// ROUTE CATEGORIES
-// ============================================
-router.get('/categories', async (req, res) => {
+router.post('/auth/login', async (req, res, next) => {
+    try {
+        await authController.login(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/auth/refresh', async (req, res, next) => {
+    try {
+        await authController.refresh(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Categories (100% publique)
+router.get('/categories', async (req, res, next) => {
     try {
         const db = require('../config/db');
         const result = await db.query(`
@@ -52,34 +76,12 @@ router.get('/categories', async (req, res) => {
         });
     } catch (error) {
         console.error('[Categories] Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors du chargement des catégories'
-        });
+        next(error);
     }
 });
 
-// ============================================
-// AUTH ROUTES
-// ============================================
-router.post('/auth/register', authController.register);
-router.post('/auth/login', authController.login);
-router.post('/auth/refresh', authController.refresh);
-router.get('/auth/me', authenticate, authController.me);
-router.post('/auth/logout', authenticate, authController.logout);
-
-// ============================================
-// ROUTES API (sauf supplier déjà monté dans app.js)
-// ============================================
-router.use('/products', productRoutes);
-router.use('/payments', paymentRoutes);
-router.use('/orders', orderRoutes);
-router.use('/countries', countryRoutes);
-
-// ============================================
-// ROUTE PROMOTIONS PUBLIQUES (pour offre.html)
-// ============================================
-router.get('/public/promotions/active', async (req, res) => {
+// Promotions publiques (pour offre.html)
+router.get('/public/promotions/active', async (req, res, next) => {
     try {
         const db = require('../config/db');
         
@@ -87,12 +89,15 @@ router.get('/public/promotions/active', async (req, res) => {
             SELECT 
                 p.*,
                 s.company_name as brand_name,
-                s.logo_url as brand_logo
+                s.logo_url as brand_logo,
+                COUNT(pp.product_id) as products_count
             FROM promotions p
             JOIN suppliers s ON p.supplier_id = s.user_id
+            LEFT JOIN promotion_products pp ON pp.promotion_id = p.id
             WHERE p.status = 'active'
                 AND p.start_date <= NOW()
                 AND p.end_date >= NOW()
+            GROUP BY p.id, s.company_name, s.logo_url
             ORDER BY p.created_at DESC
             LIMIT 20
         `);
@@ -104,38 +109,94 @@ router.get('/public/promotions/active', async (req, res) => {
         
     } catch (error) {
         console.error('[Public Promotions] Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors du chargement des promotions'
-        });
+        next(error);
     }
 });
 
 // ============================================
-// DOCUMENTATION API
+// 🔥 ROUTES PROTÉGÉES (AVEC AUTHENTIFICATION)
+// ============================================
+
+// Auth - Profil et Logout (protégés)
+router.get('/auth/me', authenticate, async (req, res, next) => {
+    try {
+        await authController.me(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/auth/logout', authenticate, async (req, res, next) => {
+    try {
+        await authController.logout(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Orders (protégé - mais on passe authenticate comme middleware de route)
+// 🔥 CORRECTION: On s'assure que orderRoutes n'a pas de conflit
+router.use('/orders', authenticate, (req, res, next) => {
+    // Middleware de transition pour catcher les erreurs
+    next();
+}, orderRoutes);
+
+// Payments (protégé)
+router.use('/payments', authenticate, (req, res, next) => {
+    next();
+}, paymentRoutes);
+
+// Countries (publique - pas d'authentification requise)
+// 🔥 CORRECTION: Déplacé avant les routes protégées pour clarté
+router.use('/countries', countryRoutes);
+
+// ============================================
+// DOCUMENTATION API (publique)
 // ============================================
 router.get('/', (req, res) => {
     res.json({
         success: true,
         service: 'Brandia API',
-        version: '1.0.0',
+        version: '3.2.0',
+        status: 'operational',
+        timestamp: new Date().toISOString(),
         endpoints: {
-            public: '/api/supplier/public/campaigns?supplier=X&product=Y',
-            categories: '/api/categories',
-            health: '/api/health'
+            public: {
+                health: 'GET /api/health',
+                categories: 'GET /api/categories',
+                products: 'GET /api/products',
+                promotions: 'GET /api/public/promotions/active',
+                supplier_campaigns: 'GET /api/supplier/public/campaigns?supplier=X&product=Y'
+            },
+            authentication: {
+                register: 'POST /api/auth/register',
+                login: 'POST /api/auth/login',
+                refresh: 'POST /api/auth/refresh',
+                me: 'GET /api/auth/me (protected)',
+                logout: 'POST /api/auth/logout (protected)'
+            },
+            protected: {
+                orders: '/api/orders/*',
+                payments: '/api/payments/*',
+                supplier_dashboard: '/api/supplier/*'
+            }
         }
     });
 });
 
 // ============================================
-// GESTION ERREURS 404
+// GESTION ERREURS 404 (DOIT ÊTRE DERNIER)
 // ============================================
 router.use((req, res) => {
     res.status(404).json({
         success: false,
         message: 'Endpoint non trouvé',
-        path: req.path
+        path: req.path,
+        method: req.method,
+        tip: 'Consultez GET /api pour la documentation'
     });
 });
+
+console.log('[Routes Index] ✅ Loaded successfully');
 
 module.exports = router;
