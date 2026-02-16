@@ -1,11 +1,11 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v5.3 CORRIGÉ
+// SUPPLIER ROUTES - v5.4 CORRIGÉ
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v5.3...');
+console.log('[Supplier Routes] Loading v5.4...');
 
 // Import du controller
 let supplierController;
@@ -22,16 +22,14 @@ try {
 const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
 
 // ============================================
-// ROUTES PUBLIQUES (doivent être AVANT le middleware auth)
+// ROUTES PUBLIQUES (sans authentification)
 // ============================================
-
-// 🔥 IMPORTANT: Ces routes sont accessibles sans authentification
 router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
 router.post('/public/campaigns/view', supplierController.trackCampaignView);
 router.post('/public/campaigns/click', supplierController.trackCampaignClick);
 
 // ============================================
-// MIDDLEWARES D'AUTHENTIFICATION (tout ce qui suit est protégé)
+// MIDDLEWARES D'AUTHENTIFICATION
 // ============================================
 router.use(authenticate);
 router.use(requireRole('supplier'));
@@ -49,7 +47,7 @@ router.post('/products', supplierController.createProduct);
 router.put('/products/:id', supplierController.updateProduct);
 router.delete('/products/:id', supplierController.deleteProduct);
 
-// Uploads
+// 🔥 Uploads - Les middlewares sont maintenant des fonctions valides
 router.post('/upload-image', supplierController.uploadImageMiddleware, supplierController.uploadImage);
 router.post('/upload-video', supplierController.uploadVideoMiddleware, supplierController.uploadCampaignVideo);
 

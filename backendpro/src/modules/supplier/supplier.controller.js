@@ -1172,9 +1172,9 @@ class SupplierController {
 
 const controller = new SupplierController();
 
-// Export des middlewares d'abord
-module.exports.uploadImageMiddleware = uploadImageMiddleware;
-module.exports.uploadVideoMiddleware = uploadVideoMiddleware;
+// 🔥 CORRECTION: Les middlewares multer doivent être des fonctions .single()
+module.exports.uploadImageMiddleware = uploadImageMiddleware.single('media');
+module.exports.uploadVideoMiddleware = uploadVideoMiddleware.single('media');
 
 // Export des méthodes du contrôleur
 module.exports.getPayments = controller.getPayments.bind(controller);
