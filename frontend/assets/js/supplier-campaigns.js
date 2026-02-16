@@ -592,7 +592,7 @@ window.SupplierCampaigns = {
     select.innerHTML = html;
   },
 
-  handleCtaType: function(type) {
+    handleCtaType: function(type) {
     const productSelect = document.getElementById('cta-product-select');
     const externalUrl = document.getElementById('cta-external-url');
     
@@ -603,17 +603,19 @@ window.SupplierCampaigns = {
         externalUrl.required = true;
       }
     } else {
+      // type === 'product'
       if (productSelect) {
         productSelect.classList.remove('hidden');
         productSelect.required = true;
       }
       if (externalUrl) {
-        externalInput.classList.add('hidden');
-        externalInput.required = false;
+        externalUrl.classList.add('hidden');
+        externalUrl.required = false;
+        externalUrl.value = ''; // Reset
       }
     }
   },
-
+ 
   updatePreview: function() {
     const headline = document.querySelector('[name="headline"]')?.value || 'Votre titre';
     const description = document.querySelector('[name="description"]')?.value || 'Description de votre offre...';
@@ -641,23 +643,50 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // SAUVEGARDE CAMPAGNE - CORRIGÉ
+  // SAUVEGARDE CAMPAGNE - CORRIGÉ v5.2
   // ==========================================
   
   save: async function() {
     try {
-      // Validation
+      console.log('[Campaigns] Starting save...');
+      
+      // Récupération des valeurs avec vérification
       const name = document.querySelector('[name="name"]')?.value?.trim();
       const headline = document.querySelector('[name="headline"]')?.value?.trim();
+      const description = document.querySelector('[name="description"]')?.value?.trim() || '';
+      const ctaText = document.querySelector('[name="cta_text"]')?.value?.trim() || "Voir l'offre";
       const startDate = document.querySelector('[name="start_date"]')?.value;
       const endDate = document.querySelector('[name="end_date"]')?.value;
       
+      // 🔥 CORRECTION CTA Link - Récupérer la valeur correctement
+      const ctaType = document.querySelector('[name="cta_link_type"]')?.value || 'product';
+      let ctaLink = '';
+      
+      if (ctaType === 'external') {
+        ctaLink = document.getElementById('cta-external-url')?.value?.trim() || '';
+      } else if (ctaType === 'product') {
+        const productSelect = document.getElementById('cta-product-select');
+        ctaLink = productSelect?.value || '';
+      } else if (ctaType === 'category') {
+        // Si tu ajoutes des catégories plus tard
+        ctaLink = '/catalogue.html';
+      }
+      
+      console.log('[Campaigns] CTA Type:', ctaType, 'CTA Link:', ctaLink);
+
+      // Validation
       if (!name) {
         this.showToast('Le nom de la campagne est requis', 'error');
+        document.querySelector('[name="name"]')?.focus();
         return;
       }
       if (!headline) {
         this.showToast('Le titre principal est requis', 'error');
+        document.querySelector('[name="headline"]')?.focus();
+        return;
+      }
+      if (!ctaLink) {
+        this.showToast('Le lien de destination est requis. Sélectionnez un produit ou entrez une URL.', 'error');
         return;
       }
       if (!startDate || !endDate) {
@@ -665,81 +694,100 @@ window.SupplierCampaigns = {
         return;
       }
       
-      // Récupérer produits ciblés
+      // Vérifier que la date de fin est après la date de début
+      if (new Date(endDate) <= new Date(startDate)) {
+        this.showToast('La date de fin doit être après la date de début', 'error');
+        return;
+      }
+
+      // 🔥 CORRECTION: Récupérer les produits ciblés correctement
       const targetProducts = [];
-      document.querySelectorAll('[name^="target_product_"]:checked').forEach(cb => {
+      const checkboxes = document.querySelectorAll('input[name^="target_product_"]:checked');
+      checkboxes.forEach(cb => {
         targetProducts.push(parseInt(cb.value));
       });
       
+      console.log('[Campaigns] Target products selected:', targetProducts.length);
+
       if (targetProducts.length === 0) {
         this.showToast('Sélectionnez au moins un produit cible', 'error');
         return;
       }
-      
+
       // Upload média si nouveau
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
       
-      try {
-        const uploadResult = await this.uploadMediaToCloudinary();
-        if (uploadResult) {
-          mediaUrl = uploadResult.url;
-          mediaType = uploadResult.type;
+      // Vérifier si on a un média (nouveau ou existant)
+      if (this.state.uploadedMedia) {
+        if (this.state.uploadedMedia.isNew) {
+          // Upload nécessaire
+          try {
+            this.showLoading(true);
+            const uploadResult = await this.uploadMediaToCloudinary();
+            if (uploadResult) {
+              mediaUrl = uploadResult.url;
+              mediaType = uploadResult.type;
+            }
+          } catch (uploadError) {
+            console.error('[Campaigns] Upload failed:', uploadError);
+            this.showToast('Erreur upload: ' + uploadError.message, 'error');
+            this.showLoading(false);
+            return;
+          }
+        } else if (this.state.uploadedMedia.existingUrl) {
+          // Utiliser l'URL existante (mode édition)
+          mediaUrl = this.state.uploadedMedia.existingUrl;
+          mediaType = this.state.uploadedMedia.existingType;
         }
-      } catch (uploadError) {
-        console.error('[Campaigns] Upload failed:', uploadError);
-        this.showToast('Erreur upload: ' + uploadError.message, 'error');
-        return;
       }
       
+      // Si création et pas de média, erreur
       if (!mediaUrl && !this.state.editingCampaignId) {
         this.showToast('Une image ou vidéo est requise', 'error');
         return;
       }
-      
-      // CTA Link
-      const ctaType = document.querySelector('[name="cta_link_type"]')?.value || 'product';
-      let ctaLink = '';
-      if (ctaType === 'external') {
-        ctaLink = document.getElementById('cta-external-url')?.value || '';
-      } else {
-        ctaLink = document.getElementById('cta-product-select')?.value || '';
-      }
-      
+
+      // 🔥 CORRECTION: Construction des données avec les bonnes clés pour PostgreSQL
       const campaignData = {
         name: name,
         type: 'overlay',
         media_url: mediaUrl,
         media_type: mediaType,
         headline: headline,
-        description: document.querySelector('[name="description"]')?.value || '',
-        cta_text: document.querySelector('[name="cta_text"]')?.value || "Voir l'offre",
+        description: description,
+        cta_text: ctaText,
         cta_link: ctaLink,
-        target_products: targetProducts,
-        start_date: startDate,
-        end_date: endDate
+        target_products: targetProducts, // Array d'IDs
+        start_date: startDate, // Format YYYY-MM-DD
+        end_date: endDate,     // Format YYYY-MM-DD
+        status: 'active'
       };
       
-      console.log('[Campaigns] Saving:', campaignData);
-      
+      console.log('[Campaigns] Saving data:', campaignData);
+
       this.showLoading(true);
       
       let response;
       if (this.state.editingCampaignId) {
+        console.log('[Campaigns] Updating campaign:', this.state.editingCampaignId);
         response = await BrandiaAPI.Supplier.updateCampaign(this.state.editingCampaignId, campaignData);
       } else {
+        console.log('[Campaigns] Creating new campaign');
         response = await BrandiaAPI.Supplier.createCampaign(campaignData);
       }
       
       this.showLoading(false);
       
+      console.log('[Campaigns] Save response:', response);
+
       if (response.success) {
         this.showToast(
-          this.state.editingCampaignId ? 'Campagne mise à jour' : 'Campagne créée avec succès', 
+          this.state.editingCampaignId ? 'Campagne mise à jour avec succès' : 'Campagne créée avec succès', 
           'success'
         );
         this.closeModal();
-        await this.loadCampaigns();
+        await this.loadCampaigns(); // Recharger la liste
       } else {
         throw new Error(response.message || 'Erreur lors de la sauvegarde');
       }
