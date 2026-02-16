@@ -1,21 +1,116 @@
 // ============================================
-// BRANDIA ADS SYSTEM - v2.0 PUBLIC (sans auth)
-// S'affiche pour TOUS les visiteurs (client/fournisseur/anonyme)
+// BRANDIA ADS SYSTEM - v3.0 QUOTA VARIABLE
+// Gestion du quota personnalisé par marque (défini par Brandia)
 // ============================================
 
 (function() {
   'use strict';
   
   // Éviter double chargement
-  if (window.BrandiaAds) return;
+  if (window.BrandiaAds && window.BrandiaAds.version === '3.0') return;
 
   const API_BASE = 'https://brandia-1.onrender.com/api';
   
-  // Session storage pour respecter "1x par session"
+  // Configuration
+  const CONFIG = {
+    overlayDuration: 15000, // 15 secondes
+    initDelay: 2000,        // Délai avant affichage (2s)
+    apiEndpoints: {
+      product: `${API_BASE}/products/`,
+      campaign: `${API_BASE}/public/campaigns`,
+      adSettings: `${API_BASE}/supplier/public/ad-settings`, // 🔥 NOUVEAU : quota par marque
+      trackView: `${API_BASE}/public/campaigns/view`,
+      trackClick: `${API_BASE}/public/campaigns/click`
+    }
+  };
+
+  // État par marque (pour gérer les quotas différents)
+  const BrandQuotaManager = {
+    // Structure: { supplierId: { shownCount: 0, maxAllowed: 1, dismissed: false } }
+    quotas: {},
+
+    async getQuotaForBrand(supplierId) {
+      // Si déjà en mémoire, retourner
+      if (this.quotas[supplierId]) {
+        return this.quotas[supplierId];
+      }
+
+      try {
+        // 🔥 Récupérer le quota défini par Brandia pour cette marque
+        const response = await fetch(`${CONFIG.apiEndpoints.adSettings}?supplier=${supplierId}`);
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          this.quotas[supplierId] = {
+            shownCount: 0,
+            maxAllowed: data.data.max_ads_per_session || 1, // 🔥 QUOTA VARIABLE
+            priority: data.data.priority || 5,
+            dismissed: false,
+            isDefault: data.data.is_default || false
+          };
+        } else {
+          // Fallback : 1 par défaut
+          this.quotas[supplierId] = {
+            shownCount: 0,
+            maxAllowed: 1,
+            priority: 5,
+            dismissed: false,
+            isDefault: true
+          };
+        }
+        
+        console.log(`[BrandiaAds] Quota for supplier ${supplierId}: ${this.quotas[supplierId].maxAllowed} ads/session`);
+        return this.quotas[supplierId];
+        
+      } catch (err) {
+        console.error('[BrandiaAds] Error fetching ad settings:', err);
+        // Fallback sécurisé
+        this.quotas[supplierId] = { shownCount: 0, maxAllowed: 1, priority: 5, dismissed: false, isDefault: true };
+        return this.quotas[supplierId];
+      }
+    },
+
+    canShowAd(supplierId) {
+      const quota = this.quotas[supplierId];
+      if (!quota) return false;
+      
+      // Vérifier si quota atteint
+      if (quota.shownCount >= quota.maxAllowed) {
+        console.log(`[BrandiaAds] Quota reached for supplier ${supplierId}: ${quota.shownCount}/${quota.maxAllowed}`);
+        return false;
+      }
+      
+      // Vérifier si utilisateur a fermé manuellement
+      if (quota.dismissed) {
+        console.log(`[BrandiaAds] User dismissed ads for supplier ${supplierId} this session`);
+        return false;
+      }
+      
+      return true;
+    },
+
+    incrementShown(supplierId) {
+      if (this.quotas[supplierId]) {
+        this.quotas[supplierId].shownCount++;
+      }
+    },
+
+    markDismissed(supplierId) {
+      if (this.quotas[supplierId]) {
+        this.quotas[supplierId].dismissed = true;
+      }
+    },
+
+    reset() {
+      this.quotas = {};
+    }
+  };
+
+  // Session storage legacy (pour compatibilité)
   const AdsStorage = {
     getSeenCampaigns: () => {
       try {
-        return JSON.parse(sessionStorage.getItem('brandia_seen_campaigns') || '[]');
+        return JSON.parse(sessionStorage.getItem('brandia_seen_campaigns_v3') || '[]');
       } catch {
         return [];
       }
@@ -24,28 +119,27 @@
       const seen = AdsStorage.getSeenCampaigns();
       if (!seen.includes(campaignId)) {
         seen.push(campaignId);
-        sessionStorage.setItem('brandia_seen_campaigns', JSON.stringify(seen));
+        sessionStorage.setItem('brandia_seen_campaigns_v3', JSON.stringify(seen));
       }
     },
     hasSeenCampaign: (campaignId) => {
       return AdsStorage.getSeenCampaigns().includes(campaignId);
-    },
-    reset: () => {
-      sessionStorage.removeItem('brandia_seen_campaigns');
     }
   };
 
   const BrandiaAds = {
+    version: '3.0',
     state: {
       currentCampaign: null,
+      currentSupplierId: null,
       isPlaying: false,
       timer: null,
       countdown: 15
     },
 
-    // 🔥 POINT CLÉ : Récupérer supplier_id depuis le produit, pas depuis l'auth
+    // 🔥 POINT CLÉ : Récupérer supplier_id depuis le produit + quota Brandia
     init: async function() {
-      console.log('[BrandiaAds] Initializing...');
+      console.log('[BrandiaAds] Initializing v3.0 (Quota Variable)...');
       
       // Récupérer IDs depuis l'URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -57,8 +151,8 @@
       }
 
       try {
-        // 1. D'abord récupérer les infos du produit pour avoir le supplier_id
-        const productResponse = await fetch(`${API_BASE}/products/${productId}`);
+        // 1. Récupérer les infos du produit pour avoir le supplier_id
+        const productResponse = await fetch(`${CONFIG.apiEndpoints.product}${productId}`);
         const productData = await productResponse.json();
         
         if (!productData.success || !productData.data) {
@@ -74,11 +168,20 @@
           return;
         }
 
-        console.log('[BrandiaAds] Product:', productId, 'Supplier:', supplierId);
+        this.state.currentSupplierId = supplierId;
+        console.log(`[BrandiaAds] Product: ${productId} | Supplier: ${supplierId}`);
 
-        // 2. Récupérer la campagne active pour ce fournisseur ET ce produit
+        // 2. 🔥 Récupérer le QUOTA défini par Brandia pour cette marque
+        await BrandQuotaManager.getQuotaForBrand(supplierId);
+        
+        // 3. Vérifier si on peut encore montrer une pub pour cette marque
+        if (!BrandQuotaManager.canShowAd(supplierId)) {
+          return; // Quota atteint ou utilisateur a fermé
+        }
+
+        // 4. Récupérer la campagne active
         const campaignResponse = await fetch(
-          `${API_BASE}/public/campaigns?supplier=${supplierId}&product=${productId}`
+          `${CONFIG.apiEndpoints.campaign}?supplier=${supplierId}&product=${productId}`
         );
         const campaignData = await campaignResponse.json();
 
@@ -89,13 +192,13 @@
 
         const campaign = campaignData.data;
         
-        // 3. Vérifier si déjà vue cette session
+        // 5. Vérifier si cette campagne spécifique déjà vue
         if (AdsStorage.hasSeenCampaign(campaign.id)) {
-          console.log('[BrandiaAds] Already seen this session');
+          console.log('[BrandiaAds] Campaign already seen this session');
           return;
         }
 
-        // 4. Vérifier dates de validité
+        // 6. Vérifier dates de validité
         const now = new Date();
         const startDate = new Date(campaign.start_date);
         const endDate = new Date(campaign.end_date);
@@ -105,23 +208,30 @@
           return;
         }
 
-        console.log('[BrandiaAds] Campaign found:', campaign.id);
+        console.log(`[BrandiaAds] Campaign found: ${campaign.id} | Quota: ${BrandQuotaManager.quotas[supplierId].shownCount + 1}/${BrandQuotaManager.quotas[supplierId].maxAllowed}`);
+        
         this.state.currentCampaign = campaign;
         
-        // 5. Afficher après un délai (UX : laisser voir le produit d'abord)
+        // 7. Afficher après délai UX
         setTimeout(() => {
-          this.showAd(campaign);
-        }, 2000); // 2 secondes après chargement
+          this.showAd(campaign, supplierId);
+        }, CONFIG.initDelay);
 
       } catch (error) {
         console.error('[BrandiaAds] Error:', error);
       }
     },
 
-    showAd: function(campaign) {
+    showAd: function(campaign, supplierId) {
       if (!campaign || AdsStorage.hasSeenCampaign(campaign.id)) return;
       
-      console.log('[BrandiaAds] Showing ad:', campaign.id);
+      // Double vérification quota
+      if (!BrandQuotaManager.canShowAd(supplierId)) {
+        console.log('[BrandiaAds] Quota exceeded during show attempt');
+        return;
+      }
+      
+      console.log(`[BrandiaAds] Showing ad: ${campaign.id} for supplier ${supplierId}`);
       
       // Créer l'overlay
       const overlay = document.createElement('div');
@@ -145,44 +255,65 @@
 
       const isVideo = campaign.media_type === 'video';
       const mediaHtml = isVideo 
-        ? `<video src="${campaign.media_url}" muted playsinline class="w-full h-full object-cover"></video>`
+        ? `<video src="${campaign.media_url}" muted playsinline class="w-full h-full object-cover" id="ad-video"></video>`
         : `<img src="${campaign.media_url}" class="w-full h-full object-cover" alt="${campaign.headline}">`;
 
+      // 🔥 Indicateur de quota si > 1
+      const quota = BrandQuotaManager.quotas[supplierId];
+      const quotaIndicator = quota.maxAllowed > 1 
+        ? `<span class="text-xs text-slate-500 ml-2">(${quota.shownCount + 1}/${quota.maxAllowed})</span>` 
+        : '';
+
       overlay.innerHTML = `
-        <div class="ad-container w-full max-w-lg bg-slate-900 rounded-t-2xl overflow-hidden shadow-2xl transform translate-y-full transition-transform duration-300" style="max-height: 45vh;">
+        <div class="ad-container w-full max-w-lg bg-slate-900 rounded-t-2xl overflow-hidden shadow-2xl transform translate-y-full transition-transform duration-300" style="max-height: 50vh; border-top: 3px solid #6366f1;">
           <!-- Header -->
-          <div class="flex items-center justify-between px-4 py-2 bg-slate-800/50">
-            <span class="text-xs text-indigo-400 font-medium">
-              <i class="fas fa-ad mr-1"></i> Contenu proposé par la marque
-            </span>
-            <button onclick="BrandiaAds.closeAd()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+          <div class="flex items-center justify-between px-4 py-3 bg-slate-800/50 border-b border-slate-700">
+            <div class="flex items-center">
+              <span class="text-xs text-indigo-400 font-medium flex items-center">
+                <i class="fas fa-ad mr-1.5"></i> Contenu proposé par la marque
+              </span>
+              ${quotaIndicator}
+            </div>
+            <button id="ad-close-btn" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-all">
               <i class="fas fa-times"></i>
             </button>
           </div>
           
           <!-- Media -->
-          <div class="relative aspect-video bg-slate-800">
+          <div class="relative aspect-video bg-slate-800 max-h-[200px]">
             ${mediaHtml}
             ${isVideo ? `
-              <div class="absolute bottom-2 right-2 px-2 py-1 bg-black/70 rounded text-xs text-white">
-                <span id="ad-timer">15</span>s
+              <div class="absolute bottom-3 right-3 px-2.5 py-1 bg-black/80 rounded-lg text-xs text-white font-mono">
+                <i class="fas fa-clock mr-1"></i><span id="ad-timer">15</span>s
               </div>
             ` : ''}
           </div>
           
           <!-- Content -->
-          <div class="p-4">
-            <h3 class="text-lg font-bold text-white mb-1">${campaign.headline}</h3>
-            <p class="text-sm text-slate-400 mb-3 line-clamp-2">${campaign.description || ''}</p>
+          <div class="p-4 space-y-3">
+            <div>
+              <h3 class="text-lg font-bold text-white mb-1 leading-tight">${campaign.headline}</h3>
+              <p class="text-sm text-slate-400 line-clamp-2">${campaign.description || 'Découvrez cette offre exclusive'}</p>
+            </div>
+            
             <a href="${campaign.cta_link || '#'}" 
-               onclick="BrandiaAds.trackClick()"
-               class="block w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-center rounded-lg font-medium transition-colors">
+               id="ad-cta-btn"
+               class="block w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-center rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-500/25">
               ${campaign.cta_text || 'Voir l\'offre'}
+              <i class="fas fa-arrow-right ml-2 text-sm"></i>
             </a>
+            
+            ${quota.maxAllowed > 1 ? `
+              <p class="text-xs text-center text-slate-500">
+                ${quota.shownCount + 1} sur ${quota.maxAllowed} messages de cette marque
+              </p>
+            ` : ''}
           </div>
           
-          <!-- Progress bar for video -->
-          ${isVideo ? '<div class="h-1 bg-indigo-600" id="ad-progress" style="width: 100%;"></div>' : ''}
+          <!-- Progress bar -->
+          <div class="h-1 bg-slate-800">
+            <div class="h-full bg-gradient-to-r from-indigo-500 to-violet-500" id="ad-progress" style="width: 100%; transition: width ${CONFIG.overlayDuration}ms linear;"></div>
+          </div>
         </div>
       `;
 
@@ -191,71 +322,118 @@
       // Animation d'entrée
       requestAnimationFrame(() => {
         overlay.style.opacity = '1';
-        overlay.querySelector('.ad-container').style.transform = 'translateY(0)';
+        const container = overlay.querySelector('.ad-container');
+        if (container) container.style.transform = 'translateY(0)';
+        
+        // Démarrer la barre de progression
+        setTimeout(() => {
+          const progress = document.getElementById('ad-progress');
+          if (progress) progress.style.width = '0%';
+        }, 50);
       });
 
-      // Gestion fermeture
+      // Event listeners
+      const closeBtn = document.getElementById('ad-close-btn');
+      const ctaBtn = document.getElementById('ad-cta-btn');
+
+      closeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.closeAd('dismissed');
+      });
+
+      ctaBtn.addEventListener('click', (e) => {
+        // Laisser le lien fonctionner mais tracker
+        this.trackClick();
+        this.closeAd('clicked');
+      });
+
+      // Fermer sur clic backdrop
       overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) this.closeAd();
-      });
-      
-      // Touche Echap
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') this.closeAd();
+        if (e.target === overlay) {
+          this.closeAd('dismissed');
+        }
       });
 
-      // Pour les vidéos : démarrer et timer
+      // Touche Echap
+      const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+          this.closeAd('dismissed');
+          document.removeEventListener('keydown', escapeHandler);
+        }
+      };
+      document.addEventListener('keydown', escapeHandler);
+
+      // Pour les vidéos
       if (isVideo) {
-        const video = overlay.querySelector('video');
-        video.play().catch(() => {});
-        this.startTimer(video);
+        const video = document.getElementById('ad-video');
+        if (video) {
+          video.play().catch(() => {});
+          this.startTimer(video);
+        }
+      } else {
+        // Timer pour images aussi (15s auto-close)
+        this.startTimer(null);
       }
 
-      // Marquer comme vue
+      // 🔥 Mettre à jour les compteurs
       AdsStorage.markCampaignSeen(campaign.id);
+      BrandQuotaManager.incrementShown(supplierId);
       this.trackView(campaign.id);
     },
 
     startTimer: function(video) {
       this.state.countdown = 15;
       const timerEl = document.getElementById('ad-timer');
-      const progressEl = document.getElementById('ad-progress');
       
       this.state.timer = setInterval(() => {
         this.state.countdown--;
         if (timerEl) timerEl.textContent = this.state.countdown;
-        if (progressEl) {
-          progressEl.style.width = `${(this.state.countdown / 15) * 100}%`;
-        }
         
         if (this.state.countdown <= 0) {
-          this.closeAd();
+          this.closeAd('completed');
         }
       }, 1000);
 
-      // Fermer quand vidéo finie
-      video.onended = () => this.closeAd();
+      // Fermer si vidéo finie avant les 15s
+      if (video) {
+        video.onended = () => {
+          setTimeout(() => this.closeAd('completed'), 500);
+        };
+      }
     },
 
-    closeAd: function() {
-      console.log('[BrandiaAds] Closing ad');
+    closeAd: function(reason = 'unknown') {
+      console.log(`[BrandiaAds] Closing ad: ${reason}`);
       
       if (this.state.timer) {
         clearInterval(this.state.timer);
         this.state.timer = null;
       }
 
+      // Si fermé manuellement, marquer toute la marque comme "dismissed"
+      if (reason === 'dismissed' && this.state.currentSupplierId) {
+        BrandQuotaManager.markDismissed(this.state.currentSupplierId);
+      }
+
       const overlay = document.getElementById('brandia-ad-overlay');
       if (overlay) {
         overlay.style.opacity = '0';
-        overlay.querySelector('.ad-container').style.transform = 'translateY(100%)';
-        setTimeout(() => overlay.remove(), 300);
+        const container = overlay.querySelector('.ad-container');
+        if (container) {
+          container.style.transform = 'translateY(100%)';
+        }
+        
+        setTimeout(() => {
+          overlay.remove();
+          this.state.currentCampaign = null;
+        }, 300);
       }
     },
 
     trackView: async function(campaignId) {
       try {
-        await fetch(`${API_BASE}/public/campaigns/view`, {
+        await fetch(CONFIG.apiEndpoints.trackView, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ campaign_id: campaignId })
@@ -269,7 +447,7 @@
       if (!this.state.currentCampaign) return;
       
       try {
-        await fetch(`${API_BASE}/public/campaigns/click`, {
+        await fetch(CONFIG.apiEndpoints.trackClick, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ campaign_id: this.state.currentCampaign.id })
@@ -277,20 +455,33 @@
       } catch (e) {
         console.error('[BrandiaAds] Track click error:', e);
       }
-      
-      this.closeAd();
+    },
+
+    // 🔥 API publique pour debug
+    debug: function() {
+      return {
+        state: this.state,
+        quotas: BrandQuotaManager.quotas,
+        canShowFor: (supplierId) => BrandQuotaManager.canShowAd(supplierId)
+      };
+    },
+
+    reset: function() {
+      BrandQuotaManager.reset();
+      AdsStorage.reset && AdsStorage.reset();
+      console.log('[BrandiaAds] Reset complete');
     }
   };
 
   // Exposer globalement
   window.BrandiaAds = BrandiaAds;
   
-  // Auto-init si sur page produit
+  // Auto-init
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => BrandiaAds.init());
   } else {
     BrandiaAds.init();
   }
 
-  console.log('[BrandiaAds] Loaded v2.0 - Public Mode');
+  console.log('[BrandiaAds] Loaded v3.0 - Quota Variable System');
 })();

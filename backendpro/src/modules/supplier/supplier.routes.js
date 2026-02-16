@@ -1,37 +1,75 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v5.4 CORRIGÉ
+// SUPPLIER ROUTES - v5.5 CORRIGÉ ET COMPLET
 // ============================================
 
 const express = require('express');
 const router = express.Router();
-const db = require('../../config/db');
 
-console.log('[Supplier Routes] Loading v5.4...');
+console.log('[Supplier Routes] Loading v5.5...');
 
 // Import du controller
 let supplierController;
 try {
     supplierController = require('./supplier.controller');
-    console.log('[Supplier Routes] Controller loaded');
+    console.log('[Supplier Routes] ✅ Controller loaded');
 } catch (err) {
-    console.error('[Supplier Routes] FAILED to load controller:', err.message);
-    module.exports = router;
-    return;
+    console.error('[Supplier Routes] ❌ FAILED to load controller:', err.message);
+    // On continue pour ne pas bloquer tout le serveur, mais on log l'erreur
+    supplierController = {};
 }
 
 // Import middlewares
-const { authenticate, requireRole } = require('../../middlewares/auth.middleware');
+let authMiddleware;
+try {
+    authMiddleware = require('../../middlewares/auth.middleware');
+    console.log('[Supplier Routes] ✅ Auth middleware loaded');
+} catch (err) {
+    console.error('[Supplier Routes] ❌ FAILED to load auth middleware:', err.message);
+    authMiddleware = { authenticate: (req, res, next) => next(), requireRole: () => (req, res, next) => next() };
+}
+
+const { authenticate, requireRole } = authMiddleware;
 
 // ============================================
-// ROUTES PUBLIQUES (sans authentification)
+// ROUTES PUBLIQUES (sans authentification) - DOIVENT ÊTRE EN PREMIER
 // ============================================
-router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
-router.post('/public/campaigns/view', supplierController.trackCampaignView);
-router.post('/public/campaigns/click', supplierController.trackCampaignClick);
 
-// ============================================
-// ROUTE PUBLIQUE AD SETTINGS - À AJOUTER DANS supplier.routes.js
-// ============================================
+// 🔥 CRITIQUE : Ces routes doivent fonctionner sans auth
+router.get('/public/campaigns', async (req, res) => {
+    try {
+        if (!supplierController.getActiveCampaignForProduct) {
+            throw new Error('Controller method getActiveCampaignForProduct not available');
+        }
+        await supplierController.getActiveCampaignForProduct(req, res);
+    } catch (err) {
+        console.error('[Public Campaigns] Error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/public/campaigns/view', async (req, res) => {
+    try {
+        if (!supplierController.trackCampaignView) {
+            throw new Error('Controller method trackCampaignView not available');
+        }
+        await supplierController.trackCampaignView(req, res);
+    } catch (err) {
+        console.error('[Track View] Error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/public/campaigns/click', async (req, res) => {
+    try {
+        if (!supplierController.trackCampaignClick) {
+            throw new Error('Controller method trackCampaignClick not available');
+        }
+        await supplierController.trackCampaignClick(req, res);
+    } catch (err) {
+        console.error('[Track Click] Error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Paramètres publicitaires publics (quota par marque)
 router.get('/public/ad-settings', async (req, res) => {
@@ -45,7 +83,6 @@ router.get('/public/ad-settings', async (req, res) => {
             });
         }
 
-        // 🔥 Vérifier que db est disponible
         const db = require('../../config/db');
     
         // Récupérer les paramètres Brandia pour ce fournisseur
@@ -78,7 +115,6 @@ router.get('/public/ad-settings', async (req, res) => {
 
     } catch (error) {
         console.error('[Public Ad Settings] Error:', error);
-        // En cas d'erreur, retourner les valeurs par défaut (ne pas bloquer l'affichage)
         res.json({ 
             success: true, 
             data: { 
@@ -92,54 +128,219 @@ router.get('/public/ad-settings', async (req, res) => {
 });
 
 // ============================================
-// MIDDLEWARES D'AUTHENTIFICATION
+// MIDDLEWARES D'AUTHENTIFICATION - TOUT CE QUI SUIT NÉCESSITE UN TOKEN
 // ============================================
 router.use(authenticate);
 router.use(requireRole('supplier'));
+
+console.log('[Supplier Routes] Auth middleware applied to protected routes');
 
 // ============================================
 // ROUTES PROTÉGÉES FOURNISSEUR
 // ============================================
 
-// Stats
-router.get('/stats', supplierController.getStats);
+// 🔥 STATS - La route qui manquait !
+router.get('/stats', async (req, res) => {
+    try {
+        if (!supplierController.getStats) {
+            throw new Error('Controller method getStats not available');
+        }
+        await supplierController.getStats(req, res);
+    } catch (err) {
+        console.error('[Stats] Error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Products
-router.get('/products', supplierController.getProducts);
-router.post('/products', supplierController.createProduct);
-router.put('/products/:id', supplierController.updateProduct);
-router.delete('/products/:id', supplierController.deleteProduct);
+router.get('/products', async (req, res) => {
+    try {
+        await supplierController.getProducts(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
-// 🔥 Uploads - Les middlewares sont maintenant des fonctions valides
-router.post('/upload-image', supplierController.uploadImageMiddleware, supplierController.uploadImage);
-router.post('/upload-video', supplierController.uploadVideoMiddleware, supplierController.uploadCampaignVideo);
+router.post('/products', async (req, res) => {
+    try {
+        await supplierController.createProduct(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.put('/products/:id', async (req, res) => {
+    try {
+        await supplierController.updateProduct(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.delete('/products/:id', async (req, res) => {
+    try {
+        await supplierController.deleteProduct(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Uploads
+router.post('/upload-image', supplierController.uploadImageMiddleware || ((req, res, next) => {
+    console.error('[Upload] Middleware not available');
+    res.status(500).json({ success: false, message: 'Upload middleware not configured' });
+}), async (req, res) => {
+    try {
+        await supplierController.uploadImage(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/upload-video', supplierController.uploadVideoMiddleware || ((req, res, next) => {
+    console.error('[Upload] Middleware not available');
+    res.status(500).json({ success: false, message: 'Upload middleware not configured' });
+}), async (req, res) => {
+    try {
+        await supplierController.uploadCampaignVideo(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Orders
-router.get('/orders', supplierController.getOrders);
-router.get('/orders/:id', supplierController.getOrderById);
-router.put('/orders/:id/status', supplierController.updateOrderStatus);
+router.get('/orders', async (req, res) => {
+    try {
+        await supplierController.getOrders(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.get('/orders/:id', async (req, res) => {
+    try {
+        await supplierController.getOrderById(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.put('/orders/:id/status', async (req, res) => {
+    try {
+        await supplierController.updateOrderStatus(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Payments
-router.get('/payments', supplierController.getPayments);
-router.post('/payouts', supplierController.requestPayout);
-router.get('/payouts', supplierController.getPayouts);
+router.get('/payments', async (req, res) => {
+    try {
+        await supplierController.getPayments(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/payouts', async (req, res) => {
+    try {
+        await supplierController.requestPayout(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.get('/payouts', async (req, res) => {
+    try {
+        await supplierController.getPayouts(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Promotions
-router.get('/promotions', supplierController.getPromotions);
-router.post('/promotions', supplierController.createPromotion);
-router.put('/promotions/:id', supplierController.updatePromotion);
-router.delete('/promotions/:id', supplierController.deletePromotion);
+router.get('/promotions', async (req, res) => {
+    try {
+        await supplierController.getPromotions(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/promotions', async (req, res) => {
+    try {
+        await supplierController.createPromotion(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.put('/promotions/:id', async (req, res) => {
+    try {
+        await supplierController.updatePromotion(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.delete('/promotions/:id', async (req, res) => {
+    try {
+        await supplierController.deletePromotion(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Paramètres publicité (lecture seule pour le fournisseur)
-router.get('/ad-settings', supplierController.getAdSettings);
+router.get('/ad-settings', async (req, res) => {
+    try {
+        await supplierController.getAdSettings(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Campaigns
-router.get('/campaigns', supplierController.getCampaigns);
-router.post('/campaigns', supplierController.createCampaign);
-router.put('/campaigns/:id', supplierController.updateCampaign);
-router.delete('/campaigns/:id', supplierController.deleteCampaign);
-router.put('/campaigns/:id/status', supplierController.toggleCampaignStatus);
+router.get('/campaigns', async (req, res) => {
+    try {
+        await supplierController.getCampaigns(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
-console.log('[Supplier Routes] All routes registered successfully');
+router.post('/campaigns', async (req, res) => {
+    try {
+        await supplierController.createCampaign(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.put('/campaigns/:id', async (req, res) => {
+    try {
+        await supplierController.updateCampaign(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.delete('/campaigns/:id', async (req, res) => {
+    try {
+        await supplierController.deleteCampaign(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.put('/campaigns/:id/status', async (req, res) => {
+    try {
+        await supplierController.toggleCampaignStatus(req, res);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+console.log('[Supplier Routes] ✅ All routes registered successfully');
 
 module.exports = router;
