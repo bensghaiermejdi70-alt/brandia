@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.1 CORRIGÉ
-// Upload Cloudinary fonctionnel
+// SUPPLIER CAMPAIGNS MODULE - v5.4 CORRIGÉ
+// Upload Cloudinary fonctionnel + Corrections CTA et Save
 // ============================================
 
 window.SupplierCampaigns = {
@@ -21,7 +21,7 @@ window.SupplierCampaigns = {
   // ==========================================
   
   init: async function() {
-    console.log('[Campaigns] Initializing v5.1...');
+    console.log('[Campaigns] Initializing v5.4...');
     await this.loadProducts();
     await this.loadCampaigns();
     this.initChart();
@@ -29,21 +29,31 @@ window.SupplierCampaigns = {
 
   loadProducts: async function() {
     try {
+      console.log('[Campaigns] Loading products...');
       const response = await BrandiaAPI.Supplier.getProducts();
-      console.log('[Campaigns] Products response:', response);
+      console.log('[Campaigns] Products API response:', response);
       
       let productsArray = [];
-      if (response.data && Array.isArray(response.data)) {
-        productsArray = response.data;
-      } else if (response.data && response.data.products && Array.isArray(response.data.products)) {
-        productsArray = response.data.products;
+      
+      if (response.success && response.data) {
+        if (Array.isArray(response.data)) {
+          productsArray = response.data;
+        } else if (response.data.products && Array.isArray(response.data.products)) {
+          productsArray = response.data.products;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          productsArray = response.data.data;
+        }
       }
       
       this.state.products = productsArray;
-      console.log('[Campaigns] Loaded products:', this.state.products.length);
+      console.log('[Campaigns] Products loaded:', this.state.products.length);
+      
+      return this.state.products;
+      
     } catch (error) {
       console.error('[Campaigns] Error loading products:', error);
       this.state.products = [];
+      return [];
     }
   },
 
@@ -190,7 +200,9 @@ window.SupplierCampaigns = {
   // MODAL & FORMULAIRE - CORRIGÉ
   // ==========================================
   
-  openModal: function(campaignId = null) {
+  openModal: async function(campaignId = null) {
+    console.log('[Campaigns] Opening modal, editing:', campaignId);
+    
     this.state.editingCampaignId = campaignId;
     this.state.uploadedMedia = null;
     this.state.currentMediaType = 'image';
@@ -201,6 +213,12 @@ window.SupplierCampaigns = {
       return;
     }
     
+    // 🔥 S'assurer que les produits sont chargés
+    if (!this.state.products || this.state.products.length === 0) {
+      console.log('[Campaigns] Products not loaded, loading now...');
+      await this.loadProducts();
+    }
+    
     // Reset form
     const form = document.getElementById('campaign-form');
     if (form) form.reset();
@@ -208,10 +226,8 @@ window.SupplierCampaigns = {
     // Reset UI upload
     this.resetUploadUI();
     
-    // Charger liste produits pour ciblage
+    // Charger liste produits pour ciblage et CTA
     this.renderTargetProductsList();
-    
-    // Charger produits pour CTA
     this.renderCtaProductSelect();
     
     if (campaignId) {
@@ -233,6 +249,13 @@ window.SupplierCampaigns = {
       const endInput = document.querySelector('[name="end_date"]');
       if (startInput) startInput.value = today;
       if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
+      
+      // Reset CTA à product par défaut
+      const ctaTypeSelect = document.querySelector('select[name="cta_link_type"]');
+      if (ctaTypeSelect) {
+        ctaTypeSelect.value = 'product';
+        this.handleCtaType('product');
+      }
     }
     
     modal.classList.remove('hidden');
@@ -242,16 +265,14 @@ window.SupplierCampaigns = {
   },
 
   resetUploadUI: function() {
-    // 🔥 CORRECTION CRITIQUE : Reset complet de la zone d'upload
     const dropzone = document.getElementById('campaign-dropzone');
     const fileInput = document.getElementById('campaign-media');
     
     if (fileInput) {
-      fileInput.value = ''; // Reset input file
+      fileInput.value = '';
     }
     
     if (dropzone) {
-      // Recréer le contenu initial
       dropzone.innerHTML = `
         <div id="campaign-media-placeholder">
           <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-3"></i>
@@ -273,26 +294,22 @@ window.SupplierCampaigns = {
     
     // CTA Link
     if (campaign.cta_link) {
-      const ctaTypeSelect = document.querySelector('[name="cta_link_type"]');
+      const ctaTypeSelect = document.querySelector('select[name="cta_link_type"]');
       if (ctaTypeSelect) {
         if (campaign.cta_link.startsWith('http')) {
           ctaTypeSelect.value = 'external';
           const externalInput = document.getElementById('cta-external-url');
           if (externalInput) {
             externalInput.value = campaign.cta_link;
-            externalInput.classList.remove('hidden');
           }
-          const productSelect = document.getElementById('cta-product-select');
-          if (productSelect) productSelect.classList.add('hidden');
+          this.handleCtaType('external');
         } else {
           ctaTypeSelect.value = 'product';
           const productSelect = document.getElementById('cta-product-select');
           if (productSelect) {
             productSelect.value = campaign.cta_link;
-            productSelect.classList.remove('hidden');
           }
-          const externalInput = document.getElementById('cta-external-url');
-          if (externalInput) externalInput.classList.add('hidden');
+          this.handleCtaType('product');
         }
       }
     }
@@ -312,10 +329,10 @@ window.SupplierCampaigns = {
       this.showMediaPreview(campaign.media_url, campaign.media_type);
     }
     
-    if (campaign.target_products) {
+    if (campaign.target_products && Array.isArray(campaign.target_products)) {
       setTimeout(() => {
         campaign.target_products.forEach(pid => {
-          const checkbox = document.querySelector(`[name="target_product_${pid}"]`);
+          const checkbox = document.querySelector(`input[name="target_product_${pid}"]`);
           if (checkbox) checkbox.checked = true;
         });
       }, 100);
@@ -357,7 +374,7 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // GESTION MÉDIAS - CORRIGÉ
+  // GESTION MÉDIAS
   // ==========================================
   
   handleMediaSelect: function(event) {
@@ -472,11 +489,10 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // UPLOAD CLOUDINARY - CORRIGÉ
+  // UPLOAD CLOUDINARY
   // ==========================================
   
   uploadMediaToCloudinary: async function() {
-    // Si pas de nouveau média mais média existant en édition
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
       if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
         return {
@@ -493,7 +509,7 @@ window.SupplierCampaigns = {
     console.log('[Campaigns Upload] Starting upload:', file.name, type);
 
     const formData = new FormData();
-    formData.append('media', file); // 🔥 'media' doit correspondre au nom dans multer
+    formData.append('media', file);
 
     try {
       this.showLoading(true);
@@ -502,13 +518,11 @@ window.SupplierCampaigns = {
       const fullUrl = BrandiaAPI.config.apiURL + endpoint;
       
       console.log('[Campaigns Upload] URL:', fullUrl);
-      console.log('[Campaigns Upload] Token:', localStorage.getItem('token') ? 'Present' : 'Missing');
 
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token')
-          // Ne PAS mettre Content-Type, fetch le gère automatiquement pour FormData
         },
         body: formData
       });
@@ -550,25 +564,26 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // CIBLAGE PRODUITS
+  // CIBLAGE PRODUITS - CORRIGÉ
   // ==========================================
   
   renderTargetProductsList: function() {
     const container = document.getElementById('target-products-list');
     if (!container) return;
     
-    if (this.state.products.length === 0) {
+    if (!this.state.products || this.state.products.length === 0) {
       container.innerHTML = '<div class="text-center py-4 text-slate-500 text-sm">Aucun produit disponible</div>';
       return;
     }
     
     let html = '';
     for (const p of this.state.products) {
+      const imageUrl = p.main_image_url || this.FALLBACK_IMAGE;
       html += `
         <label class="flex items-center gap-3 p-2 hover:bg-slate-700 rounded cursor-pointer">
           <input type="checkbox" name="target_product_${p.id}" value="${p.id}" 
                  class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500">
-          <img src="${p.main_image_url || this.FALLBACK_IMAGE}" class="w-10 h-10 rounded object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'">
+          <img src="${imageUrl}" class="w-10 h-10 rounded object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-white truncate">${p.name}</p>
             <p class="text-xs text-slate-500">${parseFloat(p.price).toFixed(2)} €</p>
@@ -580,46 +595,82 @@ window.SupplierCampaigns = {
     container.innerHTML = html;
   },
 
+  // 🔥 CORRIGÉ: renderCtaProductSelect avec création d'options propre
   renderCtaProductSelect: function() {
     const select = document.getElementById('cta-product-select');
-    if (!select) return;
-    
-    let html = '<option value="">Choisir un produit...</option>';
-    for (const p of this.state.products) {
-      html += `<option value="/product.html?id=${p.id}">${p.name} - ${parseFloat(p.price).toFixed(2)} €</option>`;
+    if (!select) {
+      console.error('[Campaigns] CTA product select not found');
+      return;
     }
     
-    select.innerHTML = html;
+    // Vider complètement
+    select.innerHTML = '';
+    
+    // Option par défaut
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Choisir un produit...';
+    select.appendChild(defaultOption);
+    
+    if (!this.state.products || this.state.products.length === 0) {
+      console.warn('[Campaigns] No products available for CTA select');
+      defaultOption.textContent = 'Aucun produit disponible';
+      return;
+    }
+    
+    // Ajouter les produits
+    for (const p of this.state.products) {
+      const option = document.createElement('option');
+      option.value = `/product.html?id=${p.id}`;
+      option.textContent = `${p.name} - ${parseFloat(p.price).toFixed(2)} €`;
+      select.appendChild(option);
+    }
+    
+    console.log('[Campaigns] CTA select populated with', this.state.products.length, 'products');
   },
 
-    handleCtaType: function(type) {
+  // 🔥 CORRIGÉ: handleCtaType avec gestion propre des éléments
+  handleCtaType: function(type) {
+    console.log('[Campaigns] handleCtaType called with:', type);
+    
     const productSelect = document.getElementById('cta-product-select');
     const externalUrl = document.getElementById('cta-external-url');
     
+    if (!productSelect || !externalUrl) {
+      console.error('[Campaigns] CTA elements not found:', { productSelect: !!productSelect, externalUrl: !!externalUrl });
+      return;
+    }
+    
     if (type === 'external') {
-      if (productSelect) productSelect.classList.add('hidden');
-      if (externalUrl) {
-        externalUrl.classList.remove('hidden');
-        externalUrl.required = true;
-      }
+      // Masquer select produit
+      productSelect.classList.add('hidden');
+      productSelect.required = false;
+      productSelect.value = '';
+      
+      // Afficher input URL
+      externalUrl.classList.remove('hidden');
+      externalUrl.required = true;
+      externalUrl.focus();
+      
     } else {
       // type === 'product'
-      if (productSelect) {
-        productSelect.classList.remove('hidden');
-        productSelect.required = true;
-      }
-      if (externalUrl) {
-        externalUrl.classList.add('hidden');
-        externalUrl.required = false;
-        externalUrl.value = ''; // Reset
-      }
+      // Masquer input URL
+      externalUrl.classList.add('hidden');
+      externalUrl.required = false;
+      externalUrl.value = '';
+      
+      // Afficher select produit
+      productSelect.classList.remove('hidden');
+      productSelect.required = true;
     }
+    
+    console.log('[Campaigns] CTA type changed to:', type);
   },
- 
+
   updatePreview: function() {
-    const headline = document.querySelector('[name="headline"]')?.value || 'Votre titre';
-    const description = document.querySelector('[name="description"]')?.value || 'Description de votre offre...';
-    const ctaText = document.querySelector('[name="cta_text"]')?.value || "Voir l'offre";
+    const headline = document.querySelector('input[name="headline"]')?.value || 'Votre titre';
+    const description = document.querySelector('textarea[name="description"]')?.value || 'Description de votre offre...';
+    const ctaText = document.querySelector('input[name="cta_text"]')?.value || "Voir l'offre";
     
     const headlineEl = document.getElementById('ad-preview-headline');
     const descEl = document.getElementById('ad-preview-desc');
@@ -643,128 +694,156 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // SAUVEGARDE CAMPAGNE - CORRIGÉ v5.2
+  // SAUVEGARDE CAMPAGNE - v5.4 CORRIGÉ
   // ==========================================
   
   save: async function() {
+    console.log('[Campaigns] ========== SAVE STARTED ==========');
+    
     try {
-      console.log('[Campaigns] Starting save...');
+      // Récupération des champs avec vérification complète
+      const nameField = document.querySelector('input[name="name"]');
+      const headlineField = document.querySelector('input[name="headline"]');
+      const startDateField = document.querySelector('input[name="start_date"]');
+      const endDateField = document.querySelector('input[name="end_date"]');
       
-      // Récupération des valeurs avec vérification
-      const name = document.querySelector('[name="name"]')?.value?.trim();
-      const headline = document.querySelector('[name="headline"]')?.value?.trim();
-      const description = document.querySelector('[name="description"]')?.value?.trim() || '';
-      const ctaText = document.querySelector('[name="cta_text"]')?.value?.trim() || "Voir l'offre";
-      const startDate = document.querySelector('[name="start_date"]')?.value;
-      const endDate = document.querySelector('[name="end_date"]')?.value;
+      console.log('[Campaigns] Fields found:', {
+        name: !!nameField,
+        headline: !!headlineField,
+        startDate: !!startDateField,
+        endDate: !!endDateField
+      });
       
-      // 🔥 CORRECTION CTA Link - Récupérer la valeur correctement
-      const ctaType = document.querySelector('[name="cta_link_type"]')?.value || 'product';
-      let ctaLink = '';
+      const name = nameField?.value?.trim();
+      const headline = headlineField?.value?.trim();
+      const startDate = startDateField?.value;
+      const endDate = endDateField?.value;
       
-      if (ctaType === 'external') {
-        ctaLink = document.getElementById('cta-external-url')?.value?.trim() || '';
-      } else if (ctaType === 'product') {
-        const productSelect = document.getElementById('cta-product-select');
-        ctaLink = productSelect?.value || '';
-      } else if (ctaType === 'category') {
-        // Si tu ajoutes des catégories plus tard
-        ctaLink = '/catalogue.html';
-      }
-      
-      console.log('[Campaigns] CTA Type:', ctaType, 'CTA Link:', ctaLink);
+      console.log('[Campaigns] Values:', { name, headline, startDate, endDate });
 
-      // Validation
+      // Validation avec messages explicites
       if (!name) {
+        console.error('[Campaigns] Validation failed: name empty');
         this.showToast('Le nom de la campagne est requis', 'error');
-        document.querySelector('[name="name"]')?.focus();
-        return;
+        nameField?.focus();
+        return false;
       }
+      
       if (!headline) {
+        console.error('[Campaigns] Validation failed: headline empty');
         this.showToast('Le titre principal est requis', 'error');
-        document.querySelector('[name="headline"]')?.focus();
-        return;
+        headlineField?.focus();
+        return false;
       }
-      if (!ctaLink) {
-        this.showToast('Le lien de destination est requis. Sélectionnez un produit ou entrez une URL.', 'error');
-        return;
-      }
+      
       if (!startDate || !endDate) {
+        console.error('[Campaigns] Validation failed: dates empty');
         this.showToast('Les dates de début et fin sont requises', 'error');
-        return;
+        return false;
       }
       
       // Vérifier que la date de fin est après la date de début
       if (new Date(endDate) <= new Date(startDate)) {
         this.showToast('La date de fin doit être après la date de début', 'error');
-        return;
+        return false;
       }
 
-      // 🔥 CORRECTION: Récupérer les produits ciblés correctement
+      // 🔥 CORRECTION CTA Link - Récupération robuste
+      const ctaTypeSelect = document.querySelector('select[name="cta_link_type"]');
+      const ctaType = ctaTypeSelect?.value || 'product';
+      
+      console.log('[Campaigns] CTA type select:', ctaTypeSelect);
+      console.log('[Campaigns] CTA type value:', ctaType);
+      
+      let ctaLink = '';
+      let ctaSourceElement = null;
+
+      if (ctaType === 'external') {
+        ctaSourceElement = document.getElementById('cta-external-url');
+        ctaLink = ctaSourceElement?.value?.trim();
+        console.log('[Campaigns] External URL element:', ctaSourceElement);
+      } else {
+        ctaSourceElement = document.getElementById('cta-product-select');
+        ctaLink = ctaSourceElement?.value;
+        console.log('[Campaigns] Product select element:', ctaSourceElement);
+        console.log('[Campaigns] Product select value:', ctaLink);
+        console.log('[Campaigns] Product select selectedIndex:', ctaSourceElement?.selectedIndex);
+      }
+
+      console.log('[Campaigns] CTA link result:', ctaLink);
+
+      if (!ctaLink) {
+        this.showToast('Veuillez sélectionner un produit ou entrer un lien de destination', 'error');
+        if (ctaSourceElement && !ctaSourceElement.classList.contains('hidden')) {
+          ctaSourceElement.focus();
+        }
+        return false;
+      }
+
+      // 🔥 CORRECTION: Récupération des produits ciblés
       const targetProducts = [];
       const checkboxes = document.querySelectorAll('input[name^="target_product_"]:checked');
+      console.log('[Campaigns] Target checkboxes found:', checkboxes.length);
+      
       checkboxes.forEach(cb => {
-        targetProducts.push(parseInt(cb.value));
+        const productId = parseInt(cb.value);
+        if (!isNaN(productId)) {
+          targetProducts.push(productId);
+        }
       });
       
-      console.log('[Campaigns] Target products selected:', targetProducts.length);
+      console.log('[Campaigns] Target products selected:', targetProducts);
 
       if (targetProducts.length === 0) {
         this.showToast('Sélectionnez au moins un produit cible', 'error');
-        return;
+        return false;
       }
 
-      // Upload média si nouveau
+      // Upload média si nécessaire
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
-      
-      // Vérifier si on a un média (nouveau ou existant)
-      if (this.state.uploadedMedia) {
-        if (this.state.uploadedMedia.isNew) {
-          // Upload nécessaire
-          try {
-            this.showLoading(true);
-            const uploadResult = await this.uploadMediaToCloudinary();
-            if (uploadResult) {
-              mediaUrl = uploadResult.url;
-              mediaType = uploadResult.type;
-            }
-          } catch (uploadError) {
-            console.error('[Campaigns] Upload failed:', uploadError);
-            this.showToast('Erreur upload: ' + uploadError.message, 'error');
-            this.showLoading(false);
-            return;
+
+      if (this.state.uploadedMedia?.isNew) {
+        console.log('[Campaigns] Uploading new media...');
+        try {
+          this.showLoading(true);
+          const uploadResult = await this.uploadMediaToCloudinary();
+          if (uploadResult) {
+            mediaUrl = uploadResult.url;
+            mediaType = uploadResult.type;
           }
-        } else if (this.state.uploadedMedia.existingUrl) {
-          // Utiliser l'URL existante (mode édition)
-          mediaUrl = this.state.uploadedMedia.existingUrl;
-          mediaType = this.state.uploadedMedia.existingType;
+        } catch (err) {
+          this.showLoading(false);
+          this.showToast('Erreur upload: ' + err.message, 'error');
+          return false;
         }
-      }
-      
-      // Si création et pas de média, erreur
-      if (!mediaUrl && !this.state.editingCampaignId) {
-        this.showToast('Une image ou vidéo est requise', 'error');
-        return;
+      } else if (this.state.uploadedMedia?.existingUrl) {
+        mediaUrl = this.state.uploadedMedia.existingUrl;
+        mediaType = this.state.uploadedMedia.existingType;
       }
 
-      // 🔥 CORRECTION: Construction des données avec les bonnes clés pour PostgreSQL
+      if (!mediaUrl && !this.state.editingCampaignId) {
+        this.showToast('Une image ou vidéo est requise', 'error');
+        return false;
+      }
+
+      // Construction des données
       const campaignData = {
         name: name,
         type: 'overlay',
         media_url: mediaUrl,
         media_type: mediaType,
         headline: headline,
-        description: description,
-        cta_text: ctaText,
+        description: document.querySelector('textarea[name="description"]')?.value?.trim() || '',
+        cta_text: document.querySelector('input[name="cta_text"]')?.value?.trim() || "Voir l'offre",
         cta_link: ctaLink,
-        target_products: targetProducts, // Array d'IDs
-        start_date: startDate, // Format YYYY-MM-DD
-        end_date: endDate,     // Format YYYY-MM-DD
+        target_products: targetProducts,
+        start_date: startDate,
+        end_date: endDate,
         status: 'active'
       };
-      
-      console.log('[Campaigns] Saving data:', campaignData);
+
+      console.log('[Campaigns] Sending data:', campaignData);
 
       this.showLoading(true);
       
@@ -779,23 +858,20 @@ window.SupplierCampaigns = {
       
       this.showLoading(false);
       
-      console.log('[Campaigns] Save response:', response);
+      console.log('[Campaigns] Response:', response);
 
       if (response.success) {
-        this.showToast(
-          this.state.editingCampaignId ? 'Campagne mise à jour avec succès' : 'Campagne créée avec succès', 
-          'success'
-        );
+        this.showToast(this.state.editingCampaignId ? 'Campagne mise à jour' : 'Campagne créée avec succès !', 'success');
         this.closeModal();
-        await this.loadCampaigns(); // Recharger la liste
+        await this.loadCampaigns();
       } else {
-        throw new Error(response.message || 'Erreur lors de la sauvegarde');
+        throw new Error(response.message || 'Erreur serveur');
       }
       
     } catch (error) {
       console.error('[Campaigns] Save error:', error);
-      this.showToast('Erreur: ' + error.message, 'error');
       this.showLoading(false);
+      this.showToast('Erreur: ' + error.message, 'error');
     }
   },
 
@@ -943,18 +1019,25 @@ window.SupplierCampaigns = {
 };
 
 // ==========================================
-// FONCTIONS GLOBALES
+// FONCTIONS GLOBALES - CORRIGÉES
 // ==========================================
 
 window.openCampaignModal = function() {
+  console.log('[Global] openCampaignModal called');
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.openModal();
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
   }
 };
 
 window.saveCampaign = function() {
+  console.log('[Global] saveCampaign called');
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.save();
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
+    alert('Erreur: Module campagnes non chargé');
   }
 };
 
@@ -1007,7 +1090,10 @@ window.toggleMediaType = function(type) {
 };
 
 window.handleCtaType = function(type) {
+  console.log('[Global] handleCtaType called with:', type);
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.handleCtaType(type);
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
   }
 };
