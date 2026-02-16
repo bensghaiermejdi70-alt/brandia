@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.5 CORRIGÉ
-// Correction: Récupération des champs UNIQUEMENT dans le modal campagne
+// SUPPLIER CAMPAIGNS MODULE - v5.6 CORRIGÉ
+// Upload Cloudinary fonctionnel + Corrections CTA, Save, Description
 // ============================================
 
 window.SupplierCampaigns = {
@@ -21,7 +21,7 @@ window.SupplierCampaigns = {
   // ==========================================
   
   init: async function() {
-    console.log('[Campaigns] Initializing v5.5...');
+    console.log('[Campaigns] Initializing v5.6...');
     await this.loadProducts();
     await this.loadCampaigns();
     this.initChart();
@@ -248,7 +248,7 @@ window.SupplierCampaigns = {
       const nextMonth = new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       
-      // 🔥 CORRECTION: Utiliser getFormField pour setter les valeurs par défaut
+      // Dates par défaut
       const startInput = this.getFormField('start_date');
       const endInput = this.getFormField('end_date');
       if (startInput) startInput.value = today;
@@ -262,13 +262,36 @@ window.SupplierCampaigns = {
       }
     }
     
+    // 🔥 AJOUT: Écouteurs pour la preview en temps réel
+    this.attachPreviewListeners();
+    
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
     this.updatePreview();
   },
 
-  // 🔥 NOUVELLE MÉTHODE: Récupérer un champ UNIQUEMENT dans le modal campagne
+  // 🔥 NOUVELLE MÉTHODE: Attacher les écouteurs d'événements
+  attachPreviewListeners: function() {
+    const fields = ['name', 'headline', 'description', 'cta_text'];
+    
+    fields.forEach(fieldName => {
+      const field = this.getFormField(fieldName);
+      if (field) {
+        // Retirer l'ancien écouteur s'il existe (pour éviter les doublons)
+        field.removeEventListener('input', this.previewHandler);
+        // Ajouter le nouvel écouteur
+        field.addEventListener('input', () => this.updatePreview());
+      }
+    });
+  },
+
+  // 🔥 NOUVELLE MÉTHODE: Handler pour la preview (référence pour removeEventListener)
+  previewHandler: function() {
+    window.SupplierCampaigns.updatePreview();
+  },
+
+  // 🔥 CORRECTION: getFormField cherche UNIQUEMENT dans le modal campagne
   getFormField: function(fieldName) {
     const modal = document.getElementById('campaign-modal');
     if (!modal) {
@@ -276,7 +299,6 @@ window.SupplierCampaigns = {
       return null;
     }
     
-    // Chercher uniquement dans le modal campagne
     const field = modal.querySelector(`[name="${fieldName}"]`);
     if (!field) {
       console.warn(`[Campaigns] Field "${fieldName}" not found in campaign modal`);
@@ -675,42 +697,47 @@ window.SupplierCampaigns = {
     console.log('[Campaigns] CTA type changed to:', type);
   },
 
+  // 🔥 CORRECTION: updatePreview avec protection try-catch
   updatePreview: function() {
-    const headline = this.getFormField('headline')?.value || 'Votre titre';
-    const description = this.getFormField('description')?.value || 'Description de votre offre...';
-    const ctaText = this.getFormField('cta_text')?.value || "Voir l'offre";
-    
-    const headlineEl = document.getElementById('ad-preview-headline');
-    const descEl = document.getElementById('ad-preview-desc');
-    const ctaEl = document.getElementById('ad-preview-cta');
-    const mediaEl = document.getElementById('ad-preview-media');
-    
-    if (headlineEl) headlineEl.textContent = headline;
-    if (descEl) descEl.textContent = description;
-    if (ctaEl) ctaEl.textContent = ctaText;
-    
-    if (mediaEl && this.state.uploadedMedia) {
-      const url = this.state.uploadedMedia.localUrl || this.state.uploadedMedia.existingUrl;
-      if (this.state.currentMediaType === 'video') {
-        mediaEl.innerHTML = `<video src="${url}" class="w-full h-full object-cover" muted autoplay loop></video>`;
-      } else {
-        mediaEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+    try {
+      const headline = this.getFormField('headline')?.value || 'Votre titre';
+      const description = this.getFormField('description')?.value || 'Description de votre offre...';
+      const ctaText = this.getFormField('cta_text')?.value || "Voir l'offre";
+      
+      const headlineEl = document.getElementById('ad-preview-headline');
+      const descEl = document.getElementById('ad-preview-desc');
+      const ctaEl = document.getElementById('ad-preview-cta');
+      const mediaEl = document.getElementById('ad-preview-media');
+      
+      if (headlineEl) headlineEl.textContent = headline;
+      if (descEl) descEl.textContent = description;
+      if (ctaEl) ctaEl.textContent = ctaText;
+      
+      if (mediaEl && this.state.uploadedMedia) {
+        const url = this.state.uploadedMedia.localUrl || this.state.uploadedMedia.existingUrl;
+        if (this.state.currentMediaType === 'video') {
+          mediaEl.innerHTML = `<video src="${url}" class="w-full h-full object-cover" muted autoplay loop></video>`;
+        } else {
+          mediaEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+        }
+      } else if (mediaEl) {
+        mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-2xl"></i>';
       }
-    } else if (mediaEl) {
-      mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-2xl"></i>';
+    } catch (error) {
+      console.error('[Campaigns] updatePreview error:', error);
+      // Ne pas bloquer la saisie
     }
   },
 
   // ==========================================
-  // SAUVEGARDE CAMPAGNE - v5.5 CORRIGÉ
-  // 🔥 UTILISE getFormField pour éviter les conflits de noms
+  // SAUVEGARDE CAMPAGNE - v5.6 CORRIGÉ
   // ==========================================
   
   save: async function() {
     console.log('[Campaigns] ========== SAVE STARTED ==========');
     
     try {
-      // 🔥 CORRECTION CRITIQUE: Utiliser getFormField pour chercher UNIQUEMENT dans le modal
+      // 🔥 CORRECTION: Utiliser getFormField pour chercher UNIQUEMENT dans le modal
       const nameField = this.getFormField('name');
       const headlineField = this.getFormField('headline');
       const startDateField = this.getFormField('start_date');
@@ -723,10 +750,6 @@ window.SupplierCampaigns = {
         endDate: !!endDateField
       });
       
-      // 🔥 DEBUG: Vérifier les valeurs brutes
-      console.log('[Campaigns] nameField value:', nameField?.value);
-      console.log('[Campaigns] nameField outerHTML:', nameField?.outerHTML?.substring(0, 100));
-      
       const name = nameField?.value?.trim();
       const headline = headlineField?.value?.trim();
       const startDate = startDateField?.value;
@@ -736,14 +759,14 @@ window.SupplierCampaigns = {
 
       // Validation
       if (!name) {
-        console.error('[Campaigns] Validation failed: name is empty');
+        console.error('[Campaigns] Validation failed: name empty');
         this.showToast('Le nom de la campagne est requis', 'error');
         nameField?.focus();
         return false;
       }
       
       if (!headline) {
-        console.error('[Campaigns] Validation failed: headline is empty');
+        console.error('[Campaigns] Validation failed: headline empty');
         this.showToast('Le titre principal est requis', 'error');
         headlineField?.focus();
         return false;
@@ -1029,6 +1052,8 @@ window.openCampaignModal = function() {
   console.log('[Global] openCampaignModal called');
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.openModal();
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
   }
 };
 
@@ -1093,5 +1118,7 @@ window.handleCtaType = function(type) {
   console.log('[Global] handleCtaType called with:', type);
   if (window.SupplierCampaigns) {
     window.SupplierCampaigns.handleCtaType(type);
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
   }
 };

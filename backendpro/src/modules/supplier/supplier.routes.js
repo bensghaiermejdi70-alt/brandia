@@ -4,6 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
+const db = require('../../config/db');
 
 console.log('[Supplier Routes] Loading v5.4...');
 
@@ -27,6 +28,68 @@ const { authenticate, requireRole } = require('../../middlewares/auth.middleware
 router.get('/public/campaigns', supplierController.getActiveCampaignForProduct);
 router.post('/public/campaigns/view', supplierController.trackCampaignView);
 router.post('/public/campaigns/click', supplierController.trackCampaignClick);
+
+// ============================================
+// ROUTE PUBLIQUE AD SETTINGS - À AJOUTER DANS supplier.routes.js
+// ============================================
+
+// Paramètres publicitaires publics (quota par marque)
+router.get('/public/ad-settings', async (req, res) => {
+    try {
+        const { supplier } = req.query;
+    
+        if (!supplier) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'supplier required' 
+            });
+        }
+
+        // 🔥 Vérifier que db est disponible
+        const db = require('../../config/db');
+    
+        // Récupérer les paramètres Brandia pour ce fournisseur
+        const result = await db.query(`
+            SELECT max_ads_per_session, priority, is_active
+            FROM supplier_ad_settings
+            WHERE supplier_id = $1 AND is_active = true
+        `, [supplier]);
+
+        if (result.rows.length === 0) {
+            // Par défaut : 1 pub par session
+            return res.json({
+                success: true,
+                data: { 
+                    max_ads_per_session: 1, 
+                    priority: 5,
+                    is_default: true
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                max_ads_per_session: parseInt(result.rows[0].max_ads_per_session) || 1,
+                priority: parseInt(result.rows[0].priority) || 5,
+                is_default: false
+            }
+        });
+
+    } catch (error) {
+        console.error('[Public Ad Settings] Error:', error);
+        // En cas d'erreur, retourner les valeurs par défaut (ne pas bloquer l'affichage)
+        res.json({ 
+            success: true, 
+            data: { 
+                max_ads_per_session: 1, 
+                priority: 5,
+                is_default: true,
+                error: 'database_error'
+            }
+        });
+    }
+});
 
 // ============================================
 // MIDDLEWARES D'AUTHENTIFICATION
@@ -66,6 +129,9 @@ router.get('/promotions', supplierController.getPromotions);
 router.post('/promotions', supplierController.createPromotion);
 router.put('/promotions/:id', supplierController.updatePromotion);
 router.delete('/promotions/:id', supplierController.deletePromotion);
+
+// Paramètres publicité (lecture seule pour le fournisseur)
+router.get('/ad-settings', supplierController.getAdSettings);
 
 // Campaigns
 router.get('/campaigns', supplierController.getCampaigns);

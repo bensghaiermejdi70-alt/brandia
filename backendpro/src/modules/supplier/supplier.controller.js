@@ -1131,6 +1131,67 @@ class SupplierController {
         return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
       }
       
+
+  /* ================= PARAMÈTRES PUBLICITÉ (BRANDIA) ================= */
+
+  async getAdSettings(req, res) {
+    try {
+      const userId = req.user.id;
+      
+      const supplierResult = await db.query(
+        'SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      
+      if (supplierResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+      }
+      
+      const supplierId = supplierResult.rows[0].id;
+
+      const result = await db.query(`
+        SELECT max_ads_per_session, daily_budget, priority, is_active, notes
+        FROM supplier_ad_settings
+        WHERE supplier_id = $1
+      `, [supplierId]);
+
+      if (result.rows.length === 0) {
+        // Créer les paramètres par défaut si inexistant
+        await db.query(`
+          INSERT INTO supplier_ad_settings (supplier_id, max_ads_per_session, notes)
+          VALUES ($1, 1, 'Configuration par défaut')
+        `, [supplierId]);
+        
+        return res.json({
+          success: true,
+          data: {
+            max_ads_per_session: 1,
+            daily_budget: null,
+            priority: 5,
+            is_active: true,
+            ads_shown_this_session: 0
+          }
+        });
+      }
+
+      const settings = result.rows[0];
+      
+      res.json({
+        success: true,
+        data: {
+          max_ads_per_session: parseInt(settings.max_ads_per_session),
+          daily_budget: settings.daily_budget !== null ? parseFloat(settings.daily_budget) : null,
+          priority: parseInt(settings.priority),
+          is_active: settings.is_active,
+          notes: settings.notes
+        }
+      });
+
+    } catch (error) {
+      console.error('[Get Ad Settings] Error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
       const supplierId = supplierResult.rows[0].id;
 
       const [sales, orders, products, campaigns, balance] = await Promise.all([
@@ -1202,3 +1263,4 @@ module.exports.getActiveCampaignForProduct = controller.getActiveCampaignForProd
 module.exports.trackCampaignClick = controller.trackCampaignClick.bind(controller);
 module.exports.trackCampaignView = controller.trackCampaignView.bind(controller);
 module.exports.getStats = controller.getStats.bind(controller);
+module.exports.getAdSettings = controller.getAdSettings.bind(controller);
