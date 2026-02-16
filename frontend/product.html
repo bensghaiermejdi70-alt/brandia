@@ -349,10 +349,24 @@
   <!-- ========================================== -->
   <!-- SCRIPTS -->
   <!-- ========================================== -->
-  
-    <script src="assets/js/api.js"></script>
-    <script src="assets/js/brandia-ads.js"></script>
-  
+  <!-- ========================================== -->
+  <!-- SCRIPTS - ORDRE CRITIQUE -->
+  <!-- ========================================== -->
+
+  <!-- 1. API Client (doit être chargé en PREMIER) -->
+  <script src="assets/js/api.js"></script>
+
+  <!-- 2. Modules supplier (si connecté) -->
+  <script src="assets/js/supplier-products.js"></script>
+  <script src="assets/js/supplier-orders.js"></script>
+  <script src="assets/js/supplier-campaigns.js"></script>
+  <script src="assets/js/supplier-payments.js"></script>
+  <script src="assets/js/supplier-promotions.js"></script>
+  <script src="assets/js/supplier-dashboard.js"></script>
+
+  <!-- 3. Système de publicité (doit être chargé APRÈS api.js) -->
+  <script src="assets/js/brandia-ads.js"></script>
+
   <script>
     window.currentProduct = null;
 
