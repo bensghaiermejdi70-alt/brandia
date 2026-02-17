@@ -3,66 +3,89 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Brandia – La marketplace des marques</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
+        /* RESET CSS COMPLET */
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
-            line-height: 1.6;
+        html, body {
+            width: 100%;
+            min-height: 100%;
             overflow-x: hidden;
         }
 
-        /* Header */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0a0a0a;
+            color: #ffffff;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* HEADER FIXE */
         header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
+            width: 100%;
+            height: 70px;
+            background: rgba(10, 10, 10, 0.98);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
         }
 
         .header-container {
+            width: 100%;
             max-width: 1400px;
             margin: 0 auto;
-            padding: 1rem 2rem;
+            padding: 0 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 100%;
         }
 
         .logo {
             font-size: 1.8rem;
-            font-weight: 800;
+            font-weight: 900;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         nav {
             display: flex;
-            gap: 2rem;
             align-items: center;
+            gap: 2rem;
+            margin: 0 2rem;
         }
 
         nav a {
             color: #a0a0a0;
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
         nav a:hover {
@@ -71,18 +94,22 @@
 
         .header-actions {
             display: flex;
-            gap: 1rem;
             align-items: center;
+            gap: 1rem;
+            flex-shrink: 0;
         }
 
         .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
             font-weight: 600;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
             border: none;
-            font-size: 0.95rem;
+            outline: none;
+            font-family: inherit;
+            white-space: nowrap;
         }
 
         .btn-outline {
@@ -107,22 +134,21 @@
         }
 
         #dashboard-btn {
-            display: none;
+            display: none !important;
         }
 
         #dashboard-btn.visible {
-            display: inline-flex;
+            display: inline-flex !important;
             align-items: center;
             gap: 0.5rem;
         }
 
-        /* Hero Section */
+        /* HERO SECTION - LAYOUT FORCÉ SIDE-BY-SIDE */
         .hero {
+            width: 100%;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            padding: 8rem 2rem 4rem;
-            background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0a 70%);
+            padding-top: 70px;
+            background: radial-gradient(ellipse at top right, #1a1a2e 0%, #0a0a0a 60%);
             position: relative;
             overflow: hidden;
         }
@@ -130,12 +156,13 @@
         .hero::before {
             content: '';
             position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 800px;
-            height: 800px;
+            top: -20%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
             background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
             animation: pulse 8s ease-in-out infinite;
+            pointer-events: none;
         }
 
         @keyframes pulse {
@@ -144,19 +171,27 @@
         }
 
         .hero-container {
+            width: 100%;
             max-width: 1400px;
             margin: 0 auto;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            padding: 4rem 2rem;
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between;
             align-items: center;
+            gap: 4rem;
+            min-height: calc(100vh - 70px);
+        }
+
+        .hero-content {
+            flex: 1 1 50% !important;
+            max-width: 600px;
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
         .hero-content h1 {
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: 800;
             line-height: 1.1;
             margin-bottom: 1.5rem;
@@ -174,87 +209,118 @@
         }
 
         .hero-content p {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             color: #a0a0a0;
             margin-bottom: 2rem;
-            max-width: 500px;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .hero-buttons .btn {
+            padding: 1rem 2rem;
+            font-size: 1rem;
         }
 
         .hero-stats {
             display: flex;
             gap: 3rem;
-            margin-top: 3rem;
         }
 
         .stat-item {
-            text-align: left;
+            display: flex;
+            flex-direction: column;
         }
 
         .stat-number {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 800;
             color: #667eea;
+            line-height: 1;
         }
 
         .stat-label {
             color: #666;
             font-size: 0.9rem;
+            margin-top: 0.3rem;
         }
 
-        .hero-image {
-            position: relative;
+        .hero-image-container {
+            flex: 1 1 50% !important;
             display: flex;
             justify-content: center;
             align-items: center;
+            position: relative;
+            z-index: 2;
         }
 
-        .hero-image img {
+        .hero-image-wrapper {
+            position: relative;
             width: 100%;
-            max-width: 600px;
+            max-width: 550px;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: auto;
             border-radius: 24px;
-            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
-            object-fit: cover;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+            display: block;
         }
 
         .floating-card {
             position: absolute;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             padding: 1rem 1.5rem;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            font-weight: 500;
             animation: float 6s ease-in-out infinite;
+            white-space: nowrap;
         }
 
         .floating-card.top-right {
-            top: 10%;
-            right: 0%;
+            top: 5%;
+            right: -5%;
             animation-delay: 0s;
         }
 
         .floating-card.bottom-left {
-            bottom: 20%;
+            bottom: 15%;
             left: -10%;
             animation-delay: 3s;
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+            50% { transform: translateY(-15px); }
         }
 
-        /* Categories Section */
-        .categories {
-            padding: 6rem 2rem;
-            background: #0a0a0a;
+        /* SECTIONS COMMUNES */
+        section {
+            width: 100%;
+            padding: 5rem 2rem;
+        }
+
+        .section-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .section-header {
-            max-width: 1400px;
-            margin: 0 auto 3rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 3rem;
         }
 
         .section-title {
@@ -269,30 +335,39 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            transition: gap 0.3s;
+        }
+
+        .see-all:hover {
+            gap: 1rem;
+        }
+
+        /* CATEGORIES - GRILLE FORCÉE */
+        .categories {
+            background: #0a0a0a;
         }
 
         .categories-grid {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
             gap: 1.5rem;
+            width: 100%;
         }
 
         .category-card {
             background: linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 2.5rem 2rem;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
         }
 
         .category-card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-10px) scale(1.02);
             border-color: rgba(102, 126, 234, 0.5);
-            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 25px 50px rgba(102, 126, 234, 0.2);
         }
 
         .category-icon {
@@ -305,7 +380,7 @@
         }
 
         .category-name {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
@@ -315,18 +390,16 @@
             font-size: 0.9rem;
         }
 
-        /* Products Section */
+        /* PRODUCTS - GRILLE FORCÉE */
         .products {
-            padding: 6rem 2rem;
             background: linear-gradient(180deg, #0a0a0a 0%, #111 100%);
         }
 
         .products-grid {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
             gap: 2rem;
+            width: 100%;
         }
 
         .product-card {
@@ -334,55 +407,33 @@
             border-radius: 20px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
         }
 
         .product-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .product-image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            overflow: hidden;
+            background: #222;
         }
 
         .product-image {
             width: 100%;
-            height: 280px;
+            height: 100%;
             object-fit: cover;
-            background: #222;
+            transition: transform 0.5s;
         }
 
-        .product-info {
-            padding: 1.5rem;
-        }
-
-        .product-brand {
-            color: #667eea;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        .product-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .product-price {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .product-original-price {
-            text-decoration: line-through;
-            color: #666;
-            font-size: 0.9rem;
-            margin-left: 0.5rem;
+        .product-card:hover .product-image {
+            transform: scale(1.1);
         }
 
         .discount-badge {
@@ -395,20 +446,80 @@
             border-radius: 20px;
             font-weight: 700;
             font-size: 0.85rem;
+            z-index: 2;
         }
 
-        /* Features Section */
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-brand {
+            color: #667eea;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-price-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .product-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .product-original-price {
+            text-decoration: line-through;
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* LOADER */
+        .loader-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* FEATURES - GRILLE FORCÉE */
         .features {
-            padding: 6rem 2rem;
             background: #0a0a0a;
         }
 
         .features-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
             gap: 3rem;
+            width: 100%;
         }
 
         .feature-card {
@@ -417,35 +528,42 @@
         }
 
         .feature-icon {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             margin: 0 auto 1.5rem;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
-            border-radius: 24px;
+            border-radius: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 2.2rem;
             color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1) rotate(5deg);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
         }
 
         .feature-title {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             font-weight: 700;
             margin-bottom: 1rem;
         }
 
         .feature-desc {
             color: #888;
-            line-height: 1.7;
+            line-height: 1.8;
+            font-size: 1rem;
         }
 
-        /* CTA Section */
+        /* CTA SECTION */
         .cta {
-            padding: 6rem 2rem;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             position: relative;
             overflow: hidden;
+            text-align: center;
         }
 
         .cta::before {
@@ -455,16 +573,15 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23667eea" fill-opacity="0.05"><path d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></g></g></svg>');
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23667eea' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             opacity: 0.5;
         }
 
-        .cta-container {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
+        .cta-content {
             position: relative;
             z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .cta h2 {
@@ -476,37 +593,49 @@
         .cta p {
             font-size: 1.2rem;
             color: #a0a0a0;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
-        /* Footer */
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-buttons .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* FOOTER */
         footer {
             background: #050505;
-            padding: 4rem 2rem 2rem;
+            padding: 5rem 2rem 2rem;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .footer-grid {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
+            display: grid !important;
+            grid-template-columns: 2fr 1fr 1fr 1fr !important;
             gap: 4rem;
-            margin-bottom: 3rem;
+            max-width: 1400px;
+            margin: 0 auto 4rem;
         }
 
         .footer-brand .logo {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             display: inline-block;
         }
 
         .footer-brand p {
             color: #666;
-            line-height: 1.7;
+            line-height: 1.8;
+            font-size: 0.95rem;
         }
 
         .footer-column h4 {
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 700;
             margin-bottom: 1.5rem;
             color: #ffffff;
@@ -523,11 +652,13 @@
         .footer-column a {
             color: #666;
             text-decoration: none;
-            transition: color 0.3s;
+            transition: all 0.3s;
+            font-size: 0.95rem;
         }
 
         .footer-column a:hover {
             color: #667eea;
+            padding-left: 5px;
         }
 
         .footer-bottom {
@@ -548,8 +679,8 @@
         }
 
         .social-links a {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.05);
             display: flex;
@@ -557,85 +688,246 @@
             justify-content: center;
             color: #888;
             transition: all 0.3s;
+            text-decoration: none;
         }
 
         .social-links a:hover {
             background: #667eea;
             color: #ffffff;
+            transform: translateY(-3px);
         }
 
-        /* Loader */
-        .loader {
+        /* MODALS */
+        .modal-overlay {
             display: none;
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(102, 126, 234, 0.3);
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 2rem auto;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .modal-overlay.active {
+            display: flex;
         }
 
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .hero-content h1 {
-                font-size: 3rem;
+        .modal {
+            background: #1a1a1a;
+            border-radius: 24px;
+            padding: 2.5rem;
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: modalSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
             }
-            
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #ffffff;
+        }
+
+        .modal h3 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal p {
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: #0f0f0f;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .role-option {
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: #0f0f0f;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .role-option:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .role-option.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .role-option i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+
+        .role-option div {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .role-option small {
+            color: #666;
+            font-size: 0.75rem;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+        }
+
+        .modal-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .modal-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* RESPONSIVE - BREAKPOINTS CLAIRES */
+        @media (max-width: 1200px) {
             .categories-grid,
             .products-grid {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(3, 1fr) !important;
             }
         }
 
         @media (max-width: 992px) {
             .hero-container {
-                grid-template-columns: 1fr;
+                flex-direction: column !important;
                 text-align: center;
+                gap: 3rem;
+                padding-top: 3rem;
             }
 
-            .hero-content p {
-                margin-left: auto;
-                margin-right: auto;
+            .hero-content {
+                max-width: 100%;
+            }
+
+            .hero-content h1 {
+                font-size: 3rem;
+            }
+
+            .hero-buttons {
+                justify-content: center;
             }
 
             .hero-stats {
                 justify-content: center;
             }
 
-            .hero-image {
+            .hero-image-container {
                 order: -1;
             }
 
+            .hero-image-wrapper {
+                max-width: 450px;
+            }
+
+            .floating-card {
+                display: none;
+            }
+
             .features-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
+                gap: 2rem;
             }
 
             .footer-grid {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 3rem;
             }
         }
 
         @media (max-width: 768px) {
             .header-container {
-                flex-wrap: wrap;
-                gap: 1rem;
+                padding: 0 1rem;
             }
 
             nav {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                gap: 1rem;
+                display: none;
             }
 
             .categories-grid,
             .products-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 1rem;
             }
 
             .hero-content h1 {
@@ -647,39 +939,55 @@
             }
 
             .cta h2 {
-                font-size: 2rem;
+                font-size: 2.2rem;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr !important;
+                gap: 2.5rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 1.5rem;
+                text-align: center;
             }
         }
 
         @media (max-width: 480px) {
             .categories-grid,
             .products-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
             }
 
-            .footer-grid {
-                grid-template-columns: 1fr;
-                gap: 2rem;
+            .hero-content h1 {
+                font-size: 2rem;
             }
 
-            .footer-bottom {
+            .hero-stats {
                 flex-direction: column;
-                gap: 1rem;
+                gap: 1.5rem;
+            }
+
+            .stat-item {
                 text-align: center;
+            }
+
+            .role-selector {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <!-- HEADER -->
     <header>
         <div class="header-container">
             <div class="logo">Brandia</div>
             <nav>
                 <a href="#categories">Catégories</a>
-                <a href="#products">Produits</a>
-                <a href="#features">Avantages</a>
-                <a href="#" onclick="showSupplierModal()">Devenir vendeur</a>
+                <a href="#products">Nouveautés</a>
+                <a href="#features">À propos</a>
             </nav>
             <div class="header-actions">
                 <button id="dashboard-btn" class="btn btn-outline" onclick="goToDashboard()">
@@ -691,134 +999,160 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
+    <!-- HERO SECTION -->
     <section class="hero">
         <div class="hero-container">
             <div class="hero-content">
                 <h1>Achetez directement <span>chez les marques</span></h1>
                 <p>Produits authentiques, livraison par la marque, commission réduite. Découvrez des milliers de produits originaux directement auprès des créateurs.</p>
-                <button class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;" onclick="scrollToProducts()">
-                    Découvrir les produits <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
-                </button>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" onclick="scrollToSection('products')">
+                        Explorer le catalogue <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
+                    </button>
+                    <button class="btn btn-outline" onclick="showSupplierModal()">
+                        Devenir vendeur
+                    </button>
+                </div>
                 <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">50+</div>
+                        <div class="stat-label">Marques partenaires</div>
+                    </div>
                     <div class="stat-item">
                         <div class="stat-number">1000+</div>
                         <div class="stat-label">Produits disponibles</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">200+</div>
-                        <div class="stat-label">Marques partenaires</div>
+                        <div class="stat-number">28</div>
+                        <div class="stat-label">Pays desservis</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">50k+</div>
-                        <div class="stat-label">Clients satisfaits</div>
+                        <div class="stat-number">48h</div>
+                        <div class="stat-label">Livraison moyenne</div>
                     </div>
                 </div>
             </div>
-            <div class="hero-image">
-                <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80" alt="Shopping">
-                <div class="floating-card top-right">
-                    <i class="fas fa-check-circle" style="color: #667eea;"></i> Authenticité garantie
-                </div>
-                <div class="floating-card bottom-left">
-                    <i class="fas fa-shipping-fast" style="color: #667eea;"></i> Livraison 24-48h
+            <div class="hero-image-container">
+                <div class="hero-image-wrapper">
+                    <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80" 
+                         alt="Shopping Brandia" 
+                         class="hero-image">
+                    <div class="floating-card top-right">
+                        <i class="fas fa-check-circle" style="color: #667eea; margin-right: 0.5rem;"></i>
+                        Authenticité garantie
+                    </div>
+                    <div class="floating-card bottom-left">
+                        <i class="fas fa-shipping-fast" style="color: #667eea; margin-right: 0.5rem;"></i>
+                        Livraison 24-48h
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Categories Section -->
+    <!-- CATEGORIES SECTION -->
     <section class="categories" id="categories">
-        <div class="section-header">
-            <h2 class="section-title">Nos catégories</h2>
-            <a href="#" class="see-all">Voir tout <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="categories-grid">
-            <div class="category-card">
-                <div class="category-icon"><i class="fas fa-tshirt"></i></div>
-                <div class="category-name">Mode</div>
-                <div class="category-count">320 produits</div>
+        <div class="section-container">
+            <div class="section-header">
+                <h2 class="section-title">Nos catégories</h2>
+                <a href="#" class="see-all">Voir tout <i class="fas fa-arrow-right"></i></a>
             </div>
-            <div class="category-card">
-                <div class="category-icon"><i class="fas fa-mobile-alt"></i></div>
-                <div class="category-name">Tech</div>
-                <div class="category-count">180 produits</div>
-            </div>
-            <div class="category-card">
-                <div class="category-icon"><i class="fas fa-home"></i></div>
-                <div class="category-name">Maison</div>
-                <div class="category-count">245 produits</div>
-            </div>
-            <div class="category-card">
-                <div class="category-icon"><i class="fas fa-spa"></i></div>
-                <div class="category-name">Beauté</div>
-                <div class="category-count">156 produits</div>
+            <div class="categories-grid">
+                <div class="category-card" onclick="filterByCategory('mode')">
+                    <div class="category-icon"><i class="fas fa-tshirt"></i></div>
+                    <div class="category-name">Mode</div>
+                    <div class="category-count">320 produits</div>
+                </div>
+                <div class="category-card" onclick="filterByCategory('tech')">
+                    <div class="category-icon"><i class="fas fa-mobile-alt"></i></div>
+                    <div class="category-name">Tech</div>
+                    <div class="category-count">180 produits</div>
+                </div>
+                <div class="category-card" onclick="filterByCategory('maison')">
+                    <div class="category-icon"><i class="fas fa-home"></i></div>
+                    <div class="category-name">Maison</div>
+                    <div class="category-count">245 produits</div>
+                </div>
+                <div class="category-card" onclick="filterByCategory('beaute')">
+                    <div class="category-icon"><i class="fas fa-spa"></i></div>
+                    <div class="category-name">Beauté</div>
+                    <div class="category-count">156 produits</div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Products Section -->
+    <!-- PRODUCTS SECTION -->
     <section class="products" id="products">
-        <div class="section-header">
-            <h2 class="section-title">Nos meilleures offres</h2>
-            <a href="#" class="see-all">Voir tout <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div id="products-loader" class="loader"></div>
-        <div class="products-grid" id="products-grid">
-            <!-- Products will be loaded dynamically -->
+        <div class="section-container">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Nos meilleures offres</h2>
+                    <p style="color: #888; margin-top: 0.5rem;">Profitez de nos promotions exclusives</p>
+                </div>
+                <a href="#" class="see-all">Voir tout le catalogue <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div id="products-loader" class="loader-container">
+                <div class="loader"></div>
+            </div>
+            <div class="products-grid" id="products-grid" style="display: none;">
+                <!-- Produits injectés par JS -->
+            </div>
         </div>
     </section>
 
-    <!-- Features Section -->
+    <!-- FEATURES SECTION -->
     <section class="features" id="features">
-        <div class="section-header" style="justify-content: center; margin-bottom: 4rem;">
-            <h2 class="section-title">Pourquoi Brandia ?</h2>
-        </div>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                <h3 class="feature-title">Produits authentiques</h3>
-                <p class="feature-desc">Achetez directement auprès des marques officielles, garantie authenticité 100%.</p>
+        <div class="section-container">
+            <div class="section-header" style="justify-content: center; margin-bottom: 4rem;">
+                <h2 class="section-title">Pourquoi Brandia ?</h2>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-shipping-fast"></i></div>
-                <h3 class="feature-title">Livraison rapide</h3>
-                <p class="feature-desc">Expédition directe par les marques, livraison en 24-48h selon votre localisation.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-tags"></i></div>
-                <h3 class="feature-title">Prix justes</h3>
-                <p class="feature-desc">Commission modulable, les meilleurs prix pour les marques et les clients.</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h3 class="feature-title">Produits authentiques</h3>
+                    <p class="feature-desc">Achetez directement auprès des marques officielles, garantie authenticité 100%.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-shipping-fast"></i></div>
+                    <h3 class="feature-title">Livraison rapide</h3>
+                    <p class="feature-desc">Expédition directe par les marques, livraison en 24-48h selon votre localisation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-tags"></i></div>
+                    <h3 class="feature-title">Prix justes</h3>
+                    <p class="feature-desc">Commission modulable, les meilleurs prix pour les marques et les clients.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
+    <!-- CTA SECTION -->
     <section class="cta">
-        <div class="cta-container">
+        <div class="cta-content">
             <h2>Rejoignez Brandia aujourd'hui</h2>
             <p>Que vous soyez une marque cherchant à vendre ou un client à la recherche de produits authentiques, Brandia est fait pour vous.</p>
-            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                <button class="btn btn-primary" style="padding: 1rem 2rem;">Commencer à acheter</button>
-                <button class="btn btn-outline" style="padding: 1rem 2rem; border-color: rgba(255,255,255,0.3);">Devenir vendeur</button>
+            <div class="cta-buttons">
+                <button class="btn btn-primary" onclick="showRegisterModal('buyer')">Commencer à acheter</button>
+                <button class="btn btn-outline" onclick="showRegisterModal('supplier')" style="border-color: rgba(255,255,255,0.3);">Devenir vendeur</button>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- FOOTER -->
     <footer>
         <div class="footer-grid">
             <div class="footer-brand">
                 <div class="logo">Brandia</div>
-                <p>La marketplace qui connecte directement les marques avec leurs clients. Produits authentiques, prix justes.</p>
+                <p>La marketplace qui connecte directement les marques avec leurs clients. Produits authentiques, prix justes, livraison rapide.</p>
             </div>
             <div class="footer-column">
                 <h4>Navigation</h4>
                 <ul>
                     <li><a href="#">Accueil</a></li>
-                    <li><a href="#">Produits</a></li>
+                    <li><a href="#products">Produits</a></li>
                     <li><a href="#">Marques</a></li>
-                    <li><a href="#">Catégories</a></li>
+                    <li><a href="#categories">Catégories</a></li>
                 </ul>
             </div>
             <div class="footer-column">
@@ -851,57 +1185,286 @@
         </div>
     </footer>
 
+    <!-- LOGIN MODAL -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('login-modal')"><i class="fas fa-times"></i></button>
+            <h3>Connexion</h3>
+            <p>Connectez-vous à votre compte Brandia</p>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="votre@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Se connecter</button>
+            </form>
+            <div class="modal-footer">
+                Pas encore de compte ? <a href="#" onclick="switchModal('login-modal', 'register-modal')">S'inscrire</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTER MODAL -->
+    <div class="modal-overlay" id="register-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('register-modal')"><i class="fas fa-times"></i></button>
+            <h3>Créer un compte</h3>
+            <p>Rejoignez la marketplace des marques</p>
+            <div class="role-selector">
+                <div class="role-option" id="role-buyer" onclick="selectRole('buyer')">
+                    <i class="fas fa-shopping-bag"></i>
+                    <div>Client</div>
+                    <small>Acheteur</small>
+                </div>
+                <div class="role-option" id="role-supplier" onclick="selectRole('supplier')">
+                    <i class="fas fa-store"></i>
+                    <div>Partenaire</div>
+                    <small>Marque / Vendeur</small>
+                </div>
+            </div>
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Nom complet</label>
+                    <input type="text" id="register-name" placeholder="Jean Dupont" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="register-email" placeholder="votre@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="register-password" placeholder="••••••••" required>
+                </div>
+                <input type="hidden" id="register-role" value="buyer">
+                <button type="submit" class="btn btn-primary btn-full">Créer mon compte</button>
+            </form>
+            <div class="modal-footer">
+                Déjà un compte ? <a href="#" onclick="switchModal('register-modal', 'login-modal')">Se connecter</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUPPLIER MODAL -->
+    <div class="modal-overlay" id="supplier-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('supplier-modal')"><i class="fas fa-times"></i></button>
+            <h3>Devenir vendeur</h3>
+            <p>Rejoignez nos marques partenaires</p>
+            <form onsubmit="handleSupplierRequest(event)">
+                <div class="form-group">
+                    <label>Nom de la marque</label>
+                    <input type="text" id="supplier-brand" placeholder="Votre marque" required>
+                </div>
+                <div class="form-group">
+                    <label>Email professionnel</label>
+                    <input type="email" id="supplier-email" placeholder="contact@votremarque.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Site web (optionnel)</label>
+                    <input type="url" id="supplier-website" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <input type="text" id="supplier-message" placeholder="Décrivez votre activité..." style="padding: 1rem; height: auto;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Envoyer ma demande</button>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Configuration API
+        // CONFIGURATION
         const API_BASE_URL = 'https://brandia-1.onrender.com/api';
-        
-        // Vérifier si l'utilisateur est connecté en tant que fournisseur
+        let selectedRole = 'buyer';
+
+        // INITIALISATION
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadProducts();
+            
+            // Fermer modals en cliquant à l'extérieur
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal.id);
+                });
+            });
+        });
+
+        // AUTHENTIFICATION
         function checkAuth() {
             const token = localStorage.getItem('token');
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             
+            const dashboardBtn = document.getElementById('dashboard-btn');
             if (token && user.role === 'supplier') {
-                document.getElementById('dashboard-btn').classList.add('visible');
+                dashboardBtn.classList.add('visible');
+            } else {
+                dashboardBtn.classList.remove('visible');
             }
         }
 
-        // Charger les produits
+        function goToDashboard() {
+            window.location.href = '/dashboard.html';
+        }
+
+        // MODALS
+        function showLoginModal() {
+            document.getElementById('login-modal').classList.add('active');
+        }
+
+        function showRegisterModal(role = null) {
+            if (role) selectRole(role);
+            document.getElementById('register-modal').classList.add('active');
+        }
+
+        function showSupplierModal() {
+            document.getElementById('supplier-modal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function switchModal(from, to) {
+            closeModal(from);
+            setTimeout(() => document.getElementById(to).classList.add('active'), 200);
+        }
+
+        function selectRole(role) {
+            selectedRole = role;
+            document.getElementById('register-role').value = role;
+            document.querySelectorAll('.role-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`role-${role}`).classList.add('selected');
+        }
+
+        // FORM HANDLERS
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    closeModal('login-modal');
+                    checkAuth();
+                    
+                    if (data.user.role === 'supplier') {
+                        window.location.href = '/dashboard.html';
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.message || 'Erreur de connexion');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Erreur de connexion au serveur');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const role = document.getElementById('register-role').value;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    closeModal('register-modal');
+                    
+                    if (role === 'supplier') {
+                        window.location.href = '/dashboard.html';
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.message || 'Erreur d\'inscription');
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                alert('Erreur de connexion au serveur');
+            }
+        }
+
+        function handleSupplierRequest(e) {
+            e.preventDefault();
+            alert('Demande envoyée ! Notre équipe vous contactera sous 24h.');
+            closeModal('supplier-modal');
+        }
+
+        // PRODUITS
         async function loadProducts() {
             const loader = document.getElementById('products-loader');
             const grid = document.getElementById('products-grid');
             
-            loader.style.display = 'block';
+            loader.style.display = 'flex';
             grid.style.display = 'none';
             
+            // Timeout de sécurité
+            const timeout = setTimeout(() => {
+                loader.style.display = 'none';
+                grid.style.display = 'grid';
+                grid.innerHTML = getFallbackProducts();
+            }, 5000);
+            
             try {
-                const response = await fetch(`${API_BASE_URL}/products?limit=8`);
+                const response = await fetch(`${API_BASE_URL}/products?limit=8&featured=true`);
                 const data = await response.json();
                 
-                if (data.success && data.products) {
+                clearTimeout(timeout);
+                
+                if (data.success && data.products && data.products.length > 0) {
                     grid.innerHTML = data.products.map(product => `
-                        <div class="product-card">
-                            <img src="${product.image_url || 'https://via.placeholder.com/300x280/1a1a1a/667eea?text=Produit'}" 
-                                 alt="${product.name}" 
-                                 class="product-image">
-                            ${product.discount ? `<div class="discount-badge">-${product.discount}%</div>` : ''}
+                        <div class="product-card" onclick="viewProduct(${product.id})">
+                            <div class="product-image-wrapper">
+                                <img src="${product.image_url || product.image || 'https://via.placeholder.com/300x280/1a1a1a/667eea?text=Produit'}" 
+                                     alt="${product.name}" 
+                                     class="product-image">
+                                ${product.discount ? `<div class="discount-badge">-${product.discount}%</div>` : ''}
+                            </div>
                             <div class="product-info">
-                                <div class="product-brand">${product.brand || 'Marque'}</div>
+                                <div class="product-brand">${product.brand || product.brand_name || 'Marque'}</div>
                                 <div class="product-name">${product.name}</div>
-                                <div class="product-price">
-                                    ${product.price}€
+                                <div class="product-price-row">
+                                    <span class="product-price">${product.price}€</span>
                                     ${product.original_price ? `<span class="product-original-price">${product.original_price}€</span>` : ''}
                                 </div>
                             </div>
                         </div>
                     `).join('');
                 } else {
-                    // Fallback avec données statiques si l'API ne répond pas
                     grid.innerHTML = getFallbackProducts();
                 }
             } catch (error) {
                 console.error('Erreur chargement produits:', error);
                 grid.innerHTML = getFallbackProducts();
             } finally {
+                clearTimeout(timeout);
                 loader.style.display = 'none';
                 grid.style.display = 'grid';
             }
@@ -909,25 +1472,27 @@
 
         function getFallbackProducts() {
             const products = [
-                { name: 'T-shirt Premium Coton', brand: 'Nike', price: 29.99, original_price: 39.99, discount: 25, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80' },
-                { name: 'Sneakers Edition Limitée', brand: 'Adidas', price: 89.99, original_price: 120.00, discount: 25, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' },
-                { name: 'Montre Connectée Pro', brand: 'TechBrand', price: 199.99, original_price: 249.99, discount: 20, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
-                { name: 'Sac en Cuir Italien', brand: 'Luxury', price: 149.99, original_price: 199.99, discount: 25, image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80' },
-                { name: 'Casque Audio Sans Fil', brand: 'SoundMax', price: 79.99, original_price: 99.99, discount: 20, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
-                { name: 'Lunettes de Soleil UV400', brand: 'Vision', price: 49.99, original_price: 69.99, discount: 29, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&q=80' },
-                { name: 'Enceinte Bluetooth', brand: 'Bose', price: 129.99, original_price: 159.99, discount: 19, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80' },
-                { name: 'Tablette Graphique', brand: 'Wacom', price: 249.99, original_price: 299.99, discount: 17, image: 'https://images.unsplash.com/photo-1585792180666-f7347f490ee2?w=400&q=80' }
+                { id: 1, name: 'T-shirt Premium Coton Bio', brand: 'EcoWear', price: 29.99, original_price: 39.99, discount: 25, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80' },
+                { id: 2, name: 'Sneakers Edition Limitée', brand: 'UrbanKicks', price: 89.99, original_price: 120.00, discount: 25, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' },
+                { id: 3, name: 'Montre Connectée Pro', brand: 'TechTime', price: 199.99, original_price: 249.99, discount: 20, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
+                { id: 4, name: 'Sac en Cuir Italien', brand: 'Milano', price: 149.99, original_price: 199.99, discount: 25, image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80' },
+                { id: 5, name: 'Casque Audio Sans Fil', brand: 'SoundMax', price: 79.99, original_price: 99.99, discount: 20, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
+                { id: 6, name: 'Lunettes de Soleil UV400', brand: 'Vision', price: 49.99, original_price: 69.99, discount: 29, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&q=80' },
+                { id: 7, name: 'Enceinte Bluetooth 360°', brand: 'Bose', price: 129.99, original_price: 159.99, discount: 19, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80' },
+                { id: 8, name: 'Tablette Graphique Pro', brand: 'Wacom', price: 249.99, original_price: 299.99, discount: 17, image: 'https://images.unsplash.com/photo-1585792180666-f7347f490ee2?w=400&q=80' }
             ];
             
             return products.map(product => `
-                <div class="product-card">
-                    <img src="${product.image}" alt="${product.name}" class="product-image">
-                    <div class="discount-badge">-${product.discount}%</div>
+                <div class="product-card" onclick="viewProduct(${product.id})">
+                    <div class="product-image-wrapper">
+                        <img src="${product.image}" alt="${product.name}" class="product-image">
+                        <div class="discount-badge">-${product.discount}%</div>
+                    </div>
                     <div class="product-info">
                         <div class="product-brand">${product.brand}</div>
                         <div class="product-name">${product.name}</div>
-                        <div class="product-price">
-                            ${product.price}€
+                        <div class="product-price-row">
+                            <span class="product-price">${product.price}€</span>
                             <span class="product-original-price">${product.original_price}€</span>
                         </div>
                     </div>
@@ -935,32 +1500,20 @@
             `).join('');
         }
 
-        function goToDashboard() {
-            window.location.href = '/dashboard.html';
+        function viewProduct(id) {
+            console.log('View product:', id);
+            // Redirection vers page produit
         }
 
-        function showLoginModal() {
-            alert('Modal de connexion - À implémenter');
+        function filterByCategory(category) {
+            console.log('Filter by:', category);
+            scrollToSection('products');
         }
 
-        function showRegisterModal() {
-            alert('Modal d\'inscription - À implémenter');
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
         }
-
-        function showSupplierModal() {
-            alert('Modal fournisseur - À implémenter');
-        }
-
-        function scrollToProducts() {
-            document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            loadProducts();
-        });
     </script>
 </body>
-</html>'''
+</html>
 
