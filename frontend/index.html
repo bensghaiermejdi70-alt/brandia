@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
@@ -179,6 +180,7 @@
 </head>
 <body>
 
+<!-- HEADER CORRIGÉ - Structure flexbox complète -->
 <header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
   <nav class="container flex items-center justify-between px-4 py-3">
     <!-- Logo Header -->
@@ -200,6 +202,7 @@
       <span class="brandia-text">Brandia</span>
     </a>
     
+    <!-- Navigation centrale - CORRIGÉ avec flex -->
     <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
       <a href="nouveautes.html" class="hover:text-white transition">Nouveautés</a>
       <a href="marques.html" class="hover:text-white transition">Marques</a>
@@ -220,6 +223,7 @@
       <a href="#about" class="hover:text-white transition">À propos</a>
     </div>
 
+    <!-- Section droite - CORRIGÉE avec flex -->
     <div class="flex items-center space-x-3">
       <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
         <option value="">Chargement...</option>
@@ -230,6 +234,7 @@
         <option value="en">🇬🇧 EN</option>
       </select>
 
+      <!-- Menu non connecté -->
       <div id="auth-buttons" class="flex items-center space-x-2">
         <a href="login.html" class="text-sm text-neutral-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-neutral-800 transition">Connexion</a>
         
@@ -269,7 +274,7 @@
         <button onclick="BrandiaAPI.Auth.logout()" class="text-sm text-red-400 hover:text-red-300">Déconnexion</button>
       </div>
 
-      <!-- Menu fournisseur connecté (visible uniquement si role=supplier) -->
+      <!-- Menu fournisseur connecté -->
       <div id="supplier-menu" class="hidden items-center space-x-3">
         <a href="supplier/dashboard.html" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg transition text-sm border border-emerald-500/30">
           <i class="fas fa-chart-line"></i>
@@ -279,13 +284,16 @@
         <button onclick="BrandiaAPI.Auth.logout()" class="text-sm text-red-400 hover:text-red-300">Déconnexion</button>
       </div>
 
-      <a href="panier.html" class="relative">
-        <i class="fas fa-shopping-bag text-neutral-300"></i>
+      <!-- Panier -->
+      <a href="panier.html" class="relative flex items-center">
+        <i class="fas fa-shopping-bag text-neutral-300 text-lg"></i>
         <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white hidden">0</span>
       </a>
     </div>
   </nav>
 </header>
+
+<!-- HERO SECTION CORRIGÉE -->
 <section class="py-10 fade-in">
   <div class="container grid md:grid-cols-2 gap-6 items-center">
     <div>
@@ -309,6 +317,7 @@
   </div>
 </section>
 
+<!-- STATS SECTION -->
 <section class="py-8 border-y border-neutral-800 bg-neutral-900/30">
   <div class="container">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
@@ -332,6 +341,7 @@
   </div>
 </section>
 
+<!-- CATÉGORIES -->
 <section class="py-10">
   <div class="container">
     <div class="flex items-center justify-between mb-6">
@@ -344,7 +354,7 @@
   </div>
 </section>
 
-<!-- SECTION PRODUITS EN VEDETTE - CORRIGÉE -->
+<!-- PRODUITS EN VEDETTE -->
 <section class="py-16 px-4 max-w-7xl mx-auto">
   <div class="flex items-center justify-between mb-8">
     <div>
@@ -367,6 +377,7 @@
   </div>
 </section>
 
+<!-- WHY BRANDIA -->
 <section id="about" class="py-16 border-t border-neutral-800">
   <div class="container">
     <div class="grid md:grid-cols-2 gap-12 items-center">
@@ -397,7 +408,7 @@
             </div>
             <div>
               <h3 class="font-semibold text-neutral-100">Prix justes</h3>
-              <p class="text-neutral-400 text-sm">Commission modulable  , les meilleurs prix pour les marques et clients.</p>
+              <p class="text-neutral-400 text-sm">Commission modulable, les meilleurs prix pour les marques et clients.</p>
             </div>
           </div>
         </div>
@@ -409,6 +420,7 @@
   </div>
 </section>
 
+<!-- FOOTER -->
 <footer class="border-t border-neutral-800 py-10 bg-neutral-900">
   <div class="container">
     <div class="grid md:grid-cols-4 gap-8 mb-8">
@@ -451,9 +463,10 @@
 </footer>
 
 <div id="toast" class="toast"></div>
+
 <script>
 // ==========================================
-// HEADER SCROLL EFFECT - Logo rétrécit
+// HEADER SCROLL EFFECT
 // ==========================================
 function initHeaderScroll() {
   const header = document.querySelector('header');
@@ -464,7 +477,6 @@ function initHeaderScroll() {
     const currentScroll = window.pageYOffset;
     if (currentScroll > 100) {
       header.classList.add('header-scrolled');
-      // Réduire le logo
       logo.style.transform = 'scale(0.85)';
       logo.querySelector('.brandia-text').style.fontSize = '1.1rem';
     } else {
@@ -475,6 +487,7 @@ function initHeaderScroll() {
     lastScroll = currentScroll;
   });
 }
+
 // ==========================================
 // CONFIGURATION CATÉGORIES
 // ==========================================
@@ -549,7 +562,7 @@ function getFlagEmoji(countryCode) {
 }
 
 // ==========================================
-// CHARGEMENT PRODUITS EN VEDETTE (CORRIGÉ)
+// CHARGEMENT PRODUITS EN VEDETTE
 // ==========================================
 async function loadFeaturedProducts() {
   const container = document.getElementById('featured-products-grid');
@@ -589,12 +602,10 @@ async function loadFeaturedProducts() {
       const imageUrl = p.main_image_url || p.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
       return `
       <div class="bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500 transition group">
-        <!-- 🔥 LIEN SUR TOUTE LA ZONE IMAGE + TITRE -->
         <a href="product.html?id=${p.id}" class="block relative aspect-square overflow-hidden">
           <img src="${imageUrl}" alt="${p.name}"
                class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
-          <!-- Badge promo -->
           ${hasPromo ? `
             <div class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
               ${discountDisplay || '- Promo'}
@@ -602,7 +613,6 @@ async function loadFeaturedProducts() {
           ` : ''}
         </a>
         <div class="p-4">
-          <!-- 🔥 LIEN SUR LE TITRE AUSSI -->
           <a href="product.html?id=${p.id}" class="block">
             <p class="text-xs text-indigo-400 mb-1">${p.category_name || p.category_slug || 'Catégorie'}</p>
             <h3 class="font-semibold text-white mb-2 truncate hover:text-indigo-400 transition">${p.name}</h3>
@@ -614,7 +624,6 @@ async function loadFeaturedProducts() {
                 <span class="text-sm text-neutral-500 line-through">${formatPrice(originalPrice)}</span>
               ` : ''}
             </div>
-            <!-- 🔥 BOUTON + RESTE MAIS CLIQUE PAS SUR LE LIEN -->
             <button onclick="addToCart(${p.id}, event)" 
                     class="w-10 h-10 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white transition z-20">
               <i class="fas fa-plus"></i>
@@ -644,7 +653,6 @@ async function loadFeaturedProducts() {
 }
 
 async function addToCart(productId) {
-  // 🔥 Empêcher la navigation si on clique sur le bouton
   if (arguments.length > 1 && arguments[1]) {
     const event = arguments[1];
     event.preventDefault();
@@ -664,7 +672,7 @@ async function addToCart(productId) {
       quantity: 1
     });
     showToast('Produit ajouté au panier !', 'success');
-    BrandiaAPI.Cart.updateBadge(); // 🔥 Mettre à jour le badge immédiatement
+    BrandiaAPI.Cart.updateBadge();
   } catch (error) {
     console.error('[Home] Erreur ajout panier:', error);
     showToast('Erreur lors de l\'ajout', 'error');
@@ -929,7 +937,7 @@ function initCountrySelector() {
 }
 
 // ==========================================
-// AUTHENTIFICATION (CORRIGÉ - Gestion rôles)
+// AUTHENTIFICATION
 // ==========================================
 function initAuth() {
   if (typeof BrandiaAPI === 'undefined') return;
@@ -948,22 +956,18 @@ function initAuth() {
   supplierMenu?.classList.remove('flex');
   
   if (user && user.email) {
-    // 🔥 VÉRIFICATION DU RÔLE
     if (user.role === 'supplier') {
-      // Fournisseur connecté -> afficher menu supplier
       supplierMenu?.classList.remove('hidden');
       supplierMenu?.classList.add('flex');
       const supplierName = document.getElementById('supplier-name');
       if (supplierName) supplierName.textContent = user.first_name || user.email;
     } else {
-      // Client connecté -> afficher menu client normal
       userMenu?.classList.remove('hidden');
       userMenu?.classList.add('flex');
       const userName = document.getElementById('user-name');
       if (userName) userName.textContent = user.first_name || user.email;
     }
   } else {
-    // Non connecté -> afficher boutons auth
     authButtons?.classList.remove('hidden');
     authButtons?.classList.add('flex');
   }
@@ -977,11 +981,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   initHeaderScroll();
   initCountrySelector();
   loadCategories();
-  await loadFeaturedProducts(); // 🔥 APPEL CRUCIAL AJOUTÉ
+  await loadFeaturedProducts();
   initAuth();
   BrandiaAPI.Cart.updateBadge();
 });
 </script>
 
 </body>
-</html>
+</html>'''
+
