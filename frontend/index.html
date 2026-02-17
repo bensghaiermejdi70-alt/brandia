@@ -6,9 +6,99 @@
   <title>Brandia – La marketplace des marques</title>
   <meta name="description" content="Produits officiels, livraison par la marque.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="assets/js/api.js"></script>
+  <!-- 🔥 TAILWIND AVEC FALLBACK LOCAL -->
+  <script src="https://cdn.tailwindcss.com" onerror="loadFallbackTailwind()"></script>
+  
+  <!-- 🔥 FALLBACK: Si CDN échoue, charger version locale -->
+  <script>
+    function loadFallbackTailwind() {
+      console.warn('[Tailwind] CDN failed, loading fallback...');
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'assets/css/tailwind.css'; // Ou URL alternative
+      document.head.appendChild(link);
+    }
+    
+    // Configuration Tailwind immédiate
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- 🔥 STYLE CRITIQUE INLINE (pour éviter le flash sans style) -->
+  <style>
+    /* Critical CSS - Layout de base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #0b111e;
+      color: #f3f4f6;
+      line-height: 1.5;
+    }
+    
+    /* Fallback si Tailwind ne charge pas */
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .flex { display: flex; }
+    .grid { display: grid; }
+    .hidden { display: none; }
+    .block { display: block; }
+    
+    /* Layout horizontal forcé */
+    header, nav, main, footer {
+      display: block;
+      width: 100%;
+    }
+    
+    /* Empêcher l'empilement vertical */
+    .flex-row { flex-direction: row; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    
+    /* Grille produit fallback */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    
+    /* Cacher le message d'erreur Tailwind */
+    #tailwind-error { display: none !important; }
+  </style>
+  
+  <!-- Font Awesome avec fallback -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
+        onerror="this.href='https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css'">
+  
+  <!-- Vos autres styles -->
+  <link rel="stylesheet" href="assets/css/main.css">
   <style>
     body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -177,7 +267,37 @@
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white antialiased">
+  <!-- 🔥 VÉRIFICATION TAILWIND CHARGÉ -->
+  <script>
+    // Vérifier si Tailwind a chargé après 3 secondes
+    setTimeout(function() {
+      var test = document.createElement('div');
+      test.className = 'hidden md:block';
+      document.body.appendChild(test);
+      
+      var isHidden = getComputedStyle(test).display === 'none';
+      document.body.removeChild(test);
+      
+      if (!isHidden) {
+        console.error('[CRITICAL] Tailwind CSS not loaded! Loading emergency styles...');
+        
+        var emergencyCSS = document.createElement('style');
+        emergencyCSS.textContent = `
+          body { background: #0b111e !important; color: white !important; }
+          .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+          header { background: #1e293b; padding: 16px 0; }
+          nav { display: flex; justify-content: space-between; align-items: center; }
+          .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+          .card { background: #1e293b; border-radius: 8px; padding: 16px; }
+          img { max-width: 100%; height: auto; }
+          a { color: inherit; text-decoration: none; }
+          button { cursor: pointer; }
+        `;
+        document.head.appendChild(emergencyCSS);
+      }
+    }, 3000);
+  </script>
 
 <header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
   <nav class="container flex items-center justify-between px-4 py-3">
@@ -451,6 +571,7 @@
 </footer>
 
 <div id="toast" class="toast"></div>
+<script src="assets/js/api.js"></script>
 <script>
 // ==========================================
 // HEADER SCROLL EFFECT - Logo rétrécit
