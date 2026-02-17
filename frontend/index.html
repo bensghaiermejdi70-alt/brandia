@@ -13,16 +13,19 @@
   <script src="https://cdn.tailwindcss.com"></script>
   
   <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
           colors: {
             primary: {
               50: '#f0f9ff',
@@ -31,9 +34,6 @@
               600: '#0284c7',
               700: '#0369a1',
             }
-          },
-          fontFamily: {
-            sans: ['Outfit', 'system-ui', 'sans-serif'],
           }
         }
       }
@@ -41,48 +41,19 @@
   </script>
   
   <style>
-    /* Reset de base */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    html, body {
-      min-height: 100vh;
-      font-family: 'Outfit', system-ui, sans-serif;
-    }
-    
-    body {
-      background-color: #0f172a;
-      color: #f1f5f9;
-      line-height: 1.5;
-    }
+    /* UNIQUEMENT les styles personnalisés qui ne sont pas dans Tailwind */
     
     /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #1e293b;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #475569;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #64748b;
-    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     
     /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .fade-in {
-      animation: fadeIn 0.5s ease forwards;
-    }
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
     
     @keyframes skeleton {
       0% { background-position: 200% 0; }
@@ -94,7 +65,7 @@
       animation: skeleton 1.5s infinite;
     }
     
-    /* Brandia Logo Animations */
+    /* Brandia Logo */
     @keyframes brandia-shimmer {
       0% { background-position: -200% center; }
       100% { background-position: 200% center; }
@@ -103,10 +74,6 @@
       0% { transform: scale(0.95); opacity: 0.8; }
       50% { transform: scale(1.05); opacity: 0.4; }
       100% { transform: scale(0.95); opacity: 0.8; }
-    }
-    @keyframes brandia-shine {
-      0% { left: -100%; }
-      100% { left: 200%; }
     }
     
     .brandia-logo {
@@ -117,9 +84,8 @@
       text-decoration: none;
       transition: transform 0.3s ease;
     }
-    .brandia-logo:hover {
-      transform: scale(1.02);
-    }
+    .brandia-logo:hover { transform: scale(1.02); }
+    
     .brandia-icon-wrap {
       position: relative;
       width: 32px;
@@ -148,21 +114,9 @@
       position: relative;
       overflow: hidden;
     }
-    .brandia-icon-bg::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    }
     .brandia-logo:hover .brandia-icon-bg {
       transform: rotate(0deg) scale(1.05);
       box-shadow: 0 12px 32px -8px rgba(168, 85, 247, 0.6);
-    }
-    .brandia-logo:hover .brandia-icon-bg::after {
-      animation: brandia-shine 0.6s ease;
     }
     .brandia-icon-svg {
       width: 18px;
@@ -170,7 +124,7 @@
       display: block;
     }
     .brandia-text {
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 1.25rem;
       font-weight: 800;
       background: linear-gradient(90deg, #ffffff 0%, #e879f9 25%, #ffffff 50%, #e879f9 75%, #ffffff 100%);
@@ -179,39 +133,27 @@
       background-clip: text;
       -webkit-text-fill-color: transparent;
       animation: brandia-shimmer 4s linear infinite;
-      letter-spacing: -0.02em;
-      line-height: 1;
     }
     
-    /* Header scroll effect */
+    /* Header scroll */
     header {
       transition: all 0.3s ease;
     }
     header.header-scrolled {
-      padding-top: 0.5rem;
-      padding-bottom: 0.5rem;
       background: rgba(15, 23, 42, 0.98);
-    }
-    .header-scrolled .brandia-logo {
-      transform: scale(0.9);
-    }
-    .header-scrolled .brandia-text {
-      font-size: 1.1rem;
+      backdrop-filter: blur(10px);
     }
     
     /* Dropdown */
-    .dropdown-container {
-      position: relative;
-    }
+    .dropdown-container { position: relative; }
     .dropdown-menu {
       display: none;
       position: absolute;
       top: 100%;
       left: 0;
       margin-top: 0.5rem;
-      padding-top: 0.5rem;
       z-index: 50;
-      min-width: 320px;
+      min-width: 280px;
     }
     .dropdown-container:hover .dropdown-menu,
     .dropdown-menu:hover {
@@ -239,7 +181,7 @@
     .toast.success { background: #10b981; }
     .toast.error { background: #ef4444; }
     
-    /* Product card hover */
+    /* Product card */
     .product-card {
       transition: all 0.3s ease;
     }
@@ -265,23 +207,21 @@
     }
   </style>
 </head>
-<body class="bg-slate-900 text-white antialiased">
+<body class="bg-slate-900 text-slate-100 font-sans antialiased">
 
   <!-- HEADER -->
   <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800">
-    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         
         <!-- Logo -->
-        <a href="index.html" id="header-logo" class="brandia-logo flex-shrink-0">
+        <a href="index.html" class="brandia-logo flex-shrink-0">
           <div class="brandia-icon-wrap">
             <div class="brandia-pulse"></div>
             <div class="brandia-icon-bg">
               <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
-                      stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
-                      stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
                 <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
                 <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
@@ -292,7 +232,7 @@
         </a>
         
         <!-- Navigation Desktop -->
-        <div class="hidden md:flex items-center space-x-8 text-sm text-slate-300">
+        <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
           <a href="nouveautes.html" class="hover:text-white transition">Nouveautés</a>
           <a href="marques.html" class="hover:text-white transition">Marques</a>
           
@@ -311,17 +251,17 @@
           
           <a href="offres.html" class="hover:text-white transition">Offres</a>
           <a href="#about" class="hover:text-white transition">À propos</a>
-        </div>
+        </nav>
 
         <!-- Right side -->
         <div class="flex items-center gap-3">
           <!-- Country Selector -->
-          <select id="countrySelector" class="hidden sm:block px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700 focus:border-indigo-500 outline-none">
+          <select id="countrySelector" class="hidden sm:block px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700 focus:border-indigo-500 outline-none cursor-pointer">
             <option value="">Chargement...</option>
           </select>
 
           <!-- Language -->
-          <select id="langSwitch" class="hidden sm:block px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700 focus:border-indigo-500 outline-none">
+          <select id="langSwitch" class="hidden sm:block px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700 focus:border-indigo-500 outline-none cursor-pointer">
             <option value="fr">🇫🇷 FR</option>
             <option value="en">🇬🇧 EN</option>
           </select>
@@ -384,7 +324,7 @@
           </a>
         </div>
       </div>
-    </nav>
+    </div>
   </header>
 
   <!-- HERO SECTION -->
@@ -630,13 +570,14 @@
     // ==========================================
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
+      if (!toast) return;
       toast.textContent = message;
       toast.className = `toast ${type} show`;
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
     function formatPrice(price, currency = 'EUR') {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency }).format(price);
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency }).format(price || 0);
     }
 
     function getFlagEmoji(countryCode) {
@@ -665,7 +606,7 @@
           response = await BrandiaAPI.Products.getFeatured();
         }
         
-        if (!response.success || !response.data) {
+        if (!response?.success || !response.data) {
           throw new Error('Réponse API invalide');
         }
 
@@ -679,10 +620,12 @@
         }
 
         container.innerHTML = products.map(p => {
-          const hasPromo = p.has_promotion || p.final_price < p.price || p.promo_id;
+          const hasPromo = p.has_promotion || (p.final_price && p.final_price < p.price);
           const finalPrice = parseFloat(p.final_price) || parseFloat(p.price) || 0;
           const originalPrice = parseFloat(p.original_price) || parseFloat(p.price) || 0;
-          const discountDisplay = p.discount_display || (hasPromo ? '-' + Math.round((1 - finalPrice/originalPrice)*100) + '%' : '');
+          const discountDisplay = hasPromo && originalPrice > finalPrice 
+            ? '-' + Math.round((1 - finalPrice/originalPrice)*100) + '%' 
+            : '';
           const imageUrl = p.main_image_url || p.image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
           
           return `
@@ -741,8 +684,10 @@
       }
       try {
         const response = await BrandiaAPI.Products.getById(productId);
-        if (!response.success) throw new Error('Produit non trouvé');
-        const product = response.data.product || response.data;
+        if (!response?.success) throw new Error('Produit non trouvé');
+        const product = response.data?.product || response.data;
+        if (!product) throw new Error('Produit non trouvé');
+        
         BrandiaAPI.Cart.add({
           id: product.id,
           name: product.name,
@@ -804,196 +749,18 @@
       if (!selector) return;
       
       const countries = {
-        'AF': { name: 'Afghanistan', currency: 'AFN' },
-      'AL': { name: 'Albanie', currency: 'ALL' },
-      'DZ': { name: 'Algérie', currency: 'DZD' },
-      'AD': { name: 'Andorre', currency: 'EUR' },
-      'AO': { name: 'Angola', currency: 'AOA' },
-      'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
-      'AR': { name: 'Argentine', currency: 'ARS' },
-      'AM': { name: 'Arménie', currency: 'AMD' },
-      'AU': { name: 'Australie', currency: 'AUD' },
-      'AT': { name: 'Autriche', currency: 'EUR' },
-      'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
-      'BS': { name: 'Bahamas', currency: 'BSD' },
-      'BH': { name: 'Bahreïn', currency: 'BHD' },
-      'BD': { name: 'Bangladesh', currency: 'BDT' },
-      'BB': { name: 'Barbade', currency: 'BBD' },
-      'BY': { name: 'Biélorussie', currency: 'BYN' },
-      'BE': { name: 'Belgique', currency: 'EUR' },
-      'BZ': { name: 'Belize', currency: 'BZD' },
-      'BJ': { name: 'Bénin', currency: 'XOF' },
-      'BT': { name: 'Bhoutan', currency: 'BTN' },
-      'BO': { name: 'Bolivie', currency: 'BOB' },
-      'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
-      'BW': { name: 'Botswana', currency: 'BWP' },
-      'BR': { name: 'Brésil', currency: 'BRL' },
-      'BN': { name: 'Brunei', currency: 'BND' },
-      'BG': { name: 'Bulgarie', currency: 'BGN' },
-      'BF': { name: 'Burkina Faso', currency: 'XOF' },
-      'BI': { name: 'Burundi', currency: 'BIF' },
-      'CV': { name: 'Cap-Vert', currency: 'CVE' },
-      'KH': { name: 'Cambodge', currency: 'KHR' },
-      'CM': { name: 'Cameroun', currency: 'XAF' },
-      'CA': { name: 'Canada', currency: 'CAD' },
-      'CF': { name: 'Centrafrique', currency: 'XAF' },
-      'TD': { name: 'Tchad', currency: 'XAF' },
-      'CL': { name: 'Chili', currency: 'CLP' },
-      'CN': { name: 'Chine', currency: 'CNY' },
-      'CO': { name: 'Colombie', currency: 'COP' },
-      'KM': { name: 'Comores', currency: 'KMF' },
-      'CG': { name: 'Congo', currency: 'XAF' },
-      'CD': { name: 'Congo (RDC)', currency: 'CDF' },
-      'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
-      'HR': { name: 'Croatie', currency: 'EUR' },
-      'CU': { name: 'Cuba', currency: 'CUP' },
-      'CY': { name: 'Chypre', currency: 'EUR' },
-      'CZ': { name: 'République tchèque', currency: 'CZK' },
-      'DK': { name: 'Danemark', currency: 'DKK' },
-      'DJ': { name: 'Djibouti', currency: 'DJF' },
-      'DM': { name: 'Dominique', currency: 'XCD' },
-      'DO': { name: 'République dominicaine', currency: 'DOP' },
-      'EC': { name: 'Équateur', currency: 'USD' },
-      'EG': { name: 'Égypte', currency: 'EGP' },
-      'SV': { name: 'Salvador', currency: 'USD' },
-      'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
-      'ER': { name: 'Érythrée', currency: 'ERN' },
-      'EE': { name: 'Estonie', currency: 'EUR' },
-      'ET': { name: 'Éthiopie', currency: 'ETB' },
-      'FJ': { name: 'Fidji', currency: 'FJD' },
-      'FI': { name: 'Finlande', currency: 'EUR' },
-      'FR': { name: 'France', currency: 'EUR' },
-      'GA': { name: 'Gabon', currency: 'XAF' },
-      'GM': { name: 'Gambie', currency: 'GMD' },
-      'GE': { name: 'Géorgie', currency: 'GEL' },
-      'DE': { name: 'Allemagne', currency: 'EUR' },
-      'GH': { name: 'Ghana', currency: 'GHS' },
-      'GR': { name: 'Grèce', currency: 'EUR' },
-      'GD': { name: 'Grenade', currency: 'XCD' },
-      'GT': { name: 'Guatemala', currency: 'GTQ' },
-      'GN': { name: 'Guinée', currency: 'GNF' },
-      'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
-      'GY': { name: 'Guyana', currency: 'GYD' },
-      'HT': { name: 'Haïti', currency: 'HTG' },
-      'HN': { name: 'Honduras', currency: 'HNL' },
-      'HU': { name: 'Hongrie', currency: 'HUF' },
-      'IS': { name: 'Islande', currency: 'ISK' },
-      'IN': { name: 'Inde', currency: 'INR' },
-      'ID': { name: 'Indonésie', currency: 'IDR' },
-      'IR': { name: 'Iran', currency: 'IRR' },
-      'IQ': { name: 'Irak', currency: 'IQD' },
-      'IE': { name: 'Irlande', currency: 'EUR' },
-      'IL': { name: 'Israël', currency: 'ILS' },
-      'IT': { name: 'Italie', currency: 'EUR' },
-      'JM': { name: 'Jamaïque', currency: 'JMD' },
-      'JP': { name: 'Japon', currency: 'JPY' },
-      'JO': { name: 'Jordanie', currency: 'JOD' },
-      'KZ': { name: 'Kazakhstan', currency: 'KZT' },
-      'KE': { name: 'Kenya', currency: 'KES' },
-      'KI': { name: 'Kiribati', currency: 'AUD' },
-      'KP': { name: 'Corée du Nord', currency: 'KPW' },
-      'KR': { name: 'Corée du Sud', currency: 'KRW' },
-      'KW': { name: 'Koweït', currency: 'KWD' },
-      'KG': { name: 'Kirghizistan', currency: 'KGS' },
-      'LA': { name: 'Laos', currency: 'LAK' },
-      'LV': { name: 'Lettonie', currency: 'EUR' },
-      'LB': { name: 'Liban', currency: 'LBP' },
-      'LS': { name: 'Lesotho', currency: 'LSL' },
-      'LR': { name: 'Libéria', currency: 'LRD' },
-      'LY': { name: 'Libye', currency: 'LYD' },
-      'LI': { name: 'Liechtenstein', currency: 'CHF' },
-      'LT': { name: 'Lituanie', currency: 'EUR' },
-      'LU': { name: 'Luxembourg', currency: 'EUR' },
-      'MG': { name: 'Madagascar', currency: 'MGA' },
-      'MW': { name: 'Malawi', currency: 'MWK' },
-      'MY': { name: 'Malaisie', currency: 'MYR' },
-      'MV': { name: 'Maldives', currency: 'MVR' },
-      'ML': { name: 'Mali', currency: 'XOF' },
-      'MT': { name: 'Malte', currency: 'EUR' },
-      'MH': { name: 'Îles Marshall', currency: 'USD' },
-      'MR': { name: 'Mauritanie', currency: 'MRO' },
-      'MU': { name: 'Maurice', currency: 'MUR' },
-      'MX': { name: 'Mexique', currency: 'MXN' },
-      'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
-      'MD': { name: 'Moldavie', currency: 'MDL' },
-      'MC': { name: 'Monaco', currency: 'EUR' },
-      'MN': { name: 'Mongolie', currency: 'MNT' },
-      'ME': { name: 'Monténégro', currency: 'EUR' },
-      'MA': { name: 'Maroc', currency: 'MAD' },
-      'MZ': { name: 'Mozambique', currency: 'MZN' },
-      'MM': { name: 'Myanmar', currency: 'MMK' },
-      'NA': { name: 'Namibie', currency: 'NAD' },
-      'NR': { name: 'Nauru', currency: 'AUD' },
-      'NP': { name: 'Népal', currency: 'NPR' },
-      'NL': { name: 'Pays-Bas', currency: 'EUR' },
-      'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
-      'NI': { name: 'Nicaragua', currency: 'NIO' },
-      'NE': { name: 'Niger', currency: 'XOF' },
-      'NG': { name: 'Nigéria', currency: 'NGN' },
-      'NO': { name: 'Norvège', currency: 'NOK' },
-      'OM': { name: 'Oman', currency: 'OMR' },
-      'PK': { name: 'Pakistan', currency: 'PKR' },
-      'PW': { name: 'Palaos', currency: 'USD' },
-      'PA': { name: 'Panama', currency: 'PAB' },
-      'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
-      'PY': { name: 'Paraguay', currency: 'PYG' },
-      'PE': { name: 'Pérou', currency: 'PEN' },
-      'PH': { name: 'Philippines', currency: 'PHP' },
-      'PL': { name: 'Pologne', currency: 'PLN' },
-      'PT': { name: 'Portugal', currency: 'EUR' },
-      'QA': { name: 'Qatar', currency: 'QAR' },
-      'RO': { name: 'Roumanie', currency: 'RON' },
-      'RU': { name: 'Russie', currency: 'RUB' },
-      'RW': { name: 'Rwanda', currency: 'RWF' },
-      'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
-      'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
-      'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
-      'WS': { name: 'Samoa', currency: 'WST' },
-      'SM': { name: 'Saint-Marin', currency: 'EUR' },
-      'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
-      'SA': { name: 'Arabie saoudite', currency: 'SAR' },
-      'SN': { name: 'Sénégal', currency: 'XOF' },
-      'RS': { name: 'Serbie', currency: 'RSD' },
-      'SC': { name: 'Seychelles', currency: 'SCR' },
-      'SL': { name: 'Sierra Leone', currency: 'SLL' },
-      'SG': { name: 'Singapour', currency: 'SGD' },
-      'SK': { name: 'Slovaquie', currency: 'EUR' },
-      'SI': { name: 'Slovénie', currency: 'EUR' },
-      'SB': { name: 'Îles Salomon', currency: 'SBD' },
-      'SO': { name: 'Somalie', currency: 'SOS' },
-      'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
-      'ES': { name: 'Espagne', currency: 'EUR' },
-      'LK': { name: 'Sri Lanka', currency: 'LKR' },
-      'SD': { name: 'Soudan', currency: 'SDG' },
-      'SR': { name: 'Suriname', currency: 'SRD' },
-      'SE': { name: 'Suède', currency: 'SEK' },
-      'CH': { name: 'Suisse', currency: 'CHF' },
-      'SY': { name: 'Syrie', currency: 'SYP' },
-      'TW': { name: 'Taïwan', currency: 'TWD' },
-      'TJ': { name: 'Tadjikistan', currency: 'TJS' },
-      'TZ': { name: 'Tanzanie', currency: 'TZS' },
-      'TH': { name: 'Thaïlande', currency: 'THB' },
-      'TL': { name: 'Timor oriental', currency: 'USD' },
-      'TG': { name: 'Togo', currency: 'XOF' },
-      'TO': { name: 'Tonga', currency: 'TOP' },
-      'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
-      'TN': { name: 'Tunisie', currency: 'TND' },
-      'TR': { name: 'Turquie', currency: 'TRY' },
-      'TM': { name: 'Turkménistan', currency: 'TMT' },
-      'UG': { name: 'Ouganda', currency: 'UGX' },
-      'UA': { name: 'Ukraine', currency: 'UAH' },
-      'AE': { name: 'Émirats arabes unis', currency: 'AED' },
-      'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-      'US': { name: 'États-Unis', currency: 'USD' },
-      'UY': { name: 'Uruguay', currency: 'UYU' },
-      'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
-      'VU': { name: 'Vanuatu', currency: 'VUV' },
-      'VE': { name: 'Venezuela', currency: 'VES' },
-      'VN': { name: 'Viêt Nam', currency: 'VND' },
-      'YE': { name: 'Yémen', currency: 'YER' },
-      'ZM': { name: 'Zambie', currency: 'ZMW' },
-      'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
+        'FR': { name: 'France', currency: 'EUR' },
+        'TN': { name: 'Tunisie', currency: 'TND' },
+        'DE': { name: 'Allemagne', currency: 'EUR' },
+        'IT': { name: 'Italie', currency: 'EUR' },
+        'ES': { name: 'Espagne', currency: 'EUR' },
+        'BE': { name: 'Belgique', currency: 'EUR' },
+        'CH': { name: 'Suisse', currency: 'CHF' },
+        'MA': { name: 'Maroc', currency: 'MAD' },
+        'DZ': { name: 'Algérie', currency: 'DZD' },
+        'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+        'US': { name: 'États-Unis', currency: 'USD' },
+        'CA': { name: 'Canada', currency: 'CAD' }
       };
 
       const savedCountry = localStorage.getItem('country') || 'FR';
@@ -1022,18 +789,13 @@
     // ==========================================
     function initHeaderScroll() {
       const header = document.querySelector('header');
-      const logo = document.getElementById('header-logo');
-      if (!header || !logo) return;
+      if (!header) return;
       
       window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 100) {
+        if (window.pageYOffset > 50) {
           header.classList.add('header-scrolled');
-          logo.style.transform = 'scale(0.85)';
-          logo.querySelector('.brandia-text').style.fontSize = '1.1rem';
         } else {
           header.classList.remove('header-scrolled');
-          logo.style.transform = 'scale(1)';
-          logo.querySelector('.brandia-text').style.fontSize = '1.25rem';
         }
       });
     }
@@ -1063,7 +825,7 @@
         supplierMenu.classList.remove('flex');
       }
       
-      if (user && user.email) {
+      if (user?.email) {
         if (user.role === 'supplier') {
           if (supplierMenu) {
             supplierMenu.classList.remove('hidden');
