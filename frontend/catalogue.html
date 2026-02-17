@@ -6,8 +6,19 @@
   <title>Catalogue - Brandia</title>
   <meta name="description" content="Découvrez tous les produits des marques sur Brandia">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com" onerror="loadFallbackTailwind()"></script>
+  <script>
+    function loadFallbackTailwind() {
+      console.warn('[Tailwind] CDN failed, loading fallback...');
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'assets/css/tailwind.css';
+      document.head.appendChild(link);
+    }
+    tailwind = window.tailwind || {};
+    tailwind.config = tailwind.config || { darkMode: 'class' };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onerror="this.href='https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css'">
   <script src="assets/js/api.js"></script>
   <script src="assets/js/public-products.js"></script>
   <style>
@@ -35,8 +46,21 @@
     .category-radio:checked + span { color: white; font-weight: 500; }
     .category-radio:checked { background: #6366f1; border-color: #6366f1; }
   </style>
+  <!-- Responsive utility fallback (si Tailwind absent) -->
+  <style>
+    @media (min-width: 768px) {
+      .md\:flex { display: flex !important; }
+      .md\:hidden { display: none !important; }
+      .md\:block { display: block !important; }
+      .md\:items-center { align-items: center !important; }
+    }
+    @media (min-width: 1024px) {
+      .lg\:flex { display: flex !important; }
+      .lg\:grid { display: grid !important; }
+    }
+  </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white antialiased">
 
 <header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
   <nav class="container max-w-7xl mx-auto flex items-center justify-between px-4 py-3">

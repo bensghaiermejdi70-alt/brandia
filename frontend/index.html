@@ -7,9 +7,19 @@
   <title>Brandia – La marketplace des marques</title>
   <meta name="description" content="Produits officiels, livraison par la marque.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="assets/js/api.js"></script>
+  <script src="https://cdn.tailwindcss.com" onerror="loadFallbackTailwind()"></script>
+  <script>
+    function loadFallbackTailwind() {
+      console.warn('[Tailwind] CDN failed, loading fallback...');
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'assets/css/tailwind.css';
+      document.head.appendChild(link);
+    }
+    tailwind = window.tailwind || {};
+    tailwind.config = tailwind.config || { darkMode: 'class' };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onerror="this.href='https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css'">
   <style>
     body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -37,6 +47,25 @@
     }
   </style>
   <!-- Brandia Logo Component Styles -->
+  <!-- CSS fallback pour utilities responsive (si Tailwind absent) -->
+  <style>
+    /* small: no-op (mobile-first) */
+    @media (min-width: 768px) {
+      .md\:flex { display: flex !important; }
+      .md\:grid { display: grid !important; }
+      .md\:hidden { display: none !important; }
+      .md\:block { display: block !important; }
+      .md\:items-center { align-items: center !important; }
+      .md\:justify-between { justify-content: space-between !important; }
+      .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+      .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
+    }
+    @media (min-width: 1024px) {
+      .lg\:grid { display: grid !important; }
+      .lg\:flex { display: flex !important; }
+      .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr) !important; }
+    }
+  </style>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     @keyframes brandia-shimmer {
@@ -178,7 +207,7 @@
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white antialiased">
 
 <!-- HEADER CORRIGÉ - Structure flexbox complète -->
 <header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
@@ -463,6 +492,8 @@
 </footer>
 
 <div id="toast" class="toast"></div>
+
+<script src="assets/js/api.js"></script>
 
 <script>
 // ==========================================
