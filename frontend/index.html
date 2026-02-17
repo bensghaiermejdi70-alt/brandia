@@ -1,1519 +1,2216 @@
-
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Brandia – La marketplace des marques</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* RESET CSS COMPLET */
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            width: 100%;
-            min-height: 100%;
-            overflow-x: hidden;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #0a0a0a;
-            color: #ffffff;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* HEADER FIXE */
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            height: 70px;
-            background: rgba(10, 10, 10, 0.98);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-        }
-
-        .header-container {
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 100%;
-        }
-
-        .logo {
-            font-size: 1.8rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        nav {
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            margin: 0 2rem;
-        }
-
-        nav a {
-            color: #a0a0a0;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        nav a:hover {
-            color: #ffffff;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-shrink: 0;
-        }
-
-        .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            outline: none;
-            font-family: inherit;
-            white-space: nowrap;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-        }
-
-        .btn-outline:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #ffffff;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        #dashboard-btn {
-            display: none !important;
-        }
-
-        #dashboard-btn.visible {
-            display: inline-flex !important;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* HERO SECTION - LAYOUT FORCÉ SIDE-BY-SIDE */
-        .hero {
-            width: 100%;
-            min-height: 100vh;
-            padding-top: 70px;
-            background: radial-gradient(ellipse at top right, #1a1a2e 0%, #0a0a0a 60%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -20%;
-            right: -10%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
-            animation: pulse 8s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .hero-container {
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 4rem 2rem;
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-between;
-            align-items: center;
-            gap: 4rem;
-            min-height: calc(100vh - 70px);
-        }
-
-        .hero-content {
-            flex: 1 1 50% !important;
-            max-width: 600px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-content h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-content h1 span {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-content p {
-            font-size: 1.2rem;
-            color: #a0a0a0;
-            margin-bottom: 2rem;
-            line-height: 1.7;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 3rem;
-            flex-wrap: wrap;
-        }
-
-        .hero-buttons .btn {
-            padding: 1rem 2rem;
-            font-size: 1rem;
-        }
-
-        .hero-stats {
-            display: flex;
-            gap: 3rem;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stat-number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #667eea;
-            line-height: 1;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 0.3rem;
-        }
-
-        .hero-image-container {
-            flex: 1 1 50% !important;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-image-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 550px;
-        }
-
-        .hero-image {
-            width: 100%;
-            height: auto;
-            border-radius: 24px;
-            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
-            display: block;
-        }
-
-        .floating-card {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 1rem 1.5rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            font-size: 0.9rem;
-            font-weight: 500;
-            animation: float 6s ease-in-out infinite;
-            white-space: nowrap;
-        }
-
-        .floating-card.top-right {
-            top: 5%;
-            right: -5%;
-            animation-delay: 0s;
-        }
-
-        .floating-card.bottom-left {
-            bottom: 15%;
-            left: -10%;
-            animation-delay: 3s;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-        }
-
-        /* SECTIONS COMMUNES */
-        section {
-            width: 100%;
-            padding: 5rem 2rem;
-        }
-
-        .section-container {
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 3rem;
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-
-        .see-all {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: gap 0.3s;
-        }
-
-        .see-all:hover {
-            gap: 1rem;
-        }
-
-        /* CATEGORIES - GRILLE FORCÉE */
-        .categories {
-            background: #0a0a0a;
-        }
-
-        .categories-grid {
-            display: grid !important;
-            grid-template-columns: repeat(4, 1fr) !important;
-            gap: 1.5rem;
-            width: 100%;
-        }
-
-        .category-card {
-            background: linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%);
-            border-radius: 20px;
-            padding: 2.5rem 2rem;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-        }
-
-        .category-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            border-color: rgba(102, 126, 234, 0.5);
-            box-shadow: 0 25px 50px rgba(102, 126, 234, 0.2);
-        }
-
-        .category-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .category-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .category-count {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        /* PRODUCTS - GRILLE FORCÉE */
-        .products {
-            background: linear-gradient(180deg, #0a0a0a 0%, #111 100%);
-        }
-
-        .products-grid {
-            display: grid !important;
-            grid-template-columns: repeat(4, 1fr) !important;
-            gap: 2rem;
-            width: 100%;
-        }
-
-        .product-card {
-            background: #1a1a1a;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-        }
-
-        .product-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
-            border-color: rgba(102, 126, 234, 0.3);
-        }
-
-        .product-image-wrapper {
-            position: relative;
-            width: 100%;
-            height: 280px;
-            overflow: hidden;
-            background: #222;
-        }
-
-        .product-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s;
-        }
-
-        .product-card:hover .product-image {
-            transform: scale(1.1);
-        }
-
-        .discount-badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            z-index: 2;
-        }
-
-        .product-info {
-            padding: 1.5rem;
-        }
-
-        .product-brand {
-            color: #667eea;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        .product-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .product-price-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .product-price {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .product-original-price {
-            text-decoration: line-through;
-            color: #666;
-            font-size: 0.95rem;
-        }
-
-        /* LOADER */
-        .loader-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 4rem;
-        }
-
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(102, 126, 234, 0.2);
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* FEATURES - GRILLE FORCÉE */
-        .features {
-            background: #0a0a0a;
-        }
-
-        .features-grid {
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 3rem;
-            width: 100%;
-        }
-
-        .feature-card {
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .feature-icon {
-            width: 90px;
-            height: 90px;
-            margin: 0 auto 1.5rem;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
-            border-radius: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            color: #667eea;
-            transition: all 0.3s;
-        }
-
-        .feature-card:hover .feature-icon {
-            transform: scale(1.1) rotate(5deg);
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
-        }
-
-        .feature-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .feature-desc {
-            color: #888;
-            line-height: 1.8;
-            font-size: 1rem;
-        }
-
-        /* CTA SECTION */
-        .cta {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .cta::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23667eea' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            opacity: 0.5;
-        }
-
-        .cta-content {
-            position: relative;
-            z-index: 1;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .cta h2 {
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-        }
-
-        .cta p {
-            font-size: 1.2rem;
-            color: #a0a0a0;
-            margin-bottom: 2.5rem;
-        }
-
-        .cta-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .cta-buttons .btn {
-            padding: 1rem 2.5rem;
-            font-size: 1.1rem;
-        }
-
-        /* FOOTER */
-        footer {
-            background: #050505;
-            padding: 5rem 2rem 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .footer-grid {
-            display: grid !important;
-            grid-template-columns: 2fr 1fr 1fr 1fr !important;
-            gap: 4rem;
-            max-width: 1400px;
-            margin: 0 auto 4rem;
-        }
-
-        .footer-brand .logo {
-            margin-bottom: 1.5rem;
-            display: inline-block;
-        }
-
-        .footer-brand p {
-            color: #666;
-            line-height: 1.8;
-            font-size: 0.95rem;
-        }
-
-        .footer-column h4 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: #ffffff;
-        }
-
-        .footer-column ul {
-            list-style: none;
-        }
-
-        .footer-column li {
-            margin-bottom: 0.75rem;
-        }
-
-        .footer-column a {
-            color: #666;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 0.95rem;
-        }
-
-        .footer-column a:hover {
-            color: #667eea;
-            padding-left: 5px;
-        }
-
-        .footer-bottom {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .social-links a {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #888;
-            transition: all 0.3s;
-            text-decoration: none;
-        }
-
-        .social-links a:hover {
-            background: #667eea;
-            color: #ffffff;
-            transform: translateY(-3px);
-        }
-
-        /* MODALS */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: #1a1a1a;
-            border-radius: 24px;
-            padding: 2.5rem;
-            max-width: 450px;
-            width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            animation: modalSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes modalSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.9);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Brandia – La marketplace des marques</title>
+  <meta name="description" content="Produits officiels, livraison par la marque.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandia: {
+              primary: '#6366f1',      // Indigo principal
+              secondary: '#8b5cf6',    // Violet
+              accent: '#ec4899',       // Rose/Pink
+              dark: '#0f172a',         // Slate 900
+              darker: '#020617',       // Slate 950
+              card: '#1e293b',         // Slate 800
+              border: '#334155',       // Slate 700
+              text: '#f8fafc',         // Slate 50
+              muted: '#94a3b8',        // Slate 400
+              success: '#10b981',      // Emerald
+              warning: '#f59e0b',      // Amber
+              danger: '#ef4444',        // Red
             }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
         }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        .modal-close {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            background: none;
-            border: none;
-            color: #666;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
+  <style>
+    /* ========== VARIABLES COULEURS BRANDIA ========== */
+    :root {
+      --brandia-primary: #6366f1;
+      --brandia-primary-hover: #4f46e5;
+      --brandia-secondary: #8b5cf6;
+      --brandia-accent: #ec4899;
+      --brandia-dark: #0f172a;
+      --brandia-darker: #020617;
+      --brandia-card: #1e293b;
+      --brandia-card-hover: #334155;
+      --brandia-border: #334155;
+      --brandia-text: #f8fafc;
+      --brandia-text-muted: #94a3b8;
+      --brandia-success: #10b981;
+      --brandia-warning: #f59e0b;
+      --brandia-danger: #ef4444;
+      --brandia-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --brandia-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    }
 
-        .modal-close:hover {
-            color: #ffffff;
-        }
+    /* ========== BASE STYLES ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        .modal h3 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-        }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--brandia-dark);
+      color: var(--brandia-text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-width: 320px;
+    }
 
-        .modal p {
-            color: #888;
-            margin-bottom: 1.5rem;
-        }
+    /* ========== CONTAINER ========== */
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
 
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
+    @media (min-width: 640px) {
+      .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+    }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
+    @media (min-width: 1024px) {
+      .container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+      }
+    }
 
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 1rem;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: #0f0f0f;
-            color: #ffffff;
-            font-family: inherit;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
+    /* ========== HEADER STYLES ========== */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--brandia-border);
+    }
 
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      gap: 1rem;
+    }
 
-        .form-group input::placeholder {
-            color: #666;
-        }
+    /* Logo Brandia */
+    .brandia-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      transition: transform 0.3s ease;
+    }
 
-        .role-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
+    .brandia-logo:hover {
+      transform: scale(1.02);
+    }
 
-        .role-option {
-            padding: 1.5rem;
-            border-radius: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: #0f0f0f;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
+    .brandia-icon-wrap {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
 
-        .role-option:hover {
-            border-color: rgba(102, 126, 234, 0.5);
-        }
+    .brandia-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 12px;
+      background: var(--brandia-gradient);
+      opacity: 0.3;
+      filter: blur(8px);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
 
-        .role-option.selected {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-        }
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.1); opacity: 0.5; }
+    }
 
-        .role-option i {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            color: #667eea;
-        }
+    .brandia-icon-bg {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--brandia-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
 
-        .role-option div {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
+    .brandia-icon-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shine 3s infinite;
+    }
 
-        .role-option small {
-            color: #666;
-            font-size: 0.75rem;
-        }
+    @keyframes shine {
+      0% { left: -100%; }
+      50%, 100% { left: 200%; }
+    }
 
-        .btn-full {
-            width: 100%;
-            padding: 1rem;
-            font-size: 1rem;
-        }
+    .brandia-icon-svg {
+      width: 24px;
+      height: 24px;
+      color: white;
+    }
 
-        .modal-footer {
-            text-align: center;
-            margin-top: 1.5rem;
-            color: #666;
-            font-size: 0.9rem;
-        }
+    .brandia-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
 
-        .modal-footer a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
+    /* Navigation */
+    .nav-desktop {
+      display: none;
+      align-items: center;
+      gap: 2rem;
+    }
 
-        /* RESPONSIVE - BREAKPOINTS CLAIRES */
-        @media (max-width: 1200px) {
-            .categories-grid,
-            .products-grid {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-        }
+    @media (min-width: 1024px) {
+      .nav-desktop {
+        display: flex;
+      }
+    }
 
-        @media (max-width: 992px) {
-            .hero-container {
-                flex-direction: column !important;
-                text-align: center;
-                gap: 3rem;
-                padding-top: 3rem;
-            }
+    .nav-link {
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      position: relative;
+    }
 
-            .hero-content {
-                max-width: 100%;
-            }
+    .nav-link:hover {
+      color: var(--brandia-text);
+    }
 
-            .hero-content h1 {
-                font-size: 3rem;
-            }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--brandia-gradient);
+      transition: width 0.3s;
+    }
 
-            .hero-buttons {
-                justify-content: center;
-            }
+    .nav-link:hover::after {
+      width: 100%;
+    }
 
-            .hero-stats {
-                justify-content: center;
-            }
+    /* Dropdown */
+    .dropdown {
+      position: relative;
+    }
 
-            .hero-image-container {
-                order: -1;
-            }
+    .dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 0.5rem 0;
+    }
 
-            .hero-image-wrapper {
-                max-width: 450px;
-            }
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      left: 0;
+      width: 320px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 0.75rem;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      max-height: 60vh;
+      overflow-y: auto;
+    }
 
-            .floating-card {
-                display: none;
-            }
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
 
-            .features-grid {
-                grid-template-columns: 1fr !important;
-                gap: 2rem;
-            }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem;
+      border-radius: 8px;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
 
-            .footer-grid {
-                grid-template-columns: 1fr 1fr !important;
-                gap: 3rem;
-            }
-        }
+    .dropdown-item:hover {
+      background: var(--brandia-card-hover);
+      color: var(--brandia-text);
+    }
 
-        @media (max-width: 768px) {
-            .header-container {
-                padding: 0 1rem;
-            }
+    .dropdown-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
 
-            nav {
-                display: none;
-            }
+    /* Header Right Section */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
 
-            .categories-grid,
-            .products-grid {
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 1rem;
-            }
+    .country-selector {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-            .hero-content h1 {
-                font-size: 2.5rem;
-            }
+    .country-selector:hover {
+      border-color: var(--brandia-primary);
+    }
 
-            .section-title {
-                font-size: 2rem;
-            }
+    .lang-switch {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
 
-            .cta h2 {
-                font-size: 2.2rem;
-            }
+    /* Auth Buttons */
+    .auth-buttons {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
-            .footer-grid {
-                grid-template-columns: 1fr !important;
-                gap: 2.5rem;
-            }
+    .btn-login {
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
 
-            .footer-bottom {
-                flex-direction: column;
-                gap: 1.5rem;
-                text-align: center;
-            }
-        }
+    .btn-login:hover {
+      color: var(--brandia-text);
+      background: var(--brandia-card);
+    }
 
-        @media (max-width: 480px) {
-            .categories-grid,
-            .products-grid {
-                grid-template-columns: 1fr !important;
-            }
+    .btn-register {
+      background: var(--brandia-primary);
+      color: white;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      position: relative;
+    }
 
-            .hero-content h1 {
-                font-size: 2rem;
-            }
+    .btn-register:hover {
+      background: var(--brandia-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+    }
 
-            .hero-stats {
-                flex-direction: column;
-                gap: 1.5rem;
-            }
+    .register-dropdown {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      width: 240px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 0.5rem;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
 
-            .stat-item {
-                text-align: center;
-            }
+    .btn-register:hover .register-dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
 
-            .role-selector {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    .register-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      color: var(--brandia-text);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .register-option:hover {
+      background: var(--brandia-card-hover);
+    }
+
+    .register-option-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .register-option-icon.client {
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--brandia-primary);
+    }
+
+    .register-option-icon.supplier {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--brandia-success);
+    }
+
+    /* User Menu */
+    .user-menu, .supplier-menu {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .user-menu.active, .supplier-menu.active {
+      display: flex;
+    }
+
+    .btn-dashboard {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--brandia-success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-dashboard:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
+
+    .user-name {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+    }
+
+    .btn-logout {
+      color: var(--brandia-danger);
+      background: none;
+      border: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover {
+      color: #dc2626;
+    }
+
+    /* Cart */
+    .cart-link {
+      position: relative;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      padding: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .cart-link:hover {
+      color: var(--brandia-text);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background: var(--brandia-primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.625rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cart-badge.hidden {
+      display: none;
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      color: var(--brandia-text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mobile-toggle:hover {
+      border-color: var(--brandia-primary);
+    }
+
+    @media (min-width: 1024px) {
+      .mobile-toggle {
+        display: none;
+      }
+    }
+
+    /* ========== HERO SECTION ========== */
+    .hero {
+      padding: 4rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (min-width: 1024px) {
+      .hero-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .hero-content h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .hero-content h1 {
+        font-size: 3.5rem;
+      }
+    }
+
+    .hero-content h1 span {
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-content p {
+      color: var(--brandia-text-muted);
+      font-size: 1.125rem;
+      margin-bottom: 2rem;
+      max-width: 480px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn-primary {
+      background: var(--brandia-gradient);
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.6);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--brandia-text);
+      border: 1px solid var(--brandia-border);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--brandia-primary);
+      background: var(--brandia-card);
+    }
+
+    .hero-image {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.5) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .hero-image img {
+      width: 100%;
+      height: 400px;
+      object-fit: cover;
+    }
+
+    @media (min-width: 1024px) {
+      .hero-image img {
+        height: 500px;
+      }
+    }
+
+    /* ========== STATS SECTION ========== */
+    .stats {
+      padding: 3rem 0;
+      background: rgba(30, 41, 59, 0.5);
+      border-top: 1px solid var(--brandia-border);
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* ========== SECTIONS COMMUNES ========== */
+    .section {
+      padding: 5rem 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.875rem;
+      font-weight: 700;
+    }
+
+    @media (min-width: 640px) {
+      .section-title {
+        font-size: 2.25rem;
+      }
+    }
+
+    .section-subtitle {
+      color: var(--brandia-text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .link-arrow {
+      color: var(--brandia-primary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .link-arrow:hover {
+      gap: 0.75rem;
+    }
+
+    /* ========== CATEGORIES ========== */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .categories-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .categories-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (min-width: 1280px) {
+      .categories-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+
+    .category-card {
+      display: block;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 16px;
+      overflow: hidden;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .category-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--brandia-primary);
+      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+    }
+
+    .category-image {
+      position: relative;
+      height: 120px;
+      overflow: hidden;
+    }
+
+    .category-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s;
+    }
+
+    .category-card:hover .category-image img {
+      transform: scale(1.1);
+    }
+
+    .category-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, var(--brandia-card) 0%, transparent 60%);
+    }
+
+    .category-icon {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: white;
+      z-index: 2;
+    }
+
+    .category-info {
+      padding: 1rem;
+    }
+
+    .category-name {
+      color: var(--brandia-text);
+      font-weight: 600;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ========== PRODUCTS GRID ========== */
+    .products-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .products-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .product-card {
+      display: block;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 16px;
+      overflow: hidden;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--brandia-primary);
+      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+    }
+
+    .product-image {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+    }
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s;
+    }
+
+    .product-card:hover .product-image img {
+      transform: scale(1.05);
+    }
+
+    .product-badge {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      background: var(--brandia-danger);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      z-index: 2;
+    }
+
+    .product-info {
+      padding: 1.25rem;
+    }
+
+    .product-category {
+      color: var(--brandia-primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .product-name {
+      color: var(--brandia-text);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+
+    .product-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .product-price {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .price-current {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .price-current.promo {
+      color: var(--brandia-success);
+    }
+
+    .price-original {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      text-decoration: line-through;
+    }
+
+    .btn-add-cart {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add-cart:hover {
+      background: var(--brandia-primary-hover);
+      transform: scale(1.05);
+    }
+
+    /* ========== WHY BRANDIA ========== */
+    .why-section {
+      background: var(--brandia-gradient-subtle);
+      border-top: 1px solid var(--brandia-border);
+    }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    @media (min-width: 1024px) {
+      .why-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .why-content h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+    }
+
+    .why-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .why-item {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .why-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(99, 102, 241, 0.1);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brandia-primary);
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .why-text h3 {
+      color: var(--brandia-text);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .why-text p {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+
+    .why-image {
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .why-image img {
+      width: 100%;
+      height: 400px;
+      object-fit: cover;
+    }
+
+    @media (min-width: 1024px) {
+      .why-image img {
+        height: 100%;
+        min-height: 500px;
+      }
+    }
+
+    /* ========== LOADER ========== */
+    .loader {
+      display: flex;
+      justify-content: center;
+      padding: 3rem;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--brandia-border);
+      border-top-color: var(--brandia-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ========== FOOTER ========== */
+    .footer {
+      background: var(--brandia-darker);
+      border-top: 1px solid var(--brandia-border);
+      padding: 4rem 0 2rem;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (min-width: 640px) {
+      .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .footer-grid {
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      }
+    }
+
+    .footer-brand {
+      max-width: 300px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--brandia-gradient);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .footer-logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .footer-desc {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .social-link {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .social-link:hover {
+      background: var(--brandia-primary);
+      border-color: var(--brandia-primary);
+      color: white;
+    }
+
+    .footer-title {
+      color: var(--brandia-text);
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .footer-link {
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .footer-link:hover {
+      color: var(--brandia-primary);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--brandia-border);
+      padding-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    @media (min-width: 640px) {
+      .footer-bottom {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+      }
+    }
+
+    .footer-copyright {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+    }
+
+    .footer-payments {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .payment-icon {
+      color: var(--brandia-text-muted);
+      font-size: 1.5rem;
+    }
+
+    /* ========== TOAST ========== */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-left: 4px solid var(--brandia-primary);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.success {
+      border-left-color: var(--brandia-success);
+    }
+
+    .toast.error {
+      border-left-color: var(--brandia-danger);
+    }
+
+    /* ========== SKELETON LOADING ========== */
+    .skeleton {
+      background: linear-gradient(90deg, var(--brandia-card) 25%, var(--brandia-card-hover) 50%, var(--brandia-card) 75%);
+      background-size: 200% 100%;
+      animation: skeleton 1.5s infinite;
+      border-radius: 8px;
+    }
+
+    @keyframes skeleton {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ========== MOBILE MENU ========== */
+    .mobile-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--brandia-dark);
+      z-index: 100;
+      padding: 1.5rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s;
+      overflow-y: auto;
+    }
+
+    .mobile-menu.open {
+      transform: translateX(0);
+    }
+
+    .mobile-menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .mobile-menu-close {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      color: var(--brandia-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .mobile-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .mobile-nav-link {
+      color: var(--brandia-text);
+      text-decoration: none;
+      font-size: 1.125rem;
+      font-weight: 500;
+      padding: 1rem;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .mobile-nav-link:hover {
+      background: var(--brandia-card);
+    }
+
+    /* ========== UTILITAIRES ========== */
+    .hidden {
+      display: none !important;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--brandia-dark);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--brandia-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--brandia-card-hover);
+    }
+  </style>
 </head>
 <body>
-    <!-- HEADER -->
-    <header>
-        <div class="header-container">
-            <div class="logo">Brandia</div>
-            <nav>
-                <a href="#categories">Catégories</a>
-                <a href="#products">Nouveautés</a>
-                <a href="#features">À propos</a>
-            </nav>
-            <div class="header-actions">
-                <button id="dashboard-btn" class="btn btn-outline" onclick="goToDashboard()">
-                    <i class="fas fa-chart-line"></i> Dashboard
-                </button>
-                <button class="btn btn-outline" onclick="showLoginModal()">Connexion</button>
-                <button class="btn btn-primary" onclick="showRegisterModal()">S'inscrire</button>
-            </div>
-        </div>
-    </header>
 
-    <!-- HERO SECTION -->
-    <section class="hero">
-        <div class="hero-container">
-            <div class="hero-content">
-                <h1>Achetez directement <span>chez les marques</span></h1>
-                <p>Produits authentiques, livraison par la marque, commission réduite. Découvrez des milliers de produits originaux directement auprès des créateurs.</p>
-                <div class="hero-buttons">
-                    <button class="btn btn-primary" onclick="scrollToSection('products')">
-                        Explorer le catalogue <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
-                    </button>
-                    <button class="btn btn-outline" onclick="showSupplierModal()">
-                        Devenir vendeur
-                    </button>
-                </div>
-                <div class="hero-stats">
-                    <div class="stat-item">
-                        <div class="stat-number">50+</div>
-                        <div class="stat-label">Marques partenaires</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">1000+</div>
-                        <div class="stat-label">Produits disponibles</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">28</div>
-                        <div class="stat-label">Pays desservis</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">48h</div>
-                        <div class="stat-label">Livraison moyenne</div>
-                    </div>
-                </div>
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <!-- Logo -->
+        <a href="index.html" class="brandia-logo">
+          <div class="brandia-icon-wrap">
+            <div class="brandia-pulse"></div>
+            <div class="brandia-icon-bg">
+              <svg class="brandia-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
             </div>
-            <div class="hero-image-container">
-                <div class="hero-image-wrapper">
-                    <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80" 
-                         alt="Shopping Brandia" 
-                         class="hero-image">
-                    <div class="floating-card top-right">
-                        <i class="fas fa-check-circle" style="color: #667eea; margin-right: 0.5rem;"></i>
-                        Authenticité garantie
-                    </div>
-                    <div class="floating-card bottom-left">
-                        <i class="fas fa-shipping-fast" style="color: #667eea; margin-right: 0.5rem;"></i>
-                        Livraison 24-48h
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+          </div>
+          <span class="brandia-text">Brandia</span>
+        </a>
 
-    <!-- CATEGORIES SECTION -->
-    <section class="categories" id="categories">
-        <div class="section-container">
-            <div class="section-header">
-                <h2 class="section-title">Nos catégories</h2>
-                <a href="#" class="see-all">Voir tout <i class="fas fa-arrow-right"></i></a>
+        <!-- Navigation Desktop -->
+        <nav class="nav-desktop">
+          <a href="nouveautes.html" class="nav-link">Nouveautés</a>
+          <a href="marques.html" class="nav-link">Marques</a>
+          
+          <div class="dropdown">
+            <div class="dropdown-trigger nav-link">
+              <span>Catégories</span>
+              <i class="fas fa-chevron-down text-xs"></i>
             </div>
-            <div class="categories-grid">
-                <div class="category-card" onclick="filterByCategory('mode')">
-                    <div class="category-icon"><i class="fas fa-tshirt"></i></div>
-                    <div class="category-name">Mode</div>
-                    <div class="category-count">320 produits</div>
-                </div>
-                <div class="category-card" onclick="filterByCategory('tech')">
-                    <div class="category-icon"><i class="fas fa-mobile-alt"></i></div>
-                    <div class="category-name">Tech</div>
-                    <div class="category-count">180 produits</div>
-                </div>
-                <div class="category-card" onclick="filterByCategory('maison')">
-                    <div class="category-icon"><i class="fas fa-home"></i></div>
-                    <div class="category-name">Maison</div>
-                    <div class="category-count">245 produits</div>
-                </div>
-                <div class="category-card" onclick="filterByCategory('beaute')">
-                    <div class="category-icon"><i class="fas fa-spa"></i></div>
-                    <div class="category-name">Beauté</div>
-                    <div class="category-count">156 produits</div>
-                </div>
+            <div class="dropdown-menu" id="dropdown-categories">
+              <!-- Injecté par JS -->
             </div>
-        </div>
-    </section>
+          </div>
+          
+          <a href="offres.html" class="nav-link">Offres</a>
+          <a href="#about" class="nav-link">À propos</a>
+        </nav>
 
-    <!-- PRODUCTS SECTION -->
-    <section class="products" id="products">
-        <div class="section-container">
-            <div class="section-header">
-                <div>
-                    <h2 class="section-title">Nos meilleures offres</h2>
-                    <p style="color: #888; margin-top: 0.5rem;">Profitez de nos promotions exclusives</p>
-                </div>
-                <a href="#" class="see-all">Voir tout le catalogue <i class="fas fa-arrow-right"></i></a>
-            </div>
-            <div id="products-loader" class="loader-container">
-                <div class="loader"></div>
-            </div>
-            <div class="products-grid" id="products-grid" style="display: none;">
-                <!-- Produits injectés par JS -->
-            </div>
-        </div>
-    </section>
+        <!-- Actions -->
+        <div class="header-actions">
+          <select class="country-selector" id="countrySelector">
+            <option value="">🌍 Chargement...</option>
+          </select>
 
-    <!-- FEATURES SECTION -->
-    <section class="features" id="features">
-        <div class="section-container">
-            <div class="section-header" style="justify-content: center; margin-bottom: 4rem;">
-                <h2 class="section-title">Pourquoi Brandia ?</h2>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                    <h3 class="feature-title">Produits authentiques</h3>
-                    <p class="feature-desc">Achetez directement auprès des marques officielles, garantie authenticité 100%.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-shipping-fast"></i></div>
-                    <h3 class="feature-title">Livraison rapide</h3>
-                    <p class="feature-desc">Expédition directe par les marques, livraison en 24-48h selon votre localisation.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-tags"></i></div>
-                    <h3 class="feature-title">Prix justes</h3>
-                    <p class="feature-desc">Commission modulable, les meilleurs prix pour les marques et les clients.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+          <select class="lang-switch" id="langSwitch">
+            <option value="fr">🇫🇷 FR</option>
+            <option value="en">🇬🇧 EN</option>
+          </select>
 
-    <!-- CTA SECTION -->
-    <section class="cta">
-        <div class="cta-content">
-            <h2>Rejoignez Brandia aujourd'hui</h2>
-            <p>Que vous soyez une marque cherchant à vendre ou un client à la recherche de produits authentiques, Brandia est fait pour vous.</p>
-            <div class="cta-buttons">
-                <button class="btn btn-primary" onclick="showRegisterModal('buyer')">Commencer à acheter</button>
-                <button class="btn btn-outline" onclick="showRegisterModal('supplier')" style="border-color: rgba(255,255,255,0.3);">Devenir vendeur</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-grid">
-            <div class="footer-brand">
-                <div class="logo">Brandia</div>
-                <p>La marketplace qui connecte directement les marques avec leurs clients. Produits authentiques, prix justes, livraison rapide.</p>
-            </div>
-            <div class="footer-column">
-                <h4>Navigation</h4>
-                <ul>
-                    <li><a href="#">Accueil</a></li>
-                    <li><a href="#products">Produits</a></li>
-                    <li><a href="#">Marques</a></li>
-                    <li><a href="#categories">Catégories</a></li>
-                </ul>
-            </div>
-            <div class="footer-column">
-                <h4>Aide</h4>
-                <ul>
-                    <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Livraison</a></li>
-                    <li><a href="#">Retours</a></li>
-                    <li><a href="#">Contact</a></li>
-                </ul>
-            </div>
-            <div class="footer-column">
-                <h4>Légal</h4>
-                <ul>
-                    <li><a href="#">CGU</a></li>
-                    <li><a href="#">Confidentialité</a></li>
-                    <li><a href="#">Cookies</a></li>
-                    <li><a href="#">Mentions légales</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <div>© 2026 Brandia. Tous droits réservés.</div>
-            <div class="social-links">
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-linkedin"></i></a>
-                <a href="#"><i class="fab fa-facebook"></i></a>
-            </div>
-        </div>
-    </footer>
-
-    <!-- LOGIN MODAL -->
-    <div class="modal-overlay" id="login-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('login-modal')"><i class="fas fa-times"></i></button>
-            <h3>Connexion</h3>
-            <p>Connectez-vous à votre compte Brandia</p>
-            <form onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="login-email" placeholder="votre@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Mot de passe</label>
-                    <input type="password" id="login-password" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full">Se connecter</button>
-            </form>
-            <div class="modal-footer">
-                Pas encore de compte ? <a href="#" onclick="switchModal('login-modal', 'register-modal')">S'inscrire</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- REGISTER MODAL -->
-    <div class="modal-overlay" id="register-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('register-modal')"><i class="fas fa-times"></i></button>
-            <h3>Créer un compte</h3>
-            <p>Rejoignez la marketplace des marques</p>
-            <div class="role-selector">
-                <div class="role-option" id="role-buyer" onclick="selectRole('buyer')">
-                    <i class="fas fa-shopping-bag"></i>
-                    <div>Client</div>
-                    <small>Acheteur</small>
-                </div>
-                <div class="role-option" id="role-supplier" onclick="selectRole('supplier')">
+          <!-- Non connecté -->
+          <div class="auth-buttons" id="auth-buttons">
+            <a href="login.html" class="btn-login">Connexion</a>
+            <div class="btn-register" style="position: relative;">
+              <span>Inscription</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+              <div class="register-dropdown">
+                <a href="register.html?type=client" class="register-option">
+                  <div class="register-option-icon client">
+                    <i class="fas fa-user"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight: 600; color: var(--brandia-text);">Client</div>
+                    <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Acheteur</div>
+                  </div>
+                </a>
+                <div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>
+                <a href="register.html?type=supplier" class="register-option">
+                  <div class="register-option-icon supplier">
                     <i class="fas fa-store"></i>
-                    <div>Partenaire</div>
-                    <small>Marque / Vendeur</small>
-                </div>
+                  </div>
+                  <div>
+                    <div style="font-weight: 600; color: var(--brandia-text);">Partenaire</div>
+                    <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Vendeur / Marque</div>
+                  </div>
+                </a>
+              </div>
             </div>
-            <form onsubmit="handleRegister(event)">
-                <div class="form-group">
-                    <label>Nom complet</label>
-                    <input type="text" id="register-name" placeholder="Jean Dupont" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="register-email" placeholder="votre@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Mot de passe</label>
-                    <input type="password" id="register-password" placeholder="••••••••" required>
-                </div>
-                <input type="hidden" id="register-role" value="buyer">
-                <button type="submit" class="btn btn-primary btn-full">Créer mon compte</button>
-            </form>
-            <div class="modal-footer">
-                Déjà un compte ? <a href="#" onclick="switchModal('register-modal', 'login-modal')">Se connecter</a>
+          </div>
+
+          <!-- Client connecté -->
+          <div class="user-menu" id="user-menu">
+            <span class="user-name" id="user-name"></span>
+            <button class="btn-logout" onclick="logout()">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </div>
+
+          <!-- Fournisseur connecté -->
+          <div class="supplier-menu" id="supplier-menu">
+            <a href="supplier/dashboard.html" class="btn-dashboard">
+              <i class="fas fa-chart-line"></i>
+              <span>Dashboard</span>
+            </a>
+            <span class="user-name" id="supplier-name"></span>
+            <button class="btn-logout" onclick="logout()">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </div>
+
+          <!-- Panier -->
+          <a href="panier.html" class="cart-link">
+            <i class="fas fa-shopping-bag text-xl"></i>
+            <span class="cart-badge hidden" id="cart-count">0</span>
+          </a>
+
+          <!-- Mobile Toggle -->
+          <button class="mobile-toggle" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <div class="brandia-logo">
+        <div class="brandia-icon-wrap">
+          <div class="brandia-icon-bg">
+            <svg class="brandia-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            </svg>
+          </div>
+        </div>
+        <span class="brandia-text">Brandia</span>
+      </div>
+      <button class="mobile-menu-close" onclick="toggleMobileMenu()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="mobile-nav">
+      <a href="nouveautes.html" class="mobile-nav-link">Nouveautés</a>
+      <a href="marques.html" class="mobile-nav-link">Marques</a>
+      <a href="categories.html" class="mobile-nav-link">Catégories</a>
+      <a href="offres.html" class="mobile-nav-link">Offres</a>
+      <a href="login.html" class="mobile-nav-link">Connexion</a>
+      <a href="register.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Inscription</a>
+    </nav>
+  </div>
+
+  <!-- ========== HERO SECTION ========== -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-content fade-in">
+          <h1>
+            Achetez directement<br>
+            <span>chez les marques</span>
+          </h1>
+          <p>Produits authentiques, livraison par la marque, commission réduite. Découvrez des milliers de produits originaux directement auprès des créateurs.</p>
+          <div class="hero-buttons">
+            <a href="catalogue.html" class="btn-primary">
+              <span>Explorer le catalogue</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a href="register.html?type=supplier" class="btn-secondary">
+              <span>Devenir vendeur</span>
+              <i class="fas fa-store"></i>
+            </a>
+          </div>
+        </div>
+        <div class="hero-image fade-in">
+          <img src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&h=600&fit=crop&q=80" alt="Produits Brandia">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STATS SECTION ========== -->
+  <section class="stats">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value" id="stat-brands">50+</div>
+          <div class="stat-label">Marques partenaires</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-products">1000+</div>
+          <div class="stat-label">Produits disponibles</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-countries">28</div>
+          <div class="stat-label">Pays desservis</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-delivery">48h</div>
+          <div class="stat-label">Livraison moyenne</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CATEGORIES SECTION ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Nos catégories</h2>
+          <p class="section-subtitle">Explorez notre univers</p>
+        </div>
+        <a href="categories.html" class="link-arrow">
+          Voir tout <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+      <div class="categories-grid" id="categories-grid">
+        <div class="skeleton" style="height: 180px; grid-column: 1 / -1;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURED PRODUCTS SECTION ========== -->
+  <section class="section" style="background: var(--brandia-gradient-subtle);">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Nos meilleures offres</h2>
+          <p class="section-subtitle">Profitez de nos promotions exclusives</p>
+        </div>
+        <a href="catalogue.html" class="link-arrow">
+          Voir tout le catalogue <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+      
+      <div class="loader" id="featured-loader">
+        <div class="spinner"></div>
+      </div>
+      
+      <div class="products-grid hidden" id="featured-products-grid">
+        <!-- Injecté par JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== WHY BRANDIA SECTION ========== -->
+  <section class="section why-section" id="about">
+    <div class="container">
+      <div class="why-grid">
+        <div class="why-content">
+          <h2>Pourquoi Brandia ?</h2>
+          <div class="why-list">
+            <div class="why-item">
+              <div class="why-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="why-text">
+                <h3>Produits authentiques</h3>
+                <p>Achetez directement auprès des marques officielles, garantie authenticité 100%.</p>
+              </div>
             </div>
+            <div class="why-item">
+              <div class="why-icon">
+                <i class="fas fa-shipping-fast"></i>
+              </div>
+              <div class="why-text">
+                <h3>Livraison rapide</h3>
+                <p>Expédition directe par les marques, livraison en 24-48h selon votre localisation.</p>
+              </div>
+            </div>
+            <div class="why-item">
+              <div class="why-icon">
+                <i class="fas fa-hand-holding-usd"></i>
+              </div>
+              <div class="why-text">
+                <h3>Prix justes</h3>
+                <p>Commission modulable, les meilleurs prix pour les marques et les clients.</p>
+              </div>
+            </div>
+          </div>
         </div>
-    </div>
-
-    <!-- SUPPLIER MODAL -->
-    <div class="modal-overlay" id="supplier-modal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal('supplier-modal')"><i class="fas fa-times"></i></button>
-            <h3>Devenir vendeur</h3>
-            <p>Rejoignez nos marques partenaires</p>
-            <form onsubmit="handleSupplierRequest(event)">
-                <div class="form-group">
-                    <label>Nom de la marque</label>
-                    <input type="text" id="supplier-brand" placeholder="Votre marque" required>
-                </div>
-                <div class="form-group">
-                    <label>Email professionnel</label>
-                    <input type="email" id="supplier-email" placeholder="contact@votremarque.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Site web (optionnel)</label>
-                    <input type="url" id="supplier-website" placeholder="https://...">
-                </div>
-                <div class="form-group">
-                    <label>Message</label>
-                    <input type="text" id="supplier-message" placeholder="Décrivez votre activité..." style="padding: 1rem; height: auto;">
-                </div>
-                <button type="submit" class="btn btn-primary btn-full">Envoyer ma demande</button>
-            </form>
+        <div class="why-image">
+          <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop&q=80" alt="Pourquoi Brandia">
         </div>
+      </div>
     </div>
+  </section>
 
-    <script>
-        // CONFIGURATION
-        const API_BASE_URL = 'https://brandia-1.onrender.com/api';
-        let selectedRole = 'buyer';
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- Brand -->
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <div class="footer-logo-icon">
+              <i class="fas fa-shopping-bag"></i>
+            </div>
+            <span class="footer-logo-text">Brandia</span>
+          </div>
+          <p class="footer-desc">
+            La marketplace des marques officielles. Achetez directement auprès des créateurs et marques authentiques.
+          </p>
+          <div class="footer-social">
+            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+          </div>
+        </div>
 
-        // INITIALISATION
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            loadProducts();
-            
-            // Fermer modals en cliquant à l'extérieur
-            document.querySelectorAll('.modal-overlay').forEach(modal => {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) closeModal(modal.id);
-                });
-            });
+        <!-- Links -->
+        <div>
+          <h4 class="footer-title">Acheter</h4>
+          <div class="footer-links">
+            <a href="catalogue.html" class="footer-link">Catalogue</a>
+            <a href="categories.html" class="footer-link">Catégories</a>
+            <a href="nouveautes.html" class="footer-link">Nouveautés</a>
+            <a href="offres.html" class="footer-link">Offres</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Vendre</h4>
+          <div class="footer-links">
+            <a href="register.html?type=supplier" class="footer-link">Devenir vendeur</a>
+            <a href="supplier/dashboard.html" class="footer-link">Espace fournisseur</a>
+            <a href="#" class="footer-link">Tarifs</a>
+            <a href="#" class="footer-link">Success stories</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Aide</h4>
+          <div class="footer-links">
+            <a href="contact.html" class="footer-link">Contact</a>
+            <a href="faq.html" class="footer-link">FAQ</a>
+            <a href="#" class="footer-link">Livraison</a>
+            <a href="#" class="footer-link">Retours</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Légal</h4>
+          <div class="footer-links">
+            <a href="#" class="footer-link">CGU</a>
+            <a href="#" class="footer-link">CGV</a>
+            <a href="#" class="footer-link">Confidentialité</a>
+            <a href="#" class="footer-link">Cookies</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copyright">© 2026 Brandia – Marketplace officielle des marques</p>
+        <div class="footer-payments">
+          <i class="fab fa-cc-visa payment-icon"></i>
+          <i class="fab fa-cc-mastercard payment-icon"></i>
+          <i class="fab fa-cc-amex payment-icon"></i>
+          <i class="fab fa-cc-paypal payment-icon"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="assets/js/api.js"></script>
+  
+  <script>
+    // ========== CONFIGURATION ==========
+    const CATEGORY_IMAGES = {
+      'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80',
+      'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80',
+      'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80',
+      'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80',
+      'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
+      'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80',
+      'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
+      'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80',
+      'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80',
+      'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80',
+      'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
+      'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80',
+      'parfumerie-interieur': 'https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=400&h=400&fit=crop&q=80',
+      'produits-ecologiques': 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=400&fit=crop&q=80',
+      'bebe-maternite': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80',
+      'animaux-pets': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop&q=80',
+      'sante-hygiene': 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80',
+      'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80',
+      'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80',
+      'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80',
+      'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80'
+    };
+
+    const BRANDIA_CATEGORIES = [
+      { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', color: 'from-pink-500 to-rose-500' },
+      { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: 'from-purple-500 to-indigo-500' },
+      { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', color: 'from-red-500 to-pink-500' },
+      { slug: 'soins-capillaires', name: 'Soins cheveux', icon: 'fa-cut', color: 'from-amber-500 to-orange-500' },
+      { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', color: 'from-emerald-500 to-teal-500' },
+      { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', color: 'from-blue-500 to-cyan-500' },
+      { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', color: 'from-yellow-500 to-amber-500' },
+      { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', color: 'from-orange-500 to-red-500' },
+      { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', color: 'from-green-500 to-emerald-500' },
+      { slug: 'high-tech-mobile', name: 'High-Tech', icon: 'fa-mobile-alt', color: 'from-indigo-500 to-blue-500' },
+      { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', color: 'from-violet-500 to-purple-500' },
+      { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', color: 'from-orange-500 to-red-500' }
+    ];
+
+    // ========== UTILITAIRES ==========
+    function formatPrice(price, currency = 'EUR') {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(price || 0);
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function getFlagEmoji(countryCode) {
+      const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+      return String.fromCodePoint(...codePoints);
+    }
+
+    // ========== MOBILE MENU ==========
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('open');
+      document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+    }
+
+    // ========== COUNTRIES ==========
+    function initCountries() {
+      const selector = document.getElementById('countrySelector');
+      const countries = {
+       'AF': { name: 'Afghanistan', currency: 'AFN' },
+      'AL': { name: 'Albanie', currency: 'ALL' },
+      'DZ': { name: 'Algérie', currency: 'DZD' },
+      'AD': { name: 'Andorre', currency: 'EUR' },
+      'AO': { name: 'Angola', currency: 'AOA' },
+      'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
+      'AR': { name: 'Argentine', currency: 'ARS' },
+      'AM': { name: 'Arménie', currency: 'AMD' },
+      'AU': { name: 'Australie', currency: 'AUD' },
+      'AT': { name: 'Autriche', currency: 'EUR' },
+      'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
+      'BS': { name: 'Bahamas', currency: 'BSD' },
+      'BH': { name: 'Bahreïn', currency: 'BHD' },
+      'BD': { name: 'Bangladesh', currency: 'BDT' },
+      'BB': { name: 'Barbade', currency: 'BBD' },
+      'BY': { name: 'Biélorussie', currency: 'BYN' },
+      'BE': { name: 'Belgique', currency: 'EUR' },
+      'BZ': { name: 'Belize', currency: 'BZD' },
+      'BJ': { name: 'Bénin', currency: 'XOF' },
+      'BT': { name: 'Bhoutan', currency: 'BTN' },
+      'BO': { name: 'Bolivie', currency: 'BOB' },
+      'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
+      'BW': { name: 'Botswana', currency: 'BWP' },
+      'BR': { name: 'Brésil', currency: 'BRL' },
+      'BN': { name: 'Brunei', currency: 'BND' },
+      'BG': { name: 'Bulgarie', currency: 'BGN' },
+      'BF': { name: 'Burkina Faso', currency: 'XOF' },
+      'BI': { name: 'Burundi', currency: 'BIF' },
+      'CV': { name: 'Cap-Vert', currency: 'CVE' },
+      'KH': { name: 'Cambodge', currency: 'KHR' },
+      'CM': { name: 'Cameroun', currency: 'XAF' },
+      'CA': { name: 'Canada', currency: 'CAD' },
+      'CF': { name: 'Centrafrique', currency: 'XAF' },
+      'TD': { name: 'Tchad', currency: 'XAF' },
+      'CL': { name: 'Chili', currency: 'CLP' },
+      'CN': { name: 'Chine', currency: 'CNY' },
+      'CO': { name: 'Colombie', currency: 'COP' },
+      'KM': { name: 'Comores', currency: 'KMF' },
+      'CG': { name: 'Congo', currency: 'XAF' },
+      'CD': { name: 'Congo (RDC)', currency: 'CDF' },
+      'CR': { name: 'Costa Rica', currency: 'CRC' },
+      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+      'HR': { name: 'Croatie', currency: 'EUR' },
+      'CU': { name: 'Cuba', currency: 'CUP' },
+      'CY': { name: 'Chypre', currency: 'EUR' },
+      'CZ': { name: 'République tchèque', currency: 'CZK' },
+      'DK': { name: 'Danemark', currency: 'DKK' },
+      'DJ': { name: 'Djibouti', currency: 'DJF' },
+      'DM': { name: 'Dominique', currency: 'XCD' },
+      'DO': { name: 'République dominicaine', currency: 'DOP' },
+      'EC': { name: 'Équateur', currency: 'USD' },
+      'EG': { name: 'Égypte', currency: 'EGP' },
+      'SV': { name: 'Salvador', currency: 'USD' },
+      'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
+      'ER': { name: 'Érythrée', currency: 'ERN' },
+      'EE': { name: 'Estonie', currency: 'EUR' },
+      'ET': { name: 'Éthiopie', currency: 'ETB' },
+      'FJ': { name: 'Fidji', currency: 'FJD' },
+      'FI': { name: 'Finlande', currency: 'EUR' },
+      'FR': { name: 'France', currency: 'EUR' },
+      'GA': { name: 'Gabon', currency: 'XAF' },
+      'GM': { name: 'Gambie', currency: 'GMD' },
+      'GE': { name: 'Géorgie', currency: 'GEL' },
+      'DE': { name: 'Allemagne', currency: 'EUR' },
+      'GH': { name: 'Ghana', currency: 'GHS' },
+      'GR': { name: 'Grèce', currency: 'EUR' },
+      'GD': { name: 'Grenade', currency: 'XCD' },
+      'GT': { name: 'Guatemala', currency: 'GTQ' },
+      'GN': { name: 'Guinée', currency: 'GNF' },
+      'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
+      'GY': { name: 'Guyana', currency: 'GYD' },
+      'HT': { name: 'Haïti', currency: 'HTG' },
+      'HN': { name: 'Honduras', currency: 'HNL' },
+      'HU': { name: 'Hongrie', currency: 'HUF' },
+      'IS': { name: 'Islande', currency: 'ISK' },
+      'IN': { name: 'Inde', currency: 'INR' },
+      'ID': { name: 'Indonésie', currency: 'IDR' },
+      'IR': { name: 'Iran', currency: 'IRR' },
+      'IQ': { name: 'Irak', currency: 'IQD' },
+      'IE': { name: 'Irlande', currency: 'EUR' },
+      'IL': { name: 'Israël', currency: 'ILS' },
+      'IT': { name: 'Italie', currency: 'EUR' },
+      'JM': { name: 'Jamaïque', currency: 'JMD' },
+      'JP': { name: 'Japon', currency: 'JPY' },
+      'JO': { name: 'Jordanie', currency: 'JOD' },
+      'KZ': { name: 'Kazakhstan', currency: 'KZT' },
+      'KE': { name: 'Kenya', currency: 'KES' },
+      'KI': { name: 'Kiribati', currency: 'AUD' },
+      'KP': { name: 'Corée du Nord', currency: 'KPW' },
+      'KR': { name: 'Corée du Sud', currency: 'KRW' },
+      'KW': { name: 'Koweït', currency: 'KWD' },
+      'KG': { name: 'Kirghizistan', currency: 'KGS' },
+      'LA': { name: 'Laos', currency: 'LAK' },
+      'LV': { name: 'Lettonie', currency: 'EUR' },
+      'LB': { name: 'Liban', currency: 'LBP' },
+      'LS': { name: 'Lesotho', currency: 'LSL' },
+      'LR': { name: 'Libéria', currency: 'LRD' },
+      'LY': { name: 'Libye', currency: 'LYD' },
+      'LI': { name: 'Liechtenstein', currency: 'CHF' },
+      'LT': { name: 'Lituanie', currency: 'EUR' },
+      'LU': { name: 'Luxembourg', currency: 'EUR' },
+      'MG': { name: 'Madagascar', currency: 'MGA' },
+      'MW': { name: 'Malawi', currency: 'MWK' },
+      'MY': { name: 'Malaisie', currency: 'MYR' },
+      'MV': { name: 'Maldives', currency: 'MVR' },
+      'ML': { name: 'Mali', currency: 'XOF' },
+      'MT': { name: 'Malte', currency: 'EUR' },
+      'MH': { name: 'Îles Marshall', currency: 'USD' },
+      'MR': { name: 'Mauritanie', currency: 'MRO' },
+      'MU': { name: 'Maurice', currency: 'MUR' },
+      'MX': { name: 'Mexique', currency: 'MXN' },
+      'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
+      'MD': { name: 'Moldavie', currency: 'MDL' },
+      'MC': { name: 'Monaco', currency: 'EUR' },
+      'MN': { name: 'Mongolie', currency: 'MNT' },
+      'ME': { name: 'Monténégro', currency: 'EUR' },
+      'MA': { name: 'Maroc', currency: 'MAD' },
+      'MZ': { name: 'Mozambique', currency: 'MZN' },
+      'MM': { name: 'Myanmar', currency: 'MMK' },
+      'NA': { name: 'Namibie', currency: 'NAD' },
+      'NR': { name: 'Nauru', currency: 'AUD' },
+      'NP': { name: 'Népal', currency: 'NPR' },
+      'NL': { name: 'Pays-Bas', currency: 'EUR' },
+      'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
+      'NI': { name: 'Nicaragua', currency: 'NIO' },
+      'NE': { name: 'Niger', currency: 'XOF' },
+      'NG': { name: 'Nigéria', currency: 'NGN' },
+      'NO': { name: 'Norvège', currency: 'NOK' },
+      'OM': { name: 'Oman', currency: 'OMR' },
+      'PK': { name: 'Pakistan', currency: 'PKR' },
+      'PW': { name: 'Palaos', currency: 'USD' },
+      'PA': { name: 'Panama', currency: 'PAB' },
+      'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
+      'PY': { name: 'Paraguay', currency: 'PYG' },
+      'PE': { name: 'Pérou', currency: 'PEN' },
+      'PH': { name: 'Philippines', currency: 'PHP' },
+      'PL': { name: 'Pologne', currency: 'PLN' },
+      'PT': { name: 'Portugal', currency: 'EUR' },
+      'QA': { name: 'Qatar', currency: 'QAR' },
+      'RO': { name: 'Roumanie', currency: 'RON' },
+      'RU': { name: 'Russie', currency: 'RUB' },
+      'RW': { name: 'Rwanda', currency: 'RWF' },
+      'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
+      'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
+      'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
+      'WS': { name: 'Samoa', currency: 'WST' },
+      'SM': { name: 'Saint-Marin', currency: 'EUR' },
+      'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
+      'SA': { name: 'Arabie saoudite', currency: 'SAR' },
+      'SN': { name: 'Sénégal', currency: 'XOF' },
+      'RS': { name: 'Serbie', currency: 'RSD' },
+      'SC': { name: 'Seychelles', currency: 'SCR' },
+      'SL': { name: 'Sierra Leone', currency: 'SLL' },
+      'SG': { name: 'Singapour', currency: 'SGD' },
+      'SK': { name: 'Slovaquie', currency: 'EUR' },
+      'SI': { name: 'Slovénie', currency: 'EUR' },
+      'SB': { name: 'Îles Salomon', currency: 'SBD' },
+      'SO': { name: 'Somalie', currency: 'SOS' },
+      'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
+      'ES': { name: 'Espagne', currency: 'EUR' },
+      'LK': { name: 'Sri Lanka', currency: 'LKR' },
+      'SD': { name: 'Soudan', currency: 'SDG' },
+      'SR': { name: 'Suriname', currency: 'SRD' },
+      'SE': { name: 'Suède', currency: 'SEK' },
+      'CH': { name: 'Suisse', currency: 'CHF' },
+      'SY': { name: 'Syrie', currency: 'SYP' },
+      'TW': { name: 'Taïwan', currency: 'TWD' },
+      'TJ': { name: 'Tadjikistan', currency: 'TJS' },
+      'TZ': { name: 'Tanzanie', currency: 'TZS' },
+      'TH': { name: 'Thaïlande', currency: 'THB' },
+      'TL': { name: 'Timor oriental', currency: 'USD' },
+      'TG': { name: 'Togo', currency: 'XOF' },
+      'TO': { name: 'Tonga', currency: 'TOP' },
+      'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
+      'TN': { name: 'Tunisie', currency: 'TND' },
+      'TR': { name: 'Turquie', currency: 'TRY' },
+      'TM': { name: 'Turkménistan', currency: 'TMT' },
+      'UG': { name: 'Ouganda', currency: 'UGX' },
+      'UA': { name: 'Ukraine', currency: 'UAH' },
+      'AE': { name: 'Émirats arabes unis', currency: 'AED' },
+      'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+      'US': { name: 'États-Unis', currency: 'USD' },
+      'UY': { name: 'Uruguay', currency: 'UYU' },
+      'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
+      'VU': { name: 'Vanuatu', currency: 'VUV' },
+      'VE': { name: 'Venezuela', currency: 'VES' },
+      'VN': { name: 'Viêt Nam', currency: 'VND' },
+      'YE': { name: 'Yémen', currency: 'YER' },
+      'ZM': { name: 'Zambie', currency: 'ZMW' },
+      'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
+      };
+
+      const saved = localStorage.getItem('country') || 'FR';
+      selector.innerHTML = Object.entries(countries)
+        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+        .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
+        .join('');
+
+      selector.addEventListener('change', (e) => {
+        localStorage.setItem('country', e.target.value);
+        localStorage.setItem('currency', countries[e.target.value].currency);
+      });
+    }
+
+    // ========== CATEGORIES ==========
+    function loadCategories() {
+      const grid = document.getElementById('categories-grid');
+      const dropdown = document.getElementById('dropdown-categories');
+      
+      const html = BRANDIA_CATEGORIES.map((cat, i) => `
+        <a href="catalogue.html?category=${cat.slug}" class="category-card fade-in" style="animation-delay: ${i * 0.05}s">
+          <div class="category-image">
+            <img src="${CATEGORY_IMAGES[cat.slug]}" alt="${cat.name}" loading="lazy">
+            <div class="category-icon bg-gradient-to-br ${cat.color}">
+              <i class="fas ${cat.icon}"></i>
+            </div>
+          </div>
+          <div class="category-info">
+            <div class="category-name">${cat.name}</div>
+          </div>
+        </a>
+      `).join('');
+      
+      grid.innerHTML = html;
+      
+      if (dropdown) {
+        dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
+          <a href="catalogue.html?category=${cat.slug}" class="dropdown-item">
+            <div class="dropdown-icon bg-gradient-to-br ${cat.color}">
+              <i class="fas ${cat.icon} text-white"></i>
+            </div>
+            <span>${cat.name}</span>
+          </a>
+        `).join('');
+      }
+    }
+
+    // ========== FEATURED PRODUCTS ==========
+    async function loadFeaturedProducts() {
+      const container = document.getElementById('featured-products-grid');
+      const loader = document.getElementById('featured-loader');
+      
+      try {
+        let response;
+        try {
+          response = await BrandiaAPI.Products.getFeaturedWithPromotions();
+        } catch (e) {
+          response = await BrandiaAPI.Products.getFeatured();
+        }
+        
+        if (!response.success || !response.data) throw new Error('Erreur API');
+        
+        const products = response.data.products || response.data;
+        
+        if (!products.length) {
+          container.innerHTML = '<p class="text-center text-slate-400 col-span-full">Aucun produit disponible</p>';
+          loader.style.display = 'none';
+          container.classList.remove('hidden');
+          return;
+        }
+
+        container.innerHTML = products.map(p => {
+          const hasPromo = p.has_promotion || p.final_price < p.price;
+          const finalPrice = parseFloat(p.final_price || p.price);
+          const originalPrice = hasPromo ? parseFloat(p.original_price || p.price) : null;
+          
+          return `
+            <div class="product-card">
+              <div class="product-image">
+                <a href="product.html?id=${p.id}">
+                  <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" 
+                       alt="${p.name}" loading="lazy">
+                </a>
+                ${hasPromo ? `<span class="product-badge">-${Math.round((1 - finalPrice/originalPrice) * 100)}%</span>` : ''}
+              </div>
+              <div class="product-info">
+                <div class="product-category">${p.category_name || 'Catégorie'}</div>
+                <a href="product.html?id=${p.id}" class="product-name">${p.name}</a>
+                <div class="product-footer">
+                  <div class="product-price">
+                    <span class="price-current ${hasPromo ? 'promo' : ''}">${formatPrice(finalPrice)}</span>
+                    ${hasPromo ? `<span class="price-original">${formatPrice(originalPrice)}</span>` : ''}
+                  </div>
+                  <button class="btn-add-cart" onclick="addToCart(${p.id}, event)">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        loader.style.display = 'none';
+        container.classList.remove('hidden');
+        
+      } catch (error) {
+        console.error('Erreur chargement produits:', error);
+        loader.style.display = 'none';
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <p class="text-slate-400 mb-4">Erreur de chargement</p>
+            <button onclick="location.reload()" class="btn-primary">
+              <i class="fas fa-redo mr-2"></i>Réessayer
+            </button>
+          </div>
+        `;
+        container.classList.remove('hidden');
+      }
+    }
+
+    async function addToCart(productId, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      try {
+        const response = await BrandiaAPI.Products.getById(productId);
+        if (!response.success) throw new Error('Produit non trouvé');
+        
+        const p = response.data.product || response.data;
+        BrandiaAPI.Cart.add({
+          id: p.id,
+          name: p.name,
+          price: parseFloat(p.final_price || p.price),
+          main_image_url: p.main_image_url,
+          quantity: 1
         });
+        
+        showToast('Produit ajouté au panier !', 'success');
+        updateCartBadge();
+      } catch (error) {
+        showToast('Erreur: ' + error.message, 'error');
+      }
+    }
 
-        // AUTHENTIFICATION
-        function checkAuth() {
-            const token = localStorage.getItem('token');
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            
-            const dashboardBtn = document.getElementById('dashboard-btn');
-            if (token && user.role === 'supplier') {
-                dashboardBtn.classList.add('visible');
-            } else {
-                dashboardBtn.classList.remove('visible');
-            }
-        }
+    function updateCartBadge() {
+      const count = BrandiaAPI.Cart.getCount();
+      const badge = document.getElementById('cart-count');
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.classList.toggle('hidden', count === 0);
+    }
 
-        function goToDashboard() {
-            window.location.href = '/dashboard.html';
+    // ========== AUTH ==========
+    function initAuth() {
+      const user = BrandiaAPI.Auth.getUser();
+      
+      document.getElementById('auth-buttons').classList.add('hidden');
+      document.getElementById('user-menu').classList.remove('active');
+      document.getElementById('supplier-menu').classList.remove('active');
+      
+      if (user?.email) {
+        if (user.role === 'supplier') {
+          document.getElementById('supplier-menu').classList.add('active');
+          document.getElementById('supplier-name').textContent = user.first_name || user.email;
+        } else {
+          document.getElementById('user-menu').classList.add('active');
+          document.getElementById('user-name').textContent = user.first_name || user.email;
         }
+      } else {
+        document.getElementById('auth-buttons').classList.remove('hidden');
+      }
+    }
 
-        // MODALS
-        function showLoginModal() {
-            document.getElementById('login-modal').classList.add('active');
-        }
+    function logout() {
+      BrandiaAPI.Auth.logout();
+    }
 
-        function showRegisterModal(role = null) {
-            if (role) selectRole(role);
-            document.getElementById('register-modal').classList.add('active');
-        }
+    // ========== INIT ==========
+    document.addEventListener('DOMContentLoaded', () => {
+      initCountries();
+      loadCategories();
+      loadFeaturedProducts();
+      initAuth();
+      updateCartBadge();
+    });
+  </script>
 
-        function showSupplierModal() {
-            document.getElementById('supplier-modal').classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        function switchModal(from, to) {
-            closeModal(from);
-            setTimeout(() => document.getElementById(to).classList.add('active'), 200);
-        }
-
-        function selectRole(role) {
-            selectedRole = role;
-            document.getElementById('register-role').value = role;
-            document.querySelectorAll('.role-option').forEach(el => el.classList.remove('selected'));
-            document.getElementById(`role-${role}`).classList.add('selected');
-        }
-
-        // FORM HANDLERS
-        async function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    closeModal('login-modal');
-                    checkAuth();
-                    
-                    if (data.user.role === 'supplier') {
-                        window.location.href = '/dashboard.html';
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    alert(data.message || 'Erreur de connexion');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('Erreur de connexion au serveur');
-            }
-        }
-
-        async function handleRegister(e) {
-            e.preventDefault();
-            const name = document.getElementById('register-name').value;
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            const role = document.getElementById('register-role').value;
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, role })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    closeModal('register-modal');
-                    
-                    if (role === 'supplier') {
-                        window.location.href = '/dashboard.html';
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    alert(data.message || 'Erreur d\'inscription');
-                }
-            } catch (error) {
-                console.error('Register error:', error);
-                alert('Erreur de connexion au serveur');
-            }
-        }
-
-        function handleSupplierRequest(e) {
-            e.preventDefault();
-            alert('Demande envoyée ! Notre équipe vous contactera sous 24h.');
-            closeModal('supplier-modal');
-        }
-
-        // PRODUITS
-        async function loadProducts() {
-            const loader = document.getElementById('products-loader');
-            const grid = document.getElementById('products-grid');
-            
-            loader.style.display = 'flex';
-            grid.style.display = 'none';
-            
-            // Timeout de sécurité
-            const timeout = setTimeout(() => {
-                loader.style.display = 'none';
-                grid.style.display = 'grid';
-                grid.innerHTML = getFallbackProducts();
-            }, 5000);
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/products?limit=8&featured=true`);
-                const data = await response.json();
-                
-                clearTimeout(timeout);
-                
-                if (data.success && data.products && data.products.length > 0) {
-                    grid.innerHTML = data.products.map(product => `
-                        <div class="product-card" onclick="viewProduct(${product.id})">
-                            <div class="product-image-wrapper">
-                                <img src="${product.image_url || product.image || 'https://via.placeholder.com/300x280/1a1a1a/667eea?text=Produit'}" 
-                                     alt="${product.name}" 
-                                     class="product-image">
-                                ${product.discount ? `<div class="discount-badge">-${product.discount}%</div>` : ''}
-                            </div>
-                            <div class="product-info">
-                                <div class="product-brand">${product.brand || product.brand_name || 'Marque'}</div>
-                                <div class="product-name">${product.name}</div>
-                                <div class="product-price-row">
-                                    <span class="product-price">${product.price}€</span>
-                                    ${product.original_price ? `<span class="product-original-price">${product.original_price}€</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    grid.innerHTML = getFallbackProducts();
-                }
-            } catch (error) {
-                console.error('Erreur chargement produits:', error);
-                grid.innerHTML = getFallbackProducts();
-            } finally {
-                clearTimeout(timeout);
-                loader.style.display = 'none';
-                grid.style.display = 'grid';
-            }
-        }
-
-        function getFallbackProducts() {
-            const products = [
-                { id: 1, name: 'T-shirt Premium Coton Bio', brand: 'EcoWear', price: 29.99, original_price: 39.99, discount: 25, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80' },
-                { id: 2, name: 'Sneakers Edition Limitée', brand: 'UrbanKicks', price: 89.99, original_price: 120.00, discount: 25, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' },
-                { id: 3, name: 'Montre Connectée Pro', brand: 'TechTime', price: 199.99, original_price: 249.99, discount: 20, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
-                { id: 4, name: 'Sac en Cuir Italien', brand: 'Milano', price: 149.99, original_price: 199.99, discount: 25, image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80' },
-                { id: 5, name: 'Casque Audio Sans Fil', brand: 'SoundMax', price: 79.99, original_price: 99.99, discount: 20, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
-                { id: 6, name: 'Lunettes de Soleil UV400', brand: 'Vision', price: 49.99, original_price: 69.99, discount: 29, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&q=80' },
-                { id: 7, name: 'Enceinte Bluetooth 360°', brand: 'Bose', price: 129.99, original_price: 159.99, discount: 19, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80' },
-                { id: 8, name: 'Tablette Graphique Pro', brand: 'Wacom', price: 249.99, original_price: 299.99, discount: 17, image: 'https://images.unsplash.com/photo-1585792180666-f7347f490ee2?w=400&q=80' }
-            ];
-            
-            return products.map(product => `
-                <div class="product-card" onclick="viewProduct(${product.id})">
-                    <div class="product-image-wrapper">
-                        <img src="${product.image}" alt="${product.name}" class="product-image">
-                        <div class="discount-badge">-${product.discount}%</div>
-                    </div>
-                    <div class="product-info">
-                        <div class="product-brand">${product.brand}</div>
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-price-row">
-                            <span class="product-price">${product.price}€</span>
-                            <span class="product-original-price">${product.original_price}€</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function viewProduct(id) {
-            console.log('View product:', id);
-            // Redirection vers page produit
-        }
-
-        function filterByCategory(category) {
-            console.log('Filter by:', category);
-            scrollToSection('products');
-        }
-
-        function scrollToSection(id) {
-            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-        }
-    </script>
 </body>
 </html>
-
