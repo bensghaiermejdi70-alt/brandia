@@ -2,636 +2,2028 @@
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Panier – Brandia</title>
+  <meta name="description" content="Votre panier Brandia - Produits authentiques directement des marques.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
-    .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
-    .cart-item { transition: all 0.3s ease; }
-    .cart-item:hover { background-color: rgba(255,255,255,0.02); }
-    .quantity-btn { transition: all 0.2s; }
-    .quantity-btn:hover:not(:disabled) { background-color: #374151; }
-    .quantity-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .dropdown-container { position: relative; }
-    .dropdown-menu {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 0;
-      padding-top: 10px;
-      z-index: 50;
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandia: {
+              primary: '#6366f1',
+              secondary: '#8b5cf6',
+              accent: '#ec4899',
+              dark: '#0f172a',
+              darker: '#020617',
+              card: '#1e293b',
+              border: '#334155',
+              text: '#f8fafc',
+              muted: '#94a3b8',
+              success: '#10b981',
+              warning: '#f59e0b',
+              danger: '#ef4444',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
     }
-    .dropdown-container:hover .dropdown-menu,
-    .dropdown-menu:hover { display: block; }
-    
-    /* Image fallback */
-    .product-image-container {
-      background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  </script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* ========== VARIABLES COULEURS BRANDIA ========== */
+    :root {
+      --brandia-primary: #6366f1;
+      --brandia-primary-hover: #4f46e5;
+      --brandia-secondary: #8b5cf6;
+      --brandia-accent: #ec4899;
+      --brandia-dark: #0f172a;
+      --brandia-darker: #020617;
+      --brandia-card: #1e293b;
+      --brandia-card-hover: #334155;
+      --brandia-border: #334155;
+      --brandia-text: #f8fafc;
+      --brandia-text-muted: #94a3b8;
+      --brandia-success: #10b981;
+      --brandia-warning: #f59e0b;
+      --brandia-danger: #ef4444;
+      --brandia-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --brandia-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    }
+
+    /* ========== BASE STYLES ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--brandia-dark);
+      color: var(--brandia-text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-width: 320px;
+    }
+
+    /* ========== CONTAINER ========== */
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+      }
+    }
+
+    /* ========== HEADER STYLES ========== */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      gap: 1rem;
+    }
+
+    /* Logo Brandia */
+    .brandia-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      transition: transform 0.3s ease;
+    }
+
+    .brandia-logo:hover {
+      transform: scale(1.02);
+    }
+
+    .brandia-icon-wrap {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+
+    .brandia-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 12px;
+      background: var(--brandia-gradient);
+      opacity: 0.3;
+      filter: blur(8px);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.1); opacity: 0.5; }
+    }
+
+    .brandia-icon-bg {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--brandia-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brandia-icon-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { left: -100%; }
+      50%, 100% { left: 200%; }
+    }
+
+    .brandia-icon-svg {
+      width: 24px;
+      height: 24px;
+      color: white;
+    }
+
+    .brandia-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    /* Navigation */
+    .nav-desktop {
+      display: none;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+      .nav-desktop {
+        display: flex;
+      }
+    }
+
+    .nav-link {
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .nav-link:hover {
+      color: var(--brandia-text);
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--brandia-gradient);
+      transition: width 0.3s;
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    /* Dropdown */
+    .dropdown {
+      position: relative;
+    }
+
+    .dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 0.5rem 0;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      left: 0;
+      width: 320px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 0.75rem;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem;
+      border-radius: 8px;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .dropdown-item:hover {
+      background: var(--brandia-card-hover);
+      color: var(--brandia-text);
+    }
+
+    .dropdown-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
+
+    /* Header Right Section */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .country-selector {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .country-selector:hover {
+      border-color: var(--brandia-primary);
+    }
+
+    .lang-switch {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    /* Cart */
+    .cart-link {
+      position: relative;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      padding: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .cart-link:hover {
+      color: var(--brandia-text);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background: var(--brandia-primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.625rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .product-image-container img {
-      object-fit: cover;
-      width: 100%;
-      height: 100%;
+
+    .cart-badge.hidden {
+      display: none;
     }
-    
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 24px;
+
+    /* Mobile Menu Toggle */
+    .mobile-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
       border-radius: 8px;
-      color: white;
-      font-weight: 500;
-      z-index: 1000;
-      transform: translateY(100px);
-      opacity: 0;
+      color: var(--brandia-text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mobile-toggle:hover {
+      border-color: var(--brandia-primary);
+    }
+
+    @media (min-width: 1024px) {
+      .mobile-toggle {
+        display: none;
+      }
+    }
+
+    /* ========== PAGE TITLE ========== */
+    .page-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    @media (min-width: 640px) {
+      .page-title {
+        font-size: 2.5rem;
+      }
+    }
+
+    /* ========== CART GRID ========== */
+    .cart-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (min-width: 1024px) {
+      .cart-grid {
+        grid-template-columns: 1.5fr 1fr;
+      }
+    }
+
+    /* ========== CART ITEMS ========== */
+    .cart-items-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .cart-item {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 16px;
+      padding: 1.25rem;
       transition: all 0.3s ease;
     }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.success { background: #10b981; }
-    .toast.error { background: #ef4444; }
+
+    .cart-item:hover {
+      border-color: var(--brandia-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.2);
+    }
+
+    .cart-item-inner {
+      display: flex;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .cart-item-inner {
+        gap: 1.5rem;
+      }
+    }
+
+    .cart-item-image {
+      width: 100px;
+      height: 100px;
+      border-radius: 12px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--brandia-darker);
+    }
+
+    @media (min-width: 640px) {
+      .cart-item-image {
+        width: 120px;
+        height: 120px;
+      }
+    }
+
+    .cart-item-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+
+    .cart-item:hover .cart-item-image img {
+      transform: scale(1.05);
+    }
+
+    .cart-item-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .cart-item-title {
+      color: var(--brandia-text);
+      font-weight: 600;
+      font-size: 1rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    @media (min-width: 640px) {
+      .cart-item-title {
+        font-size: 1.125rem;
+      }
+    }
+
+    .cart-item-brand {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .cart-item-promo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--brandia-success);
+      font-size: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .cart-item-promo-code {
+      font-family: monospace;
+      background: rgba(16, 185, 129, 0.2);
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .cart-item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      gap: 1rem;
+    }
+
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      background: var(--brandia-darker);
+      overflow: hidden;
+    }
+
+    .quantity-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--brandia-text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quantity-btn:hover:not(:disabled) {
+      background: var(--brandia-card-hover);
+      color: var(--brandia-text);
+    }
+
+    .quantity-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .quantity-value {
+      min-width: 50px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .cart-item-price {
+      text-align: right;
+    }
+
+    .price-final {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--brandia-text);
+    }
+
+    .price-original {
+      font-size: 0.875rem;
+      color: var(--brandia-text-muted);
+      text-decoration: line-through;
+    }
+
+    .price-saving {
+      font-size: 0.75rem;
+      color: var(--brandia-success);
+    }
+
+    .btn-remove {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--brandia-text-muted);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-remove:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--brandia-danger);
+    }
+
+    /* ========== EMPTY CART ========== */
+    .empty-cart {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 20px;
+    }
+
+    .empty-cart-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: var(--brandia-gradient-subtle);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brandia-primary);
+      font-size: 2rem;
+    }
+
+    .empty-cart-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--brandia-text);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-cart-text {
+      color: var(--brandia-text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ========== SUMMARY CARD ========== */
+    .summary-card {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      position: sticky;
+      top: 100px;
+    }
+
+    @media (min-width: 1024px) {
+      .summary-card {
+        padding: 2rem;
+      }
+    }
+
+    .summary-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--brandia-text);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Promo Code */
+    .promo-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .promo-input-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .promo-input {
+      flex: 1;
+      background: var(--brandia-darker);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .promo-input:focus {
+      outline: none;
+      border-color: var(--brandia-primary);
+    }
+
+    .promo-input::placeholder {
+      color: var(--brandia-text-muted);
+      text-transform: none;
+    }
+
+    .btn-promo {
+      padding: 0.75rem 1rem;
+      background: var(--brandia-card-hover);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-promo:hover {
+      border-color: var(--brandia-primary);
+      background: var(--brandia-primary);
+      color: white;
+    }
+
+    .promo-message {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .promo-message.success {
+      color: var(--brandia-success);
+    }
+
+    .promo-message.error {
+      color: var(--brandia-danger);
+    }
+
+    /* Summary Lines */
+    .summary-lines {
+      border-top: 1px solid var(--brandia-border);
+      padding-top: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .summary-line:last-child {
+      margin-bottom: 0;
+    }
+
+    .summary-label {
+      color: var(--brandia-text-muted);
+    }
+
+    .summary-value {
+      color: var(--brandia-text);
+      font-weight: 500;
+    }
+
+    .summary-value.success {
+      color: var(--brandia-success);
+    }
+
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--brandia-border);
+      padding-top: 1rem;
+      margin-top: 1rem;
+    }
+
+    .total-label {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--brandia-text);
+    }
+
+    .total-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Checkout Button */
+    .btn-checkout {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--brandia-gradient);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-checkout:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.6);
+    }
+
+    .btn-checkout:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .checkout-security {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      color: var(--brandia-text-muted);
+      font-size: 0.75rem;
+    }
+
+    /* ========== LOADER ========== */
+    .loader {
+      display: flex;
+      justify-content: center;
+      padding: 3rem;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--brandia-border);
+      border-top-color: var(--brandia-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ========== FOOTER ========== */
+    .footer {
+      background: var(--brandia-darker);
+      border-top: 1px solid var(--brandia-border);
+      padding: 4rem 0 2rem;
+      margin-top: 5rem;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (min-width: 640px) {
+      .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .footer-grid {
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      }
+    }
+
+    .footer-brand {
+      max-width: 300px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--brandia-gradient);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .footer-logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .footer-desc {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .social-link {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .social-link:hover {
+      background: var(--brandia-primary);
+      border-color: var(--brandia-primary);
+      color: white;
+    }
+
+    .footer-title {
+      color: var(--brandia-text);
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .footer-link {
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .footer-link:hover {
+      color: var(--brandia-primary);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--brandia-border);
+      padding-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    @media (min-width: 640px) {
+      .footer-bottom {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+      }
+    }
+
+    .footer-copyright {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+    }
+
+    .footer-payments {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .payment-icon {
+      color: var(--brandia-text-muted);
+      font-size: 1.5rem;
+    }
+
+    /* ========== TOAST ========== */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-left: 4px solid var(--brandia-primary);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.success {
+      border-left-color: var(--brandia-success);
+    }
+
+    .toast.error {
+      border-left-color: var(--brandia-danger);
+    }
+
+    /* ========== MOBILE MENU ========== */
+    .mobile-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--brandia-dark);
+      z-index: 100;
+      padding: 1.5rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s;
+      overflow-y: auto;
+    }
+
+    .mobile-menu.open {
+      transform: translateX(0);
+    }
+
+    .mobile-menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .mobile-menu-close {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      color: var(--brandia-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .mobile-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .mobile-nav-link {
+      color: var(--brandia-text);
+      text-decoration: none;
+      font-size: 1.125rem;
+      font-weight: 500;
+      padding: 1rem;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .mobile-nav-link:hover {
+      background: var(--brandia-card);
+    }
+
+    /* ========== UTILITAIRES ========== */
+    .hidden {
+      display: none !important;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--brandia-dark);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--brandia-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--brandia-card-hover);
+    }
+
+    /* ========== SECTION ========== */
+    .section {
+      padding: 3rem 0;
+    }
+
+    @media (min-width: 1024px) {
+      .section {
+        padding: 5rem 0;
+      }
+    }
   </style>
 </head>
 <body>
 
-<header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
-  <nav class="container flex items-center justify-between px-4 py-3">
-    <a href="index.html" class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
-        <i class="fas fa-store text-white text-sm"></i>
-      </div>
-      <span class="font-bold text-lg text-neutral-100">Brandia</span>
-    </a>
-    
-    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="nouveautes.html" class="hover:text-white transition">Nouveautés</a>
-      <a href="marques.html" class="hover:text-white transition">Marques</a>
-      
-      <div class="dropdown-container">
-        <div class="hover:text-white flex items-center space-x-1 py-2 cursor-pointer transition">
-          <span>Catégories</span>
-          <i class="fas fa-chevron-down text-xs"></i>
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <!-- Logo -->
+        <a href="index.html" class="brandia-logo">
+          <div class="brandia-icon-wrap">
+            <div class="brandia-pulse"></div>
+            <div class="brandia-icon-bg">
+              <svg class="brandia-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </div>
+          </div>
+          <span class="brandia-text">Brandia</span>
+        </a>
+
+        <!-- Navigation Desktop -->
+        <nav class="nav-desktop">
+          <a href="nouveautes.html" class="nav-link">Nouveautés</a>
+          <a href="marques.html" class="nav-link">Marques</a>
+          
+          <div class="dropdown">
+            <div class="dropdown-trigger nav-link">
+              <span>Catégories</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </div>
+            <div class="dropdown-menu" id="dropdown-categories">
+              <!-- Injecté par JS -->
+            </div>
+          </div>
+          
+          <a href="offres.html" class="nav-link">Offres</a>
+          <a href="index.html#about" class="nav-link">À propos</a>
+        </nav>
+
+        <!-- Actions -->
+        <div class="header-actions">
+          <select class="country-selector" id="countrySelector">
+            <option value="">🌍 Chargement...</option>
+          </select>
+
+          <select class="lang-switch" id="langSwitch">
+            <option value="fr">🇫🇷 FR</option>
+            <option value="en">🇬🇧 EN</option>
+          </select>
+
+          <!-- Panier -->
+          <a href="panier.html" class="cart-link">
+            <i class="fas fa-shopping-bag text-xl"></i>
+            <span class="cart-badge hidden" id="cart-count">0</span>
+          </a>
+
+          <!-- Mobile Toggle -->
+          <button class="mobile-toggle" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+          </button>
         </div>
-        <div class="dropdown-menu w-80 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 py-2 max-h-[70vh] overflow-y-auto">
-          <div id="header-categories-list">
-            <div class="text-neutral-500 text-xs px-4 py-2">Chargement...</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <div class="brandia-logo">
+        <div class="brandia-icon-wrap">
+          <div class="brandia-icon-bg">
+            <svg class="brandia-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            </svg>
           </div>
         </div>
+        <span class="brandia-text">Brandia</span>
       </div>
-      
-      <a href="offres.html" class="hover:text-white transition">Offres</a>
+      <button class="mobile-menu-close" onclick="toggleMobileMenu()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
+    <nav class="mobile-nav">
+      <a href="nouveautes.html" class="mobile-nav-link">Nouveautés</a>
+      <a href="marques.html" class="mobile-nav-link">Marques</a>
+      <a href="categories.html" class="mobile-nav-link">Catégories</a>
+      <a href="offres.html" class="mobile-nav-link">Offres</a>
+      <a href="login.html" class="mobile-nav-link">Connexion</a>
+      <a href="register.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Inscription</a>
+    </nav>
+  </div>
 
-    <div class="flex items-center space-x-3">
-      <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
-        <option value="">Chargement...</option>
-      </select>
-      <a href="panier.html" class="relative">
-        <i class="fas fa-shopping-bag text-neutral-300"></i>
-        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span>
-      </a>
-    </div>
-  </nav>
-</header>
-
-<section class="py-8">
-  <div class="container px-4">
-    <h1 class="text-2xl font-bold text-white mb-6">Votre panier</h1>
-    
-    <div class="grid lg:grid-cols-3 gap-8">
+  <!-- ========== MAIN CONTENT ========== -->
+  <section class="section">
+    <div class="container">
+      <h1 class="page-title">Votre panier</h1>
       
-      <!-- Cart Items -->
-      <div class="lg:col-span-2">
-        <div id="cart-container" class="space-y-4">
-          <div class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-4"></i>
-            <p class="text-neutral-500">Chargement du panier...</p>
+      <div class="cart-grid">
+        <!-- Cart Items -->
+        <div class="cart-items-container" id="cart-container">
+          <div class="loader">
+            <div class="spinner"></div>
           </div>
         </div>
 
         <!-- Empty State -->
-        <div id="empty-cart" class="hidden text-center py-16">
-          <i class="fas fa-shopping-bag text-6xl text-neutral-600 mb-6"></i>
-          <h2 class="text-xl font-semibold text-white mb-2">Votre panier est vide</h2>
-          <p class="text-neutral-400 mb-4">Découvrez nos produits et commencez vos achats</p>
-          <a href="catalogue.html" class="inline-block px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
-            Explorer le catalogue
+        <div id="empty-cart" class="empty-cart hidden">
+          <div class="empty-cart-icon">
+            <i class="fas fa-shopping-bag"></i>
+          </div>
+          <h2 class="empty-cart-title">Votre panier est vide</h2>
+          <p class="empty-cart-text">Découvrez nos produits et commencez vos achats</p>
+          <a href="catalogue.html" class="btn-checkout" style="max-width: 300px; margin: 0 auto;">
+            <span>Explorer le catalogue</span>
+            <i class="fas fa-arrow-right"></i>
           </a>
         </div>
-      </div>
 
-      <!-- Order Summary -->
-      <div class="lg:col-span-1">
-        <div class="bg-neutral-800 rounded-lg p-6 border border-neutral-700 sticky top-24">
-          <h2 class="text-lg font-semibold text-white mb-4">Récapitulatif</h2>
+        <!-- Order Summary -->
+        <div class="summary-card">
+          <h2 class="summary-title">Récapitulatif</h2>
           
           <!-- Code promo -->
-          <div class="mb-4">
-            <div class="flex gap-2">
-              <input type="text" id="promo-code" placeholder="Code promo" 
-                     class="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none uppercase">
-              <button onclick="applyPromo()" class="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-sm transition">Appliquer</button>
+          <div class="promo-section">
+            <div class="promo-input-group">
+              <input type="text" id="promo-code" placeholder="Code promo" class="promo-input">
+              <button onclick="applyPromo()" class="btn-promo">Appliquer</button>
             </div>
-            <p id="promo-message" class="text-xs mt-1 hidden"></p>
+            <p id="promo-message" class="promo-message hidden"></p>
           </div>
 
-          <div class="space-y-3 text-sm border-t border-neutral-700 pt-4">
-            <div class="flex justify-between text-neutral-400">
-              <span>Sous-total</span>
-              <span id="subtotal" class="text-white">0,00 €</span>
+          <div class="summary-lines">
+            <div class="summary-line">
+              <span class="summary-label">Sous-total</span>
+              <span class="summary-value" id="subtotal">0,00 €</span>
             </div>
-            <div id="discount-row" class="flex justify-between text-emerald-400 hidden">
-              <span>Réduction</span>
-              <span id="discount-amount">-0,00 €</span>
+            <div class="summary-line hidden" id="discount-row">
+              <span class="summary-label" style="color: var(--brandia-success);">Réduction</span>
+              <span class="summary-value success" id="discount-amount">-0,00 €</span>
             </div>
-            <div class="flex justify-between text-neutral-400">
-              <span>Livraison</span>
-              <span id="shipping" class="text-emerald-400">Gratuit</span>
+            <div class="summary-line">
+              <span class="summary-label">Livraison</span>
+              <span class="summary-value success" id="shipping">Gratuit</span>
             </div>
-            <div class="border-t border-neutral-700 pt-3 flex justify-between items-center">
-              <span class="text-white font-semibold">Total</span>
-              <span id="total" class="text-2xl font-bold text-indigo-400">0,00 €</span>
+            <div class="summary-total">
+              <span class="total-label">Total</span>
+              <span class="total-value" id="total">0,00 €</span>
             </div>
           </div>
 
-          <button onclick="proceedToCheckout()" id="btn-checkout" class="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-            Passer la commande
+          <button onclick="proceedToCheckout()" id="btn-checkout" class="btn-checkout" disabled>
+            <span>Passer la commande</span>
+            <i class="fas fa-arrow-right"></i>
           </button>
           
-          <p class="text-xs text-neutral-500 mt-3 text-center">
-            <i class="fas fa-shield-alt mr-1"></i> Paiement sécurisé par Stripe
+          <div class="checkout-security">
+            <i class="fas fa-shield-alt"></i>
+            <span>Paiement sécurisé par Stripe</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- Brand -->
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <div class="footer-logo-icon">
+              <i class="fas fa-shopping-bag"></i>
+            </div>
+            <span class="footer-logo-text">Brandia</span>
+          </div>
+          <p class="footer-desc">
+            La marketplace des marques officielles. Achetez directement auprès des créateurs et marques authentiques.
           </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer class="border-t border-neutral-800 py-10 bg-neutral-900 mt-12">
-  <div class="container text-center text-neutral-500 text-sm">
-    © 2026 Brandia – Marketplace officielle des marques
-  </div>
-</footer>
-
-<!-- Toast -->
-<div id="toast" class="fixed bottom-4 right-4 bg-neutral-800 border border-neutral-700 text-white px-4 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 max-w-sm">
-  <span id="toast-message"></span>
-</div>
-
-<script>
-// ==========================================
-// CONFIGURATION API
-// ==========================================
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:4000' 
-  : 'https://brandia-1.onrender.com';
-
-// ==========================================
-// CONFIGURATION - 21 CATÉGORIES
-// ==========================================
-const CATEGORIES = [
-  { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
-  { slug: 'parfums-fragrances', name: 'Parfums & fragrances', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
-  { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'from-red-500 to-pink-600' },
-  { slug: 'soins-capillaires', name: 'Soins capillaires', icon: 'fa-cut', gradient: 'from-amber-500 to-orange-600' },
-  { slug: 'complements-bien-etre', name: 'Compléments bien-être & beauté', icon: 'fa-heart', gradient: 'from-emerald-500 to-teal-600' },
-  { slug: 'mode-accessoires', name: 'Mode & accessoires', icon: 'fa-tshirt', gradient: 'from-blue-500 to-cyan-600' },
-  { slug: 'montres-bijoux', name: 'Montres & bijoux', icon: 'fa-gem', gradient: 'from-yellow-500 to-amber-600' },
-  { slug: 'sport-fitness', name: 'Articles de sport & fitness', icon: 'fa-dumbbell', gradient: 'from-orange-500 to-red-600' },
-  { slug: 'nutrition-sportive', name: 'Nutrition sportive', icon: 'fa-apple-alt', gradient: 'from-green-500 to-emerald-600' },
-  { slug: 'high-tech-mobile', name: 'High-tech & accessoires mobiles', icon: 'fa-mobile-alt', gradient: 'from-indigo-500 to-blue-600' },
-  { slug: 'electronique-lifestyle', name: 'Électronique lifestyle', icon: 'fa-headphones', gradient: 'from-violet-500 to-purple-600' },
-  { slug: 'maison-decoration', name: 'Maison & décoration', icon: 'fa-home', gradient: 'from-orange-500 to-red-500' },
-  { slug: 'parfumerie-interieur', name: 'Parfumerie d\'intérieur', icon: 'fa-fire', gradient: 'from-rose-400 to-pink-500' },
-  { slug: 'produits-ecologiques', name: 'Produits écologiques & durables', icon: 'fa-leaf', gradient: 'from-green-400 to-emerald-500' },
-  { slug: 'bebe-maternite', name: 'Bébé & maternité', icon: 'fa-baby', gradient: 'from-sky-400 to-blue-500' },
-  { slug: 'animaux-pets', name: 'Animaux & accessoires pets', icon: 'fa-paw', gradient: 'from-amber-600 to-yellow-600' },
-  { slug: 'sante-hygiene', name: 'Santé & hygiène personnelle', icon: 'fa-heartbeat', gradient: 'from-red-400 to-rose-500' },
-  { slug: 'bagagerie-voyage', name: 'Bagagerie & accessoires de voyage', icon: 'fa-suitcase', gradient: 'from-violet-500 to-purple-600' },
-  { slug: 'papeterie-lifestyle', name: 'Papeterie premium & lifestyle', icon: 'fa-pen-fancy', gradient: 'from-teal-400 to-cyan-500' },
-  { slug: 'artisanat-local', name: 'Produits artisanaux & marques locales', icon: 'fa-hands', gradient: 'from-orange-400 to-amber-500' },
-  { slug: 'sport-loisirs', name: 'Sport et loisirs', icon: 'fa-bicycle', gradient: 'from-cyan-500 to-blue-600' }
-];
-
-// IMAGES PAR CATÉGORIE (fallback)
-const CATEGORY_IMAGES = {
-  'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80',
-  'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80',
-  'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80',
-  'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80',
-  'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
-  'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80',
-  'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
-  'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80',
-  'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80',
-  'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80',
-  'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
-  'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80',
-  'parfumerie-interieur': 'https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=400&h=400&fit=crop&q=80',
-  'produits-ecologiques': 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=400&fit=crop&q=80',
-  'bebe-maternite': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80',
-  'animaux-pets': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop&q=80',
-  'sante-hygiene': 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80',
-  'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80',
-  'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80',
-  'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80',
-  'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80'
-};
-
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=400&fit=crop&q=80';
-
-// ==========================================
-// PANIER
-// ==========================================
-let cart = { items: [], discount: null };
-
-function isValidImageUrl(url) {
-  if (!url || url === 'undefined' || url === 'null' || url === '') return false;
-  if (url.includes('placeholder') && !url.includes('unsplash')) return false;
-  return true;
-}
-
-function getProductImage(item) {
-  if (isValidImageUrl(item.image_url)) return item.image_url;
-  if (isValidImageUrl(item.main_image_url)) return item.main_image_url;
-  if (item.category_slug && CATEGORY_IMAGES[item.category_slug]) return CATEGORY_IMAGES[item.category_slug];
-  return DEFAULT_IMAGE;
-}
-
-function loadCart() {
-  try {
-    const saved = localStorage.getItem('brandia_cart');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      cart.items = Array.isArray(parsed) ? parsed : [];
-      
-      // Nettoyer les items
-      cart.items = cart.items.map(item => ({
-        product_id: item.product_id || item.id || Date.now(),
-        name: item.name || 'Produit',
-        price: parseFloat(item.price) || 0,
-        original_price: parseFloat(item.original_price) || parseFloat(item.price) || 0,
-        has_promotion: item.has_promotion || false,
-        promo_code: item.promo_code || null,
-        quantity: parseInt(item.quantity) || 1,
-        image_url: item.image_url || item.main_image_url || item.image || null,
-        category_slug: item.category_slug || null,
-        brand: item.brand || item.supplier_name || 'Marque'
-      }));
-    }
-    
-    const savedDiscount = localStorage.getItem('brandia_discount');
-    if (savedDiscount) cart.discount = JSON.parse(savedDiscount);
-  } catch (e) {
-    console.error('Erreur chargement panier:', e);
-    cart.items = [];
-  }
-  
-  renderCart();
-  calculateTotals();
-}
-
-function renderCart() {
-  const container = document.getElementById('cart-container');
-  const emptyState = document.getElementById('empty-cart');
-  const checkoutBtn = document.getElementById('btn-checkout');
-  
-  if (!container) return;
-  
-  if (cart.items.length === 0) {
-    container.classList.add('hidden');
-    emptyState?.classList.remove('hidden');
-    if (checkoutBtn) checkoutBtn.disabled = true;
-    return;
-  }
-  
-  container.classList.remove('hidden');
-  emptyState?.classList.add('hidden');
-  if (checkoutBtn) checkoutBtn.disabled = false;
-  
-  container.innerHTML = cart.items.map((item, index) => {
-    const imageUrl = getProductImage(item);
-    const itemTotal = (item.price * item.quantity).toFixed(2);
-    const itemOriginalTotal = (item.original_price * item.quantity).toFixed(2);
-    const hasDiscount = item.original_price > item.price;
-    
-    return `
-    <div class="cart-item bg-neutral-800 rounded-lg p-4 border border-neutral-700">
-      <div class="flex gap-4">
-        <div class="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-neutral-900">
-          <img src="${imageUrl}" alt="${item.name}" class="w-full h-full object-cover"
-               onerror="this.onerror=null; this.src='${DEFAULT_IMAGE}';">
-        </div>
-        
-        <div class="flex-1 min-w-0">
-          <div class="flex justify-between items-start gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="text-white font-medium">${item.name}</div>
-              <p class="text-sm text-neutral-500 truncate">${item.brand}</p>
-              ${item.has_promotion ? `
-                <p class="text-xs text-emerald-400 mt-1">
-                  <i class="fas fa-tag mr-1"></i>Promo ${item.promo_code ? `<span class="font-mono bg-emerald-500/20 px-1 rounded">${item.promo_code}</span>` : ''}
-                </p>
-              ` : ''}
-            </div>
-            <button onclick="removeItem(${index})" class="text-neutral-500 hover:text-red-400 flex-shrink-0 p-1">
-              <i class="fas fa-trash-alt"></i>
-            </button>
+          <div class="footer-social">
+            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
           </div>
-          
-          <div class="flex justify-between items-end mt-3">
-            <div class="flex items-center border border-neutral-700 rounded-lg bg-neutral-900">
-              <button onclick="updateQuantity(${index}, -1)" class="px-3 py-2 text-neutral-400 hover:text-white rounded-l-lg" ${item.quantity <= 1 ? 'disabled' : ''}>
-                <i class="fas fa-minus text-xs"></i>
-              </button>
-              <span class="px-3 py-2 text-sm font-medium min-w-[40px] text-center">${item.quantity}</span>
-              <button onclick="updateQuantity(${index}, 1)" class="px-3 py-2 text-neutral-400 hover:text-white rounded-r-lg">
-                <i class="fas fa-plus text-xs"></i>
-              </button>
-            </div>
-            
-            <div class="text-right">
-              <p class="text-lg font-bold ${hasDiscount ? 'text-emerald-400' : 'text-indigo-400'}">${itemTotal} €</p>
-              ${hasDiscount ? `
-                <p class="text-xs text-neutral-500 line-through">${itemOriginalTotal} €</p>
-                <p class="text-xs text-emerald-400">Économie: ${(itemOriginalTotal - itemTotal).toFixed(2)} €</p>
-              ` : `
-                <p class="text-xs text-neutral-500">${item.price.toFixed(2)} € / unité</p>
-              `}
-            </div>
+        </div>
+
+        <!-- Links -->
+        <div>
+          <h4 class="footer-title">Acheter</h4>
+          <div class="footer-links">
+            <a href="catalogue.html" class="footer-link">Catalogue</a>
+            <a href="categories.html" class="footer-link">Catégories</a>
+            <a href="nouveautes.html" class="footer-link">Nouveautés</a>
+            <a href="offres.html" class="footer-link">Offres</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Vendre</h4>
+          <div class="footer-links">
+            <a href="register.html?type=supplier" class="footer-link">Devenir vendeur</a>
+            <a href="supplier/dashboard.html" class="footer-link">Espace fournisseur</a>
+            <a href="#" class="footer-link">Tarifs</a>
+            <a href="#" class="footer-link">Success stories</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Aide</h4>
+          <div class="footer-links">
+            <a href="contact.html" class="footer-link">Contact</a>
+            <a href="faq.html" class="footer-link">FAQ</a>
+            <a href="#" class="footer-link">Livraison</a>
+            <a href="#" class="footer-link">Retours</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Légal</h4>
+          <div class="footer-links">
+            <a href="#" class="footer-link">CGU</a>
+            <a href="#" class="footer-link">CGV</a>
+            <a href="#" class="footer-link">Confidentialité</a>
+            <a href="#" class="footer-link">Cookies</a>
           </div>
         </div>
       </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copyright">© 2026 Brandia – Marketplace officielle des marques</p>
+        <div class="footer-payments">
+          <i class="fab fa-cc-visa payment-icon"></i>
+          <i class="fab fa-cc-mastercard payment-icon"></i>
+          <i class="fab fa-cc-amex payment-icon"></i>
+          <i class="fab fa-cc-paypal payment-icon"></i>
+        </div>
+      </div>
     </div>
-  `}).join('');
-  
-  updateCartBadge();
-}
+  </footer>
 
-function updateQuantity(index, delta) {
-  if (!cart.items[index]) return;
-  const newQty = cart.items[index].quantity + delta;
-  if (newQty < 1) return;
-  
-  cart.items[index].quantity = newQty;
-  saveCart();
-  renderCart();
-  calculateTotals();
-  showToast('Quantité mise à jour', 'success');
-}
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
 
-function removeItem(index) {
-  if (!confirm('Retirer cet article ?')) return;
-  const removed = cart.items[index];
-  cart.items.splice(index, 1);
+  <!-- Scripts -->
+  <script src="assets/js/api.js"></script>
   
-  if (cart.items.length === 0) {
-    cart.discount = null;
-    localStorage.removeItem('brandia_discount');
-  }
-  
-  saveCart();
-  renderCart();
-  calculateTotals();
-  showToast(`${removed?.name || 'Article'} retiré`, 'info');
-}
+  <script>
+    // ==========================================
+    // CONFIGURATION
+    // ==========================================
+    const CATEGORY_IMAGES = {
+      'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80',
+      'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80',
+      'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80',
+      'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80',
+      'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
+      'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80',
+      'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
+      'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80',
+      'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80',
+      'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80',
+      'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
+      'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80',
+      'parfumerie-interieur': 'https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=400&h=400&fit=crop&q=80',
+      'produits-ecologiques': 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=400&fit=crop&q=80',
+      'bebe-maternite': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80',
+      'animaux-pets': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop&q=80',
+      'sante-hygiene': 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80',
+      'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80',
+      'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80',
+      'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80',
+      'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80'
+    };
 
-function saveCart() {
-  localStorage.setItem('brandia_cart', JSON.stringify(cart.items));
-}
+    const BRANDIA_CATEGORIES = [
+      { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', color: 'from-pink-500 to-rose-500' },
+      { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: 'from-purple-500 to-indigo-500' },
+      { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', color: 'from-red-500 to-pink-500' },
+      { slug: 'soins-capillaires', name: 'Soins cheveux', icon: 'fa-cut', color: 'from-amber-500 to-orange-500' },
+      { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', color: 'from-emerald-500 to-teal-500' },
+      { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', color: 'from-blue-500 to-cyan-500' },
+      { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', color: 'from-yellow-500 to-amber-500' },
+      { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', color: 'from-orange-500 to-red-500' },
+      { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', color: 'from-green-500 to-emerald-500' },
+      { slug: 'high-tech-mobile', name: 'High-Tech', icon: 'fa-mobile-alt', color: 'from-indigo-500 to-blue-500' },
+      { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', color: 'from-violet-500 to-purple-500' },
+      { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', color: 'from-orange-500 to-red-500' }
+    ];
 
-function calculateTotals() {
-  const subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const originalSubtotal = cart.items.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
-  const itemSavings = originalSubtotal - subtotal;
-  
-  let discountAmount = 0;
-  if (cart.discount) {
-    if (cart.discount.type === 'percentage') {
-      discountAmount = subtotal * (cart.discount.value / 100);
-    } else {
-      discountAmount = cart.discount.value;
+    const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=400&fit=crop&q=80';
+
+    // ==========================================
+    // PANIER STATE
+    // ==========================================
+    let cart = { items: [], discount: null };
+
+    // ==========================================
+    // UTILITAIRES
+    // ==========================================
+    function formatPrice(price, currency = 'EUR') {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(price || 0);
     }
-    discountAmount = Math.min(discountAmount, subtotal);
-  }
-  
-  const discountedSubtotal = subtotal - discountAmount;
-  const shipping = discountedSubtotal >= 50 ? 0 : 5.90;
-  const total = discountedSubtotal + shipping;
-  const totalSavings = itemSavings + discountAmount;
-  
-  document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
-  
-  const discountRow = document.getElementById('discount-row');
-  if ((cart.discount && discountAmount > 0) || itemSavings > 0) {
-    discountRow?.classList.remove('hidden');
-    document.getElementById('discount-amount').textContent = '-' + totalSavings.toFixed(2) + ' €';
-  } else {
-    discountRow?.classList.add('hidden');
-  }
-  
-  const shippingEl = document.getElementById('shipping');
-  if (shippingEl) {
-    shippingEl.textContent = shipping === 0 ? 'Gratuit' : shipping.toFixed(2) + ' €';
-    shippingEl.className = shipping === 0 ? 'text-emerald-400' : 'text-white';
-  }
-  
-  document.getElementById('total').textContent = total.toFixed(2) + ' €';
-}
 
-async function applyPromo() {
-  const code = document.getElementById('promo-code')?.value?.trim().toUpperCase();
-  const msgEl = document.getElementById('promo-message');
-  if (!code) return;
-  
-  try {
-    const response = await fetch(`${API_BASE}/api/public/promotions/validate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code: code,
-        productIds: cart.items.map(i => i.product_id || i.id),
-        totalAmount: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      cart.discount = {
-        type: data.data.type,
-        value: data.data.value,
-        name: data.data.name,
-        code: code,
-        discount_amount: data.data.discount
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function getFlagEmoji(countryCode) {
+      const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+      return String.fromCodePoint(...codePoints);
+    }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('open');
+      document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+    }
+
+    function isValidImageUrl(url) {
+      if (!url || url === 'undefined' || url === 'null' || url === '') return false;
+      if (url.includes('placeholder') && !url.includes('unsplash')) return false;
+      return true;
+    }
+
+    function getProductImage(item) {
+      if (isValidImageUrl(item.image_url)) return item.image_url;
+      if (isValidImageUrl(item.main_image_url)) return item.main_image_url;
+      if (item.category_slug && CATEGORY_IMAGES[item.category_slug]) return CATEGORY_IMAGES[item.category_slug];
+      return DEFAULT_IMAGE;
+    }
+
+    // ==========================================
+    // COUNTRIES
+    // ==========================================
+    function initCountries() {
+      const selector = document.getElementById('countrySelector');
+      const countries = {
+         'AF': { name: 'Afghanistan', currency: 'AFN' },
+      'AL': { name: 'Albanie', currency: 'ALL' },
+      'DZ': { name: 'Algérie', currency: 'DZD' },
+      'AD': { name: 'Andorre', currency: 'EUR' },
+      'AO': { name: 'Angola', currency: 'AOA' },
+      'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
+      'AR': { name: 'Argentine', currency: 'ARS' },
+      'AM': { name: 'Arménie', currency: 'AMD' },
+      'AU': { name: 'Australie', currency: 'AUD' },
+      'AT': { name: 'Autriche', currency: 'EUR' },
+      'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
+      'BS': { name: 'Bahamas', currency: 'BSD' },
+      'BH': { name: 'Bahreïn', currency: 'BHD' },
+      'BD': { name: 'Bangladesh', currency: 'BDT' },
+      'BB': { name: 'Barbade', currency: 'BBD' },
+      'BY': { name: 'Biélorussie', currency: 'BYN' },
+      'BE': { name: 'Belgique', currency: 'EUR' },
+      'BZ': { name: 'Belize', currency: 'BZD' },
+      'BJ': { name: 'Bénin', currency: 'XOF' },
+      'BT': { name: 'Bhoutan', currency: 'BTN' },
+      'BO': { name: 'Bolivie', currency: 'BOB' },
+      'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
+      'BW': { name: 'Botswana', currency: 'BWP' },
+      'BR': { name: 'Brésil', currency: 'BRL' },
+      'BN': { name: 'Brunei', currency: 'BND' },
+      'BG': { name: 'Bulgarie', currency: 'BGN' },
+      'BF': { name: 'Burkina Faso', currency: 'XOF' },
+      'BI': { name: 'Burundi', currency: 'BIF' },
+      'CV': { name: 'Cap-Vert', currency: 'CVE' },
+      'KH': { name: 'Cambodge', currency: 'KHR' },
+      'CM': { name: 'Cameroun', currency: 'XAF' },
+      'CA': { name: 'Canada', currency: 'CAD' },
+      'CF': { name: 'Centrafrique', currency: 'XAF' },
+      'TD': { name: 'Tchad', currency: 'XAF' },
+      'CL': { name: 'Chili', currency: 'CLP' },
+      'CN': { name: 'Chine', currency: 'CNY' },
+      'CO': { name: 'Colombie', currency: 'COP' },
+      'KM': { name: 'Comores', currency: 'KMF' },
+      'CG': { name: 'Congo', currency: 'XAF' },
+      'CD': { name: 'Congo (RDC)', currency: 'CDF' },
+      'CR': { name: 'Costa Rica', currency: 'CRC' },
+      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+      'HR': { name: 'Croatie', currency: 'EUR' },
+      'CU': { name: 'Cuba', currency: 'CUP' },
+      'CY': { name: 'Chypre', currency: 'EUR' },
+      'CZ': { name: 'République tchèque', currency: 'CZK' },
+      'DK': { name: 'Danemark', currency: 'DKK' },
+      'DJ': { name: 'Djibouti', currency: 'DJF' },
+      'DM': { name: 'Dominique', currency: 'XCD' },
+      'DO': { name: 'République dominicaine', currency: 'DOP' },
+      'EC': { name: 'Équateur', currency: 'USD' },
+      'EG': { name: 'Égypte', currency: 'EGP' },
+      'SV': { name: 'Salvador', currency: 'USD' },
+      'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
+      'ER': { name: 'Érythrée', currency: 'ERN' },
+      'EE': { name: 'Estonie', currency: 'EUR' },
+      'ET': { name: 'Éthiopie', currency: 'ETB' },
+      'FJ': { name: 'Fidji', currency: 'FJD' },
+      'FI': { name: 'Finlande', currency: 'EUR' },
+      'FR': { name: 'France', currency: 'EUR' },
+      'GA': { name: 'Gabon', currency: 'XAF' },
+      'GM': { name: 'Gambie', currency: 'GMD' },
+      'GE': { name: 'Géorgie', currency: 'GEL' },
+      'DE': { name: 'Allemagne', currency: 'EUR' },
+      'GH': { name: 'Ghana', currency: 'GHS' },
+      'GR': { name: 'Grèce', currency: 'EUR' },
+      'GD': { name: 'Grenade', currency: 'XCD' },
+      'GT': { name: 'Guatemala', currency: 'GTQ' },
+      'GN': { name: 'Guinée', currency: 'GNF' },
+      'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
+      'GY': { name: 'Guyana', currency: 'GYD' },
+      'HT': { name: 'Haïti', currency: 'HTG' },
+      'HN': { name: 'Honduras', currency: 'HNL' },
+      'HU': { name: 'Hongrie', currency: 'HUF' },
+      'IS': { name: 'Islande', currency: 'ISK' },
+      'IN': { name: 'Inde', currency: 'INR' },
+      'ID': { name: 'Indonésie', currency: 'IDR' },
+      'IR': { name: 'Iran', currency: 'IRR' },
+      'IQ': { name: 'Irak', currency: 'IQD' },
+      'IE': { name: 'Irlande', currency: 'EUR' },
+      'IL': { name: 'Israël', currency: 'ILS' },
+      'IT': { name: 'Italie', currency: 'EUR' },
+      'JM': { name: 'Jamaïque', currency: 'JMD' },
+      'JP': { name: 'Japon', currency: 'JPY' },
+      'JO': { name: 'Jordanie', currency: 'JOD' },
+      'KZ': { name: 'Kazakhstan', currency: 'KZT' },
+      'KE': { name: 'Kenya', currency: 'KES' },
+      'KI': { name: 'Kiribati', currency: 'AUD' },
+      'KP': { name: 'Corée du Nord', currency: 'KPW' },
+      'KR': { name: 'Corée du Sud', currency: 'KRW' },
+      'KW': { name: 'Koweït', currency: 'KWD' },
+      'KG': { name: 'Kirghizistan', currency: 'KGS' },
+      'LA': { name: 'Laos', currency: 'LAK' },
+      'LV': { name: 'Lettonie', currency: 'EUR' },
+      'LB': { name: 'Liban', currency: 'LBP' },
+      'LS': { name: 'Lesotho', currency: 'LSL' },
+      'LR': { name: 'Libéria', currency: 'LRD' },
+      'LY': { name: 'Libye', currency: 'LYD' },
+      'LI': { name: 'Liechtenstein', currency: 'CHF' },
+      'LT': { name: 'Lituanie', currency: 'EUR' },
+      'LU': { name: 'Luxembourg', currency: 'EUR' },
+      'MG': { name: 'Madagascar', currency: 'MGA' },
+      'MW': { name: 'Malawi', currency: 'MWK' },
+      'MY': { name: 'Malaisie', currency: 'MYR' },
+      'MV': { name: 'Maldives', currency: 'MVR' },
+      'ML': { name: 'Mali', currency: 'XOF' },
+      'MT': { name: 'Malte', currency: 'EUR' },
+      'MH': { name: 'Îles Marshall', currency: 'USD' },
+      'MR': { name: 'Mauritanie', currency: 'MRO' },
+      'MU': { name: 'Maurice', currency: 'MUR' },
+      'MX': { name: 'Mexique', currency: 'MXN' },
+      'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
+      'MD': { name: 'Moldavie', currency: 'MDL' },
+      'MC': { name: 'Monaco', currency: 'EUR' },
+      'MN': { name: 'Mongolie', currency: 'MNT' },
+      'ME': { name: 'Monténégro', currency: 'EUR' },
+      'MA': { name: 'Maroc', currency: 'MAD' },
+      'MZ': { name: 'Mozambique', currency: 'MZN' },
+      'MM': { name: 'Myanmar', currency: 'MMK' },
+      'NA': { name: 'Namibie', currency: 'NAD' },
+      'NR': { name: 'Nauru', currency: 'AUD' },
+      'NP': { name: 'Népal', currency: 'NPR' },
+      'NL': { name: 'Pays-Bas', currency: 'EUR' },
+      'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
+      'NI': { name: 'Nicaragua', currency: 'NIO' },
+      'NE': { name: 'Niger', currency: 'XOF' },
+      'NG': { name: 'Nigéria', currency: 'NGN' },
+      'NO': { name: 'Norvège', currency: 'NOK' },
+      'OM': { name: 'Oman', currency: 'OMR' },
+      'PK': { name: 'Pakistan', currency: 'PKR' },
+      'PW': { name: 'Palaos', currency: 'USD' },
+      'PA': { name: 'Panama', currency: 'PAB' },
+      'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
+      'PY': { name: 'Paraguay', currency: 'PYG' },
+      'PE': { name: 'Pérou', currency: 'PEN' },
+      'PH': { name: 'Philippines', currency: 'PHP' },
+      'PL': { name: 'Pologne', currency: 'PLN' },
+      'PT': { name: 'Portugal', currency: 'EUR' },
+      'QA': { name: 'Qatar', currency: 'QAR' },
+      'RO': { name: 'Roumanie', currency: 'RON' },
+      'RU': { name: 'Russie', currency: 'RUB' },
+      'RW': { name: 'Rwanda', currency: 'RWF' },
+      'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
+      'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
+      'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
+      'WS': { name: 'Samoa', currency: 'WST' },
+      'SM': { name: 'Saint-Marin', currency: 'EUR' },
+      'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
+      'SA': { name: 'Arabie saoudite', currency: 'SAR' },
+      'SN': { name: 'Sénégal', currency: 'XOF' },
+      'RS': { name: 'Serbie', currency: 'RSD' },
+      'SC': { name: 'Seychelles', currency: 'SCR' },
+      'SL': { name: 'Sierra Leone', currency: 'SLL' },
+      'SG': { name: 'Singapour', currency: 'SGD' },
+      'SK': { name: 'Slovaquie', currency: 'EUR' },
+      'SI': { name: 'Slovénie', currency: 'EUR' },
+      'SB': { name: 'Îles Salomon', currency: 'SBD' },
+      'SO': { name: 'Somalie', currency: 'SOS' },
+      'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
+      'ES': { name: 'Espagne', currency: 'EUR' },
+      'LK': { name: 'Sri Lanka', currency: 'LKR' },
+      'SD': { name: 'Soudan', currency: 'SDG' },
+      'SR': { name: 'Suriname', currency: 'SRD' },
+      'SE': { name: 'Suède', currency: 'SEK' },
+      'CH': { name: 'Suisse', currency: 'CHF' },
+      'SY': { name: 'Syrie', currency: 'SYP' },
+      'TW': { name: 'Taïwan', currency: 'TWD' },
+      'TJ': { name: 'Tadjikistan', currency: 'TJS' },
+      'TZ': { name: 'Tanzanie', currency: 'TZS' },
+      'TH': { name: 'Thaïlande', currency: 'THB' },
+      'TL': { name: 'Timor oriental', currency: 'USD' },
+      'TG': { name: 'Togo', currency: 'XOF' },
+      'TO': { name: 'Tonga', currency: 'TOP' },
+      'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
+      'TN': { name: 'Tunisie', currency: 'TND' },
+      'TR': { name: 'Turquie', currency: 'TRY' },
+      'TM': { name: 'Turkménistan', currency: 'TMT' },
+      'UG': { name: 'Ouganda', currency: 'UGX' },
+      'UA': { name: 'Ukraine', currency: 'UAH' },
+      'AE': { name: 'Émirats arabes unis', currency: 'AED' },
+      'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+      'US': { name: 'États-Unis', currency: 'USD' },
+      'UY': { name: 'Uruguay', currency: 'UYU' },
+      'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
+      'VU': { name: 'Vanuatu', currency: 'VUV' },
+      'VE': { name: 'Venezuela', currency: 'VES' },
+      'VN': { name: 'Viêt Nam', currency: 'VND' },
+      'YE': { name: 'Yémen', currency: 'YER' },
+      'ZM': { name: 'Zambie', currency: 'ZMW' },
+      'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
       };
-      localStorage.setItem('brandia_discount', JSON.stringify(cart.discount));
-      msgEl.textContent = `✓ ${data.data.name} appliquée (-${data.data.discount.toFixed(2)}€)`;
-      msgEl.className = 'text-xs mt-1 text-emerald-400';
-      msgEl.classList.remove('hidden');
+
+      const saved = localStorage.getItem('country') || 'FR';
+      selector.innerHTML = Object.entries(countries)
+        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+        .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
+        .join('');
+
+      selector.addEventListener('change', (e) => {
+        localStorage.setItem('country', e.target.value);
+        localStorage.setItem('currency', countries[e.target.value].currency);
+      });
+    }
+
+    // ==========================================
+    // CATEGORIES DROPDOWN
+    // ==========================================
+    function loadCategories() {
+      const dropdown = document.getElementById('dropdown-categories');
+      if (!dropdown) return;
+      
+      dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
+        <a href="catalogue.html?category=${cat.slug}" class="dropdown-item">
+          <div class="dropdown-icon bg-gradient-to-br ${cat.color}">
+            <i class="fas ${cat.icon} text-white"></i>
+          </div>
+          <span>${cat.name}</span>
+        </a>
+      `).join('');
+    }
+
+    // ==========================================
+    // CART FUNCTIONS
+    // ==========================================
+    function loadCart() {
+      try {
+        const saved = localStorage.getItem('brandia_cart');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          cart.items = Array.isArray(parsed) ? parsed : [];
+          
+          // Nettoyer les items
+          cart.items = cart.items.map(item => ({
+            product_id: item.product_id || item.id || Date.now(),
+            name: item.name || 'Produit',
+            price: parseFloat(item.price) || 0,
+            original_price: parseFloat(item.original_price) || parseFloat(item.price) || 0,
+            has_promotion: item.has_promotion || false,
+            promo_code: item.promo_code || null,
+            quantity: parseInt(item.quantity) || 1,
+            image_url: item.image_url || item.main_image_url || item.image || null,
+            category_slug: item.category_slug || null,
+            brand: item.brand || item.supplier_name || 'Marque'
+          }));
+        }
+        
+        const savedDiscount = localStorage.getItem('brandia_discount');
+        if (savedDiscount) cart.discount = JSON.parse(savedDiscount);
+      } catch (e) {
+        console.error('Erreur chargement panier:', e);
+        cart.items = [];
+      }
+      
+      renderCart();
       calculateTotals();
-      showToast('Code promo appliqué !', 'success');
-    } else {
-      throw new Error(data.message);
     }
-  } catch (error) {
-    msgEl.textContent = '✗ ' + (error.message || 'Code promo invalide');
-    msgEl.className = 'text-xs mt-1 text-red-400';
-    msgEl.classList.remove('hidden');
-    showToast('Code promo invalide', 'error');
-  }
-}
 
-function updateCartBadge() {
-  const count = cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  document.querySelectorAll('#cart-count').forEach(badge => {
-    badge.textContent = count;
-    badge.classList.toggle('hidden', count === 0);
-  });
-}
-
-function proceedToCheckout() {
-  if (cart.items.length === 0) {
-    showToast('Panier vide', 'error');
-    return;
-  }
-  
-  const token = localStorage.getItem('token');
-  if (!token) {
-    showToast('Connectez-vous pour continuer', 'info');
-    setTimeout(() => window.location.href = 'login.html?redirect=checkout', 1500);
-    return;
-  }
-  
-  localStorage.setItem('brandia_checkout_cart', JSON.stringify({
-    items: cart.items,
-    discount: cart.discount,
-    totals: {
-      subtotal: parseFloat(document.getElementById('subtotal')?.textContent || 0),
-      total: parseFloat(document.getElementById('total')?.textContent || 0)
+    function renderCart() {
+      const container = document.getElementById('cart-container');
+      const emptyState = document.getElementById('empty-cart');
+      const checkoutBtn = document.getElementById('btn-checkout');
+      
+      if (!container) return;
+      
+      if (cart.items.length === 0) {
+        container.classList.add('hidden');
+        emptyState?.classList.remove('hidden');
+        if (checkoutBtn) checkoutBtn.disabled = true;
+        updateCartBadge();
+        return;
+      }
+      
+      container.classList.remove('hidden');
+      emptyState?.classList.add('hidden');
+      if (checkoutBtn) checkoutBtn.disabled = false;
+      
+      container.innerHTML = cart.items.map((item, index) => {
+        const imageUrl = getProductImage(item);
+        const itemTotal = (item.price * item.quantity).toFixed(2);
+        const itemOriginalTotal = (item.original_price * item.quantity).toFixed(2);
+        const hasDiscount = item.original_price > item.price;
+        
+        return `
+          <div class="cart-item fade-in">
+            <div class="cart-item-inner">
+              <div class="cart-item-image">
+                <img src="${imageUrl}" alt="${item.name}" onerror="this.src='${DEFAULT_IMAGE}'">
+              </div>
+              
+              <div class="cart-item-content">
+                <div class="cart-item-header">
+                  <h3 class="cart-item-title">${item.name}</h3>
+                  <button class="btn-remove" onclick="removeItem(${index})" title="Retirer">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+                
+                <p class="cart-item-brand">${item.brand}</p>
+                
+                ${item.has_promotion ? `
+                  <div class="cart-item-promo">
+                    <i class="fas fa-tag"></i>
+                    <span>Promo ${item.promo_code ? `<span class="cart-item-promo-code">${item.promo_code}</span>` : ''}</span>
+                  </div>
+                ` : ''}
+                
+                <div class="cart-item-footer">
+                  <div class="quantity-control">
+                    <button class="quantity-btn" onclick="updateQuantity(${index}, -1)" ${item.quantity <= 1 ? 'disabled' : ''}>
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="quantity-value">${item.quantity}</span>
+                    <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  
+                  <div class="cart-item-price">
+                    <div class="price-final">${itemTotal} €</div>
+                    ${hasDiscount ? `
+                      <div class="price-original">${itemOriginalTotal} €</div>
+                      <div class="price-saving">Économie: ${(itemOriginalTotal - itemTotal).toFixed(2)} €</div>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      updateCartBadge();
     }
-  }));
-  
-  window.location.href = 'checkout.html';
-}
 
-function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  const msg = document.getElementById('toast-message');
-  if (!toast || !msg) return;
-  
-  msg.textContent = message;
-  const colors = { success: 'bg-emerald-600', error: 'bg-red-600', info: 'bg-blue-600' };
-  toast.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-4 py-3 rounded-lg shadow-xl transform transition-all duration-300 z-50 max-w-sm`;
-  toast.classList.remove('translate-y-20', 'opacity-0');
-  
-  setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
-}
+    function updateQuantity(index, delta) {
+      if (!cart.items[index]) return;
+      const newQty = cart.items[index].quantity + delta;
+      if (newQty < 1) return;
+      
+      cart.items[index].quantity = newQty;
+      saveCart();
+      renderCart();
+      calculateTotals();
+      showToast('Quantité mise à jour', 'success');
+    }
 
-function initCountrySelector() {
-  const selector = document.getElementById('countrySelector');
-  if (!selector) return;
-  
-  const countries = {
-    'FR': { name: 'France', currency: 'EUR' },
-    'BE': { name: 'Belgique', currency: 'EUR' },
-    'CH': { name: 'Suisse', currency: 'CHF' },
-    'CA': { name: 'Canada', currency: 'CAD' },
-    'TN': { name: 'Tunisie', currency: 'TND' },
-    'DZ': { name: 'Algérie', currency: 'DZD' },
-    'MA': { name: 'Maroc', currency: 'MAD' },
-    'DE': { name: 'Allemagne', currency: 'EUR' },
-    'IT': { name: 'Italie', currency: 'EUR' },
-    'ES': { name: 'Espagne', currency: 'EUR' },
-    'NL': { name: 'Pays-Bas', currency: 'EUR' },
-    'AT': { name: 'Autriche', currency: 'EUR' },
-    'PT': { name: 'Portugal', currency: 'EUR' },
-    'IE': { name: 'Irlande', currency: 'EUR' },
-    'FI': { name: 'Finlande', currency: 'EUR' },
-    'LU': { name: 'Luxembourg', currency: 'EUR' },
-    'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-    'US': { name: 'États-Unis', currency: 'USD' },
-    'JP': { name: 'Japon', currency: 'JPY' },
-    'KR': { name: 'Corée du Sud', currency: 'KRW' },
-    'CN': { name: 'Chine', currency: 'CNY' },
-    'SG': { name: 'Singapour', currency: 'SGD' },
-    'AU': { name: 'Australie', currency: 'AUD' },
-    'EG': { name: 'Égypte', currency: 'EGP' },
-    'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
-    'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
-    'QA': { name: 'Qatar', currency: 'QAR' },
-    'KW': { name: 'Koweït', currency: 'KWD' }
-  };
-  
-  const savedCountry = localStorage.getItem('country') || 'FR';
-  selector.innerHTML = '';
-  
-  Object.entries(countries).forEach(([code, country]) => {
-    const option = document.createElement('option');
-    option.value = code;
-    option.textContent = `${getFlagEmoji(code)} ${country.name}`;
-    if (code === savedCountry) option.selected = true;
-    selector.appendChild(option);
-  });
-  
-  selector.addEventListener('change', (e) => {
-    localStorage.setItem('country', e.target.value);
-    localStorage.setItem('currency', countries[e.target.value].currency);
-  });
-}
+    function removeItem(index) {
+      if (!confirm('Retirer cet article du panier ?')) return;
+      const removed = cart.items[index];
+      cart.items.splice(index, 1);
+      
+      if (cart.items.length === 0) {
+        cart.discount = null;
+        localStorage.removeItem('brandia_discount');
+      }
+      
+      saveCart();
+      renderCart();
+      calculateTotals();
+      showToast(`${removed?.name || 'Article'} retiré`, 'info');
+    }
 
-function getFlagEmoji(countryCode) {
-  const flags = {
-    'FR': '🇫🇷', 'DE': '🇩🇪', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱',
-    'BE': '🇧🇪', 'PT': '🇵🇹', 'AT': '🇦🇹', 'IE': '🇮🇪', 'FI': '🇫🇮',
-    'GB': '🇬🇧', 'CH': '🇨🇭', 'US': '🇺🇸', 'CA': '🇨🇦', 'BR': '🇧🇷',
-    'JP': '🇯🇵', 'KR': '🇰🇷', 'CN': '🇨🇳', 'SG': '🇸🇬', 'AU': '🇦🇺',
-    'TN': '🇹🇳', 'DZ': '🇩🇿', 'MA': '🇲🇦', 'EG': '🇪🇬',
-    'AE': '🇦🇪', 'SA': '🇸🇦', 'QA': '🇶🇦', 'KW': '🇰🇼', 'LU': '🇱🇺'
-  };
-  return flags[countryCode] || '🏳️';
-}
+    function saveCart() {
+      localStorage.setItem('brandia_cart', JSON.stringify(cart.items));
+    }
 
-function renderHeaderCategories() {
-  const dropdown = document.getElementById('header-categories-list');
-  if (!dropdown) return;
-  
-  dropdown.innerHTML = CATEGORIES.map(cat => `
-    <a href="catalogue.html?category=${cat.slug}" 
-       class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
-      <div class="w-8 h-8 bg-gradient-to-br ${cat.gradient} rounded-lg flex items-center justify-center flex-shrink-0">
-        <i class="fas ${cat.icon} text-white text-xs"></i>
-      </div>
-      <span class="font-medium truncate">${cat.name}</span>
-    </a>
-  `).join('');
-}
+    function calculateTotals() {
+      const subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const originalSubtotal = cart.items.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+      const itemSavings = originalSubtotal - subtotal;
+      
+      let discountAmount = 0;
+      if (cart.discount) {
+        if (cart.discount.type === 'percentage') {
+          discountAmount = subtotal * (cart.discount.value / 100);
+        } else {
+          discountAmount = cart.discount.value;
+        }
+        discountAmount = Math.min(discountAmount, subtotal);
+      }
+      
+      const discountedSubtotal = subtotal - discountAmount;
+      const shipping = discountedSubtotal >= 50 ? 0 : 5.90;
+      const total = discountedSubtotal + shipping;
+      const totalSavings = itemSavings + discountAmount;
+      
+      document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
+      
+      const discountRow = document.getElementById('discount-row');
+      if ((cart.discount && discountAmount > 0) || itemSavings > 0) {
+        discountRow?.classList.remove('hidden');
+        document.getElementById('discount-amount').textContent = '-' + totalSavings.toFixed(2) + ' €';
+      } else {
+        discountRow?.classList.add('hidden');
+      }
+      
+      const shippingEl = document.getElementById('shipping');
+      if (shippingEl) {
+        shippingEl.textContent = shipping === 0 ? 'Gratuit' : shipping.toFixed(2) + ' €';
+        shippingEl.className = shipping === 0 ? 'summary-value success' : 'summary-value';
+      }
+      
+      const totalEl = document.getElementById('total');
+      if (totalEl) {
+        totalEl.textContent = total.toFixed(2) + ' €';
+      }
+    }
 
-// Init
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ Panier chargé - Mode localStorage');
-  renderHeaderCategories();
-  initCountrySelector();
-  loadCart();
-  
-  document.getElementById('promo-code')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') applyPromo();
-  });
-});
+    async function applyPromo() {
+      const code = document.getElementById('promo-code')?.value?.trim().toUpperCase();
+      const msgEl = document.getElementById('promo-message');
+      if (!code) return;
+      
+      try {
+        // Simulation API - remplacer par vrai appel API si disponible
+        // const response = await BrandiaAPI.Promotions.validate(code);
+        
+        // Simulation pour démo
+        const validCodes = {
+          'BRANDIA10': { type: 'percentage', value: 10, name: 'Remise 10%' },
+          'WELCOME20': { type: 'percentage', value: 20, name: 'Bienvenue 20%' },
+          'FIXED50': { type: 'fixed', value: 50, name: 'Remise 50€' }
+        };
+        
+        const promo = validCodes[code];
+        
+        if (promo) {
+          cart.discount = {
+            type: promo.type,
+            value: promo.value,
+            name: promo.name,
+            code: code
+          };
+          localStorage.setItem('brandia_discount', JSON.stringify(cart.discount));
+          msgEl.textContent = `✓ ${promo.name} appliquée`;
+          msgEl.className = 'promo-message success';
+          msgEl.classList.remove('hidden');
+          calculateTotals();
+          showToast('Code promo appliqué !', 'success');
+        } else {
+          throw new Error('Code promo invalide');
+        }
+      } catch (error) {
+        msgEl.textContent = '✗ ' + (error.message || 'Code promo invalide');
+        msgEl.className = 'promo-message error';
+        msgEl.classList.remove('hidden');
+        showToast('Code promo invalide', 'error');
+      }
+    }
 
-// Exposer globalement
-window.updateQuantity = updateQuantity;
-window.removeItem = removeItem;
-window.proceedToCheckout = proceedToCheckout;
-window.applyPromo = applyPromo;
-</script>
+    function updateCartBadge() {
+      const count = cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const badge = document.getElementById('cart-count');
+      if (badge) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.toggle('hidden', count === 0);
+      }
+    }
+
+    function proceedToCheckout() {
+      if (cart.items.length === 0) {
+        showToast('Panier vide', 'error');
+        return;
+      }
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showToast('Connectez-vous pour continuer', 'info');
+        setTimeout(() => window.location.href = 'login.html?redirect=checkout', 1500);
+        return;
+      }
+      
+      localStorage.setItem('brandia_checkout_cart', JSON.stringify({
+        items: cart.items,
+        discount: cart.discount,
+        totals: {
+          subtotal: parseFloat(document.getElementById('subtotal')?.textContent || 0),
+          total: parseFloat(document.getElementById('total')?.textContent || 0)
+        }
+      }));
+      
+      window.location.href = 'checkout.html';
+    }
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+      initCountries();
+      loadCategories();
+      loadCart();
+      
+      document.getElementById('promo-code')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') applyPromo();
+      });
+    });
+
+    // Exposer globalement
+    window.updateQuantity = updateQuantity;
+    window.removeItem = removeItem;
+    window.proceedToCheckout = proceedToCheckout;
+    window.applyPromo = applyPromo;
+    window.toggleMobileMenu = toggleMobileMenu;
+  </script>
 
 </body>
 </html>
