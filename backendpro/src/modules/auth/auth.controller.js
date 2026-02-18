@@ -1,5 +1,5 @@
 // ============================================
-// AUTH CONTROLLER - Logique Register/Login
+// AUTH CONTROLLER - v2.2 CORRIGÉ (Export compatible)
 // ============================================
 
 const bcrypt = require('bcrypt');
@@ -17,21 +17,23 @@ const generateTokens = (user) => {
     };
 
     const accessToken = jwt.sign(payload, env.JWT.SECRET, {
-        expiresIn: env.JWT.ACCESS_EXPIRES_IN
+        expiresIn: env.JWT.ACCESS_EXPIRES_IN || '7d'
     });
 
     const refreshToken = jwt.sign(payload, env.JWT.REFRESH_SECRET, {
-        expiresIn: env.JWT.REFRESH_EXPIRES_IN
+        expiresIn: env.JWT.REFRESH_EXPIRES_IN || '30d'
     });
 
     return { accessToken, refreshToken };
 };
 
 const AuthController = {
-    // Inscription
+    // ==========================================
+    // INSCRIPTION
+    // ==========================================
     register: async (req, res) => {
         try {
-            const { email, password, first_name, last_name, country_code } = req.body;
+            const { email, password, first_name, last_name, country_code, role = 'client' } = req.body;
 
             // Validation
             if (!email || !password || !first_name || !last_name) {
@@ -55,17 +57,28 @@ const AuthController = {
 
             // Créer l'utilisateur
             const user = await AuthModel.createUser({
-                email,
+                email: email.toLowerCase(),
                 password_hash,
                 first_name,
                 last_name,
-                country_code: country_code || 'FR'
+                country_code: country_code || 'FR',
+                role
             });
+
+            // Si c'est un fournisseur, créer le profil supplier
+            if (role === 'supplier') {
+                const db = require('../../config/db');
+                await db.query(
+                    `INSERT INTO suppliers (user_id, company_name, created_at, updated_at)
+                     VALUES ($1, $2, NOW(), NOW())`,
+                    [user.id, first_name || 'Ma Société']
+                );
+            }
 
             // Générer les tokens
             const tokens = generateTokens(user);
 
-            logger.info(`✅ Nouvel utilisateur inscrit: ${email}`);
+            logger.info(`✅ Nouvel utilisateur inscrit: ${email} (role: ${role})`);
 
             res.status(201).json({
                 success: true,
@@ -91,7 +104,9 @@ const AuthController = {
         }
     },
 
-    // Connexion
+    // ==========================================
+    // CONNEXION
+    // ==========================================
     login: async (req, res) => {
         try {
             const { email, password } = req.body;
@@ -104,8 +119,19 @@ const AuthController = {
                 });
             }
 
-            // Trouver l'utilisateur
-            const user = await AuthModel.findByEmail(email);
+            // Trouver l'utilisateur avec infos supplier
+            const db = require('../../config/db');
+            const result = await db.query(
+                `SELECT u.*, s.id as supplier_id, s.company_name as supplier_company
+                 FROM users u
+                 LEFT JOIN suppliers s ON s.user_id = u.id
+                 WHERE u.email = $1 AND u.is_active = true
+                 LIMIT 1`,
+                [email.toLowerCase()]
+            );
+
+            const user = result.rows[0];
+
             if (!user) {
                 return res.status(401).json({
                     success: false,
@@ -122,10 +148,16 @@ const AuthController = {
                 });
             }
 
+            // Mettre à jour last_login
+            await db.query(
+                'UPDATE users SET last_login = NOW() WHERE id = $1',
+                [user.id]
+            );
+
             // Générer les tokens
             const tokens = generateTokens(user);
 
-            logger.info(`✅ Connexion réussie: ${email}`);
+            logger.info(`✅ Connexion réussie: ${email} (role: ${user.role})`);
 
             res.json({
                 success: true,
@@ -136,7 +168,9 @@ const AuthController = {
                         email: user.email,
                         first_name: user.first_name,
                         last_name: user.last_name,
-                        role: user.role
+                        role: user.role,
+                        supplier_id: user.supplier_id || null,
+                        supplier_company: user.supplier_company || null
                     },
                     ...tokens
                 }
@@ -151,7 +185,9 @@ const AuthController = {
         }
     },
 
-    // Rafraîchir le token
+    // ==========================================
+    // RAFRAÎCHIR TOKEN
+    // ==========================================
     refresh: async (req, res) => {
         try {
             const { refreshToken } = req.body;
@@ -175,7 +211,7 @@ const AuthController = {
                 });
             }
 
-            // Générer un nouveau access token
+            // Générer de nouveaux tokens
             const tokens = generateTokens(user);
 
             res.json({
@@ -192,15 +228,39 @@ const AuthController = {
         }
     },
 
-    // 🔥 AJOUTÉ : Alias pour compatibilité avec index.js
+    // Alias pour compatibilité
     refreshToken: async (req, res) => {
         return AuthController.refresh(req, res);
     },
 
-    // Profil utilisateur connecté
-    me: async (req, res) => {
+    // ==========================================
+    // PROFIL UTILISATEUR (getMe / me)
+    // ==========================================
+    getMe: async (req, res) => {
         try {
-            const user = await AuthModel.findById(req.user.userId);
+            const userId = req.user?.userId || req.user?.id;
+
+            if (!userId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID utilisateur manquant'
+                });
+            }
+
+            const db = require('../../config/db');
+            const result = await db.query(
+                `SELECT u.id, u.email, u.first_name, u.last_name, u.role, 
+                        u.country_code, u.created_at, u.last_login,
+                        s.id as supplier_id, s.company_name as supplier_company, 
+                        s.logo_url as supplier_logo
+                 FROM users u
+                 LEFT JOIN suppliers s ON s.user_id = u.id
+                 WHERE u.id = $1 AND u.is_active = true
+                 LIMIT 1`,
+                [userId]
+            );
+
+            const user = result.rows[0];
             
             if (!user) {
                 return res.status(404).json({
@@ -211,7 +271,21 @@ const AuthController = {
 
             res.json({
                 success: true,
-                data: { user }
+                data: { 
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        role: user.role,
+                        country_code: user.country_code,
+                        created_at: user.created_at,
+                        last_login: user.last_login,
+                        supplier_id: user.supplier_id || null,
+                        supplier_company: user.supplier_company || null,
+                        supplier_logo: user.supplier_logo || null
+                    }
+                }
             });
 
         } catch (error) {
@@ -223,15 +297,18 @@ const AuthController = {
         }
     },
 
-    // 🔥 AJOUTÉ : Alias pour compatibilité avec index.js
-    getMe: async (req, res) => {
-        return AuthController.me(req, res);
+    // Alias pour compatibilité
+    me: async (req, res) => {
+        return AuthController.getMe(req, res);
     },
 
-    // 🔥 AJOUTÉ : Déconnexion
+    // ==========================================
+    // DÉCONNEXION
+    // ==========================================
     logout: async (req, res) => {
         try {
-            logger.info(`✅ Déconnexion: ${req.user.userId}`);
+            const userId = req.user?.userId || req.user?.id;
+            logger.info(`✅ Déconnexion: ${userId}`);
             
             res.json({
                 success: true,
@@ -248,4 +325,5 @@ const AuthController = {
     }
 };
 
+// 🔥 EXPORT EXPLICITE - L'objet complet avec toutes les méthodes
 module.exports = AuthController;
