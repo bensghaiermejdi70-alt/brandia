@@ -70,12 +70,13 @@ app.get('/api/health', (req, res) => {
 });
 
 // 2. Supplier routes (public campaigns + protected)
-const supplierRoutes = require('./modules/supplier/supplier.route'); // ⚠️ Vérifiez le nom du fichier
+// 🔥 CORRIGÉ : module (singulier) + .routes (avec 's')
+const supplierRoutes = require('./module/supplier/supplier.routes');
 app.use('/api/supplier', supplierRoutes);
 console.log('[App] ✅ Supplier routes mounted');
 
 // 3. Product routes (public)
-const productRoutes = require('./modules/products/product.routes');
+const productRoutes = require('./module/products/product.routes');
 app.use('/api/products', productRoutes);
 console.log('[App] ✅ Product routes mounted (PUBLIC)');
 
