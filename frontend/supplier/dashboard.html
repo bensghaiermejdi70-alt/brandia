@@ -1,1573 +1,2587 @@
-<!DOCTYPE html>  
-<html lang="fr">
+<!DOCTYPE html>
+<html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">   
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fournisseur - Brandia</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Espace fournisseur Brandia - Gérez vos produits, commandes et promotions">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-        .campaign-actions {
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-        .campaign-row:hover .campaign-actions {
-          opacity: 1;
-        }
-        @media (max-width: 768px) {
-          .campaign-actions {
-            opacity: 1 !important;
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandia: {
+              primary: '#6366f1',
+              secondary: '#8b5cf6',
+              accent: '#ec4899',
+              dark: '#0f172a',
+              darker: '#020617',
+              card: '#1e293b',
+              border: '#334155',
+              text: '#f8fafc',
+              muted: '#94a3b8',
+              success: '#10b981',
+              warning: '#f59e0b',
+              danger: '#ef4444',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
           }
         }
+      }
+    }
+  </script>
+  
+  <!-- Chart.js pour les graphiques -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Styles critiques inline -->
+  <style>
+    /* ========== VARIABLES & RESET ========== */
     :root {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-tertiary: #334155;
-      --accent: #6366f1;
-      --accent-hover: #4f46e5;
+      --brandia-primary: #6366f1;
+      --brandia-primary-hover: #4f46e5;
+      --brandia-secondary: #8b5cf6;
+      --brandia-accent: #ec4899;
+      --brandia-dark: #0f172a;
+      --brandia-darker: #020617;
+      --brandia-card: #1e293b;
+      --brandia-card-hover: #334155;
+      --brandia-border: #334155;
+      --brandia-text: #f8fafc;
+      --brandia-text-muted: #94a3b8;
+      --brandia-success: #10b981;
+      --brandia-warning: #f59e0b;
+      --brandia-danger: #ef4444;
+      --sidebar-width: 280px;
+      --sidebar-collapsed: 80px;
     }
-    
-    body { 
-      background-color: var(--bg-primary); 
-      color: #f1f5f9; 
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
       font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--brandia-dark);
+      color: var(--brandia-text);
+      line-height: 1.6;
+      min-width: 320px;
     }
-    
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
-    ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 3px; }
-    
-    .nav-link { 
-      transition: all 0.2s ease;
-      position: relative;
+
+    /* ========== LAYOUT ========== */
+    .dashboard-layout {
+      display: flex;
+      min-height: 100vh;
     }
-    .nav-link.active {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      color: white;
-    }
-    .nav-link:not(.active):hover {
-      background-color: rgba(99, 102, 241, 0.1);
-      color: #818cf8;
-    }
-    .nav-link.active::before {
-      content: '';
-      position: absolute;
+
+    /* ========== SIDEBAR ========== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--brandia-darker);
+      border-right: 1px solid var(--brandia-border);
+      position: fixed;
+      top: 0;
       left: 0;
+      height: 100vh;
+      z-index: 100;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar.collapsed {
+      width: var(--sidebar-collapsed);
+    }
+
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--brandia-border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+
+    .sidebar-logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sidebar.collapsed .sidebar-logo-text,
+    .sidebar.collapsed .nav-text,
+    .sidebar.collapsed .nav-section-title {
+      display: none;
+    }
+
+    .sidebar-toggle {
+      position: absolute;
+      right: -12px;
+      top: 80px;
+      width: 24px;
+      height: 24px;
+      background: var(--brandia-primary);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      z-index: 101;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 1rem 0;
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-section-title {
+      padding: 0 1.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--brandia-text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.875rem 1.5rem;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      font-size: 0.875rem;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--brandia-primary);
+      border-right: 3px solid var(--brandia-primary);
+    }
+
+    .nav-item i {
+      width: 20px;
+      text-align: center;
+      font-size: 1rem;
+    }
+
+    .sidebar-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--brandia-border);
+    }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+      background: var(--brandia-card);
+      color: var(--brandia-text);
+    }
+
+    /* ========== MAIN CONTENT ========== */
+    .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar.collapsed ~ .main-content {
+      margin-left: var(--sidebar-collapsed);
+    }
+
+    /* ========== HEADER ========== */
+    .top-header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--brandia-border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-search {
+      position: relative;
+      max-width: 400px;
+      flex: 1;
+    }
+
+    .header-search input {
+      width: 100%;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.625rem 1rem 0.625rem 2.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    .header-search i {
+      position: absolute;
+      left: 1rem;
       top: 50%;
       transform: translateY(-50%);
-      width: 3px;
-      height: 20px;
-      background: #818cf8;
-      border-radius: 0 2px 2px 0;
+      color: var(--brandia-text-muted);
     }
-    
-    .section { 
-      display: none; 
-      animation: fadeIn 0.3s ease-out;
-    }
-    .section.active { 
-      display: block; 
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .card {
-      background: var(--bg-secondary);
-      border: 1px solid rgba(148, 163, 184, 0.1);
-      transition: all 0.3s ease;
-    }
-    .card:hover {
-      border-color: rgba(99, 102, 241, 0.3);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
-    }
-    
-    .badge {
-      display: inline-flex;
+
+    .header-actions {
+      display: flex;
       align-items: center;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      gap: 1rem;
     }
-    .badge-draft { background: #64748b; color: white; }
-    .badge-published { background: #10b981; color: white; }
-    .badge-pending { background: #f59e0b; color: #000; }
-    .badge-paid { background: #3b82f6; color: white; }
-    .badge-shipped { background: #8b5cf6; color: white; }
-    .badge-delivered { background: #059669; color: white; }
-    .badge-active { background: #10b981; color: white; }
-    .badge-paused { background: #f59e0b; color: black; }
-    
-    .btn-primary {
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      color: var(--brandia-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .btn-icon:hover {
+      background: var(--brandia-card-hover);
+      color: var(--brandia-text);
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background: var(--brandia-danger);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.625rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
       background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--brandia-text);
+    }
+
+    .user-role {
+      font-size: 0.75rem;
+      color: var(--brandia-text-muted);
+    }
+
+    /* ========== CONTENT AREA ========== */
+    .content-area {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.875rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+      color: var(--brandia-text-muted);
+    }
+
+    /* ========== KPI CARDS ========== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .kpi-card {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 1.5rem;
       transition: all 0.3s;
     }
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--brandia-primary);
     }
-    
-    .table-row:hover {
-      background-color: rgba(99, 102, 241, 0.05);
+
+    .kpi-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
     }
-    
-    .modal-backdrop {
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
+
+    .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
     }
-    
+
+    .kpi-icon.blue {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--brandia-primary);
+    }
+
+    .kpi-icon.green {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--brandia-success);
+    }
+
+    .kpi-icon.orange {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--brandia-warning);
+    }
+
+    .kpi-icon.purple {
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--brandia-secondary);
+    }
+
+    .kpi-trend {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .kpi-trend.up {
+      color: var(--brandia-success);
+    }
+
+    .kpi-trend.down {
+      color: var(--brandia-danger);
+    }
+
+    .kpi-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.875rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .kpi-label {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* ========== CHARTS SECTION ========== */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+      .charts-grid {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-title {
+      font-weight: 600;
+      font-size: 1.125rem;
+    }
+
+    .chart-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      background: var(--brandia-dark);
+      border: 1px solid var(--brandia-border);
+      border-radius: 6px;
+      color: var(--brandia-text-muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-sm:hover,
+    .btn-sm.active {
+      background: var(--brandia-primary);
+      border-color: var(--brandia-primary);
+      color: white;
+    }
+
     .chart-container {
       position: relative;
       height: 300px;
     }
-    
-    .toggle {
-      appearance: none;
-      width: 44px;
-      height: 24px;
-      background: #334155;
+
+    /* ========== SECTIONS ========== */
+    .section-card {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
       border-radius: 12px;
-      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 1.125rem;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-primary {
+      background: var(--brandia-primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.3s;
-    }
-    .toggle::after {
-      content: '';
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      background: white;
-      border-radius: 50%;
-      top: 2px;
-      left: 2px;
-      transition: transform 0.3s;
-    }
-    .toggle:checked {
-      background: #6366f1;
-    }
-    .toggle:checked::after {
-      transform: translateX(20px);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .skeleton {
-      background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
-      background-size: 200% 100%;
-      animation: skeleton 1.5s infinite;
-    }
-    @keyframes skeleton {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+    .btn-primary:hover {
+      background: var(--brandia-primary-hover);
     }
 
-    .order-tab.active {
-      background: #6366f1;
+    .btn-secondary {
+      background: var(--brandia-dark);
+      color: var(--brandia-text);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: var(--brandia-card-hover);
+    }
+
+    .section-content {
+      padding: 1.5rem;
+    }
+
+    /* ========== TABLES ========== */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 1rem;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    .data-table th {
+      color: var(--brandia-text-muted);
+      font-weight: 500;
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .data-table td {
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .product-cell {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .product-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--brandia-dark);
+    }
+
+    .product-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-name {
+      font-weight: 500;
+      color: var(--brandia-text);
+    }
+
+    .product-sku {
+      font-size: 0.75rem;
+      color: var(--brandia-text-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-badge.active {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--brandia-success);
+    }
+
+    .status-badge.pending {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--brandia-warning);
+    }
+
+    .status-badge.inactive {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--brandia-danger);
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-table {
+      width: 32px;
+      height: 32px;
+      background: var(--brandia-dark);
+      border: 1px solid var(--brandia-border);
+      border-radius: 6px;
+      color: var(--brandia-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-table:hover {
+      background: var(--brandia-primary);
+      border-color: var(--brandia-primary);
       color: white;
     }
 
-    .image-preview {
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      border-radius: 8px;
-      border: 2px solid #334155;
+    /* ========== MODALS ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
     }
 
-    .campaign-preview {
-      position: relative;
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
       overflow: hidden;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border: 2px dashed #334155;
-    }
-    .campaign-preview.active {
-      border-color: #6366f1;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Protection anti-clic pendant chargement */
-    .loading-disabled {
-      pointer-events: none;
-      opacity: 0.6;
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .modal-title {
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      background: var(--brandia-dark);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      color: var(--brandia-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: var(--brandia-danger);
+      border-color: var(--brandia-danger);
+      color: white;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--brandia-text);
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      background: var(--brandia-dark);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--brandia-primary);
+    }
+
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--brandia-border);
+      background: var(--brandia-darker);
+    }
+
+    /* ========== TABS ========== */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0 1.5rem;
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .tab {
+      padding: 1rem 1.25rem;
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .tab:hover {
+      color: var(--brandia-text);
+    }
+
+    .tab.active {
+      color: var(--brandia-primary);
+      border-bottom-color: var(--brandia-primary);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 1.5rem;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* ========== CAMPAIGNS ========== */
+    .campaign-card {
+      background: var(--brandia-dark);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .campaign-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .campaign-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .campaign-status {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .campaign-status.active {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--brandia-success);
+    }
+
+    .campaign-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--brandia-border);
+    }
+
+    .campaign-stat {
+      text-align: center;
+    }
+
+    .campaign-stat-value {
+      font-weight: 700;
+      font-size: 1.125rem;
+      color: var(--brandia-text);
+    }
+
+    .campaign-stat-label {
+      font-size: 0.75rem;
+      color: var(--brandia-text-muted);
+    }
+
+    /* ========== IMPORT CSV ========== */
+    .import-zone {
+      border: 2px dashed var(--brandia-border);
+      border-radius: 12px;
+      padding: 3rem;
+      text-align: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .import-zone:hover {
+      border-color: var(--brandia-primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .import-zone i {
+      font-size: 3rem;
+      color: var(--brandia-primary);
+      margin-bottom: 1rem;
+    }
+
+    .import-zone h4 {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .import-zone p {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* ========== TOAST ========== */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-left: 4px solid var(--brandia-primary);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.success {
+      border-left-color: var(--brandia-success);
+    }
+
+    .toast.error {
+      border-left-color: var(--brandia-danger);
+    }
+
+    /* ========== MOBILE RESPONSIVE ========== */
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--brandia-darker);
+      border-bottom: 1px solid var(--brandia-border);
+      padding: 1rem;
+      z-index: 99;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mobile-menu-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      color: var(--brandia-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .mobile-header {
+        display: flex;
+      }
+
+      .content-area {
+        margin-top: 60px;
+        padding: 1rem;
+      }
+
+      .top-header {
+        display: none;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ========== UTILITAIRES ========== */
+    .hidden {
+      display: none !important;
+    }
+
+    .text-success {
+      color: var(--brandia-success);
+    }
+
+    .text-danger {
+      color: var(--brandia-danger);
+    }
+
+    .text-warning {
+      color: var(--brandia-warning);
+    }
+
+    .text-muted {
+      color: var(--brandia-text-muted);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--brandia-dark);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--brandia-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--brandia-card-hover);
     }
   </style>
 </head>
-<body class="antialiased">
+<body>
 
-<!-- Sidebar -->
-<aside class="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800 z-50 flex flex-col">
-  <div class="p-6 border-b border-slate-800">
-    <div class="flex items-center gap-3">
-      <a href="../index.html" class="brandia-logo">
-        <div class="brandia-icon-wrap">
-          <div class="brandia-pulse"></div>
-          <div class="brandia-icon-bg">
-            <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
-                    stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
-                    stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
-              <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
-              <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
-            </svg>
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+      <i class="fas fa-bars"></i>
+    </button>
+    <span class="brandia-text" style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700;">Brandia</span>
+    <button class="mobile-menu-btn" onclick="logout()">
+      <i class="fas fa-sign-out-alt"></i>
+    </button>
+  </div>
+
+  <div class="dashboard-layout">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle" onclick="toggleSidebarCollapse()">
+        <i class="fas fa-chevron-left" id="sidebar-toggle-icon"></i>
+      </button>
+
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">
+            <i class="fas fa-shopping-bag"></i>
           </div>
-        </div>
-        <span class="brandia-text">Brandia</span>
-      </a>
-      <span class="text-emerald-400 text-sm font-medium ml-4">Espace Fournisseur</span>
-    </div>
-  </div>
-
-  <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-    <button onclick="navigate('overview')" id="nav-overview" class="nav-link active w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white">
-      <i class="fas fa-chart-line w-5 text-center"></i>
-      <span>Tableau de bord</span>
-    </button>
-    
-    <button onclick="navigate('products')" id="nav-products" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-box w-5 text-center"></i>
-      <span>Produits</span>
-      <span id="product-count" class="ml-auto bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full text-xs hidden">0</span>
-    </button>
-    
-    <button onclick="navigate('promotions')" id="nav-promotions" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-percent w-5 text-center"></i>
-      <span>Promotions</span>
-    </button>
-
-    <button onclick="navigate('advertising')" id="nav-advertising" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400 relative">
-      <i class="fas fa-bullhorn w-5 text-center"></i>
-      <span>Publicité</span>
-      <span class="ml-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">NEW</span>
-    </button>
-    
-    <button onclick="navigate('orders')" id="nav-orders" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-shopping-bag w-5 text-center"></i>
-      <span>Commandes</span>
-      <span id="order-badge" class="ml-auto bg-red-500 text-white px-2 py-0.5 rounded-full text-xs hidden">0</span>
-    </button>
-    
-    <button onclick="navigate('payments')" id="nav-payments" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-euro-sign w-5 text-center"></i>
-      <span>Paiements</span>
-    </button>
-    
-    <button onclick="navigate('analytics')" id="nav-analytics" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-chart-bar w-5 text-center"></i>
-      <span>Statistiques</span>
-    </button>
-    
-    <button onclick="navigate('profile')" id="nav-profile" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-building w-5 text-center"></i>
-      <span>Profil marque</span>
-    </button>
-    
-    <button onclick="navigate('support')" id="nav-support" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-headset w-5 text-center"></i>
-      <span>Support</span>
-    </button>
-    
-    <button onclick="navigate('settings')" id="nav-settings" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400">
-      <i class="fas fa-cog w-5 text-center"></i>
-      <span>Paramètres</span>
-    </button>
-  </nav>
-
-  <div class="p-4 border-t border-slate-800">
-    <div class="flex items-center gap-3 mb-4 px-2">
-      <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-        <i class="fas fa-user text-white text-sm"></i>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p id="user-name" class="text-sm font-medium truncate">Chargement...</p>
-        <p id="user-role" class="text-xs text-slate-400">Fournisseur</p>
-      </div>
-    </div>
-    <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium">
-      <i class="fas fa-sign-out-alt w-5 text-center"></i>
-      <span>Déconnexion</span>
-    </button>
-  </div>
-</aside>
-
-<!-- Main Content -->
-<main class="ml-64 min-h-screen bg-slate-950">
-  <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur border-b border-slate-800 px-8 py-4">
-    <div class="flex justify-between items-center">
-      <div class="flex items-center gap-4">
-        <div>
-          <h2 id="page-title" class="text-2xl font-bold text-white">Tableau de bord</h2>
-          <p id="page-subtitle" class="text-sm text-slate-400 mt-1">Vue d'ensemble de votre activité</p>
-        </div>
-        <a href="../index.html" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 hover:text-white transition-colors text-sm font-medium">
-          <i class="fas fa-home"></i>
-          <span>Retour boutique</span>
+          <span class="sidebar-logo-text">Brandia</span>
         </a>
       </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Menu</div>
+          <button class="nav-item active" onclick="showSection('dashboard')" data-section="dashboard">
+            <i class="fas fa-chart-line"></i>
+            <span class="nav-text">Tableau de bord</span>
+          </button>
+          <button class="nav-item" onclick="showSection('products')" data-section="products">
+            <i class="fas fa-box"></i>
+            <span class="nav-text">Produits</span>
+          </button>
+          <button class="nav-item" onclick="showSection('orders')" data-section="orders">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="nav-text">Commandes</span>
+          </button>
+          <button class="nav-item" onclick="showSection('campaigns')" data-section="campaigns">
+            <i class="fas fa-bullhorn"></i>
+            <span class="nav-text">Campagnes</span>
+          </button>
+          <button class="nav-item" onclick="showSection('promotions')" data-section="promotions">
+            <i class="fas fa-percent"></i>
+            <span class="nav-text">Promotions</span>
+          </button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Finances</div>
+          <button class="nav-item" onclick="showSection('payments')" data-section="payments">
+            <i class="fas fa-wallet"></i>
+            <span class="nav-text">Paiements</span>
+          </button>
+          <button class="nav-item" onclick="showSection('analytics')" data-section="analytics">
+            <i class="fas fa-chart-bar"></i>
+            <span class="nav-text">Analytics</span>
+          </button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Paramètres</div>
+          <button class="nav-item" onclick="showSection('profile')" data-section="profile">
+            <i class="fas fa-user"></i>
+            <span class="nav-text">Profil</span>
+          </button>
+          <button class="nav-item" onclick="showSection('settings')" data-section="settings">
+            <i class="fas fa-cog"></i>
+            <span class="nav-text">Paramètres</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="../index.html" class="btn-back">
+          <i class="fas fa-arrow-left"></i>
+          <span class="nav-text">Retour boutique</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
       
-      <div class="flex items-center gap-4">
-        <div class="relative hidden md:block">
-          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-          <input type="text" id="global-search" placeholder="Rechercher..." 
-                 class="bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none w-64">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Rechercher..." id="global-search">
         </div>
+
+        <div class="header-actions">
+          <button class="btn-icon" onclick="refreshData()">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button class="btn-icon" onclick="showNotifications()">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge">3</span>
+          </button>
+          <div class="user-menu" onclick="toggleUserMenu()">
+            <div class="user-avatar" id="user-avatar">F</div>
+            <div class="user-info">
+              <span class="user-name" id="header-user-name">Fournisseur</span>
+              <span class="user-role">Vendeur</span>
+            </div>
+            <i class="fas fa-chevron-down" style="color: var(--brandia-text-muted);"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content-area">
         
-        <button class="relative p-2 text-slate-400 hover:text-white transition-colors" onclick="showNotifications()">
-          <i class="fas fa-bell text-lg"></i>
-          <span id="notif-badge" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
-        </button>
-        
-        <button onclick="quickAction()" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-          <i class="fas fa-plus"></i>
-          <span class="hidden sm:inline">Action rapide</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <div class="p-8 max-w-7xl mx-auto">
-    
-    <!-- OVERVIEW SECTION -->
-    <section id="overview" class="section active space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="card rounded-xl p-6">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="text-slate-400 text-xs uppercase tracking-wider font-semibold">Chiffre d'affaires</p>
-              <p class="text-3xl font-bold text-emerald-400 mt-2" id="kpi-revenue">0 €</p>
-              <p class="text-xs text-emerald-400/70 mt-1 flex items-center gap-1" id="kpi-revenue-trend">
-                <i class="fas fa-arrow-up"></i> +0% ce mois
-              </p>
-            </div>
-            <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-              <i class="fas fa-euro-sign text-emerald-400 text-xl"></i>
-            </div>
+        <!-- SECTION: DASHBOARD -->
+        <section id="section-dashboard" class="section-content active">
+          <div class="page-header">
+            <h1 class="page-title">Tableau de bord</h1>
+            <p class="page-subtitle">Vue d'ensemble de votre activité</p>
           </div>
-        </div>
 
-        <div class="card rounded-xl p-6">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="text-slate-400 text-xs uppercase tracking-wider font-semibold">Commandes</p>
-              <p class="text-3xl font-bold text-blue-400 mt-2" id="kpi-orders">0</p>
-              <p class="text-xs text-blue-400/70 mt-1 flex items-center gap-1" id="kpi-orders-trend">
-                <i class="fas fa-arrow-up"></i> +0% ce mois
-              </p>
-            </div>
-            <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
-              <i class="fas fa-shopping-bag text-blue-400 text-xl"></i>
-            </div>
-          </div>
-        </div>
-
-        <div class="card rounded-xl p-6">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="text-slate-400 text-xs uppercase tracking-wider font-semibold">Produits actifs</p>
-              <p class="text-3xl font-bold text-indigo-400 mt-2" id="kpi-products">0</p>
-              <p class="text-xs text-indigo-400/70 mt-1">sur <span id="kpi-total-products">0</span> total</p>
-            </div>
-            <div class="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center">
-              <i class="fas fa-box text-indigo-400 text-xl"></i>
-            </div>
-          </div>
-        </div>
-
-        <div class="card rounded-xl p-6">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="text-slate-400 text-xs uppercase tracking-wider font-semibold">À recevoir</p>
-              <p class="text-3xl font-bold text-amber-400 mt-2" id="kpi-balance">0 €</p>
-              <p class="text-xs text-amber-400/70 mt-1" id="next-payout-date">Prochain virement: --/--</p>
-            </div>
-            <div class="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center">
-              <i class="fas fa-wallet text-amber-400 text-xl"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="card rounded-xl p-6 lg:col-span-2">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="font-semibold text-lg">Évolution des ventes</h3>
-            <select id="sales-period" onchange="updateSalesChart()" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-indigo-500 outline-none">
-              <option value="7">7 derniers jours</option>
-              <option value="30">30 derniers jours</option>
-              <option value="month">Ce mois</option>
-              <option value="year">Cette année</option>
-            </select>
-          </div>
-          <div class="chart-container">
-            <canvas id="salesChart"></canvas>
-          </div>
-        </div>
-
-        <div class="card rounded-xl p-6">
-          <h3 class="font-semibold text-lg mb-6">Top produits</h3>
-          <div id="top-products-list" class="space-y-4">
-            <div class="text-center py-8 text-slate-500">
-              <i class="fas fa-box-open text-3xl mb-3 opacity-50"></i>
-              <p class="text-sm">Aucune donnée disponible</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card rounded-xl overflow-hidden">
-        <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-          <h3 class="font-semibold text-lg">Commandes récentes</h3>
-          <button onclick="navigate('orders')" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium">
-            Voir tout <i class="fas fa-arrow-right ml-1"></i>
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-800/50 text-slate-400 text-xs uppercase">
-              <tr>
-                <th class="text-left py-4 px-6 font-semibold">N° Commande</th>
-                <th class="text-left py-4 px-6 font-semibold">Date</th>
-                <th class="text-left py-4 px-6 font-semibold">Client</th>
-                <th class="text-right py-4 px-6 font-semibold">Montant</th>
-                <th class="text-center py-4 px-6 font-semibold">Statut</th>
-              </tr>
-            </thead>
-            <tbody id="recent-orders-list" class="divide-y divide-slate-800">
-              <tr>
-                <td colspan="5" class="py-8 text-center text-slate-500">
-                  <i class="fas fa-spinner fa-spin mr-2"></i>Chargement...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- PRODUCTS SECTION -->
-    <section id="products" class="section space-y-6">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Mes produits</h2>
-          <p class="text-slate-400 text-sm mt-1">Gérez votre catalogue produits</p>
-        </div>
-        <div class="flex gap-3">
-          <button onclick="openProductModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
-            <i class="fas fa-plus"></i>
-            Ajouter un produit
-          </button>
-          <button onclick="importProducts()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-upload"></i>
-            Importer
-          </button>
-        </div>
-      </div>
-
-      <div class="card rounded-xl p-4">
-        <div class="flex flex-col md:flex-row gap-4">
-          <div class="relative flex-1">
-            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-            <input type="text" id="product-search" placeholder="Rechercher un produit..." 
-                   class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:border-indigo-500 outline-none"
-                   oninput="filterProducts()">
-          </div>
-          <select id="product-status-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:border-indigo-500 outline-none" onchange="filterProducts()">
-            <option value="">Tous les statuts</option>
-            <option value="published">Publié</option>
-            <option value="draft">Brouillon</option>
-            <option value="archived">Archivé</option>
-          </select>
-          <select id="product-category-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:border-indigo-500 outline-none" onchange="filterProducts()">
-            <option value="">Toutes les catégories</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div class="col-span-full text-center py-12">
-          <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
-        </div>
-      </div>
-
-      <div id="products-pagination" class="flex justify-center gap-2 mt-6 hidden">
-        <button onclick="changeProductPage(-1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm disabled:opacity-50" id="prev-page">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <span id="page-info" class="px-4 py-2 text-sm text-slate-400">Page 1 sur 1</span>
-        <button onclick="changeProductPage(1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm disabled:opacity-50" id="next-page">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-    </section>
-
-    <!-- PROMOTIONS SECTION -->
-    <section id="promotions" class="section space-y-6">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Promotions</h2>
-          <p class="text-slate-400 text-sm mt-1">Créez des offres pour booster vos ventes</p>
-        </div>
-        <button onclick="openPromotionModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
-          <i class="fas fa-plus"></i>
-          Nouvelle promotion
-        </button>
-      </div>
-
-      <div class="card rounded-xl overflow-hidden">
-        <div class="p-6 border-b border-slate-800">
-          <h3 class="font-semibold text-lg">Promotions actives</h3>
-        </div>
-        <div id="active-promotions" class="divide-y divide-slate-800">
-          <div class="p-8 text-center text-slate-500">
-            <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
-            <p>Chargement...</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ADVERTISING SECTION -->
-    <!-- ADVERTISING SECTION -->
-    <section id="advertising" class="section space-y-6">
-      <div class="flex justify-between items-start">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Publicité Contextuelle</h2>
-          <p class="text-slate-400 text-sm mt-1">Promouvez vos produits quand les clients vous consultent</p>
-        </div>
-        <button onclick="openCampaignModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
-          <i class="fas fa-plus"></i>
-          Nouvelle campagne
-        </button>
-      </div>
-
-      <div class="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 rounded-xl p-6">
-        <div class="flex items-start gap-4">
-          <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-            <i class="fas fa-lightbulb text-indigo-400 text-xl"></i>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-semibold text-lg mb-2">Comment ça marche ?</h3>
-            <div class="grid md:grid-cols-3 gap-4 text-sm text-slate-300">
-              <div class="flex items-start gap-2">
-                <i class="fas fa-check-circle text-emerald-400 mt-0.5"></i>
-                <span>Vos publicités s'affichent uniquement quand un client consulte vos produits</span>
-              </div>
-              <div class="flex items-start gap-2">
-                <i class="fas fa-check-circle text-emerald-400 mt-0.5"></i>
-                <span>Maximum 1 affichage par session (respect de l'utilisateur)</span>
-              </div>
-              <div class="flex items-start gap-2">
-                <i class="fas fa-check-circle text-emerald-400 mt-0.5"></i>
-                <span>Format overlay 40% écran, fermeture immédiate possible</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-eye text-pink-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Vues ce mois</p>
-          <p class="text-2xl font-bold text-white" id="ad-views">0</p>
-        </div>
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-mouse-pointer text-indigo-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Clics</p>
-          <p class="text-2xl font-bold text-white" id="ad-clicks">0</p>
-        </div>
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-percentage text-emerald-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Taux de clic</p>
-          <p class="text-2xl font-bold text-white" id="ad-ctr">0%</p>
-        </div>
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-shopping-cart text-amber-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Conversions</p>
-          <p class="text-2xl font-bold text-white" id="ad-conversions">0</p>
-        </div>
-      </div>
-
-      <div class="card rounded-xl overflow-hidden">
-        <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-          <h3 class="font-semibold text-lg">Campagnes actives</h3>
-          <span class="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full">1 max par marque</span>
-        </div>
-        <div id="campaigns-list" class="divide-y divide-slate-800">
-          <div class="p-8 text-center text-slate-500">
-            <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
-            <p>Chargement des campagnes...</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card rounded-xl p-6">
-        <h3 class="font-semibold text-lg mb-6">Performance des campagnes (30 derniers jours)</h3>
-        <div class="chart-container">
-          <canvas id="campaignChart"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <!-- ORDERS SECTION -->
-    <section id="orders" class="section space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Commandes</h2>
-        <p class="text-slate-400 text-sm mt-1">Suivez et gérez vos commandes clients</p>
-      </div>
-
-      <div class="card rounded-xl p-2">
-        <div class="flex gap-2 overflow-x-auto">
-          <button onclick="filterOrders('all')" class="order-tab active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-indigo-600 text-white" data-filter="all">
-            Toutes <span class="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-all">0</span>
-          </button>
-          <button onclick="filterOrders('pending')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="pending">
-            À préparer <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-pending">0</span>
-          </button>
-          <button onclick="filterOrders('shipped')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="shipped">
-            Expédiées <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-shipped">0</span>
-          </button>
-          <button onclick="filterOrders('delivered')" class="order-tab px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" data-filter="delivered">
-            Livrées <span class="ml-2 bg-slate-700 px-2 py-0.5 rounded-full text-xs" id="count-delivered">0</span>
-          </button>
-        </div>
-      </div>
-
-      <div id="orders-list" class="space-y-4">
-        <div class="text-center py-12">
-          <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
-        </div>
-      </div>
-    </section>
-
-    <!-- PAYMENTS SECTION -->
-    <section id="payments" class="section space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Paiements & Revenus</h2>
-        <p class="text-slate-400 text-sm mt-1">Suivez vos revenus et demandez des virements</p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-14 h-14 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-check-circle text-emerald-400 text-2xl"></i>
-          </div>
-          <p class="text-slate-400 text-sm mb-1">Solde disponible</p>
-          <p class="text-4xl font-bold text-emerald-400 mb-4" id="balance-available">0 €</p>
-          <button onclick="requestPayout()" id="btn-payout" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-medium text-white transition-colors">
-            Demander un virement
-          </button>
-        </div>
-
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-14 h-14 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-clock text-amber-400 text-2xl"></i>
-          </div>
-          <p class="text-slate-400 text-sm mb-1">En attente</p>
-          <p class="text-4xl font-bold text-amber-400 mb-4" id="balance-pending">0 €</p>
-          <p class="text-xs text-slate-500">Disponible dans 7 jours</p>
-        </div>
-
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-14 h-14 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-chart-line text-indigo-400 text-2xl"></i>
-          </div>
-          <p class="text-slate-400 text-sm mb-1">Total gagné</p>
-          <p class="text-4xl font-bold text-indigo-400 mb-4" id="balance-total">0 €</p>
-          <p class="text-xs text-slate-500">Depuis le début</p>
-        </div>
-      </div>
-
-      <div class="card rounded-xl overflow-hidden">
-        <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-          <h3 class="font-semibold text-lg">Historique des transactions</h3>
-          <button onclick="exportTransactions()" class="text-slate-400 hover:text-white text-sm">
-            <i class="fas fa-download mr-1"></i> Exporter
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-800/50 text-slate-400 text-xs uppercase">
-              <tr>
-                <th class="text-left py-4 px-6 font-semibold">Date</th>
-                <th class="text-left py-4 px-6 font-semibold">Description</th>
-                <th class="text-right py-4 px-6 font-semibold">Montant</th>
-                <th class="text-center py-4 px-6 font-semibold">Statut</th>
-              </tr>
-            </thead>
-            <tbody id="transactions-list" class="divide-y divide-slate-800">
-              <tr>
-                <td colspan="4" class="py-8 text-center text-slate-500">
-                  <i class="fas fa-spinner fa-spin mr-2"></i>Chargement...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ANALYTICS SECTION -->
-    <section id="analytics" class="section space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Statistiques</h2>
-        <p class="text-slate-400 text-sm mt-1">Analysez votre performance commerciale</p>
-      </div>
-
-      <div class="flex gap-2">
-        <button onclick="updateAnalyticsPeriod(7)" class="analytics-period px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium" data-period="7">7 jours</button>
-        <button onclick="updateAnalyticsPeriod(30)" class="analytics-period px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors" data-period="30">30 jours</button>
-        <button onclick="updateAnalyticsPeriod('month')" class="analytics-period px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors" data-period="month">Ce mois</button>
-        <button onclick="updateAnalyticsPeriod('year')" class="analytics-period px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors" data-period="year">Cette année</button>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card rounded-xl p-6">
-          <h3 class="font-semibold text-lg mb-4">Ventes</h3>
-          <div class="chart-container">
-            <canvas id="analyticsSalesChart"></canvas>
-          </div>
-        </div>
-
-        <div class="card rounded-xl p-6">
-          <h3 class="font-semibold text-lg mb-4">Taux de conversion</h3>
-          <div class="chart-container">
-            <canvas id="conversionChart"></canvas>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PROFILE SECTION -->
-    <section id="profile" class="section space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Profil de la marque</h2>
-        <p class="text-slate-400 text-sm mt-1">Gérez votre identité publique</p>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 space-y-6">
-          <div class="card rounded-xl p-6">
-            <div class="flex items-start gap-6 mb-6">
-              <div class="relative">
-                <div class="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden" id="brand-logo-container">
-                  <i class="fas fa-building text-white text-3xl" id="brand-logo-icon"></i>
-                  <img id="brand-logo-img" class="w-full h-full object-cover hidden" alt="Logo">
+          <!-- KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon blue">
+                  <i class="fas fa-euro-sign"></i>
                 </div>
-                <input type="file" id="logo-upload" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
-                <button onclick="document.getElementById('logo-upload').click()" class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center border-2 border-slate-800 transition-colors">
-                  <i class="fas fa-camera text-xs"></i>
+                <span class="kpi-trend up">
+                  <i class="fas fa-arrow-up"></i> 12.5%
+                </span>
+              </div>
+              <div class="kpi-value" id="kpi-revenue">0 €</div>
+              <div class="kpi-label">Chiffre d'affaires (30j)</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon green">
+                  <i class="fas fa-shopping-bag"></i>
+                </div>
+                <span class="kpi-trend up">
+                  <i class="fas fa-arrow-up"></i> 8.2%
+                </span>
+              </div>
+              <div class="kpi-value" id="kpi-orders">0</div>
+              <div class="kpi-label">Commandes</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon orange">
+                  <i class="fas fa-eye"></i>
+                </div>
+                <span class="kpi-trend down">
+                  <i class="fas fa-arrow-down"></i> 3.1%
+                </span>
+              </div>
+              <div class="kpi-value" id="kpi-views">0</div>
+              <div class="kpi-label">Vues produits</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon purple">
+                  <i class="fas fa-box"></i>
+                </div>
+                <span class="kpi-trend up">
+                  <i class="fas fa-arrow-up"></i> 5.4%
+                </span>
+              </div>
+              <div class="kpi-value" id="kpi-products">0</div>
+              <div class="kpi-label">Produits actifs</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3 class="chart-title">Évolution des ventes</h3>
+                <div class="chart-actions">
+                  <button class="btn-sm active">7j</button>
+                  <button class="btn-sm">30j</button>
+                  <button class="btn-sm">90j</button>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3 class="chart-title">Répartition des ventes</h3>
+              </div>
+              <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Orders -->
+          <div class="section-card">
+            <div class="section-header">
+              <h3 class="section-title">Commandes récentes</h3>
+              <button class="btn-secondary" onclick="showSection('orders')">
+                Voir tout <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
+              </button>
+            </div>
+            <div class="section-content">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Commande</th>
+                    <th>Client</th>
+                    <th>Produits</th>
+                    <th>Total</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-orders-table">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--brandia-text-muted); padding: 2rem;">
+                      Chargement...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: PRODUCTS -->
+        <section id="section-products" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Mes produits</h1>
+            <p class="page-subtitle">Gérez votre catalogue</p>
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <div style="display: flex; gap: 1rem;">
+                <button class="btn-primary" onclick="openProductModal()">
+                  <i class="fas fa-plus"></i> Nouveau produit
+                </button>
+                <button class="btn-secondary" onclick="openImportModal()">
+                  <i class="fas fa-file-import"></i> Importer CSV
                 </button>
               </div>
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                  <h3 class="text-xl font-bold" id="brand-name">Chargement...</h3>
-                  <span class="badge badge-published text-xs" id="brand-verified">Vérifié</span>
-                </div>
-                <p class="text-slate-400 text-sm mb-4" id="brand-category">--</p>
-                <div class="flex gap-3">
-                  <button onclick="editBrand()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">
-                    Modifier
-                  </button>
-                  <button onclick="viewPublicProfile()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors">
-                    Voir la boutique
-                  </button>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" placeholder="Rechercher un produit..." class="form-input" style="width: 250px;" id="product-search">
+                <select class="form-select" style="width: 150px;" id="product-filter">
+                  <option value="all">Tous</option>
+                  <option value="active">Actifs</option>
+                  <option value="inactive">Inactifs</option>
+                </select>
+              </div>
+            </div>
+            <div class="section-content">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Produit</th>
+                    <th>Prix</th>
+                    <th>Stock</th>
+                    <th>Statut</th>
+                    <th>Ventes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="products-table">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--brandia-text-muted); padding: 2rem;">
+                      Chargement des produits...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: ORDERS -->
+        <section id="section-orders" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Commandes</h1>
+            <p class="page-subtitle">Suivez et gérez vos commandes</p>
+          </div>
+
+          <div class="section-card">
+            <div class="tabs">
+              <button class="tab active" onclick="switchTab('orders-all')">Toutes</button>
+              <button class="tab" onclick="switchTab('orders-pending')">En attente</button>
+              <button class="tab" onclick="switchTab('orders-processing')">En cours</button>
+              <button class="tab" onclick="switchTab('orders-shipped')">Expédiées</button>
+              <button class="tab" onclick="switchTab('orders-delivered')">Livrées</button>
+            </div>
+            
+            <div id="orders-all" class="tab-content active">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>N° Commande</th>
+                    <th>Date</th>
+                    <th>Client</th>
+                    <th>Produits</th>
+                    <th>Total</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table-all">
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--brandia-text-muted); padding: 2rem;">
+                      Chargement des commandes...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: CAMPAIGNS -->
+        <section id="section-campaigns" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Campagnes publicitaires</h1>
+            <p class="page-subtitle">Promouvez vos produits sur Brandia</p>
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <button class="btn-primary" onclick="openCampaignModal()">
+                <i class="fas fa-plus"></i> Nouvelle campagne
+              </button>
+            </div>
+            <div class="section-content">
+              <div id="campaigns-list">
+                <div class="campaign-card">
+                  <div class="campaign-header">
+                    <div>
+                      <h4 class="campaign-title">Soldes d'hiver 2026</h4>
+                      <p class="text-muted" style="font-size: 0.875rem;">Du 01/01/2026 au 31/01/2026</p>
+                    </div>
+                    <span class="campaign-status active">Active</span>
+                  </div>
+                  <p style="color: var(--brandia-text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                    Promotion de -20% sur toute la collection hiver
+                  </p>
+                  <div class="campaign-stats">
+                    <div class="campaign-stat">
+                      <div class="campaign-stat-value">1,234</div>
+                      <div class="campaign-stat-label">Impressions</div>
+                    </div>
+                    <div class="campaign-stat">
+                      <div class="campaign-stat-value">89</div>
+                      <div class="campaign-stat-label">Clics</div>
+                    </div>
+                    <div class="campaign-stat">
+                      <div class="campaign-stat-value">12</div>
+                      <div class="campaign-stat-label">Conversions</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <!-- SUPPORT SECTION -->
-    <section id="support" class="section space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Support & Aide</h2>
-        <p class="text-slate-400 text-sm mt-1">Nous sommes là pour vous aider</p>
+        <!-- SECTION: PROMOTIONS -->
+        <section id="section-promotions" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Promotions</h1>
+            <p class="page-subtitle">Créez des offres spéciales</p>
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <button class="btn-primary" onclick="openPromotionModal()">
+                <i class="fas fa-plus"></i> Nouvelle promotion
+              </button>
+            </div>
+            <div class="section-content">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Type</th>
+                    <th>Valeur</th>
+                    <th>Période</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="promotions-table">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--brandia-text-muted); padding: 2rem;">
+                      Aucune promotion active
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: PAYMENTS -->
+        <section id="section-payments" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Paiements</h1>
+            <p class="page-subtitle">Suivez vos revenus et demandes de virement</p>
+          </div>
+
+          <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon green">
+                  <i class="fas fa-wallet"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="payment-balance">0 €</div>
+              <div class="kpi-label">Solde disponible</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon blue">
+                  <i class="fas fa-clock"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="payment-pending">0 €</div>
+              <div class="kpi-label">En attente</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon purple">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="payment-total">0 €</div>
+              <div class="kpi-label">Total encaissé</div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <h3 class="section-title">Historique des transactions</h3>
+              <button class="btn-primary" onclick="requestPayout()">
+                <i class="fas fa-money-bill-wave"></i> Demander un virement
+              </button>
+            </div>
+            <div class="section-content">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody id="payments-table">
+                  <tr>
+                    <td colspan="4" style="text-align: center; color: var(--brandia-text-muted); padding: 2rem;">
+                      Aucune transaction
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: ANALYTICS -->
+        <section id="section-analytics" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Analytics</h1>
+            <p class="page-subtitle">Analysez vos performances</p>
+          </div>
+          
+          <div class="section-card">
+            <div class="section-content" style="text-align: center; padding: 4rem;">
+              <i class="fas fa-chart-pie" style="font-size: 4rem; color: var(--brandia-border); margin-bottom: 1rem;"></i>
+              <h3 style="margin-bottom: 0.5rem;">Analytics avancés</h3>
+              <p style="color: var(--brandia-text-muted);">Cette fonctionnalité sera disponible prochainement.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: PROFILE -->
+        <section id="section-profile" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Mon profil</h1>
+            <p class="page-subtitle">Gérez vos informations</p>
+          </div>
+
+          <div class="section-card">
+            <div class="section-content">
+              <form id="profile-form" onsubmit="saveProfile(event)">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Nom de l'entreprise</label>
+                    <input type="text" class="form-input" id="profile-company" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="profile-email" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Description</label>
+                  <textarea class="form-textarea" id="profile-description"></textarea>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Site web</label>
+                    <input type="url" class="form-input" id="profile-website">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Téléphone</label>
+                    <input type="tel" class="form-input" id="profile-phone">
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                  <button type="button" class="btn-secondary" onclick="loadProfile()">Annuler</button>
+                  <button type="submit" class="btn-primary">Enregistrer</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: SETTINGS -->
+        <section id="section-settings" class="section-content hidden">
+          <div class="page-header">
+            <h1 class="page-title">Paramètres</h1>
+            <p class="page-subtitle">Configurez votre compte</p>
+          </div>
+
+          <div class="section-card">
+            <div class="section-content" style="text-align: center; padding: 4rem;">
+              <i class="fas fa-cogs" style="font-size: 4rem; color: var(--brandia-border); margin-bottom: 1rem;"></i>
+              <h3 style="margin-bottom: 0.5rem;">Paramètres avancés</h3>
+              <p style="color: var(--brandia-text-muted);">Cette fonctionnalité sera disponible prochainement.</p>
+            </div>
+          </div>
+        </section>
+
       </div>
-      
-      <div class="card rounded-xl p-8 text-center">
-        <div class="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <i class="fas fa-headset text-indigo-400 text-2xl"></i>
+    </main>
+  </div>
+
+  <!-- MODAL: Add/Edit Product -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="product-modal-title">Nouveau produit</h3>
+        <button class="modal-close" onclick="closeProductModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="product-form" onsubmit="saveProduct(event)">
+          <input type="hidden" id="product-id">
+          <div class="form-group">
+            <label class="form-label">Nom du produit *</label>
+            <input type="text" class="form-input" id="product-name" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Prix *</label>
+              <input type="number" step="0.01" class="form-input" id="product-price" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prix comparé (optionnel)</label>
+              <input type="number" step="0.01" class="form-input" id="product-compare-price">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Stock *</label>
+              <input type="number" class="form-input" id="product-stock" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">SKU</label>
+              <input type="text" class="form-input" id="product-sku">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catégorie</label>
+            <select class="form-select" id="product-category">
+              <option value="">Sélectionner une catégorie</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-textarea" id="product-description"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Image URL</label>
+            <input type="url" class="form-input" id="product-image" placeholder="https://...">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeProductModal()">Annuler</button>
+        <button type="button" class="btn-primary" onclick="document.getElementById('product-form').dispatchEvent(new Event('submit'))">
+          <i class="fas fa-save"></i> Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Import CSV -->
+  <div class="modal-overlay" id="import-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Importer des produits</h3>
+        <button class="modal-close" onclick="closeImportModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="import-zone" onclick="document.getElementById('csv-file').click()">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <h4>Glissez-déposez votre fichier CSV</h4>
+          <p>ou cliquez pour sélectionner un fichier</p>
+          <input type="file" id="csv-file" accept=".csv" style="display: none;" onchange="handleCSVImport(event)">
         </div>
-        <h3 class="text-lg font-semibold mb-2">Centre d'aide</h3>
-        <p class="text-slate-400 mb-6">Une question ? Contactez notre équipe support.</p>
-        <a href="mailto:support@brandia.company" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
-          Contacter le support
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--brandia-dark); border-radius: 8px;">
+          <p style="font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>Format attendu :</strong></p>
+          <code style="font-size: 0.75rem; color: var(--brandia-text-muted);">
+            name;price;stock;category;description
+          </code>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeImportModal()">Annuler</button>
+        <a href="#" class="btn-secondary" onclick="downloadTemplate()">
+          <i class="fas fa-download"></i> Template
         </a>
       </div>
-    </section>
-
-    <!-- SETTINGS SECTION -->
-    <section id="settings" class="section space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Paramètres</h2>
-        <p class="text-slate-400 text-sm mt-1">Gérez vos préférences et sécurité</p>
-      </div>
-      
-      <div class="card rounded-xl p-6 space-y-6">
-        <div class="flex items-center justify-between pb-6 border-b border-slate-800">
-          <div>
-            <h3 class="font-medium text-white">Notifications email</h3>
-            <p class="text-sm text-slate-400">Recevoir les alertes commandes par email</p>
-          </div>
-          <input type="checkbox" class="toggle" checked>
-        </div>
-        
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="font-medium text-white">Double authentification</h3>
-            <p class="text-sm text-slate-400">Sécuriser votre compte avec 2FA</p>
-          </div>
-          <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors">
-            Configurer
-          </button>
-        </div>
-      </div>
-    </section>
-
-  </div>
-</main>
-
-<!-- Product Modal -->
-<div id="product-modal" class="fixed inset-0 z-50 hidden">
-  <div class="modal-backdrop absolute inset-0" onclick="closeModal('product-modal')"></div>
-  <div class="absolute inset-4 md:inset-10 bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-w-5xl mx-auto">
-    <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-      <h3 class="text-xl font-bold" id="product-modal-title">Ajouter un produit</h3>
-      <button onclick="closeModal('product-modal')" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
-        <i class="fas fa-times text-lg"></i>
-      </button>
     </div>
-    <div class="flex-1 overflow-y-auto p-6">
-      <form id="product-form" class="grid md:grid-cols-2 gap-6">
-        <div class="md:col-span-2">
-          <label class="block text-sm text-slate-400 mb-2">Image du produit</label>
-          <div class="flex items-center gap-4">
-            <div id="image-preview-container" class="hidden w-24 h-24 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
-              <img id="image-preview" src="" class="w-full h-full object-cover" alt="Preview">
+  </div>
+
+  <!-- MODAL: Add Campaign -->
+  <div class="modal-overlay" id="campaign-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Nouvelle campagne</h3>
+        <button class="modal-close" onclick="closeCampaignModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="campaign-form">
+          <div class="form-group">
+            <label class="form-label">Nom de la campagne *</label>
+            <input type="text" class="form-input" id="campaign-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select class="form-select" id="campaign-type">
+              <option value="overlay">Overlay (40% écran)</option>
+              <option value="banner">Bannière</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date début</label>
+              <input type="date" class="form-input" id="campaign-start">
             </div>
-            <div class="flex-1">
-              <input type="file" id="product-image-input" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
-              <button type="button" onclick="document.getElementById('product-image-input').click()" class="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <span>Importer une image</span>
-              </button>
-              <p class="text-xs text-slate-500 mt-1">Format: JPG, PNG, WebP. Max 5MB.</p>
+            <div class="form-group">
+              <label class="form-label">Date fin</label>
+              <input type="date" class="form-input" id="campaign-end">
             </div>
           </div>
-        </div>
-
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Nom du produit *</label>
-          <input type="text" id="product-name" name="name" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="Ex: Sérum hydratant">
-        </div>
-        
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Prix (€) *</label>
-          <input type="number" id="product-price" name="price" step="0.01" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="29.99">
-        </div>
-        
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Catégorie</label>
-          <select id="product-category-select" name="category_id" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-            <option value="">Choisir...</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm text-slate-400 mb-2">Stock *</label>
-          <input type="number" id="product-stock" name="stock_quantity" min="0" value="10" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none" placeholder="10">
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-sm text-slate-400 mb-2">Description</label>
-          <textarea id="product-description" name="description" rows="4" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none resize-none" placeholder="Décrivez votre produit en détail..."></textarea>
-        </div>
-      </form>
-      
-      <div class="mt-6 pt-6 border-t border-slate-800 flex justify-end gap-3">
-        <button type="button" onclick="closeModal('product-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">Annuler</button>
-        <button type="button" onclick="SupplierProducts.save()" class="btn-primary px-6 py-2.5 rounded-lg font-medium">Enregistrer</button>
+          <div class="form-group">
+            <label class="form-label">Produits ciblés</label>
+            <select class="form-select" id="campaign-products" multiple>
+              <option value="all">Tous les produits</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeCampaignModal()">Annuler</button>
+        <button type="button" class="btn-primary" onclick="saveCampaign()">
+          <i class="fas fa-rocket"></i> Lancer la campagne
+        </button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Campaign Modal -->
-<!-- Campaign Modal -->
-<div id="campaign-modal" class="fixed inset-0 z-50 hidden">
-  <div class="modal-backdrop absolute inset-0" onclick="closeModal('campaign-modal')"></div>
-  <div class="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-5xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
-    <!-- Header -->
-    <div class="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-900/50">
-      <div>
-        <h3 class="text-xl font-bold">Nouvelle campagne publicitaire</h3>
-        <p class="text-sm text-slate-400 mt-1">Créez une publicité contextuelle pour vos produits</p>
-      </div>
-      <button onclick="closeModal('campaign-modal')" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
-        <i class="fas fa-times text-lg"></i>
-      </button>
-    </div>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
 
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-6">
-      <div class="grid md:grid-cols-2 gap-8">
-        <!-- Colonne gauche : Formulaire -->
-        <div class="space-y-6">
-          <form id="campaign-form" class="space-y-6">
-            <input type="hidden" id="campaign-id" name="id">
-            <input type="hidden" name="cta_link" id="cta-link-value">
-            <!-- Nom et Type -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm text-slate-400 mb-2">Nom de la campagne *</label>
-                <input type="text" name="name" required placeholder="Ex: Soldes d'hiver 2026" 
-                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-              </div>
-              <div>
-                <label class="block text-sm text-slate-400 mb-2">Type de média</label>
-                <div class="flex gap-2">
-                  <label class="flex-1 cursor-pointer">
-                    <input type="radio" name="media_type" value="image" checked class="hidden peer" onchange="toggleMediaType('image')">
-                    <div class="p-3 bg-slate-800 border border-slate-700 rounded-lg text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 transition-colors">
-                      <i class="fas fa-image text-indigo-400 mb-1"></i>
-                      <p class="text-xs">Image</p>
-                    </div>
-                  </label>
-                  <label class="flex-1 cursor-pointer">
-                    <input type="radio" name="media_type" value="video" class="hidden peer" onchange="toggleMediaType('video')">
-                    <div class="p-3 bg-slate-800 border border-slate-700 rounded-lg text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 transition-colors">
-                      <i class="fas fa-video text-indigo-400 mb-1"></i>
-                      <p class="text-xs">Vidéo (15s)</p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <!-- Upload Média -->
-            <div>
-              <label class="block text-sm text-slate-400 mb-2">Visuel de la campagne *</label>
-              <div class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center hover:border-indigo-500/50 transition-colors cursor-pointer relative bg-slate-800/30" onclick="document.getElementById('campaign-media').click()" id="campaign-dropzone">
-                <div id="campaign-media-placeholder">
-                  <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-3"></i>
-                  <p class="text-slate-400 text-sm">Cliquez ou glissez votre fichier ici</p>
-                  <p class="text-slate-600 text-xs mt-1">Format recommandé: 1200x800px, max 5MB (image) ou 50MB (vidéo)</p>
-                </div>
-              </div>
-              <input type="file" id="campaign-media" accept="image/*,video/mp4" class="hidden" onchange="handleCampaignMedia(event)">
-            </div>
-            <!-- Textes -->
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm text-slate-400 mb-2">Titre principal *</label>
-                <input type="text" name="headline" required maxlength="50" placeholder="Ex: Nouvelle collection -20%" 
-                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none"
-                       oninput="updateAdPreview()">
-                <p class="text-xs text-slate-500 mt-1">Maximum 50 caractères</p>
-              </div>
-             <div>
-                <label class="block text-sm text-slate-400 mb-2">Description courte</label>
-                 <textarea name="description" id="campaign-description" rows="2" maxlength="100" 
-            placeholder="Texte complémentaire..." 
-            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none resize-none"></textarea>
-             <p class="text-xs text-slate-500 mt-1">Maximum 100 caractères</p>
-            </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm text-slate-400 mb-2">Texte du bouton</label>
-                  <input type="text" name="cta_text" value="Voir l'offre" maxlength="20" 
-                         class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none"
-                         oninput="updateAdPreview()">
-                </div>
-                <div>
-                  <label class="block text-sm text-slate-400 mb-2">Lien de destination *</label>
-                  <select name="cta_link_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none mb-2" onchange="handleCtaType(this.value)">
-                    <option value="product">Produit spécifique</option>
-                    <option value="category">Catégorie</option>
-                    <option value="external">Lien externe</option>
-                  </select>
-                  <select id="cta-product-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-                    <option value="">Choisir un produit...</option>
-                  </select>
-                  <input type="url" id="cta-external-url" placeholder="https://..." 
-                         class="w-full hidden bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-                </div>
-              </div>
-            </div>
-            <!-- Ciblage -->
-            <div class="bg-slate-800/50 rounded-xl p-4 space-y-4">
-              <h4 class="font-semibold text-sm text-white flex items-center gap-2">
-                <i class="fas fa-crosshairs text-indigo-400"></i>
-                Ciblage (obligatoire)
-              </h4>
-              <p class="text-xs text-slate-400">La publicité ne s'affichera que sur les pages des produits sélectionnés</p>
-              <div>
-                <label class="block text-sm text-slate-400 mb-2">Produits concernés *</label>
-                <div id="target-products-list" class="max-h-40 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg p-2 space-y-1">
-                  <div class="text-center py-4 text-slate-500 text-sm">
-                    <i class="fas fa-spinner fa-spin mr-2"></i>Chargement des produits...
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Dates -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm text-slate-400 mb-2">Date de début *</label>
-                <input type="date" name="start_date" required 
-                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-              </div>
-              <div>
-                <label class="block text-sm text-slate-400 mb-2">Date de fin *</label>
-                <input type="date" name="end_date" required 
-                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none">
-              </div>
-            </div>
-          </form>
-        </div>
-        <!-- Colonne droite : Preview & Stats -->
-        <div class="space-y-6">
-          <!-- Preview temps réel -->
-          <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
-            <h4 class="font-semibold text-sm text-white mb-4 flex items-center gap-2">
-              <i class="fas fa-mobile-alt text-indigo-400"></i>
-              Aperçu mobile
-            </h4>
-            <div class="relative bg-slate-900 rounded-lg overflow-hidden border border-slate-700" style="aspect-ratio: 9/16; max-height: 400px;">
-              <!-- Simulation téléphone -->
-              <div class="absolute inset-0 flex flex-col">
-                <!-- Header simulé -->
-                <div class="h-12 bg-slate-800 flex items-center px-4 gap-2">
-                  <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                  <div class="w-3 h-3 rounded-full bg-amber-500"></div>
-                  <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-                </div>
-                <!-- Contenu simulé -->
-                <div class="flex-1 bg-slate-900 p-4 space-y-3">
-                  <div class="h-32 bg-slate-800 rounded-lg animate-pulse"></div>
-                  <div class="h-4 bg-slate-800 rounded w-3/4"></div>
-                  <div class="h-4 bg-slate-800 rounded w-1/2"></div>
-                </div>
-                <!-- Overlay Publicité (40% écran) -->
-                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent p-4" style="height: 45%;">
-                  <div class="bg-slate-800 rounded-xl p-4 border border-indigo-500/30 shadow-2xl">
-                    <div class="flex justify-between items-start mb-3">
-                      <span class="text-xs text-indigo-400 font-medium">Sponsorisé</span>
-                      <button class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div class="aspect-video bg-slate-700 rounded-lg mb-3 flex items-center justify-center overflow-hidden" id="ad-preview-media">
-                      <i class="fas fa-image text-slate-500 text-2xl"></i>
-                    </div>
-                    <h4 class="font-bold text-white text-sm mb-1" id="ad-preview-headline">Votre titre</h4>
-                    <p class="text-xs text-slate-400 mb-3 line-clamp-2" id="ad-preview-desc">Description de votre offre...</p>
-                    <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-medium text-white transition-colors" id="ad-preview-cta">
-                      Voir l'offre
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p class="text-xs text-slate-500 mt-3 text-center">
-              <i class="fas fa-info-circle mr-1"></i>
-              L'overlay couvre 40% de l'écran en bas
-            </p>
-          </div>
-          <!-- Stats rapides (visible en mode édition) -->
-          <div id="campaign-quick-stats" class="hidden bg-slate-800/30 rounded-xl p-4 border border-slate-700">
-            <h4 class="font-semibold text-sm text-white mb-4">Performance actuelle</h4>
-            <div class="grid grid-cols-3 gap-4">
-              <div class="text-center">
-                <p class="text-2xl font-bold text-white" id="modal-ad-views">0</p>
-                <p class="text-xs text-slate-400">Vues</p>
-              </div>
-              <div class="text-center">
-                <p class="text-2xl font-bold text-indigo-400" id="modal-ad-clicks">0</p>
-                <p class="text-xs text-slate-400">Clics</p>
-              </div>
-              <div class="text-center">
-                <p class="text-2xl font-bold text-emerald-400" id="modal-ad-ctr">0%</p>
-                <p class="text-xs text-slate-400">CTR</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Footer -->
-    <div class="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-end gap-3">
-      <button type="button" onclick="closeModal('campaign-modal')" class="px-6 py-2.5 text-slate-400 hover:text-white transition-colors">Annuler</button>
-      <button type="button" onclick="saveCampaign()" class="btn-primary px-6 py-2.5 rounded-lg font-medium bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
-        Créer la campagne
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Order Detail Modal -->
-<div id="order-modal" class="fixed inset-0 z-50 hidden">
-  <div class="modal-backdrop absolute inset-0" onclick="closeModal('order-modal')"></div>
-  <div class="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-xl font-bold">Détail de la commande <span id="order-detail-number">#---</span></h3>
-      <button onclick="closeModal('order-modal')" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
-        <i class="fas fa-times text-lg"></i>
-      </button>
-    </div>
-    <div id="order-detail-content" class="space-y-6"></div>
-    <div class="mt-6 pt-6 border-t border-slate-800 flex justify-end gap-3" id="order-actions"></div>
-  </div>
-</div>
-
-<!-- Toast Container -->
-<div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
-
-<!-- Loading Overlay -->
-<div id="loading-overlay" class="fixed inset-0 z-[60] bg-slate-900/80 backdrop-blur flex items-center justify-center hidden">
-  <div class="text-center">
-    <i class="fas fa-spinner fa-spin text-4xl text-indigo-400 mb-4"></i>
-    <p class="text-slate-300">Chargement...</p>
-  </div>
-</div>
-
-<!-- SCRIPTS -->
-<script src="../assets/js/api.js"></script>
-<script src="../assets/js/supplier-products.js"></script>
-<script src="../assets/js/supplier-promotions.js"></script>
-<script src="../assets/js/supplier-orders.js"></script>
-<script src="../assets/js/supplier-campaigns.js"></script>
-<script src="../assets/js/supplier-payments.js"></script>
-<script src="../assets/js/supplier-dashboard.js"></script>
-
-<!-- INITIALISATION & PROTECTION -->
-<script>
-// ==========================================
-// PROTECTION D'ACCÈS & GESTION D'ERREURS
-// ==========================================
-
-(function() {
-  'use strict';
+  <!-- Scripts -->
+  <script src="../assets/js/api.js"></script>
   
-  // Vérifier authentification immédiatement
-  function checkAuth() {
-    try {
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user') || 'null');
+  <script>
+    // ========== CONFIGURATION ==========
+    const API_BASE_URL = 'https://brandia-1.onrender.com/api';
+    
+    // ========== STATE ==========
+    let currentUser = null;
+    let supplierData = null;
+    let products = [];
+    let orders = [];
+    let campaigns = [];
+    let charts = {};
+
+    // ========== INITIALIZATION ==========
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('[Dashboard] Initialisation...');
       
-      if (!token || !user) {
-        console.error('[Dashboard] Non authentifié');
-        window.location.href = '../login.html?redirect=supplier/dashboard&error=unauthorized';
-        return false;
-      }
-      
-      if (user.role !== 'supplier') {
-        console.error('[Dashboard] Accès refusé - rôle:', user.role);
-        alert('Accès réservé aux fournisseurs');
-        window.location.href = '../index.html';
-        return false;
-      }
-      
-      // Afficher nom utilisateur
-      const userNameEl = document.getElementById('user-name');
-      if (userNameEl) {
-        userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('[Dashboard] Erreur auth:', error);
-      window.location.href = '../login.html?error=session';
-      return false;
-    }
-  }
-
-  // Gestionnaire d'erreurs global
-  window.onerror = function(msg, url, line, col, error) {
-    console.error('[Dashboard Error]', { msg, url, line, col, error });
-    showToast('Une erreur est survenue. Veuillez rafraîchir la page.', 'error');
-    return false;
-  };
-
-  // Gestionnaire de promesses rejetées
-  window.onunhandledrejection = function(event) {
-    console.error('[Dashboard Promise Error]', event.reason);
-    showToast('Erreur de chargement des données', 'error');
-  };
-
-  // Fonction toast globale
-  window.showToast = function(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    
-    const toast = document.createElement('div');
-    toast.className = `px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform translate-x-full transition-transform duration-300 ${
-      type === 'success' ? 'bg-emerald-500' : 
-      type === 'error' ? 'bg-red-500' : 
-      type === 'warning' ? 'bg-amber-500' : 'bg-indigo-500'
-    }`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>${message}`;
-    
-    container.appendChild(toast);
-    
-    // Animer entrée
-    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
-    
-    // Supprimer après 3s
-    setTimeout(() => {
-      toast.classList.add('translate-x-full');
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
-  };
-
-  // Fonctions globales pour les modals
-  window.openModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-      modal.classList.remove('hidden');
-      document.body.style.overflow = 'hidden';
-    }
-  };
-
-  window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-      modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-  };
-
-  window.showLoading = function(show) {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-      overlay.classList.toggle('hidden', !show);
-    }
-  };
-
-  window.navigate = function(section) {
-    // Mettre à jour nav
-    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(el => {
-      if (el.getAttribute('onclick')?.includes(section)) {
-        el.classList.add('active');
-      }
-    });
-    
-    // Afficher section
-    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-    const targetSection = document.getElementById(section);
-    if (targetSection) {
-      targetSection.classList.add('active');
-    }
-    
-    // Mettre à jour titre
-    const titles = {
-      'overview': ['Tableau de bord', 'Vue d\'ensemble de votre activité'],
-      'products': ['Mes produits', 'Gérez votre catalogue produits'],
-      'promotions': ['Promotions', 'Créez des offres pour booster vos ventes'],
-      'advertising': ['Publicité Contextuelle', 'Promouvez vos produits'],
-      'orders': ['Commandes', 'Suivez et gérez vos commandes clients'],
-      'payments': ['Paiements & Revenus', 'Suivez vos revenus et demandez des virements'],
-      'analytics': ['Statistiques', 'Analysez votre performance commerciale'],
-      'profile': ['Profil de la marque', 'Gérez votre identité publique'],
-      'support': ['Support & Aide', 'Nous sommes là pour vous aider'],
-      'settings': ['Paramètres', 'Gérez vos préférences et sécurité']
-    };
-    
-    const [title, subtitle] = titles[section] || ['Dashboard', ''];
-    const titleEl = document.getElementById('page-title');
-    const subtitleEl = document.getElementById('page-subtitle');
-    if (titleEl) titleEl.textContent = title;
-    if (subtitleEl) subtitleEl.textContent = subtitle;
-    
-    // Sauvegarder section active
-    localStorage.setItem('dashboard_last_section', section);
-  };
-
-  window.logout = function() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    window.location.href = '../login.html';
-  };
-
-  // Initialisation sécurisée
-  if (!checkAuth()) return;
-
-  // Restaurer dernière section ou défaut
-  const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
-  
-  // Attendre que tous les modules soient chargés
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('[Dashboard] Initialisation...');
-    
-    // Navigation initiale
-    navigate(lastSection);
-    
-    // Initialiser les modules si disponibles
-    setTimeout(() => {
-      try {
-        if (window.SupplierProducts) {
-          console.log('[Dashboard] Init SupplierProducts');
-          SupplierProducts.init();
-        }
-        if (window.SupplierOrders) {
-          console.log('[Dashboard] Init SupplierOrders');
-          SupplierOrders.init();
-        }
-        if (window.SupplierCampaigns) {
-          console.log('[Dashboard] Init SupplierCampaigns');
-          SupplierCampaigns.init();
-        }
-        if (window.SupplierPayments) {
-          console.log('[Dashboard] Init SupplierPayments');
-          SupplierPayments.init();
-        }
-        if (window.SupplierPromotions) {
-          console.log('[Dashboard] Init SupplierPromotions');
-          SupplierPromotions.init();
-        }
-        
-        // Charger stats overview
-        loadOverviewStats();
-        
-      } catch (error) {
-        console.error('[Dashboard] Erreur init modules:', error);
-        showToast('Erreur de chargement des modules', 'error');
-      }
-    }, 100);
-  });
-
- <!-- REMPLACER la fin du fichier (à partir de la ligne ~1290) par : -->
-
-  // Charger stats overview
-  async function loadOverviewStats() {
-    try {
-      if (typeof BrandiaAPI === 'undefined') {
-        console.warn('[Dashboard] BrandiaAPI non disponible');
+      // Vérifier l'authentification
+      if (!checkAuth()) {
         return;
       }
       
-      const response = await BrandiaAPI.Supplier.getStats();
-      console.log('[Dashboard] Stats:', response);
+      // Charger les données
+      await loadUserData();
+      await loadDashboardData();
+      await loadProducts();
+      await loadOrders();
       
-      if (response?.success && response.data) {
-        const data = response.data;
-        
-        // Mettre à jour KPIs
-        updateElement('kpi-revenue', formatPrice(data.totalSales || 0));
-        updateElement('kpi-orders', data.totalOrders || 0);
-        updateElement('kpi-products', data.activeProducts || 0);
-        updateElement('kpi-total-products', data.totalProducts || 0);
-        updateElement('kpi-balance', formatPrice(data.balance || 0));
-        
-        // Initialiser graphique si Chart.js disponible
-        if (typeof Chart !== 'undefined') {
-          initSalesChart(data.salesData || []);
-        }
+      // Initialiser les graphiques
+      initCharts();
+      
+      // Mettre à jour l'UI
+      updateUI();
+    });
+
+    // ========== AUTHENTIFICATION ==========
+    function checkAuth() {
+      const token = localStorage.getItem('brandia_token');
+      const user = localStorage.getItem('brandia_user');
+      
+      if (!token || !user) {
+        window.location.href = '../login.html?redirect=supplier/dashboard.html';
+        return false;
       }
-    } catch (error) {
-      console.error('[Dashboard] Erreur stats:', error);
-    }
-  }
-
-  function updateElement(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
-  }
-
-  function formatPrice(amount) {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
-  }
-
-  // ✅ FONCTION MANQUANTE AJOUTÉE
-  function initSalesChart(data) {
-    const ctx = document.getElementById('salesChart');
-    if (!ctx) return;
-
-    // Détruire le graphique existant
-    if (window.salesChartInstance) {
-      window.salesChartInstance.destroy();
-      window.salesChartInstance = null;
+      
+      currentUser = JSON.parse(user);
+      
+      if (currentUser.role !== 'supplier') {
+        showToast('Accès réservé aux fournisseurs', 'error');
+        setTimeout(() => {
+          window.location.href = '../index.html';
+        }, 2000);
+        return false;
+      }
+      
+      return true;
     }
 
-    // Recréer proprement le canvas
-    const parent = ctx.parentElement;
-    const newCanvas = document.createElement('canvas');
-    newCanvas.id = 'salesChart';
-    parent.innerHTML = '';
-    parent.appendChild(newCanvas);
+    function logout() {
+      if (window.BrandiaAPI && BrandiaAPI.Auth) {
+        BrandiaAPI.Auth.logout();
+      } else {
+        localStorage.removeItem('brandia_token');
+        localStorage.removeItem('brandia_user');
+        window.location.href = '../login.html';
+      }
+    }
 
-    // Créer le nouveau graphique
-    window.salesChartInstance = new Chart(newCanvas, {
-      type: 'line',
-      data: {
-        labels: (data && data.length)
-          ? data.map(d => d.date)
-          : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-        datasets: [{
-          label: 'Ventes (€)',
-          data: (data && data.length)
-            ? data.map(d => d.amount)
-            : [0, 0, 0, 0, 0, 0, 0],
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: { color: 'rgba(148, 163, 184, 0.1)' },
-            ticks: { color: '#94a3b8' }
+    // ========== DATA LOADING ==========
+    async function loadUserData() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/profile`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          supplierData = data.data;
+          updateUserInfo();
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur chargement profil:', error);
+      }
+    }
+
+    async function loadDashboardData() {
+      try {
+        // Charger les statistiques
+        const statsResponse = await fetch(`${API_BASE_URL}/supplier/stats`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+          }
+        });
+        
+        if (statsResponse.ok) {
+          const stats = await statsResponse.json();
+          updateKPIs(stats.data);
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur chargement stats:', error);
+        // Données de démo
+        updateKPIs({
+          revenue: 12580.50,
+          orders: 48,
+          views: 3254,
+          products: 12
+        });
+      }
+    }
+
+    async function loadProducts() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/products`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          products = data.data || [];
+          renderProductsTable();
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur chargement produits:', error);
+        products = [];
+        renderProductsTable();
+      }
+    }
+
+    async function loadOrders() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/orders`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          orders = data.data || [];
+          renderOrdersTable();
+          renderRecentOrders();
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur chargement commandes:', error);
+        orders = [];
+        renderOrdersTable();
+        renderRecentOrders();
+      }
+    }
+
+    // ========== UI UPDATES ==========
+    function updateUI() {
+      updateUserInfo();
+    }
+
+    function updateUserInfo() {
+      const userName = document.getElementById('header-user-name');
+      const userAvatar = document.getElementById('user-avatar');
+      
+      if (userName && currentUser) {
+        userName.textContent = currentUser.first_name || currentUser.company_name || 'Fournisseur';
+      }
+      
+      if (userAvatar && currentUser) {
+        const initial = (currentUser.first_name || currentUser.company_name || 'F').charAt(0).toUpperCase();
+        userAvatar.textContent = initial;
+      }
+    }
+
+    function updateKPIs(stats) {
+      document.getElementById('kpi-revenue').textContent = formatCurrency(stats.revenue);
+      document.getElementById('kpi-orders').textContent = stats.orders;
+      document.getElementById('kpi-views').textContent = stats.views.toLocaleString();
+      document.getElementById('kpi-products').textContent = stats.products;
+    }
+
+    // ========== NAVIGATION ==========
+    function showSection(sectionName) {
+      // Cacher toutes les sections
+      document.querySelectorAll('.section-content').forEach(section => {
+        section.classList.add('hidden');
+        section.classList.remove('active');
+      });
+      
+      // Afficher la section demandée
+      const targetSection = document.getElementById(`section-${sectionName}`);
+      if (targetSection) {
+        targetSection.classList.remove('hidden');
+        targetSection.classList.add('active');
+      }
+      
+      // Mettre à jour la navigation
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.section === sectionName) {
+          item.classList.add('active');
+        }
+      });
+      
+      // Fermer le sidebar sur mobile
+      if (window.innerWidth <= 1024) {
+        document.getElementById('sidebar').classList.remove('open');
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('open');
+    }
+
+    function toggleSidebarCollapse() {
+      const sidebar = document.getElementById('sidebar');
+      const icon = document.getElementById('sidebar-toggle-icon');
+      
+      sidebar.classList.toggle('collapsed');
+      
+      if (sidebar.classList.contains('collapsed')) {
+        icon.classList.remove('fa-chevron-left');
+        icon.classList.add('fa-chevron-right');
+      } else {
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-left');
+      }
+    }
+
+    function switchTab(tabId) {
+      // Mettre à jour les onglets
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      // Afficher le contenu
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // ========== PRODUCTS ==========
+    function renderProductsTable() {
+      const tbody = document.getElementById('products-table');
+      
+      if (products.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--brandia-text-muted); padding: 3rem;">
+              <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+              Aucun produit. Commencez par en ajouter un !
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = products.map(product => `
+        <tr>
+          <td>
+            <div class="product-cell">
+              <img src="${product.main_image_url || 'https://via.placeholder.com/48'}" alt="${product.name}" class="product-thumb">
+              <div class="product-info">
+                <span class="product-name">${product.name}</span>
+                <span class="product-sku">${product.sku || 'Sans SKU'}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-weight: 600;">${formatCurrency(product.price)}</span>
+              ${product.compare_price ? `<span style="text-decoration: line-through; color: var(--brandia-text-muted); font-size: 0.75rem;">${formatCurrency(product.compare_price)}</span>` : ''}
+            </div>
+          </td>
+          <td>${product.stock_quantity}</td>
+          <td>
+            <span class="status-badge ${product.is_active ? 'active' : 'inactive'}">
+              <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+              ${product.is_active ? 'Actif' : 'Inactif'}
+            </span>
+          </td>
+          <td>${product.sales_count || 0}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn-table" onclick="editProduct(${product.id})" title="Modifier">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-table" onclick="toggleProductStatus(${product.id})" title="${product.is_active ? 'Désactiver' : 'Activer'}">
+                <i class="fas fa-${product.is_active ? 'eye-slash' : 'eye'}"></i>
+              </button>
+              <button class="btn-table" onclick="deleteProduct(${product.id})" title="Supprimer" style="color: var(--brandia-danger);">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openProductModal(productId = null) {
+      const modal = document.getElementById('product-modal');
+      const title = document.getElementById('product-modal-title');
+      
+      if (productId) {
+        const product = products.find(p => p.id === productId);
+        if (product) {
+          title.textContent = 'Modifier le produit';
+          document.getElementById('product-id').value = product.id;
+          document.getElementById('product-name').value = product.name;
+          document.getElementById('product-price').value = product.price;
+          document.getElementById('product-compare-price').value = product.compare_price || '';
+          document.getElementById('product-stock').value = product.stock_quantity;
+          document.getElementById('product-sku').value = product.sku || '';
+          document.getElementById('product-description').value = product.description || '';
+          document.getElementById('product-image').value = product.main_image_url || '';
+        }
+      } else {
+        title.textContent = 'Nouveau produit';
+        document.getElementById('product-form').reset();
+        document.getElementById('product-id').value = '';
+      }
+      
+      modal.classList.add('active');
+    }
+
+    function closeProductModal() {
+      document.getElementById('product-modal').classList.remove('active');
+    }
+
+    async function saveProduct(event) {
+      event.preventDefault();
+      
+      const productId = document.getElementById('product-id').value;
+      const productData = {
+        name: document.getElementById('product-name').value,
+        price: parseFloat(document.getElementById('product-price').value),
+        compare_price: parseFloat(document.getElementById('product-compare-price').value) || null,
+        stock_quantity: parseInt(document.getElementById('product-stock').value),
+        sku: document.getElementById('product-sku').value,
+        description: document.getElementById('product-description').value,
+        main_image_url: document.getElementById('product-image').value,
+        category_id: document.getElementById('product-category').value || null
+      };
+      
+      try {
+        const url = productId 
+          ? `${API_BASE_URL}/supplier/products/${productId}`
+          : `${API_BASE_URL}/supplier/products`;
+        
+        const method = productId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
           },
-          x: {
-            grid: { display: false },
-            ticks: { color: '#94a3b8' }
+          body: JSON.stringify(productData)
+        });
+        
+        if (response.ok) {
+          showToast(productId ? 'Produit mis à jour' : 'Produit créé', 'success');
+          closeProductModal();
+          await loadProducts();
+        } else {
+          const error = await response.json();
+          showToast(error.message || 'Erreur lors de l\'enregistrement', 'error');
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur sauvegarde produit:', error);
+        showToast('Erreur de connexion', 'error');
+      }
+    }
+
+    async function toggleProductStatus(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/products/${productId}/toggle`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+          }
+        });
+        
+        if (response.ok) {
+          showToast(`Produit ${product.is_active ? 'désactivé' : 'activé'}`, 'success');
+          await loadProducts();
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur toggle statut:', error);
+        showToast('Erreur lors du changement de statut', 'error');
+      }
+    }
+
+    async function deleteProduct(productId) {
+      if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/products/${productId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+          }
+        });
+        
+        if (response.ok) {
+          showToast('Produit supprimé', 'success');
+          await loadProducts();
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur suppression produit:', error);
+        showToast('Erreur lors de la suppression', 'error');
+      }
+    }
+
+    // ========== ORDERS ==========
+    function renderOrdersTable() {
+      const tbody = document.getElementById('orders-table-all');
+      
+      if (orders.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--brandia-text-muted); padding: 3rem;">
+              <i class="fas fa-shopping-bag" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+              Aucune commande pour le moment
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = orders.map(order => `
+        <tr>
+          <td><strong>#${order.order_number}</strong></td>
+          <td>${new Date(order.created_at).toLocaleDateString('fr-FR')}</td>
+          <td>${order.customer_name || order.customer_email}</td>
+          <td>${order.items_count} article(s)</td>
+          <td>${formatCurrency(order.total)}</td>
+          <td>
+            <span class="status-badge ${getOrderStatusClass(order.status)}">
+              <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+              ${getOrderStatusLabel(order.status)}
+            </span>
+          </td>
+          <td>
+            <div class="table-actions">
+              <button class="btn-table" onclick="viewOrder(${order.id})" title="Voir détails">
+                <i class="fas fa-eye"></i>
+              </button>
+              ${order.status === 'pending' ? `
+                <button class="btn-table" onclick="updateOrderStatus(${order.id}, 'processing')" title="Accepter">
+                  <i class="fas fa-check"></i>
+                </button>
+              ` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRecentOrders() {
+      const tbody = document.getElementById('recent-orders-table');
+      const recentOrders = orders.slice(0, 5);
+      
+      if (recentOrders.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--brandia-text-muted); padding: 2rem;">
+              Aucune commande récente
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = recentOrders.map(order => `
+        <tr>
+          <td><strong>#${order.order_number}</strong></td>
+          <td>${order.customer_name || order.customer_email}</td>
+          <td>${order.items_count} article(s)</td>
+          <td>${formatCurrency(order.total)}</td>
+          <td>
+            <span class="status-badge ${getOrderStatusClass(order.status)}">
+              <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+              ${getOrderStatusLabel(order.status)}
+            </span>
+          </td>
+          <td>
+            <button class="btn-table" onclick="viewOrder(${order.id})">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function getOrderStatusClass(status) {
+      const classes = {
+        'pending': 'pending',
+        'processing': 'active',
+        'shipped': 'active',
+        'delivered': 'active',
+        'cancelled': 'inactive'
+      };
+      return classes[status] || 'pending';
+    }
+
+    function getOrderStatusLabel(status) {
+      const labels = {
+        'pending': 'En attente',
+        'processing': 'En cours',
+        'shipped': 'Expédiée',
+        'delivered': 'Livrée',
+        'cancelled': 'Annulée'
+      };
+      return labels[status] || status;
+    }
+
+    // ========== IMPORT CSV ==========
+    function openImportModal() {
+      document.getElementById('import-modal').classList.add('active');
+    }
+
+    function closeImportModal() {
+      document.getElementById('import-modal').classList.remove('active');
+    }
+
+    async function handleCSVImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        const csv = e.target.result;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(';').map(h => h.trim());
+        
+        const products = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          
+          const values = lines[i].split(';');
+          const product = {};
+          
+          headers.forEach((header, index) => {
+            product[header] = values[index]?.trim();
+          });
+          
+          products.push(product);
+        }
+        
+        try {
+          const response = await fetch(`${API_BASE_URL}/supplier/products/import`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            },
+            body: JSON.stringify({ products })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            showToast(`${result.imported} produits importés`, 'success');
+            closeImportModal();
+            await loadProducts();
+          } else {
+            showToast('Erreur lors de l\'import', 'error');
+          }
+        } catch (error) {
+          console.error('[Dashboard] Erreur import CSV:', error);
+          showToast('Erreur de connexion', 'error');
+        }
+      };
+      
+      reader.readAsText(file);
+    }
+
+    function downloadTemplate() {
+      const csv = 'name;price;stock;category;description\nProduit exemple;29.99;10;Électronique;Description du produit';
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_produits.csv';
+      a.click();
+    }
+
+    // ========== CAMPAIGNS ==========
+    function openCampaignModal() {
+      document.getElementById('campaign-modal').classList.add('active');
+      // Charger les produits dans le select
+      const select = document.getElementById('campaign-products');
+      select.innerHTML = '<option value="all">Tous les produits</option>' +
+        products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+
+    function closeCampaignModal() {
+      document.getElementById('campaign-modal').classList.remove('active');
+    }
+
+    async function saveCampaign() {
+      const campaignData = {
+        name: document.getElementById('campaign-name').value,
+        type: document.getElementById('campaign-type').value,
+        start_date: document.getElementById('campaign-start').value,
+        end_date: document.getElementById('campaign-end').value,
+        product_ids: Array.from(document.getElementById('campaign-products').selectedOptions).map(o => o.value)
+      };
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/supplier/campaigns`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+          },
+          body: JSON.stringify(campaignData)
+        });
+        
+        if (response.ok) {
+          showToast('Campagne créée avec succès', 'success');
+          closeCampaignModal();
+        } else {
+          showToast('Erreur lors de la création', 'error');
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur création campagne:', error);
+        showToast('Erreur de connexion', 'error');
+      }
+    }
+
+    // ========== CHARTS ==========
+    function initCharts() {
+      // Graphique des ventes
+      const salesCtx = document.getElementById('salesChart').getContext('2d');
+      charts.sales = new Chart(salesCtx, {
+        type: 'line',
+        data: {
+          labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+          datasets: [{
+            label: 'Ventes (€)',
+            data: [1200, 1900, 1500, 2200, 1800, 2800, 2400],
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              grid: {
+                color: 'rgba(51, 65, 85, 0.5)'
+              },
+              ticks: {
+                color: '#94a3b8'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                color: '#94a3b8'
+              }
+            }
           }
         }
-      }
+      });
+      
+      // Graphique des catégories
+      const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+      charts.category = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Électronique', 'Mode', 'Maison', 'Sport'],
+          datasets: [{
+            data: [35, 25, 20, 20],
+            backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#10b981']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#94a3b8',
+                padding: 20
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ========== UTILITAIRES ==========
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR'
+      }).format(amount || 0);
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function refreshData() {
+      showToast('Actualisation des données...', 'success');
+      loadDashboardData();
+      loadProducts();
+      loadOrders();
+    }
+
+    function showNotifications() {
+      showToast('3 nouvelles notifications', 'info');
+    }
+
+    function toggleUserMenu() {
+      // Menu utilisateur dropdown
+      showToast('Menu utilisateur', 'info');
+    }
+
+    // Fermer les modals en cliquant à l'extérieur
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      });
     });
-  }
-
-  // ✅ FONCTION filterOrders AJOUTÉE (manquante pour les onglets)
-  window.filterOrders = function(filter) {
-    if (window.SupplierOrders && SupplierOrders.setFilter) {
-      SupplierOrders.setFilter(filter);
-    } else {
-      console.error('[Dashboard] SupplierOrders non disponible');
-      showToast('Erreur: Module commandes non chargé', 'error');
-    }
-  };
-
-  // Fonctions utilitaires globales
-  window.openProductModal = function() {
-    if (window.SupplierProducts && SupplierProducts.openModal) {
-      SupplierProducts.openModal();
-    } else {
-      openModal('product-modal');
-    }
-  };
-
-  window.saveCampaign = function() {
-    if (window.SupplierCampaigns && SupplierCampaigns.save) {
-      SupplierCampaigns.save();
-    } else {
-      console.error('[Dashboard] SupplierCampaigns non disponible');
-      showToast('Erreur: Module campagnes non chargé', 'error');
-    }
-  };
-
-  window.handleCampaignMedia = function(event) {
-    if (window.SupplierCampaigns && SupplierCampaigns.handleMediaSelect) {
-      SupplierCampaigns.handleMediaSelect(event);
-    }
-  };
-
-  window.toggleMediaType = function(type) {
-    if (window.SupplierCampaigns && SupplierCampaigns.toggleMediaType) {
-      SupplierCampaigns.toggleMediaType(type);
-    }
-  };
-
-  window.handleCtaType = function(type) {
-    if (window.SupplierCampaigns && SupplierCampaigns.handleCtaType) {
-      SupplierCampaigns.handleCtaType(type);
-    }
-  };
-
-  window.requestPayout = function() {
-    if (window.SupplierPayments && SupplierPayments.requestPayout) {
-      SupplierPayments.requestPayout();
-    } else {
-      console.error('[Dashboard] SupplierPayments non disponible');
-      showToast('Erreur: Module paiements non chargé', 'error');
-    }
-  };
-
-  window.exportTransactions = function() {
-    if (window.SupplierPayments && SupplierPayments.exportTransactions) {
-      SupplierPayments.exportTransactions();
-    } else {
-      showToast('Fonctionnalité en développement', 'info');
-    }
-  };
-
-  window.importProducts = function() {
-    if (window.SupplierProducts && SupplierProducts.importCSV) {
-      SupplierProducts.importCSV();
-    } else {
-      showToast('Fonctionnalité en développement', 'info');
-    }
-  };
-
-  window.quickAction = function() {
-    const actions = ['products', 'orders', 'advertising'];
-    const current = localStorage.getItem('dashboard_last_section') || 'overview';
-    const next = actions[(actions.indexOf(current) + 1) % actions.length] || 'products';
-    navigate(next);
-  };
-
-  window.showNotifications = function() {
-    showToast('Pas de nouvelles notifications', 'info');
-  };
-
-  window.editBrand = function() {
-    showToast('Fonctionnalité en développement', 'info');
-  };
-
-  window.viewPublicProfile = function() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.id) {
-      window.open(`../brand.html?id=${user.id}`, '_blank');
-    }
-  };
-
-  window.handleLogoUpload = function(event) {
-    showToast('Upload logo en développement', 'info');
-  };
-
-  window.updateAnalyticsPeriod = function(period) {
-    document.querySelectorAll('.analytics-period').forEach(btn => {
-      btn.classList.remove('bg-indigo-600', 'text-white');
-      btn.classList.add('bg-slate-800', 'text-slate-300');
-    });
-    const activeBtn = document.querySelector(`[data-period="${period}"]`);
-    if (activeBtn) {
-      activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
-      activeBtn.classList.add('bg-indigo-600', 'text-white');
-    }
-    showToast(`Période: ${period} jours`, 'info');
-  };
-
-  window.updateSalesChart = function() {
-    const period = document.getElementById('sales-period')?.value || '7';
-    showToast(`Mise à jour graphique: ${period} jours`, 'info');
-  };
-
-})();
-</script>
+  </script>
 
 </body>
 </html>
