@@ -1,5 +1,5 @@
 // ============================================
-// PRODUCT CONTROLLER - v3.0 CORRIGÉ (100% PUBLIQUE)
+// PRODUCT CONTROLLER - v3.1 CORRIGÉ (100% PUBLIQUE)
 // ============================================
 
 const db = require('../../config/db');
@@ -18,9 +18,16 @@ class ProductController {
       const params = [];
       let paramIndex = 1;
 
+      // 🔥 CORRECTION : Gestion intelligente category (slug ou ID)
       if (category) {
-        whereClause += ` AND (p.category_id = $${paramIndex} OR c.slug = $${paramIndex})`;
-        params.push(category);
+        const isNumeric = /^\d+$/.test(category);
+        if (isNumeric) {
+          whereClause += ` AND p.category_id = $${paramIndex}`;
+          params.push(parseInt(category));
+        } else {
+          whereClause += ` AND (c.slug = $${paramIndex} OR c.name ILIKE $${paramIndex})`;
+          params.push(category);
+        }
         paramIndex++;
       }
 
@@ -32,13 +39,13 @@ class ProductController {
 
       if (min_price) {
         whereClause += ` AND p.price >= $${paramIndex}`;
-        params.push(min_price);
+        params.push(parseFloat(min_price));
         paramIndex++;
       }
 
       if (max_price) {
         whereClause += ` AND p.price <= $${paramIndex}`;
-        params.push(max_price);
+        params.push(parseFloat(max_price));
         paramIndex++;
       }
 
@@ -130,7 +137,6 @@ class ProductController {
     }
   }
 
-  // 🔥🔥🔥 CETTE MÉTHODE DOIT ÊTRE 100% PUBLIQUE 🔥🔥🔥
   async getById(req, res) {
     try {
       const { id } = req.params;
@@ -142,9 +148,6 @@ class ProductController {
         });
       }
 
-      // 🔥 PAS DE VÉRIFICATION DE RÔLE ICI !
-      // 🔥 PAS DE req.user REQUIRED !
-      
       const result = await db.query(`
         SELECT 
           p.id,
@@ -185,7 +188,6 @@ class ProductController {
 
       const product = result.rows[0];
       
-      // Normaliser pour le frontend
       const normalizedProduct = {
         ...product,
         stock: product.stock_quantity,
@@ -210,7 +212,6 @@ class ProductController {
     }
   }
 
-  // 🔥🔥🔥 CETTE MÉTHODE AUSSI DOIT ÊTRE 100% PUBLIQUE 🔥🔥🔥
   async getByIdWithPromotion(req, res) {
     try {
       const { id } = req.params;
@@ -221,8 +222,6 @@ class ProductController {
           message: 'ID produit invalide' 
         });
       }
-
-      // 🔥 PAS DE VÉRIFICATION DE RÔLE ICI !
 
       const productResult = await db.query(`
         SELECT 
@@ -246,7 +245,6 @@ class ProductController {
 
       const product = productResult.rows[0];
 
-      // Chercher promotion active
       const promoResult = await db.query(`
         SELECT * FROM promotions
         WHERE supplier_id = $1
@@ -298,6 +296,7 @@ class ProductController {
     }
   }
 
+  // 🔥 CORRECTION PRINCIPALE : getAllWithPromotions
   async getAllWithPromotions(req, res) {
     try {
       const { category, search, limit = 20 } = req.query;
@@ -306,9 +305,19 @@ class ProductController {
       const params = [];
       let paramIndex = 1;
 
+      // 🔥 CORRECTION CRITIQUE : Gestion intelligente category (slug ou ID)
       if (category) {
-        whereClause += ` AND (p.category_id = $${paramIndex} OR c.slug = $${paramIndex})`;
-        params.push(category);
+        const isNumeric = /^\d+$/.test(category);
+        
+        if (isNumeric) {
+          // C'est un ID numérique
+          whereClause += ` AND p.category_id = $${paramIndex}`;
+          params.push(parseInt(category));
+        } else {
+          // C'est un slug texte
+          whereClause += ` AND (c.slug = $${paramIndex} OR c.name ILIKE $${paramIndex})`;
+          params.push(category);
+        }
         paramIndex++;
       }
 
@@ -329,6 +338,7 @@ class ProductController {
           p.supplier_id,
           s.company_name as supplier_company,
           c.name as category_name,
+          c.slug as category_slug,
           EXISTS (
             SELECT 1 FROM promotions 
             WHERE supplier_id = p.supplier_id 
@@ -452,7 +462,6 @@ class ProductController {
 
   async create(req, res) {
     try {
-      // 🔥 VÉRIFICATION EXPLICITE DU RÔLE (seulement ici!)
       if (!req.user || req.user.role !== 'supplier') {
         return res.status(403).json({ 
           success: false, 
@@ -493,7 +502,6 @@ class ProductController {
 
   async update(req, res) {
     try {
-      // 🔥 VÉRIFICATION EXPLICITE DU RÔLE (seulement ici!)
       if (!req.user || req.user.role !== 'supplier') {
         return res.status(403).json({ 
           success: false, 
@@ -572,7 +580,6 @@ class ProductController {
 
   async delete(req, res) {
     try {
-      // 🔥 VÉRIFICATION EXPLICITE DU RÔLE (seulement ici!)
       if (!req.user || req.user.role !== 'supplier') {
         return res.status(403).json({ 
           success: false, 
