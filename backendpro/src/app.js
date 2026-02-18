@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - Configuration Express Brandia v3.3 CORRIGÉ
+// APP.JS - Configuration Express Brandia v3.4 CORRIGÉ
 // ============================================
 
 const express = require('express');
@@ -42,20 +42,17 @@ app.use(cors({
 }));
 
 // ============================================
-// 🔥🔥🔥 FICHIERS STATIQUES - AVANT LES ROUTES API 🔥🔥🔥
+// FICHIERS STATIQUES - AVANT LES ROUTES API
 // ============================================
 
-// 🔥 CRITIQUE : Servir le frontend (index.html, css, js, assets)
 const publicPath = path.join(__dirname, '../public');
 console.log('[App] Serving static files from:', publicPath);
 
 app.use(express.static(publicPath));
-
-// Uploads (si vous avez des fichiers uploadés)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ============================================
-// 🔥🔥🔥 ROUTES API - APRÈS LES FICHIERS STATIQUES 🔥🔥🔥
+// ROUTES API
 // ============================================
 
 console.log('[App] Loading routes...');
@@ -70,28 +67,26 @@ app.get('/api/health', (req, res) => {
 });
 
 // 2. Supplier routes (public campaigns + protected)
-// 🔥 CORRIGÉ : module (singulier) + .routes (avec 's')
-const supplierRoutes = require('./module/supplier/supplier.routes');
+// ✅ CORRIGÉ : modules (pluriel) et non module (singulier)
+const supplierRoutes = require('./modules/supplier/supplier.routes');
 app.use('/api/supplier', supplierRoutes);
-console.log('[App] ✅ Supplier routes mounted');
+console.log('[App] ✅ Supplier routes mounted at /api/supplier');
 
 // 3. Product routes (public)
-const productRoutes = require('./module/products/product.routes');
+const productRoutes = require('./modules/products/product.routes');
 app.use('/api/products', productRoutes);
-console.log('[App] ✅ Product routes mounted (PUBLIC)');
+console.log('[App] ✅ Product routes mounted at /api/products');
 
 // 4. Other routes (index.js)
 const indexRoutes = require('./routes/index');
 app.use('/api', indexRoutes);
-console.log('[App] ✅ Index routes mounted');
+console.log('[App] ✅ Index routes mounted at /api');
 
 // ============================================
-// 🔥🔥🔥 ROUTE CATCH-ALL POUR LE FRONTEND (SPA) 🔥🔥🔥
+// ROUTE CATCH-ALL POUR LE FRONTEND
 // ============================================
-// Toute route non-API renvoie index.html (pour React/Vue ou HTML pur)
 
 app.get('*', (req, res) => {
-    // Ne pas interférer avec les routes API
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({
             success: false,
@@ -100,7 +95,6 @@ app.get('*', (req, res) => {
         });
     }
     
-    // Servir index.html pour toutes les autres routes (client-side routing)
     res.sendFile(path.join(publicPath, 'index.html'));
 });
 
@@ -118,4 +112,3 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
-
