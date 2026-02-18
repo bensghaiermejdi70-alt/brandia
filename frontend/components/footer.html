@@ -1,3 +1,107 @@
-<footer class="border-t border-neutral-800 py-6 text-center text-xs text-neutral-500">
-  © 2026 Brandia – Marketplace officielle des marques
-</footer>
+// ============================================
+// FOOTER COMPONENT - Brandia v1.0
+// ============================================
+
+class BrandiaFooter {
+  constructor() {
+    this.currentYear = new Date().getFullYear();
+  }
+
+  render() {
+    const footer = document.getElementById('app-footer');
+    if (!footer) return;
+
+    footer.innerHTML = `
+      <footer class="bg-neutral-900 border-t border-neutral-800">
+        <div class="container max-w-7xl mx-auto px-4 py-12">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            
+            <!-- Brand -->
+            <div>
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                  </svg>
+                </div>
+                <span class="font-bold text-xl text-white">Brandia</span>
+              </div>
+              <p class="text-neutral-400 text-sm leading-relaxed mb-4">
+                La marketplace des marques officielles. Achetez directement auprès des créateurs et marques authentiques.
+              </p>
+              <div class="flex gap-3">
+                <a href="#" class="w-9 h-9 bg-neutral-800 rounded-lg flex items-center justify-center text-neutral-400 hover:bg-indigo-600 hover:text-white transition-all">
+                  <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" class="w-9 h-9 bg-neutral-800 rounded-lg flex items-center justify-center text-neutral-400 hover:bg-pink-600 hover:text-white transition-all">
+                  <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="w-9 h-9 bg-neutral-800 rounded-lg flex items-center justify-center text-neutral-400 hover:bg-sky-500 hover:text-white transition-all">
+                  <i class="fab fa-twitter"></i>
+                </a>
+                <a href="#" class="w-9 h-9 bg-neutral-800 rounded-lg flex items-center justify-center text-neutral-400 hover:bg-blue-700 hover:text-white transition-all">
+                  <i class="fab fa-linkedin-in"></i>
+                </a>
+              </div>
+            </div>
+
+            <!-- Shop -->
+            <div>
+              <h4 class="text-white font-semibold mb-4">Acheter</h4>
+              <ul class="space-y-2">
+                <li><a href="/catalogue" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/catalogue')">Catalogue</a></li>
+                <li><a href="/categories" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/categories')">Catégories</a></li>
+                <li><a href="/nouveautes" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/nouveautes')">Nouveautés</a></li>
+                <li><a href="/offres" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/offres')">Offres spéciales</a></li>
+                <li><a href="/marques" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/marques')">Nos marques</a></li>
+              </ul>
+            </div>
+
+            <!-- Sell -->
+            <div>
+              <h4 class="text-white font-semibold mb-4">Vendre</h4>
+              <ul class="space-y-2">
+                <li><a href="/devenir-vendeur" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/devenir-vendeur')">Devenir vendeur</a></li>
+                <li><a href="/supplier/register" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/supplier/register')">Inscription fournisseur</a></li>
+                <li><a href="/tarifs" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/tarifs')">Nos tarifs</a></li>
+                <li><a href="/success-stories" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/success-stories')">Success stories</a></li>
+              </ul>
+            </div>
+
+            <!-- Help -->
+            <div>
+              <h4 class="text-white font-semibold mb-4">Aide</h4>
+              <ul class="space-y-2">
+                <li><a href="/contact" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/contact')">Contact</a></li>
+                <li><a href="/faq" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/faq')">FAQ</a></li>
+                <li><a href="/livraison" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/livraison')">Livraison</a></li>
+                <li><a href="/retours" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/retours')">Retours</a></li>
+                <li><a href="/cgv" class="text-neutral-400 hover:text-white text-sm transition-colors" onclick="router.navigate('/cgv')">CGV</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Bottom -->
+          <div class="border-t border-neutral-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="text-neutral-500 text-sm">
+              © ${this.currentYear} Brandia – Marketplace officielle des marques
+            </p>
+            <div class="flex items-center gap-4 text-neutral-500 text-sm">
+              <a href="/confidentialite" class="hover:text-white transition-colors">Confidentialité</a>
+              <a href="/cookies" class="hover:text-white transition-colors">Cookies</a>
+              <a href="/mentions-legales" class="hover:text-white transition-colors">Mentions légales</a>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="fab fa-cc-visa text-2xl text-neutral-600"></i>
+              <i class="fab fa-cc-mastercard text-2xl text-neutral-600"></i>
+              <i class="fab fa-cc-amex text-2xl text-neutral-600"></i>
+              <i class="fab fa-cc-paypal text-2xl text-neutral-600"></i>
+            </div>
+          </div>
+        </div>
+      </footer>
+    `;
+  }
+}
+
+window.BrandiaFooter = BrandiaFooter;

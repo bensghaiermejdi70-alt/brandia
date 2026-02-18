@@ -1,21 +1,257 @@
-<header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
-  <nav class="container flex items-center justify-between px-4 py-3">
-    <a href="index.html" class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center"><i class="fas fa-store text-white text-sm"></i></div>
-      <span class="font-bold text-lg text-neutral-100">Brandia</span>
-    </a>
-    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="catalogue.html?filter=new">Nouveautés</a>
-      <a href="catalogue.html?tab=brands">Marques</a>
-      <a href="catalogue.html?filter=deals">Offres</a>
-      <a href="#about">À propos</a>
-      <a href="catalogue.html">Catégories</a>
-      <a href="login.html">Connexion</a>
-    </div>
-    <div class="flex items-center space-x-3 text-sm text-neutral-300">
-      <select id="countrySwitch" class="px-2 py-1 bg-neutral-800 rounded text-xs"><option value="FR">🇫🇷 EUR</option><option value="TN">🇹🇳 TND</option><option value="DE">🇩🇪 EUR</option></select>
-      <button id="themeToggle" class="px-2 py-1 bg-neutral-800 rounded text-xs"><i class="fas fa-moon"></i></button>
-      <a href="panier.html" class="relative"><i class="fas fa-shopping-bag"></i><span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span></a>
-    </div>
-  </nav>
-</header>
+// ============================================
+// HEADER COMPONENT - Brandia v1.0
+// Composant header réutilisable avec navigation dynamique
+// ============================================
+
+class BrandiaHeader {
+  constructor() {
+    this.user = null;
+    this.cartCount = 0;
+    this.currentCountry = localStorage.getItem('country') || 'FR';
+    this.isDark = document.documentElement.classList.contains('dark');
+  }
+
+  // Récupérer l'état utilisateur
+  async init() {
+    this.user = this.getUser();
+    this.cartCount = this.getCartCount();
+    this.render();
+    this.attachEvents();
+  }
+
+  getUser() {
+    try {
+      return JSON.parse(localStorage.getItem('brandia_user') || localStorage.getItem('user'));
+    } catch {
+      return null;
+    }
+  }
+
+  getCartCount() {
+    try {
+      const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+      return cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  // Template HTML du header
+  render() {
+    const header = document.getElementById('app-header');
+    if (!header) return;
+
+    const isSupplier = this.user?.role === 'supplier';
+    const userName = this.user?.first_name || this.user?.email?.split('@')[0] || 'Mon compte';
+
+    header.innerHTML = `
+      <header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800">
+        <nav class="container max-w-7xl mx-auto flex items-center justify-between px-4 py-3">
+          
+          <!-- Logo -->
+          <a href="/" class="flex items-center gap-3 group" onclick="router.navigate('/')">
+            <div class="relative w-10 h-10">
+              <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              <div class="relative w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center transform group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+              </div>
+            </div>
+            <span class="font-bold text-xl bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Brandia</span>
+          </a>
+
+          <!-- Navigation Desktop -->
+          <div class="hidden lg:flex items-center gap-8">
+            <a href="/nouveautes" class="nav-link" onclick="router.navigate('/nouveautes')">
+              <span class="text-sm font-medium text-neutral-300 hover:text-white transition-colors">Nouveautés</span>
+            </a>
+            <a href="/marques" class="nav-link" onclick="router.navigate('/marques')">
+              <span class="text-sm font-medium text-neutral-300 hover:text-white transition-colors">Marques</span>
+            </a>
+            
+            <!-- Dropdown Catégories -->
+            <div class="relative group">
+              <button class="flex items-center gap-1 text-sm font-medium text-neutral-300 hover:text-white transition-colors py-2">
+                Catégories
+                <i class="fas fa-chevron-down text-xs transition-transform group-hover:rotate-180"></i>
+              </button>
+              <div class="absolute top-full left-0 w-72 bg-neutral-800 border border-neutral-700 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                <div class="p-2" id="header-categories">
+                  ${this.renderCategoriesDropdown()}
+                </div>
+              </div>
+            </div>
+
+            <a href="/offres" class="nav-link" onclick="router.navigate('/offres')">
+              <span class="text-sm font-medium text-neutral-300 hover:text-white transition-colors">Offres</span>
+            </a>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-3">
+            
+            <!-- Sélecteur pays -->
+            <div class="relative">
+              <select id="country-selector" class="appearance-none bg-neutral-800 border border-neutral-700 text-neutral-300 text-sm rounded-lg px-3 py-2 pr-8 cursor-pointer hover:border-neutral-600 transition-colors focus:outline-none focus:border-indigo-500">
+                <option value="FR" ${this.currentCountry === 'FR' ? 'selected' : ''}>🇫🇷 EUR</option>
+                <option value="TN" ${this.currentCountry === 'TN' ? 'selected' : ''}>🇹🇳 TND</option>
+                <option value="DE" ${this.currentCountry === 'DE' ? 'selected' : ''}>🇩🇪 EUR</option>
+                <option value="US" ${this.currentCountry === 'US' ? 'selected' : ''}>🇺🇸 USD</option>
+                <option value="GB" ${this.currentCountry === 'GB' ? 'selected' : ''}>🇬🇧 GBP</option>
+              </select>
+              <i class="fas fa-chevron-down absolute right-2 top-1/2 -translate-y-1/2 text-xs text-neutral-500 pointer-events-none"></i>
+            </div>
+
+            <!-- Toggle dark/light -->
+            <button id="theme-toggle" class="w-9 h-9 bg-neutral-800 border border-neutral-700 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-all">
+              <i class="fas ${this.isDark ? 'fa-sun' : 'fa-moon'}"></i>
+            </button>
+
+            <!-- Panier -->
+            <a href="/panier" class="relative w-9 h-9 bg-neutral-800 border border-neutral-700 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-all" onclick="router.navigate('/panier')">
+              <i class="fas fa-shopping-bag"></i>
+              ${this.cartCount > 0 ? `
+                <span class="absolute -top-1 -right-1 w-5 h-5 bg-indigo-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  ${this.cartCount > 99 ? '99+' : this.cartCount}
+                </span>
+              ` : ''}
+            </a>
+
+            <!-- User Menu -->
+            ${this.user ? `
+              <div class="relative group">
+                <button class="flex items-center gap-2 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 hover:border-neutral-600 transition-all">
+                  <div class="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                    ${userName.charAt(0).toUpperCase()}
+                  </div>
+                  <span class="hidden md:block text-sm text-neutral-300 max-w-[100px] truncate">${userName}</span>
+                  <i class="fas fa-chevron-down text-xs text-neutral-500"></i>
+                </button>
+                
+                <div class="absolute top-full right-0 w-56 bg-neutral-800 border border-neutral-700 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 py-2">
+                  ${isSupplier ? `
+                    <a href="/supplier/dashboard" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors" onclick="router.navigate('/supplier/dashboard')">
+                      <i class="fas fa-chart-line text-indigo-400"></i>
+                      Espace Fournisseur
+                    </a>
+                  ` : ''}
+                  <a href="/profil" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors" onclick="router.navigate('/profil')">
+                    <i class="fas fa-user text-neutral-400"></i>
+                    Mon profil
+                  </a>
+                  <a href="/commandes" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors" onclick="router.navigate('/commandes')">
+                    <i class="fas fa-box text-neutral-400"></i>
+                    Mes commandes
+                  </a>
+                  <div class="border-t border-neutral-700 my-2"></div>
+                  <button onclick="BrandiaHeader.logout()" class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-neutral-700 transition-colors text-left">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Déconnexion
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <a href="/login" class="hidden sm:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors" onclick="router.navigate('/login')">
+                <i class="fas fa-user"></i>
+                Connexion
+              </a>
+            `}
+
+            <!-- Mobile menu button -->
+            <button id="mobile-menu-btn" class="lg:hidden w-9 h-9 bg-neutral-800 border border-neutral-700 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white">
+              <i class="fas fa-bars"></i>
+            </button>
+          </div>
+        </nav>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden lg:hidden border-t border-neutral-800 bg-neutral-900/95 backdrop-blur-md">
+          <div class="container max-w-7xl mx-auto px-4 py-4 space-y-4">
+            <a href="/nouveautes" class="block py-2 text-neutral-300 hover:text-white" onclick="router.navigate('/nouveautes')">Nouveautés</a>
+            <a href="/marques" class="block py-2 text-neutral-300 hover:text-white" onclick="router.navigate('/marques')">Marques</a>
+            <a href="/categories" class="block py-2 text-neutral-300 hover:text-white" onclick="router.navigate('/categories')">Catégories</a>
+            <a href="/offres" class="block py-2 text-neutral-300 hover:text-white" onclick="router.navigate('/offres')">Offres</a>
+            ${!this.user ? `
+              <a href="/login" class="block py-2 text-indigo-400 font-medium" onclick="router.navigate('/login')">Connexion</a>
+            ` : `
+              <div class="border-t border-neutral-800 pt-4">
+                <p class="text-sm text-neutral-500 mb-2">Connecté en tant que</p>
+                <p class="text-white font-medium mb-3">${this.user.email}</p>
+                ${isSupplier ? `<a href="/supplier/dashboard" class="block py-2 text-indigo-400" onclick="router.navigate('/supplier/dashboard')">Espace Fournisseur</a>` : ''}
+                <button onclick="BrandiaHeader.logout()" class="block py-2 text-red-400">Déconnexion</button>
+              </div>
+            `}
+          </div>
+        </div>
+      </header>
+    `;
+  }
+
+  renderCategoriesDropdown() {
+    const categories = [
+      { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques', icon: 'fa-spa', color: 'pink' },
+      { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: 'purple' },
+      { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', color: 'red' },
+      { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', color: 'blue' },
+      { slug: 'high-tech-mobile', name: 'High-Tech', icon: 'fa-mobile-alt', color: 'indigo' },
+      { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', color: 'orange' }
+    ];
+
+    return categories.map(cat => `
+      <a href="/catalogue?category=${cat.slug}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors" onclick="router.navigate('/catalogue?category=${cat.slug}')">
+        <div class="w-8 h-8 rounded-lg bg-${cat.color}-500/20 flex items-center justify-center">
+          <i class="fas ${cat.icon} text-${cat.color}-400 text-sm"></i>
+        </div>
+        <span class="text-sm font-medium">${cat.name}</span>
+      </a>
+    `).join('');
+  }
+
+  attachEvents() {
+    // Toggle mobile menu
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileBtn && mobileMenu) {
+      mobileBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+      });
+    }
+
+    // Change country
+    const countrySelect = document.getElementById('country-selector');
+    if (countrySelect) {
+      countrySelect.addEventListener('change', (e) => {
+        localStorage.setItem('country', e.target.value);
+        window.location.reload();
+      });
+    }
+
+    // Toggle theme
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        this.isDark = !this.isDark;
+        themeBtn.innerHTML = `<i class="fas ${this.isDark ? 'fa-sun' : 'fa-moon'}"></i>`;
+      });
+    }
+  }
+
+  static logout() {
+    localStorage.removeItem('brandia_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('brandia_user');
+    localStorage.removeItem('user');
+    window.location.href = '/';
+  }
+
+  // Mettre à jour le compteur panier
+  updateCartCount() {
+    this.cartCount = this.getCartCount();
+    this.render();
+  }
+}
+
+// Export pour utilisation globale
+window.BrandiaHeader = BrandiaHeader;
