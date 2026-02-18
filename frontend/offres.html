@@ -2,335 +2,1725 @@
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Offres – Brandia</title>
+  <meta name="description" content="Profitez des meilleures offres et promotions sur Brandia - Produits authentiques directement des marques.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandia: {
+              primary: '#6366f1',
+              secondary: '#8b5cf6',
+              accent: '#ec4899',
+              dark: '#0f172a',
+              darker: '#020617',
+              card: '#1e293b',
+              border: '#334155',
+              text: '#f8fafc',
+              muted: '#94a3b8',
+              success: '#10b981',
+              warning: '#f59e0b',
+              danger: '#ef4444',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
-    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
-    .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
-    .promo-card { transition: all 0.3s ease; }
-    .promo-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2); }
-    .promo-badge { animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+    /* ========== VARIABLES COULEURS BRANDIA ========== */
+    :root {
+      --brandia-primary: #6366f1;
+      --brandia-primary-hover: #4f46e5;
+      --brandia-secondary: #8b5cf6;
+      --brandia-accent: #ec4899;
+      --brandia-dark: #0f172a;
+      --brandia-darker: #020617;
+      --brandia-card: #1e293b;
+      --brandia-card-hover: #334155;
+      --brandia-border: #334155;
+      --brandia-text: #f8fafc;
+      --brandia-text-muted: #94a3b8;
+      --brandia-success: #10b981;
+      --brandia-warning: #f59e0b;
+      --brandia-danger: #ef4444;
+      --brandia-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --brandia-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    }
+
+    /* ========== BASE STYLES ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--brandia-dark);
+      color: var(--brandia-text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-width: 320px;
+    }
+
+    /* ========== CONTAINER ========== */
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+      }
+    }
+
+    /* ========== HEADER STYLES ========== */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--brandia-border);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      gap: 1rem;
+    }
+
+    /* Logo Brandia */
+    .brandia-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      transition: transform 0.3s ease;
+    }
+
+    .brandia-logo:hover {
+      transform: scale(1.02);
+    }
+
+    .brandia-icon-wrap {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+
+    .brandia-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 12px;
+      background: var(--brandia-gradient);
+      opacity: 0.3;
+      filter: blur(8px);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.1); opacity: 0.5; }
+    }
+
+    .brandia-icon-bg {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--brandia-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brandia-icon-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { left: -100%; }
+      50%, 100% { left: 200%; }
+    }
+
+    .brandia-icon-svg {
+      width: 24px;
+      height: 24px;
+      color: white;
+    }
+
+    .brandia-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    /* Navigation */
+    .nav-desktop {
+      display: none;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+      .nav-desktop {
+        display: flex;
+      }
+    }
+
+    .nav-link {
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .nav-link:hover {
+      color: var(--brandia-text);
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--brandia-gradient);
+      transition: width 0.3s;
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .nav-link.active {
+      color: var(--brandia-primary);
+    }
+
+    /* Dropdown */
+    .dropdown {
+      position: relative;
+    }
+
+    .dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 0.5rem 0;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      left: 0;
+      width: 320px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 0.75rem;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem;
+      border-radius: 8px;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .dropdown-item:hover {
+      background: var(--brandia-card-hover);
+      color: var(--brandia-text);
+    }
+
+    .dropdown-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
+
+    /* Header Right Section */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .country-selector {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .country-selector:hover {
+      border-color: var(--brandia-primary);
+    }
+
+    .lang-switch {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    /* Cart */
+    .cart-link {
+      position: relative;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      padding: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .cart-link:hover {
+      color: var(--brandia-text);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background: var(--brandia-primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.625rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cart-badge.hidden {
+      display: none;
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      color: var(--brandia-text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mobile-toggle:hover {
+      border-color: var(--brandia-primary);
+    }
+
+    @media (min-width: 1024px) {
+      .mobile-toggle {
+        display: none;
+      }
+    }
+
+    /* ========== PAGE HEADER ========== */
+    .page-header {
+      padding: 4rem 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at top, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at bottom, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .page-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (min-width: 640px) {
+      .page-title {
+        font-size: 3rem;
+      }
+    }
+
+    .page-title span {
+      background: var(--brandia-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+      color: var(--brandia-text-muted);
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ========== OFFERS GRID ========== */
+    .offers-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .offers-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .offers-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1280px) {
+      .offers-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* ========== PROMO CARD ========== */
+    .promo-card {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .promo-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--brandia-primary);
+      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+    }
+
+    .promo-image {
+      position: relative;
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .promo-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s;
+    }
+
+    .promo-card:hover .promo-image img {
+      transform: scale(1.1);
+    }
+
+    .promo-badge {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: var(--brandia-danger);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      animation: pulse-badge 2s infinite;
+      z-index: 2;
+    }
+
+    @keyframes pulse-badge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .promo-timer {
+      position: absolute;
+      bottom: 1rem;
+      left: 1rem;
+      right: 1rem;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      padding: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--brandia-warning);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .promo-content {
+      padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .promo-brand {
+      color: var(--brandia-primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .promo-title {
+      color: var(--brandia-text);
+      font-weight: 600;
+      font-size: 1.125rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .promo-description {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+
+    .promo-code-box {
+      background: var(--brandia-darker);
+      border: 1px dashed var(--brandia-border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .promo-code-label {
+      font-size: 0.75rem;
+      color: var(--brandia-text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .promo-code-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--brandia-success);
+      letter-spacing: 0.1em;
+    }
+
+    .promo-footer {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: auto;
+    }
+
+    .btn-promo-primary {
+      flex: 1;
+      background: var(--brandia-gradient);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+
+    .btn-promo-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-promo-secondary {
+      width: 48px;
+      height: 48px;
+      background: var(--brandia-card-hover);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      color: var(--brandia-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-promo-secondary:hover {
+      border-color: var(--brandia-primary);
+      color: var(--brandia-primary);
+    }
+
+    /* ========== PRODUCT CARD (Fallback) ========== */
+    .product-card {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--brandia-primary);
+      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+    }
+
+    .product-image {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+    }
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s;
+    }
+
+    .product-card:hover .product-image img {
+      transform: scale(1.1);
+    }
+
+    .product-badge {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: var(--brandia-danger);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      z-index: 2;
+    }
+
+    .product-info {
+      padding: 1.25rem;
+    }
+
+    .product-category {
+      color: var(--brandia-primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .product-name {
+      color: var(--brandia-text);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+
+    .product-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .product-price {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .price-current {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--brandia-success);
+    }
+
+    .price-original {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      text-decoration: line-through;
+    }
+
+    .btn-add-cart {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add-cart:hover {
+      background: var(--brandia-primary-hover);
+      transform: scale(1.05);
+    }
+
+    /* ========== STATES ========== */
+    .state-container {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .state-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: var(--brandia-gradient-subtle);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brandia-primary);
+      font-size: 2rem;
+    }
+
+    .state-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--brandia-text);
+      margin-bottom: 0.5rem;
+    }
+
+    .state-text {
+      color: var(--brandia-text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ========== LOADER ========== */
+    .loader {
+      display: flex;
+      justify-content: center;
+      padding: 3rem;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--brandia-border);
+      border-top-color: var(--brandia-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ========== FOOTER ========== */
+    .footer {
+      background: var(--brandia-darker);
+      border-top: 1px solid var(--brandia-border);
+      padding: 4rem 0 2rem;
+      margin-top: 5rem;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (min-width: 640px) {
+      .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .footer-grid {
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      }
+    }
+
+    .footer-brand {
+      max-width: 300px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--brandia-gradient);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .footer-logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .footer-desc {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .social-link {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .social-link:hover {
+      background: var(--brandia-primary);
+      border-color: var(--brandia-primary);
+      color: white;
+    }
+
+    .footer-title {
+      color: var(--brandia-text);
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .footer-link {
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .footer-link:hover {
+      color: var(--brandia-primary);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--brandia-border);
+      padding-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    @media (min-width: 640px) {
+      .footer-bottom {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+      }
+    }
+
+    .footer-copyright {
+      color: var(--brandia-text-muted);
+      font-size: 0.875rem;
+    }
+
+    .footer-payments {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .payment-icon {
+      color: var(--brandia-text-muted);
+      font-size: 1.5rem;
+    }
+
+    /* ========== TOAST ========== */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-left: 4px solid var(--brandia-primary);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.success {
+      border-left-color: var(--brandia-success);
+    }
+
+    .toast.error {
+      border-left-color: var(--brandia-danger);
+    }
+
+    /* ========== MOBILE MENU ========== */
+    .mobile-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--brandia-dark);
+      z-index: 100;
+      padding: 1.5rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s;
+      overflow-y: auto;
+    }
+
+    .mobile-menu.open {
+      transform: translateX(0);
+    }
+
+    .mobile-menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .mobile-menu-close {
+      width: 40px;
+      height: 40px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 10px;
+      color: var(--brandia-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .mobile-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .mobile-nav-link {
+      color: var(--brandia-text);
+      text-decoration: none;
+      font-size: 1.125rem;
+      font-weight: 500;
+      padding: 1rem;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .mobile-nav-link:hover {
+      background: var(--brandia-card);
+    }
+
+    /* ========== UTILITAIRES ========== */
+    .hidden {
+      display: none !important;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--brandia-dark);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--brandia-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--brandia-card-hover);
+    }
+
+    /* ========== SECTION ========== */
+    .section {
+      padding: 3rem 0;
+    }
+
+    @media (min-width: 1024px) {
+      .section {
+        padding: 5rem 0;
+      }
+    }
   </style>
 </head>
 <body>
 
-<header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
-  <nav class="container flex items-center justify-between px-4 py-3">
-    <a href="index.html" class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
-        <i class="fas fa-store text-white text-sm"></i>
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <!-- Logo -->
+        <a href="index.html" class="brandia-logo">
+          <div class="brandia-icon-wrap">
+            <div class="brandia-pulse"></div>
+            <div class="brandia-icon-bg">
+              <svg class="brandia-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </div>
+          </div>
+          <span class="brandia-text">Brandia</span>
+        </a>
+
+        <!-- Navigation Desktop -->
+        <nav class="nav-desktop">
+          <a href="nouveautes.html" class="nav-link">Nouveautés</a>
+          <a href="marques.html" class="nav-link">Marques</a>
+          
+          <div class="dropdown">
+            <div class="dropdown-trigger nav-link">
+              <span>Catégories</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </div>
+            <div class="dropdown-menu" id="dropdown-categories">
+              <!-- Injecté par JS -->
+            </div>
+          </div>
+          
+          <a href="offres.html" class="nav-link active">Offres</a>
+          <a href="index.html#about" class="nav-link">À propos</a>
+        </nav>
+
+        <!-- Actions -->
+        <div class="header-actions">
+          <select class="country-selector" id="countrySelector">
+            <option value="">🌍 Chargement...</option>
+          </select>
+
+          <select class="lang-switch" id="langSwitch">
+            <option value="fr">🇫🇷 FR</option>
+            <option value="en">🇬🇧 EN</option>
+          </select>
+
+          <!-- Panier -->
+          <a href="panier.html" class="cart-link">
+            <i class="fas fa-shopping-bag text-xl"></i>
+            <span class="cart-badge hidden" id="cart-count">0</span>
+          </a>
+
+          <!-- Mobile Toggle -->
+          <button class="mobile-toggle" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+          </button>
+        </div>
       </div>
-      <span class="font-bold text-lg text-neutral-100">Brandia</span>
-    </a>
-    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="catalogue.html" class="hover:text-white transition">Catalogue</a>
-      <a href="index.html" class="hover:text-white transition">Accueil</a>
-      <a href="offres.html" class="text-indigo-400 font-medium">Offres</a>
     </div>
-    <div class="flex items-center space-x-3">
-      <a href="panier.html" class="relative">
-        <i class="fas fa-shopping-bag text-neutral-300"></i>
-        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white hidden">0</span>
-      </a>
-    </div>
-  </nav>
-</header>
+  </header>
 
-<section class="py-10">
-  <div class="container px-4">
-    <div class="text-center mb-10">
-      <h1 class="text-3xl font-bold text-white mb-2">🔥 Nos meilleures offres</h1>
-      <p class="text-neutral-400">Profitez de nos promotions exclusives</p>
-    </div>
-
-    <!-- Loading State -->
-    <div id="loading-offers" class="text-center py-12">
-      <i class="fas fa-spinner fa-spin text-indigo-400 text-2xl mb-4"></i>
-      <p class="text-neutral-500">Chargement des offres...</p>
-    </div>
-
-    <!-- Error State -->
-    <div id="error-offers" class="hidden text-center py-12">
-      <i class="fas fa-exclamation-circle text-red-400 text-3xl mb-4"></i>
-      <p class="text-neutral-400 mb-4">Erreur de chargement</p>
-      <button onclick="loadOffers()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition">
-        <i class="fas fa-redo mr-2"></i>Réessayer
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <div class="brandia-logo">
+        <div class="brandia-icon-wrap">
+          <div class="brandia-icon-bg">
+            <svg class="brandia-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            </svg>
+          </div>
+        </div>
+        <span class="brandia-text">Brandia</span>
+      </div>
+      <button class="mobile-menu-close" onclick="toggleMobileMenu()">
+        <i class="fas fa-times"></i>
       </button>
     </div>
-
-    <!-- Empty State -->
-    <div id="empty-offers" class="hidden text-center py-12">
-      <i class="fas fa-tag text-neutral-600 text-4xl mb-4"></i>
-      <p class="text-neutral-400">Aucune promotion active pour le moment</p>
-      <a href="catalogue.html" class="inline-block mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition">
-        Voir le catalogue
-      </a>
-    </div>
-
-    <!-- Products Grid -->
-    <div id="offers-grid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <!-- Rempli dynamiquement -->
-    </div>
+    <nav class="mobile-nav">
+      <a href="nouveautes.html" class="mobile-nav-link">Nouveautés</a>
+      <a href="marques.html" class="mobile-nav-link">Marques</a>
+      <a href="categories.html" class="mobile-nav-link">Catégories</a>
+      <a href="offres.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Offres</a>
+      <a href="login.html" class="mobile-nav-link">Connexion</a>
+      <a href="register.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Inscription</a>
+    </nav>
   </div>
-</section>
 
-<footer class="border-t border-neutral-800 py-6 text-center text-xs text-neutral-500">
-  <div class="container">
-    <p>© 2026 Brandia – Marketplace officielle des marques</p>
-  </div>
-</footer>
+  <!-- ========== PAGE HEADER ========== -->
+  <section class="page-header">
+    <div class="container">
+      <h1 class="page-title"><span>🔥</span> Nos meilleures offres</h1>
+      <p class="page-subtitle">Profitez de nos promotions exclusives et codes promo sur les plus grandes marques</p>
+    </div>
+  </section>
 
-<script src="assets/js/api.js"></script>
-<script>
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:4000' 
-  : 'https://brandia-1.onrender.com';
-
-// ==========================================
-// CHARGEMENT DES OFFRES
-// ==========================================
-async function loadOffers() {
-  const loadingEl = document.getElementById('loading-offers');
-  const errorEl = document.getElementById('error-offers');
-  const emptyEl = document.getElementById('empty-offers');
-  const gridEl = document.getElementById('offers-grid');
-
-  // Reset states
-  loadingEl.classList.remove('hidden');
-  errorEl.classList.add('hidden');
-  emptyEl.classList.add('hidden');
-  gridEl.classList.add('hidden');
-
-  try {
-    // Essayer d'abord l'API avec promotions
-    let response;
-    try {
-      response = await fetch(`${API_BASE}/api/public/promotions/active`);
-      const data = await response.json();
+  <!-- ========== MAIN CONTENT ========== -->
+  <section class="section">
+    <div class="container">
       
-      if (data.success && data.data && data.data.length > 0) {
-        renderPromotions(data.data);
-        loadingEl.classList.add('hidden');
-        gridEl.classList.remove('hidden');
-        return;
-      }
-    } catch (e) {
-      console.log('[Offers] API promotions indisponible, fallback sur produits');
-    }
-
-    // Fallback: charger tous les produits et filtrer ceux avec promo
-    const productsRes = await fetch(`${API_BASE}/api/products/featured`);
-    const productsData = await productsRes.json();
-    
-    if (productsData.success && productsData.data && productsData.data.products) {
-      const productsWithPromo = productsData.data.products.filter(p => 
-        p.has_promotion || p.final_price < p.price || p.promo_id
-      );
-      
-      if (productsWithPromo.length > 0) {
-        renderProducts(productsWithPromo);
-        loadingEl.classList.add('hidden');
-        gridEl.classList.remove('hidden');
-      } else {
-        loadingEl.classList.add('hidden');
-        emptyEl.classList.remove('hidden');
-      }
-    } else {
-      throw new Error('Aucune donnée reçue');
-    }
-
-  } catch (error) {
-    console.error('[Offers] Erreur:', error);
-    loadingEl.classList.add('hidden');
-    errorEl.classList.remove('hidden');
-  }
-}
-
-// ==========================================
-// RENDU PROMOTIONS (API /public/promotions/active)
-// ==========================================
-function renderPromotions(promotions) {
-  const grid = document.getElementById('offers-grid');
-  
-  grid.innerHTML = promotions.map(promo => {
-    const discountLabel = promo.type === 'percentage' 
-      ? `-${promo.value}%` 
-      : `-${promo.value}€`;
-    
-    const endDate = promo.end_date 
-      ? new Date(promo.end_date).toLocaleDateString('fr-FR')
-      : 'Date limitée';
-
-    return `
-      <div class="promo-card bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500/50">
-        <div class="relative h-40 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
-          <div class="text-center p-4">
-            <div class="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-              <i class="fas fa-percentage text-indigo-400 text-2xl"></i>
-            </div>
-            <h3 class="font-bold text-white text-lg">${promo.name}</h3>
-          </div>
-          <div class="absolute top-3 right-3">
-            <span class="promo-badge bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-              ${discountLabel}
-            </span>
-          </div>
+      <!-- Loading State -->
+      <div id="loading-offers" class="state-container">
+        <div class="loader">
+          <div class="spinner"></div>
         </div>
-        <div class="p-4">
-          <p class="text-sm text-neutral-400 mb-2">${promo.supplier_company || 'Brandia'}</p>
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-amber-400">
-              <i class="fas fa-clock mr-1"></i>Jusqu'au ${endDate}
-            </span>
-            <span class="text-xs text-neutral-500">${promo.products_count || 0} produits</span>
-          </div>
-          ${promo.code ? `
-            <div class="mt-3 p-2 bg-neutral-900 rounded text-center">
-              <span class="text-xs text-neutral-500">Code:</span>
-              <span class="font-mono text-emerald-400 font-bold ml-2">${promo.code}</span>
-            </div>
-          ` : ''}
-          <a href="catalogue.html?promo=${promo.id}" class="block mt-3 w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-center rounded-lg transition">
-            Voir les produits
-          </a>
-        </div>
+        <p class="state-text">Chargement des offres...</p>
       </div>
-    `;
-  }).join('');
-}
 
-// ==========================================
-// RENDU PRODUITS (Fallback)
-// ==========================================
-function renderProducts(products) {
-  const grid = document.getElementById('offers-grid');
-  
-  grid.innerHTML = products.map(p => {
-    const finalPrice = parseFloat(p.final_price || p.price);
-    const basePrice = parseFloat(p.base_price || p.original_price || p.price);
-    const discount = basePrice > finalPrice 
-      ? Math.round(((basePrice - finalPrice) / basePrice) * 100) 
-      : 0;
-
-    const imageUrl = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
-
-    return `
-      <div class="promo-card bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-indigo-500/50">
-        <div class="relative h-48">
-          <img src="${imageUrl}" alt="${p.name}" 
-               class="w-full h-full object-cover"
-               onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
-          ${discount > 0 ? `
-            <div class="absolute top-3 left-3">
-              <span class="promo-badge bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                -${discount}%
-              </span>
-            </div>
-          ` : ''}
+      <!-- Error State -->
+      <div id="error-offers" class="state-container hidden">
+        <div class="state-icon">
+          <i class="fas fa-exclamation-circle"></i>
         </div>
-        <div class="p-4">
-          <p class="text-xs text-indigo-400 mb-1">${p.category_name || 'Catégorie'}</p>
-          <h3 class="font-semibold text-white mb-2 line-clamp-2">${p.name}</h3>
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-xl font-bold text-emerald-400">${formatPrice(finalPrice)}</span>
-            ${basePrice > finalPrice ? `
-              <span class="text-sm text-neutral-500 line-through">${formatPrice(basePrice)}</span>
-            ` : ''}
+        <h2 class="state-title">Erreur de chargement</h2>
+        <p class="state-text">Impossible de charger les offres pour le moment</p>
+        <button onclick="loadOffers()" class="btn-promo-primary" style="max-width: 200px; margin: 0 auto;">
+          <i class="fas fa-redo mr-2"></i>Réessayer
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-offers" class="state-container hidden">
+        <div class="state-icon">
+          <i class="fas fa-tag"></i>
+        </div>
+        <h2 class="state-title">Aucune promotion active</h2>
+        <p class="state-text">Revenez bientôt pour découvrir nos nouvelles offres</p>
+        <a href="catalogue.html" class="btn-promo-primary" style="max-width: 250px; margin: 0 auto;">
+          <span>Explorer le catalogue</span>
+          <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+
+      <!-- Offers Grid -->
+      <div id="offers-grid" class="offers-grid hidden">
+        <!-- Rempli dynamiquement -->
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- Brand -->
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <div class="footer-logo-icon">
+              <i class="fas fa-shopping-bag"></i>
+            </div>
+            <span class="footer-logo-text">Brandia</span>
           </div>
-          <div class="flex gap-2">
-            <button onclick="addToCart(${p.id})" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
-              <i class="fas fa-cart-plus mr-2"></i>Ajouter
-            </button>
-            <a href="product.html?id=${p.id}" class="px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition">
-              <i class="fas fa-eye"></i>
-            </a>
+          <p class="footer-desc">
+            La marketplace des marques officielles. Achetez directement auprès des créateurs et marques authentiques.
+          </p>
+          <div class="footer-social">
+            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div>
+          <h4 class="footer-title">Acheter</h4>
+          <div class="footer-links">
+            <a href="catalogue.html" class="footer-link">Catalogue</a>
+            <a href="categories.html" class="footer-link">Catégories</a>
+            <a href="nouveautes.html" class="footer-link">Nouveautés</a>
+            <a href="offres.html" class="footer-link">Offres</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Vendre</h4>
+          <div class="footer-links">
+            <a href="register.html?type=supplier" class="footer-link">Devenir vendeur</a>
+            <a href="supplier/dashboard.html" class="footer-link">Espace fournisseur</a>
+            <a href="#" class="footer-link">Tarifs</a>
+            <a href="#" class="footer-link">Success stories</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Aide</h4>
+          <div class="footer-links">
+            <a href="contact.html" class="footer-link">Contact</a>
+            <a href="faq.html" class="footer-link">FAQ</a>
+            <a href="#" class="footer-link">Livraison</a>
+            <a href="#" class="footer-link">Retours</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Légal</h4>
+          <div class="footer-links">
+            <a href="#" class="footer-link">CGU</a>
+            <a href="#" class="footer-link">CGV</a>
+            <a href="#" class="footer-link">Confidentialité</a>
+            <a href="#" class="footer-link">Cookies</a>
           </div>
         </div>
       </div>
-    `;
-  }).join('');
-}
 
-// ==========================================
-// UTILITAIRES
-// ==========================================
-function formatPrice(amount) {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount || 0);
-}
+      <div class="footer-bottom">
+        <p class="footer-copyright">© 2026 Brandia – Marketplace officielle des marques</p>
+        <div class="footer-payments">
+          <i class="fab fa-cc-visa payment-icon"></i>
+          <i class="fab fa-cc-mastercard payment-icon"></i>
+          <i class="fab fa-cc-amex payment-icon"></i>
+          <i class="fab fa-cc-paypal payment-icon"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
 
-async function addToCart(productId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/products/${productId}`);
-    const data = await response.json();
-    
-    if (!data.success) throw new Error('Produit non trouvé');
-    
-    const product = data.data.product || data.data;
-    
-    // Récupérer panier existant
-    let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-    
-    const existing = cart.find(item => item.id == productId);
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({
-        id: product.id,
-        name: product.name,
-        price: parseFloat(product.final_price || product.price),
-        original_price: parseFloat(product.original_price || product.price),
-        has_promotion: product.has_promotion || false,
-        main_image_url: product.main_image_url,
-        quantity: 1
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="assets/js/api.js"></script>
+  
+  <script>
+    // ==========================================
+    // CONFIGURATION
+    // ==========================================
+    const CATEGORY_IMAGES = {
+      'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80',
+      'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80',
+      'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80',
+      'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80',
+      'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
+      'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80',
+      'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
+      'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80',
+      'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80',
+      'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80',
+      'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
+      'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80',
+      'parfumerie-interieur': 'https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=400&h=400&fit=crop&q=80',
+      'produits-ecologiques': 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=400&fit=crop&q=80',
+      'bebe-maternite': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80',
+      'animaux-pets': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop&q=80',
+      'sante-hygiene': 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80',
+      'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80',
+      'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80',
+      'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80',
+      'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80'
+    };
+
+    const BRANDIA_CATEGORIES = [
+      { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', color: 'from-pink-500 to-rose-500' },
+      { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: 'from-purple-500 to-indigo-500' },
+      { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', color: 'from-red-500 to-pink-500' },
+      { slug: 'soins-capillaires', name: 'Soins cheveux', icon: 'fa-cut', color: 'from-amber-500 to-orange-500' },
+      { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', color: 'from-emerald-500 to-teal-500' },
+      { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', color: 'from-blue-500 to-cyan-500' },
+      { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', color: 'from-yellow-500 to-amber-500' },
+      { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', color: 'from-orange-500 to-red-500' },
+      { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', color: 'from-green-500 to-emerald-500' },
+      { slug: 'high-tech-mobile', name: 'High-Tech', icon: 'fa-mobile-alt', color: 'from-indigo-500 to-blue-500' },
+      { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', color: 'from-violet-500 to-purple-500' },
+      { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', color: 'from-orange-500 to-red-500' }
+    ];
+
+    const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&h=400&fit=crop&q=80';
+
+    // ==========================================
+    // UTILITAIRES
+    // ==========================================
+    function formatPrice(amount) {
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR'
+      }).format(amount || 0);
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function getFlagEmoji(countryCode) {
+      const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+      return String.fromCodePoint(...codePoints);
+    }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('open');
+      document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+    }
+
+    // ==========================================
+    // COUNTRIES & CATEGORIES
+    // ==========================================
+    function initCountries() {
+      const selector = document.getElementById('countrySelector');
+      const countries = {
+        'FR': { name: 'France', currency: 'EUR' },
+        'BE': { name: 'Belgique', currency: 'EUR' },
+        'CH': { name: 'Suisse', currency: 'CHF' },
+        'CA': { name: 'Canada', currency: 'CAD' },
+        'TN': { name: 'Tunisie', currency: 'TND' },
+        'DZ': { name: 'Algérie', currency: 'DZD' },
+        'MA': { name: 'Maroc', currency: 'MAD' },
+        'DE': { name: 'Allemagne', currency: 'EUR' },
+        'IT': { name: 'Italie', currency: 'EUR' },
+        'ES': { name: 'Espagne', currency: 'EUR' },
+        'NL': { name: 'Pays-Bas', currency: 'EUR' },
+        'AT': { name: 'Autriche', currency: 'EUR' },
+        'PT': { name: 'Portugal', currency: 'EUR' },
+        'IE': { name: 'Irlande', currency: 'EUR' },
+        'FI': { name: 'Finlande', currency: 'EUR' },
+        'LU': { name: 'Luxembourg', currency: 'EUR' },
+        'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+        'US': { name: 'États-Unis', currency: 'USD' },
+        'JP': { name: 'Japon', currency: 'JPY' },
+        'KR': { name: 'Corée du Sud', currency: 'KRW' },
+        'CN': { name: 'Chine', currency: 'CNY' },
+        'SG': { name: 'Singapour', currency: 'SGD' },
+        'AU': { name: 'Australie', currency: 'AUD' },
+        'EG': { name: 'Égypte', currency: 'EGP' },
+        'AE': { name: 'Émirats Arabes Unis', currency: 'AED' },
+        'SA': { name: 'Arabie Saoudite', currency: 'SAR' },
+        'QA': { name: 'Qatar', currency: 'QAR' },
+        'KW': { name: 'Koweït', currency: 'KWD' }
+      };
+
+      const saved = localStorage.getItem('country') || 'FR';
+      selector.innerHTML = Object.entries(countries)
+        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+        .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
+        .join('');
+
+      selector.addEventListener('change', (e) => {
+        localStorage.setItem('country', e.target.value);
+        localStorage.setItem('currency', countries[e.target.value].currency);
       });
     }
-    
-    localStorage.setItem('brandia_cart', JSON.stringify(cart));
-    updateCartBadge();
-    showToast('Produit ajouté au panier !', 'success');
-    
-  } catch (error) {
-    console.error('[Offers] Erreur ajout panier:', error);
-    showToast('Erreur lors de l\'ajout', 'error');
-  }
-}
 
-function updateCartBadge() {
-  const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-  const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const badge = document.getElementById('cart-count');
-  if (badge) {
-    badge.textContent = count;
-    badge.classList.toggle('hidden', count === 0);
-  }
-}
+    function loadCategories() {
+      const dropdown = document.getElementById('dropdown-categories');
+      if (!dropdown) return;
+      
+      dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
+        <a href="catalogue.html?category=${cat.slug}" class="dropdown-item">
+          <div class="dropdown-icon bg-gradient-to-br ${cat.color}">
+            <i class="fas ${cat.icon} text-white"></i>
+          </div>
+          <span>${cat.name}</span>
+        </a>
+      `).join('');
+    }
 
-function showToast(message, type = 'success') {
-  const toast = document.createElement('div');
-  toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-    type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
-  } text-white transform translate-y-0 transition-all duration-300`;
-  toast.innerHTML = `<i class="fas fa-check mr-2"></i>${message}`;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(20px)';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
+    // ==========================================
+    // CHARGEMENT DES OFFRES
+    // ==========================================
+    async function loadOffers() {
+      const loadingEl = document.getElementById('loading-offers');
+      const errorEl = document.getElementById('error-offers');
+      const emptyEl = document.getElementById('empty-offers');
+      const gridEl = document.getElementById('offers-grid');
 
-// Init
-document.addEventListener('DOMContentLoaded', () => {
-  loadOffers();
-  updateCartBadge();
-});
-</script>
+      // Reset states
+      loadingEl.classList.remove('hidden');
+      errorEl.classList.add('hidden');
+      emptyEl.classList.add('hidden');
+      gridEl.classList.add('hidden');
+
+      try {
+        // Essayer d'abord l'API avec promotions
+        let response;
+        try {
+          response = await BrandiaAPI.Promotions.getActive();
+          
+          if (response.success && response.data && response.data.length > 0) {
+            renderPromotions(response.data);
+            loadingEl.classList.add('hidden');
+            gridEl.classList.remove('hidden');
+            return;
+          }
+        } catch (e) {
+          console.log('[Offers] API promotions indisponible, fallback sur produits');
+        }
+
+        // Fallback: charger tous les produits et filtrer ceux avec promo
+        const productsRes = await BrandiaAPI.Products.getFeatured();
+        
+        if (productsRes.success && productsRes.data && productsRes.data.products) {
+          const productsWithPromo = productsRes.data.products.filter(p => 
+            p.has_promotion || p.final_price < p.price || p.promo_id
+          );
+          
+          if (productsWithPromo.length > 0) {
+            renderProducts(productsWithPromo);
+            loadingEl.classList.add('hidden');
+            gridEl.classList.remove('hidden');
+          } else {
+            loadingEl.classList.add('hidden');
+            emptyEl.classList.remove('hidden');
+          }
+        } else {
+          throw new Error('Aucune donnée reçue');
+        }
+
+      } catch (error) {
+        console.error('[Offers] Erreur:', error);
+        loadingEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    // ==========================================
+    // RENDU PROMOTIONS
+    // ==========================================
+    function renderPromotions(promotions) {
+      const grid = document.getElementById('offers-grid');
+      
+      grid.innerHTML = promotions.map((promo, index) => {
+        const discountLabel = promo.type === 'percentage' 
+          ? `-${promo.value}%` 
+          : `-${promo.value}€`;
+        
+        const endDate = promo.end_date 
+          ? new Date(promo.end_date).toLocaleDateString('fr-FR')
+          : 'Date limitée';
+        
+        const imageUrl = promo.image_url || CATEGORY_IMAGES[promo.category_slug] || DEFAULT_IMAGE;
+
+        return `
+          <div class="promo-card fade-in" style="animation-delay: ${index * 0.1}s">
+            <div class="promo-image">
+              <img src="${imageUrl}" alt="${promo.name}" onerror="this.src='${DEFAULT_IMAGE}'">
+              <span class="promo-badge">${discountLabel}</span>
+              <div class="promo-timer">
+                <i class="fas fa-clock"></i>
+                <span>Jusqu'au ${endDate}</span>
+              </div>
+            </div>
+            <div class="promo-content">
+              <div class="promo-brand">${promo.supplier_company || 'Brandia'}</div>
+              <h3 class="promo-title">${promo.name}</h3>
+              <p class="promo-description">${promo.description || 'Profitez de cette offre exclusive sur une sélection de produits.'}</p>
+              
+              ${promo.code ? `
+                <div class="promo-code-box">
+                  <div class="promo-code-label">Code promo à utiliser</div>
+                  <div class="promo-code-value">${promo.code}</div>
+                </div>
+              ` : ''}
+              
+              <div class="promo-footer">
+                <a href="catalogue.html?promo=${promo.id}" class="btn-promo-primary">
+                  <span>Voir les produits</span>
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+                <button onclick="sharePromo('${promo.name}')" class="btn-promo-secondary" title="Partager">
+                  <i class="fas fa-share-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // RENDU PRODUITS (Fallback)
+    // ==========================================
+    function renderProducts(products) {
+      const grid = document.getElementById('offers-grid');
+      
+      grid.innerHTML = products.map((p, index) => {
+        const finalPrice = parseFloat(p.final_price || p.price);
+        const basePrice = parseFloat(p.base_price || p.original_price || p.price);
+        const discount = basePrice > finalPrice 
+          ? Math.round(((basePrice - finalPrice) / basePrice) * 100) 
+          : 0;
+
+        const imageUrl = p.main_image_url || DEFAULT_IMAGE;
+
+        return `
+          <div class="product-card fade-in" style="animation-delay: ${index * 0.1}s">
+            <div class="product-image">
+              <img src="${imageUrl}" alt="${p.name}" onerror="this.src='${DEFAULT_IMAGE}'">
+              ${discount > 0 ? `<span class="product-badge">-${discount}%</span>` : ''}
+            </div>
+            <div class="product-info">
+              <div class="product-category">${p.category_name || 'Catégorie'}</div>
+              <h3 class="product-name">${p.name}</h3>
+              <div class="product-footer">
+                <div class="product-price">
+                  <span class="price-current">${formatPrice(finalPrice)}</span>
+                  ${basePrice > finalPrice ? `<span class="price-original">${formatPrice(basePrice)}</span>` : ''}
+                </div>
+                <button onclick="addToCart(${p.id})" class="btn-add-cart" title="Ajouter au panier">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function sharePromo(name) {
+      if (navigator.share) {
+        navigator.share({
+          title: `Offre Brandia: ${name}`,
+          text: `Découvre cette offre sur Brandia: ${name}`,
+          url: window.location.href
+        });
+      } else {
+        // Fallback: copier dans le presse-papier
+        navigator.clipboard.writeText(window.location.href);
+        showToast('Lien copié dans le presse-papier !', 'success');
+      }
+    }
+
+    // ==========================================
+    // PANIER
+    // ==========================================
+    async function addToCart(productId) {
+      try {
+        const response = await BrandiaAPI.Products.getById(productId);
+        
+        if (!response.success) throw new Error('Produit non trouvé');
+        
+        const product = response.data.product || response.data;
+        
+        // Récupérer panier existant
+        let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+        
+        const existing = cart.find(item => item.id == productId);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          cart.push({
+            id: product.id,
+            name: product.name,
+            price: parseFloat(product.final_price || product.price),
+            original_price: parseFloat(product.original_price || product.price),
+            has_promotion: product.has_promotion || false,
+            main_image_url: product.main_image_url,
+            quantity: 1
+          });
+        }
+        
+        localStorage.setItem('brandia_cart', JSON.stringify(cart));
+        updateCartBadge();
+        showToast('Produit ajouté au panier !', 'success');
+        
+      } catch (error) {
+        console.error('[Offers] Erreur ajout panier:', error);
+        showToast('Erreur lors de l\'ajout', 'error');
+      }
+    }
+
+    function updateCartBadge() {
+      const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+      const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const badge = document.getElementById('cart-count');
+      if (badge) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.toggle('hidden', count === 0);
+      }
+    }
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+      initCountries();
+      loadCategories();
+      loadOffers();
+      updateCartBadge();
+    });
+
+    // Exposer globalement
+    window.loadOffers = loadOffers;
+    window.addToCart = addToCart;
+    window.sharePromo = sharePromo;
+    window.toggleMobileMenu = toggleMobileMenu;
+  </script>
 
 </body>
 </html>

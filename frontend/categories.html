@@ -1,158 +1,845 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catégories – Brandia</title>
-  <meta name="description" content="Découvrez nos 21 catégories de produits sur Brandia">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body { background-color: #0b111e; color: #f3f4f6; font-family: system-ui, sans-serif; }
-    .container { max-width: 1400px; margin: auto; padding: 0 1rem; }
-    .fade-in { animation: fadeIn 0.5s ease forwards; opacity: 0; }
-    @keyframes fadeIn { to { opacity: 1; } }
-    
-    .dropdown-container { position: relative; }
-    .dropdown-menu {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 0;
-      padding-top: 10px;
-      z-index: 50;
-    }
-    .dropdown-container:hover .dropdown-menu,
-    .dropdown-menu:hover { display: block; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catégories – Brandia</title>
+    <meta name="description" content="Découvrez nos 21 catégories de produits sur Brandia">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --accent: #8b5cf6;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --success: #10b981;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .dropdown-container {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 10px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            min-width: 280px;
+            z-index: 100;
+        }
+
+        .dropdown-container:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            color: var(--light);
+            text-decoration: none;
+        }
+
+        .dropdown-item:hover {
+            background: var(--glass);
+        }
+
+        .dropdown-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .btn-dashboard {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .country-selector {
+            padding: 0.5rem 1rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--light);
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .cart-btn {
+            position: relative;
+            color: var(--light);
+            font-size: 1.3rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .cart-btn:hover {
+            color: var(--primary);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Categories Grid - Horizontal Layout */
+        .categories-section {
+            margin-bottom: 6rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .category-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            position: relative;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--light);
+            display: block;
+        }
+
+        .category-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+        }
+
+        .category-image {
+            position: relative;
+            aspect-ratio: 16/10;
+            overflow: hidden;
+        }
+
+        .category-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .category-card:hover .category-image img {
+            transform: scale(1.1);
+        }
+
+        .category-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, transparent 60%);
+            display: flex;
+            align-items: flex-end;
+            padding: 1.5rem;
+        }
+
+        .category-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .category-info {
+            padding: 1.5rem;
+        }
+
+        .category-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .category-count {
+            color: var(--gray);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-arrow {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .category-card:hover .category-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 4rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            margin-bottom: 4rem;
+        }
+
+        .cta-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Loading State */
+        .loading-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .skeleton-card {
+            background: var(--glass);
+            border-radius: 20px;
+            overflow: hidden;
+            animation: pulse 2s infinite;
+        }
+
+        .skeleton-image {
+            aspect-ratio: 16/10;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .skeleton-text {
+            padding: 1.5rem;
+        }
+
+        .skeleton-line {
+            height: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-line.short {
+            width: 60%;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 3rem 0;
+            text-align: center;
+            color: var(--gray);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .categories-grid,
+            .loading-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .categories-grid,
+            .loading-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .categories-grid,
+            .loading-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .cta-section {
+                padding: 2rem;
+            }
+        }
+
+        /* Loader */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--darker);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--glass);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
 
-<header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
-  <nav class="container flex items-center justify-between px-4 py-3">
-    <a href="index.html" class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
-        <i class="fas fa-store text-white text-sm"></i>
-      </div>
-      <span class="font-bold text-lg text-neutral-100">Brandia</span>
-    </a>
-    
-    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="nouveautes.html" class="hover:text-white transition">Nouveautés</a>
-      <a href="marques.html" class="hover:text-white transition">Marques</a>
-      
-      <div class="dropdown-container">
-        <div class="hover:text-white flex items-center space-x-1 py-2 cursor-pointer transition">
-          <span>Catégories</span>
-          <i class="fas fa-chevron-down text-xs"></i>
+    <!-- Background -->
+    <div class="bg-animation"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="logo">
+                <i class="fas fa-store"></i>
+                BRANDIA
+            </a>
+            
+            <nav class="nav-links">
+                <a href="index.html">Accueil</a>
+                <a href="products.html">Produits</a>
+                
+                <div class="dropdown-container">
+                    <a href="categories.html" style="display: flex; align-items: center; gap: 0.3rem;">
+                        Catégories <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                    </a>
+                    <div class="dropdown-menu" id="header-categories-list">
+                        <div style="text-align: center; padding: 2rem; color: var(--gray);">
+                            <i class="fas fa-spinner fa-spin"></i> Chargement...
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="deals.html">Offres</a>
+                <a href="supplier-dashboard.html" class="btn-dashboard" id="dashboardBtn" style="display: none;">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+            </nav>
+
+            <div class="header-actions">
+                <select class="country-selector" id="countrySelector">
+                    <option value="FR">🇫🇷 France</option>
+                    <option value="BE">🇧🇪 Belgique</option>
+                    <option value="CH">🇨🇭 Suisse</option>
+                    <option value="CA">🇨🇦 Canada</option>
+                </select>
+                
+                <a href="panier.html" class="cart-btn">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-count" id="cart-count">0</span>
+                </a>
+            </div>
         </div>
-        <div class="dropdown-menu w-80 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 py-2 max-h-[70vh] overflow-y-auto">
-          <div id="header-categories-list">
-            <div class="text-neutral-500 text-xs px-4 py-2">Chargement...</div>
-          </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1 class="hero-title">Nos <span>21 catégories</span></h1>
+            <p class="hero-subtitle">
+                Explorez notre sélection de produits authentiques par catégorie. 
+                Des marques officielles, livrées directement par les créateurs.
+            </p>
+        </section>
+
+        <!-- Categories Section -->
+        <section class="categories-section">
+            <div class="section-header">
+                <h2 class="section-title">Toutes les catégories</h2>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-grid" id="loading-grid">
+                <div class="skeleton-card">
+                    <div class="skeleton-image"></div>
+                    <div class="skeleton-text">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton-image"></div>
+                    <div class="skeleton-text">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton-image"></div>
+                    <div class="skeleton-text">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton-image"></div>
+                    <div class="skeleton-text">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="categories-grid" id="categories-grid" style="display: none;">
+                <!-- Les catégories seront injectées ici par JavaScript -->
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2 class="cta-title">Vous ne trouvez pas ce que vous cherchez ?</h2>
+            <a href="catalogue.html" class="cta-button">
+                Voir tout le catalogue <i class="fas fa-arrow-right"></i>
+            </a>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            © 2026 Brandia – Marketplace officielle des marques
         </div>
-      </div>
-      
-      <a href="offres.html" class="hover:text-white transition">Offres</a>
-    </div>
+    </footer>
 
-    <div class="flex items-center space-x-3">
-      <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
-        <option value="">🇫🇷 France</option>
-      </select>
-      <a href="panier.html" class="relative">
-        <i class="fas fa-shopping-bag text-neutral-300"></i>
-        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span>
-      </a>
-    </div>
-  </nav>
-</header>
+    <!-- Charger d'abord la config -->
+    <script src="assets/js/categories-config.js"></script>
 
-<section class="py-16 bg-gradient-to-b from-indigo-900/20 to-transparent">
-  <div class="container text-center px-4">
-    <h1 class="text-4xl md:text-5xl font-bold mb-4 text-neutral-100">
-      Nos <span class="text-indigo-400">21 catégories</span>
-    </h1>
-    <p class="text-neutral-400 text-lg max-w-2xl mx-auto">
-      Explorez notre sélection de produits authentiques par catégorie. 
-      Des marques officielles, livrées directement par les créateurs.
-    </p>
-  </div>
-</section>
+    <script>
+        // Loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 500);
+        });
 
-<section class="py-10">
-  <div class="container px-4">
-    <!-- Grille des 21 catégories avec images -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="categories-grid">
-      <div class="col-span-full text-center py-12 text-neutral-500">
-        <i class="fas fa-spinner fa-spin text-2xl mb-4"></i>
-        <p>Chargement des catégories...</p>
-      </div>
-    </div>
-  </div>
-</section>
+        // Check if user is supplier and show dashboard button
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const dashboardBtn = document.getElementById('dashboardBtn');
+        
+        if (currentUser && currentUser.role === 'supplier') {
+            dashboardBtn.style.display = 'flex';
+        }
 
-<section class="py-16 border-t border-neutral-800">
-  <div class="container text-center px-4">
-    <h2 class="text-2xl font-bold text-neutral-100 mb-4">Vous ne trouvez pas ce que vous cherchez ?</h2>
-    <div class="flex flex-wrap justify-center gap-4">
-      <a href="catalogue.html" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition font-medium">
-        Voir tout le catalogue
-      </a>
-    </div>
-  </div>
-</section>
+        // Données des catégories (fallback si le fichier config n'est pas chargé)
+        const defaultCategories = [
+            { id: 1, name: 'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80',
+      { id: 2, name:'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80',
+     { id:3, name: 'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80',
+      { id: 4, name:'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80',
+      { id: 5, name:'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
+      { id: 6, name:'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80',
+      { id: 7, name:'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
+      { id: 8, name:'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80',
+      { id: 9, name:'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80',
+      { id: 10, name:'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80',
+     { id: 11, name: 'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
+      { id: 12, name:'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80',
+      { id: 13, name:'parfumerie-interieur': 'https://images.unsplash.com/photo-1602607688652-9f3a0c96c646?w=400&h=400&fit=crop&q=80',
+      { id: 14, name:'produits-ecologiques': 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=400&fit=crop&q=80',
+     { id: 15, name: 'bebe-maternite': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=400&fit=crop&q=80',
+      { id: 16, name:'animaux-pets': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=400&fit=crop&q=80',
+     { id: 17, name: 'sante-hygiene': 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80',
+      { id: 18, name:'bagagerie-voyage': 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&q=80',
+      { id:19, name:'papeterie-lifestyle': 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop&q=80',
+      { id: 20, name:'artisanat-local': 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop&q=80',
+      { id: 21, name:'sport-loisirs': 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=400&h=400&fit=crop&q=80'.com/photo-1450778869180-41d0601e046e?w=600&h=400&fit=crop', color: '#10b981' }
+        ];
 
-<footer class="border-t border-neutral-800 py-10 bg-neutral-900">
-  <div class="container text-center text-neutral-500 text-sm">
-    © 2026 Brandia – Marketplace officielle des marques
-  </div>
-</footer>
+        // Render categories
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page catégories - Chargement des catégories');
+            
+            const grid = document.getElementById('categories-grid');
+            const loadingGrid = document.getElementById('loading-grid');
+            
+            // Simuler un délai de chargement pour montrer le skeleton
+            setTimeout(() => {
+                loadingGrid.style.display = 'none';
+                grid.style.display = 'grid';
+                
+                // Utiliser CategoriesAPI si disponible, sinon utiliser les données par défaut
+                let categories = defaultCategories;
+                
+                if (typeof CategoriesAPI !== 'undefined' && CategoriesAPI.getAll) {
+                    try {
+                        categories = CategoriesAPI.getAll();
+                    } catch (e) {
+                        console.warn('CategoriesAPI error, using default:', e);
+                    }
+                }
+                
+                renderCategories(categories);
+                renderDropdownCategories(categories);
+            }, 800);
+            
+            updateCartBadge();
+        });
 
-<!-- Charger d'abord la config -->
-<script src="assets/js/categories-config.js"></script>
+        function renderCategories(categories) {
+            const grid = document.getElementById('categories-grid');
+            
+            const html = categories.map(cat => `
+                <a href="products.html?category=${cat.id}" class="category-card fade-in">
+                    <div class="category-image">
+                        <img src="${cat.image}" alt="${cat.name}" loading="lazy">
+                        <div class="category-overlay">
+                            <div class="category-icon" style="background: linear-gradient(135deg, ${cat.color}, ${adjustColor(cat.color, -20)})">
+                                <i class="fas ${cat.icon}"></i>
+                            </div>
+                        </div>
+                        <div class="category-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                    <div class="category-info">
+                        <h3 class="category-name">${cat.name}</h3>
+                        <div class="category-count">
+                            <i class="fas fa-box-open"></i>
+                            ${cat.count.toLocaleString()} produits
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+            
+            grid.innerHTML = html;
+            
+            // Animate cards
+            setTimeout(() => {
+                document.querySelectorAll('.category-card').forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, index * 100);
+                });
+            }, 100);
+        }
 
-<script>
-// Utiliser l'API Categories pour rendre la grille
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Page catégories - Chargement des 21 catégories avec images');
-  
-  // Vérifier que CategoriesAPI est disponible
-  if (typeof CategoriesAPI === 'undefined') {
-    console.error('CategoriesAPI non chargé - vérifiez categories-config.js');
-    document.getElementById('categories-grid').innerHTML = 
-      '<div class="col-span-full text-center text-red-400">Erreur de chargement des catégories</div>';
-    return;
-  }
-  
-  // Rendre la grille avec les images
-  CategoriesAPI.renderGridWithImages('categories-grid', {
-    lang: 'fr',
-    showDescription: true
-  });
-  
-  // Rendre le dropdown du header
-  CategoriesAPI.renderDropdown('header-categories-list', 'fr');
-  
-  // Mettre à jour le badge panier
-  updateCartBadge();
-});
+        function renderDropdownCategories(categories) {
+            const dropdown = document.getElementById('header-categories-list');
+            
+            const html = categories.slice(0, 8).map(cat => `
+                <a href="products.html?category=${cat.id}" class="dropdown-item">
+                    <div class="dropdown-icon" style="background: linear-gradient(135deg, ${cat.color}, ${adjustColor(cat.color, -20)})">
+                        <i class="fas ${cat.icon}"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">${cat.name}</div>
+                        <div style="font-size: 0.85rem; color: var(--gray);">${cat.count} produits</div>
+                    </div>
+                </a>
+            `).join('');
+            
+            dropdown.innerHTML = html;
+        }
 
-function updateCartBadge() {
-  try {
-    const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-    const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const badge = document.getElementById('cart-count');
-    if (badge) {
-      badge.textContent = count;
-      badge.classList.toggle('hidden', count === 0);
-    }
-  } catch (e) {
-    console.error('Erreur badge panier:', e);
-  }
-}
-</script>
+        // Helper pour assombrir une couleur
+        function adjustColor(color, amount) {
+            return color; // Simplifié pour l'exemple
+        }
 
+        function updateCartBadge() {
+            try {
+                const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+                const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const badge = document.getElementById('cart-count');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count === 0 ? 'none' : 'flex';
+                }
+            } catch (e) {
+                console.error('Erreur badge panier:', e);
+            }
+        }
+
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 50) {
+                header.style.background = 'rgba(15, 23, 42, 0.95)';
+            } else {
+                header.style.background = 'rgba(15, 23, 42, 0.8)';
+            }
+        });
+    </script>
 </body>
 </html>

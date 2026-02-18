@@ -1,64 +1,811 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="brand-meta">Marque – Brandia</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/countries.css">
-  <style>body{background-color:#0b111e;color:#f3f4f6;font-family:system-ui,sans-serif;}.container{max-width:1200px;margin:auto;padding:0 1rem;}</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marque – Brandia</title>
+    <meta name="description" content="Découvrez les produits de la marque sur Brandia">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --accent: #8b5cf6;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --success: #10b981;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .btn-dashboard {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .lang-selector {
+            padding: 0.5rem 1rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--light);
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .cart-btn {
+            position: relative;
+            color: var(--light);
+            font-size: 1.3rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .cart-btn:hover {
+            color: var(--primary);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem;
+        }
+
+        /* Brand Header */
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 4rem;
+            padding: 2rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+        }
+
+        .brand-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 3px solid var(--glass-border);
+            flex-shrink: 0;
+            background: var(--dark);
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .brand-info {
+            flex: 1;
+        }
+
+        .brand-name {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--light), var(--gray));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .brand-desc {
+            color: var(--gray);
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        .brand-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        .meta-item i {
+            color: var(--primary);
+        }
+
+        /* Section Title */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .products-count {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        /* Products Grid - Horizontal Layout */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            position: relative;
+            text-decoration: none;
+            color: var(--light);
+            display: block;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+        }
+
+        .product-image {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.1);
+        }
+
+        .product-badges {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-new {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+
+        .badge-sale {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .product-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.3s ease;
+        }
+
+        .product-card:hover .product-actions {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            color: var(--dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-price {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .price-current {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .price-original {
+            font-size: 1rem;
+            color: var(--gray);
+            text-decoration: line-through;
+        }
+
+        /* About Brand Section */
+        .about-section {
+            margin-top: 6rem;
+            padding: 3rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+        }
+
+        .about-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .about-title i {
+            color: var(--primary);
+        }
+
+        .about-text {
+            color: var(--gray);
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 3rem 0;
+            text-align: center;
+            color: var(--gray);
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .products-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .brand-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .brand-meta {
+                justify-content: center;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .brand-name {
+                font-size: 1.8rem;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .brand-logo {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        /* Loader */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--darker);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--glass);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
-
-<header class="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
-  <nav class="container flex items-center justify-between px-4 py-3">
-    <a href="index.html" class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center"><i class="fas fa-store text-white text-sm"></i></div>
-      <span class="font-bold text-lg text-neutral-100">Brandia</span>
-    </a>
-    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="catalogue.html?filter=new" data-i18n="nav-new">Nouveautés</a>
-      <a href="catalogue.html?tab=brands" data-i18n="nav-brands">Marques</a>
-      <a href="offres.html" data-i18n="nav-offers">Offres</a>
-      <a href="#about" data-i18n="nav-about">À propos</a>
-      <a href="categories.html" data-i18n="nav-categories">Catégories</a>
-      <a href="login.html" data-i18n="nav-login">Connexion</a>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
     </div>
-    <div class="flex items-center space-x-3 text-sm text-neutral-300">
-      <select id="langSwitch" class="px-2 py-1 bg-neutral-800 rounded text-xs">
-        <option value="fr">🇫🇷 FR</option>
-        <option value="en">🇬🇧 EN</option>
-      </select>
-      <a href="panier.html" class="relative"><i class="fas fa-shopping-bag"></i><span class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white">0</span></a>
-    </div>
-  </nav>
-</header>
 
-<section class="py-10">
-  <div class="container">
-    <div class="flex items-center space-x-4 mb-6">
-      <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0&auto=format&fit=crop&w=200&q=80" class="h-20 w-20 rounded">
-      <div>
-        <h1 class="text-2xl font-bold text-neutral-100" data-i18n="brand-name">GlowCo</h1>
-        <p class="text-neutral-400" data-i18n="brand-desc">Marque française de soins clean.</p>
-      </div>
-    </div>
-    <h2 class="text-xl font-semibold mb-4 text-neutral-100" data-i18n="brand-products">Produits de la marque</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <a href="product.html?id=1" class="block bg-neutral-800 rounded p-3 ring-1 ring-neutral-700 hover:ring-indigo-400 transition">
-        <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0&auto=format&fit=crop&w=400&q=80" class="w-full h-32 object-cover rounded mb-2">
-        <p class="text-sm text-neutral-100 truncate" data-i18n="product-creme">Crème Anti-Âge</p>
-        <p class="font-bold text-indigo-400">38,90 €</p>
-      </a>
-    </div>
-  </div>
-</section>
+    <!-- Background -->
+    <div class="bg-animation"></div>
 
-<footer class="border-t border-neutral-800 py-6 text-center text-xs text-neutral-500" data-i18n="footer">© 2026 Brandia – Marketplace officielle des marques</footer>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="logo">
+                <i class="fas fa-store"></i>
+                BRANDIA
+            </a>
+            
+            <nav class="nav-links">
+                <a href="index.html">Accueil</a>
+                <a href="nouveautes.html">Nouveautés</a>
+                <a href="marques.html">Marques</a>
+                <a href="offres.html">Offres</a>
+                <a href="categories.html">Catégories</a>
+                <a href="supplier-dashboard.html" class="btn-dashboard" id="dashboardBtn" style="display: none;">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+            </nav>
 
-<script src="assets/js/lang.js"></script>
-<script>applyLang(localStorage.getItem("lang") || "fr");</script>
+            <div class="header-actions">
+                <select class="lang-selector" id="langSwitch">
+                    <option value="fr">🇫🇷 FR</option>
+                    <option value="en">🇬🇧 EN</option>
+                </select>
 
+                <a href="panier.html" class="cart-btn">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-count" id="cart-count" style="display: none;">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Brand Header -->
+        <div class="brand-header fade-in">
+            <div class="brand-logo">
+                <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop" alt="GlowCo">
+            </div>
+            <div class="brand-info">
+                <h1 class="brand-name">GlowCo</h1>
+                <p class="brand-desc">Marque française de soins clean et naturels. Des formulations efficaces respectueuses de votre peau et de l'environnement.</p>
+                <div class="brand-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-box-open"></i>
+                        <span>24 produits</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-star"></i>
+                        <span>4.8/5 (128 avis)</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>France</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Produits de la marque</h2>
+                <span class="products-count">24 produits disponibles</span>
+            </div>
+
+            <div class="products-grid" id="products-grid">
+                <!-- Product 1 -->
+                <a href="product.html?id=1" class="product-card fade-in">
+                    <div class="product-image">
+                        <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop" alt="Crème Anti-Âge">
+                        <div class="product-badges">
+                            <span class="badge badge-new">Nouveau</span>
+                        </div>
+                        <div class="product-actions">
+                            <button class="action-btn" onclick="event.preventDefault(); addToWishlist(1)">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            <button class="action-btn" onclick="event.preventDefault(); quickAdd(1)">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Crème Anti-Âge Premium</h3>
+                        <div class="product-price">
+                            <span class="price-current">38,90 €</span>
+                            <span class="price-original">45,90 €</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Product 2 -->
+                <a href="product.html?id=2" class="product-card fade-in" style="animation-delay: 0.1s">
+                    <div class="product-image">
+                        <img src="https://images.unsplash.com/photo-1570194065650-d99fb4b38b15?w=400&h=400&fit=crop" alt="Sérum Hydratant">
+                        <div class="product-actions">
+                            <button class="action-btn" onclick="event.preventDefault(); addToWishlist(2)">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            <button class="action-btn" onclick="event.preventDefault(); quickAdd(2)">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Sérum Hydratant Intense</h3>
+                        <div class="product-price">
+                            <span class="price-current">29,90 €</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Product 3 -->
+                <a href="product.html?id=3" class="product-card fade-in" style="animation-delay: 0.2s">
+                    <div class="product-image">
+                        <img src="https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=400&h=400&fit=crop" alt="Masque Visage">
+                        <div class="product-badges">
+                            <span class="badge badge-sale">-20%</span>
+                        </div>
+                        <div class="product-actions">
+                            <button class="action-btn" onclick="event.preventDefault(); addToWishlist(3)">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            <button class="action-btn" onclick="event.preventDefault(); quickAdd(3)">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Masque Visage Purifiant</h3>
+                        <div class="product-price">
+                            <span class="price-current">19,90 €</span>
+                            <span class="price-original">24,90 €</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Product 4 -->
+                <a href="product.html?id=4" class="product-card fade-in" style="animation-delay: 0.3s">
+                    <div class="product-image">
+                        <img src="https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&h=400&fit=crop" alt="Huile Visage">
+                        <div class="product-actions">
+                            <button class="action-btn" onclick="event.preventDefault(); addToWishlist(4)">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            <button class="action-btn" onclick="event.preventDefault(); quickAdd(4)">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Huile Visage Nourrissante</h3>
+                        <div class="product-price">
+                            <span class="price-current">42,90 €</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about-section fade-in">
+            <h2 class="about-title">
+                <i class="fas fa-info-circle"></i>
+                À propos de GlowCo
+            </h2>
+            <p class="about-text">
+                Fondée en 2020 à Paris, GlowCo s'engage à créer des soins cosmétiques d'exception 
+                en utilisant uniquement des ingrédients naturels et durables. Chaque produit est 
+                formulé sans parabènes, sulfates ni silicones, et est testé dermatologiquement. 
+                Notre mission : révéler l'éclat naturel de votre peau tout en respectant la planète.
+            </p>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            © 2026 Brandia – Marketplace officielle des marques
+        </div>
+    </footer>
+
+    <script>
+        // Loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 500);
+        });
+
+        // Check if user is supplier and show dashboard button
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const dashboardBtn = document.getElementById('dashboardBtn');
+        
+        if (currentUser && currentUser.role === 'supplier') {
+            dashboardBtn.style.display = 'flex';
+        }
+
+        // Cart functions
+        function addToWishlist(productId) {
+            console.log('Added to wishlist:', productId);
+        }
+
+        function quickAdd(productId) {
+            console.log('Quick add to cart:', productId);
+            updateCartBadge();
+        }
+
+        function updateCartBadge() {
+            try {
+                const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+                const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const badge = document.getElementById('cart-count');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count === 0 ? 'none' : 'flex';
+                }
+            } catch (e) {
+                console.error('Erreur badge panier:', e);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartBadge();
+        });
+
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 50) {
+                header.style.background = 'rgba(15, 23, 42, 0.95)';
+            } else {
+                header.style.background = 'rgba(15, 23, 42, 0.8)';
+            }
+        });
+
+        // Language switcher
+        document.getElementById('langSwitch').addEventListener('change', (e) => {
+            localStorage.setItem('lang', e.target.value);
+            console.log('Language changed to:', e.target.value);
+        });
+    </script>
 </body>
 </html>

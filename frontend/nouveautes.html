@@ -1,530 +1,1282 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nouveautés - Brandia</title>
-  <meta name="description" content="Découvrez les derniers produits ajoutés sur Brandia - La marketplace des marques officielles">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="assets/js/api.js"></script>
-  <style>
-    body { background-color: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
-    .container { max-width: 1200px; margin: auto; padding: 0 1rem; }
-    .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.3); }
-    .skeleton { background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; }
-    @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .fade-in { animation: fadeIn 0.5s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .dropdown-container { position: relative; }
-    .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 0; padding-top: 10px; z-index: 50; }
-    .dropdown-container:hover .dropdown-menu, .dropdown-menu:hover { display: block; }
-    .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; color: white; font-weight: 500; z-index: 1000; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.success { background: #10b981; }
-    .toast.error { background: #ef4444; }
-    .promo-badge { animation: pulse-red 2s infinite; }
-    @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } }
-    .new-badge { animation: pulse-emerald 2s infinite; }
-    @keyframes pulse-emerald { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouveautés - Brandia</title>
+    <meta name="description" content="Découvrez les derniers produits ajoutés sur Brandia - La marketplace des marques officielles">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --accent: #8b5cf6;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after,
+        .nav-links a.active::after {
+            width: 100%;
+        }
+
+        .dropdown-container {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 10px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            min-width: 280px;
+            z-index: 100;
+        }
+
+        .dropdown-container:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            color: var(--light);
+            text-decoration: none;
+        }
+
+        .dropdown-item:hover {
+            background: var(--glass);
+        }
+
+        .dropdown-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .btn-dashboard {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .country-selector,
+        .lang-selector {
+            padding: 0.5rem 1rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--light);
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .cart-btn {
+            position: relative;
+            color: var(--light);
+            font-size: 1.3rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .cart-btn:hover {
+            color: var(--primary);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto 1rem;
+        }
+
+        .results-info {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        /* Products Grid - Horizontal Layout */
+        .products-section {
+            margin-bottom: 4rem;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+        }
+
+        .product-image {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.1);
+        }
+
+        .product-badges {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-new {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            animation: pulse-emerald 2s infinite;
+        }
+
+        .badge-promo {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-emerald {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+
+        .product-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.3s ease;
+        }
+
+        .product-card:hover .product-actions {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            color: var(--dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-category {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--light);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .product-name:hover {
+            color: var(--primary);
+        }
+
+        .product-brand {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .product-price {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .price-current {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .price-original {
+            font-size: 1rem;
+            color: var(--gray);
+            text-decoration: line-through;
+        }
+
+        .product-date {
+            color: var(--success);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .product-footer {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .btn-add-cart {
+            flex: 1;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-add-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-view {
+            width: 44px;
+            height: 44px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-view:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Loading State */
+        .loading-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .skeleton-card {
+            background: var(--glass);
+            border-radius: 20px;
+            overflow: hidden;
+            animation: pulse 2s infinite;
+        }
+
+        .skeleton-image {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .skeleton-content {
+            padding: 1.5rem;
+        }
+
+        .skeleton-line {
+            height: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin-bottom: 0.8rem;
+        }
+
+        .skeleton-line.short {
+            width: 60%;
+        }
+
+        .skeleton-line.thin {
+            height: 12px;
+            width: 40%;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* States */
+        .state-container {
+            text-align: center;
+            padding: 4rem 2rem;
+            display: none;
+        }
+
+        .state-container.active {
+            display: block;
+        }
+
+        .state-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .state-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--light);
+        }
+
+        .state-text {
+            color: var(--gray);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-retry {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-retry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 4rem 0 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 2fr repeat(3, 1fr);
+            gap: 4rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-decoration: none;
+        }
+
+        .footer-desc {
+            color: var(--gray);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .footer-title {
+            font-weight: 700;
+            color: var(--light);
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a {
+            color: var(--gray);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .products-grid,
+            .loading-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .products-grid,
+            .loading-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-content {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .products-grid,
+            .loading-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .products-grid,
+            .loading-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loader */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--darker);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--glass);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
-
-<!-- HEADER COMPLET -->
-<header class="sticky top-0 z-50 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
-  <nav class="container flex items-center justify-between px-4 py-3">
-    <a href="index.html" class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
-        <i class="fas fa-store text-white text-sm"></i>
-      </div>
-      <span class="font-bold text-lg text-neutral-100">Brandia</span>
-    </a>
-    
-    <div class="hidden md:flex items-center space-x-6 text-sm text-neutral-300">
-      <a href="index.html" class="hover:text-white transition">Accueil</a>
-      <a href="catalogue.html" class="hover:text-white transition">Catalogue</a>
-      <a href="nouveautes.html" class="text-indigo-400 font-medium">Nouveautés</a>
-      <a href="offres.html" class="hover:text-white transition">Offres</a>
-      
-      <div class="dropdown-container">
-        <div class="dropdown-trigger hover:text-white flex items-center space-x-1 transition cursor-pointer py-2">
-          <span>Catégories</span>
-          <i class="fas fa-chevron-down text-xs"></i>
-        </div>
-        <div class="dropdown-menu w-80 bg-neutral-800 rounded-lg shadow-2xl border border-neutral-700 py-2 max-h-[70vh] overflow-y-auto">
-          <div id="dropdown-categories-list">
-            <div class="text-neutral-500 text-xs px-4 py-2">Chargement...</div>
-          </div>
-        </div>
-      </div>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
     </div>
 
-    <div class="flex items-center space-x-3">
-      <select id="countrySelector" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none min-w-[140px]">
-        <option value="">Chargement...</option>
-      </select>
+    <!-- Background -->
+    <div class="bg-animation"></div>
 
-      <select id="langSwitch" class="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-300 border border-neutral-700 focus:border-indigo-500 outline-none">
-        <option value="fr">🇫🇷 FR</option>
-        <option value="en">🇬🇧 EN</option>
-      </select>
-
-      <div id="auth-buttons" class="flex items-center space-x-2">
-        <a href="login.html" class="text-sm text-neutral-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-neutral-800 transition">Connexion</a>
-        <a href="register.html" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition">S'inscrire</a>
-      </div>
-      
-      <!-- Menu client connecté -->
-      <div id="user-menu" class="hidden items-center space-x-3">
-        <span id="user-name" class="text-sm text-neutral-300"></span>
-        <button onclick="BrandiaAPI.Auth.logout()" class="text-sm text-red-400 hover:text-red-300">Déconnexion</button>
-      </div>
-
-      <!-- Menu fournisseur connecté -->
-      <div id="supplier-menu" class="hidden items-center space-x-3">
-        <a href="supplier/dashboard.html" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg transition text-sm border border-emerald-500/30">
-          <i class="fas fa-chart-line"></i>
-          <span>Dashboard</span>
-        </a>
-        <span id="supplier-name" class="text-sm text-neutral-300"></span>
-        <button onclick="BrandiaAPI.Auth.logout()" class="text-sm text-red-400 hover:text-red-300">Déconnexion</button>
-      </div>
-
-      <a href="panier.html" class="relative">
-        <i class="fas fa-shopping-bag text-neutral-300"></i>
-        <span id="cart-count" class="absolute -top-1 -right-1 bg-indigo-500 text-xs rounded-full w-4 h-4 flex items-center justify-center text-white hidden">0</span>
-      </a>
-    </div>
-  </nav>
-</header>
-
-<!-- CONTENU PRINCIPAL -->
-<section class="py-16">
-  <div class="container px-4">
-    <div class="text-center mb-12">
-      <h1 class="text-4xl font-bold text-white mb-4">Nouveautés</h1>
-      <p class="text-neutral-400 text-lg mb-2">Découvrez nos derniers produits ajoutés</p>
-      <p class="text-sm text-neutral-500" id="results-info">Chargement...</p>
-    </div>
-    
-    <!-- Loading State -->
-    <div id="loading-state" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-      <div class="skeleton h-64 rounded-lg col-span-2 md:col-span-4 lg:col-span-6"></div>
-      <div class="skeleton h-64 rounded-lg"></div>
-      <div class="skeleton h-64 rounded-lg"></div>
-      <div class="skeleton h-64 rounded-lg"></div>
-      <div class="skeleton h-64 rounded-lg"></div>
-      <div class="skeleton h-64 rounded-lg"></div>
-      <div class="skeleton h-64 rounded-lg"></div>
-    </div>
-
-    <!-- Error State -->
-    <div id="error-state" class="hidden text-center py-16">
-      <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
-      <h3 class="text-xl font-semibold text-white mb-2">Erreur de chargement</h3>
-      <p class="text-neutral-400 mb-4">Impossible de charger les nouveautés</p>
-      <button onclick="loadNewProducts()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
-        <i class="fas fa-redo mr-2"></i>Réessayer
-      </button>
-    </div>
-
-    <!-- Empty State -->
-    <div id="empty-state" class="hidden text-center py-16">
-      <i class="fas fa-box-open text-neutral-600 text-4xl mb-4"></i>
-      <h3 class="text-xl font-semibold text-white mb-2">Aucune nouveauté</h3>
-      <p class="text-neutral-400 mb-4">Revenez plus tard pour découvrir nos nouveaux produits</p>
-      <a href="catalogue.html" class="inline-block px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
-        Voir le catalogue
-      </a>
-    </div>
-
-    <!-- Grille Produits -->
-    <div id="products-grid" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-      <!-- Injecté dynamiquement -->
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="border-t border-neutral-800 py-10 bg-neutral-900">
-  <div class="container px-4">
-    <div class="grid md:grid-cols-4 gap-8 mb-8">
-      <div>
-        <div class="flex items-center space-x-2 mb-4">
-          <div class="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center">
-            <i class="fas fa-store text-white text-xs"></i>
-          </div>
-          <span class="font-bold text-neutral-100">Brandia</span>
-        </div>
-        <p class="text-neutral-500 text-sm">La marketplace des marques officielles.</p>
-      </div>
-      <div>
-        <h4 class="font-semibold text-neutral-100 mb-3">Acheter</h4>
-        <ul class="space-y-2 text-sm text-neutral-400">
-          <li><a href="catalogue.html" class="hover:text-indigo-400 transition">Catalogue</a></li>
-          <li><a href="nouveautes.html" class="hover:text-indigo-400 transition">Nouveautés</a></li>
-          <li><a href="offres.html" class="hover:text-indigo-400 transition">Offres</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="font-semibold text-neutral-100 mb-3">Vendre</h4>
-        <ul class="space-y-2 text-sm text-neutral-400">
-          <li><a href="register.html?type=supplier" class="hover:text-indigo-400 transition">Devenir vendeur</a></li>
-          <li><a href="supplier/dashboard.html" class="hover:text-indigo-400 transition">Espace fournisseur</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="font-semibold text-neutral-100 mb-3">Aide</h4>
-        <ul class="space-y-2 text-sm text-neutral-400">
-          <li><a href="contact.html" class="hover:text-indigo-400 transition">Contact</a></li>
-          <li><a href="faq.html" class="hover:text-indigo-400 transition">FAQ</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="border-t border-neutral-800 pt-8 text-center text-neutral-500 text-sm">
-      © 2026 Brandia – Marketplace officielle des marques
-    </div>
-  </div>
-</footer>
-
-<div id="toast" class="toast"></div>
-
-<!-- SCRIPTS -->
-<script>
-// ==========================================
-// CONFIGURATION
-// ==========================================
-const BRANDIA_CATEGORIES = [
-  { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
-  { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
-  { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'from-red-500 to-pink-600' },
-  { slug: 'soins-capillaires', name: 'Soins capillaires', icon: 'fa-cut', gradient: 'from-amber-500 to-orange-600' },
-  { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', gradient: 'from-emerald-500 to-teal-600' },
-  { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', gradient: 'from-blue-500 to-cyan-600' },
-  { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', gradient: 'from-yellow-500 to-amber-600' },
-  { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', gradient: 'from-orange-500 to-red-600' },
-  { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', gradient: 'from-green-500 to-emerald-600' },
-  { slug: 'high-tech-mobile', name: 'High-tech', icon: 'fa-mobile-alt', gradient: 'from-indigo-500 to-blue-600' },
-  { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', gradient: 'from-violet-500 to-purple-600' },
-  { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', gradient: 'from-orange-500 to-red-500' }
-];
-
-const COUNTRIES = {
-  'TN': { name: 'Tunisie', currency: 'TND' },
-  'FR': { name: 'France', currency: 'EUR' },
-  'DE': { name: 'Allemagne', currency: 'EUR' },
-  'IT': { name: 'Italie', currency: 'EUR' },
-  'ES': { name: 'Espagne', currency: 'EUR' },
-  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-  'US': { name: 'États-Unis', currency: 'USD' },
-  'CA': { name: 'Canada', currency: 'CAD' },
-  'MA': { name: 'Maroc', currency: 'MAD' },
-  'DZ': { name: 'Algérie', currency: 'DZD' },
-  'BE': { name: 'Belgique', currency: 'EUR' },
-  'CH': { name: 'Suisse', currency: 'CHF' },
-  'PT': { name: 'Portugal', currency: 'EUR' },
-  'NL': { name: 'Pays-Bas', currency: 'EUR' },
-  'LU': { name: 'Luxembourg', currency: 'EUR' }
-};
-
-// ==========================================
-// UTILITAIRES
-// ==========================================
-function getFlagEmoji(countryCode) {
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map(char => 127397 + char.charCodeAt());
-  return String.fromCodePoint(...codePoints);
-}
-
-function formatPrice(price, currency = 'EUR') {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency }).format(price);
-}
-
-function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.className = `toast ${type} show`;
-  setTimeout(() => toast.classList.remove('show'), 3000);
-}
-
-function isNewProduct(createdAt) {
-  if (!createdAt) return false;
-  const productDate = new Date(createdAt);
-  const now = new Date();
-  const diffDays = Math.floor((now - productDate) / (1000 * 60 * 60 * 24));
-  return diffDays <= 7; // Considéré "nouveau" si ajouté dans les 7 derniers jours
-}
-
-// ==========================================
-// CHARGEMENT DES NOUVEAUTÉS (DYNAMIQUE)
-// ==========================================
-async function loadNewProducts() {
-  const loadingState = document.getElementById('loading-state');
-  const errorState = document.getElementById('error-state');
-  const emptyState = document.getElementById('empty-state');
-  const productsGrid = document.getElementById('products-grid');
-  const resultsInfo = document.getElementById('results-info');
-
-  // Reset states
-  loadingState.classList.remove('hidden');
-  errorState.classList.add('hidden');
-  emptyState.classList.add('hidden');
-  productsGrid.classList.add('hidden');
-
-  try {
-    // 🔥 CHARGEMENT DYNAMIQUE VIA API
-    let response;
-    
-    // Essayer d'abord avec promotions
-    try {
-      response = await BrandiaAPI.Products.getAllWithPromotions({ limit: 24, sort: 'newest' });
-    } catch (e) {
-      console.log('[Nouveautés] Fallback sans promotions');
-      response = await BrandiaAPI.Products.getAll({ limit: 24 });
-    }
-
-    console.log('[Nouveautés] API Response:', response);
-
-    if (!response.success) {
-      throw new Error(response.message || 'Erreur API');
-    }
-
-    const allProducts = response.data?.products || response.data || [];
-    
-    // 🔥 FILTRER LES VRAIES NOUVEAUTÉS (7 derniers jours)
-    // Ou si pas assez, prendre les 12 plus récents
-    let newProducts = allProducts.filter(p => isNewProduct(p.created_at));
-    
-    if (newProducts.length < 6) {
-      // Pas assez de vraies nouveautés, prendre les plus récents
-      newProducts = allProducts
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 12);
-    }
-
-    console.log(`[Nouveautés] ${newProducts.length} produits trouvés`);
-
-    if (newProducts.length === 0) {
-      loadingState.classList.add('hidden');
-      emptyState.classList.remove('hidden');
-      resultsInfo.textContent = 'Aucun produit récent';
-      return;
-    }
-
-    // Rendu
-    renderProducts(newProducts);
-    
-    // Mise à jour info
-    const newCount = newProducts.filter(p => isNewProduct(p.created_at)).length;
-    resultsInfo.textContent = `${newProducts.length} produit(s) dont ${newCount} nouveauté(s) cette semaine`;
-
-    loadingState.classList.add('hidden');
-    productsGrid.classList.remove('hidden');
-
-  } catch (error) {
-    console.error('[Nouveautés] Erreur:', error);
-    loadingState.classList.add('hidden');
-    errorState.classList.remove('hidden');
-    resultsInfo.textContent = 'Erreur de chargement';
-  }
-}
-
-function renderProducts(products) {
-  const grid = document.getElementById('products-grid');
-  
-  grid.innerHTML = products.map((p, index) => {
-    const isNew = isNewProduct(p.created_at);
-    const hasPromo = p.has_promotion || (p.final_price && p.final_price < p.price);
-    const finalPrice = parseFloat(p.final_price || p.price || 0);
-    const originalPrice = parseFloat(p.original_price || p.price || 0);
-    
-    const imageUrl = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
-    
-    // Badges
-    let badges = '';
-    if (isNew) {
-      badges += `<span class="new-badge absolute top-2 left-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">NEW</span>`;
-    }
-    if (hasPromo) {
-      const discount = Math.round(((originalPrice - finalPrice) / originalPrice) * 100);
-      badges += `<span class="promo-badge absolute ${isNew ? 'top-8' : 'top-2'} left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">-${discount}%</span>`;
-    }
-    
-    // Prix
-    const priceDisplay = hasPromo 
-      ? `<span class="text-lg font-bold text-emerald-400">${formatPrice(finalPrice)}</span>
-         <span class="text-sm text-neutral-500 line-through ml-2">${formatPrice(originalPrice)}</span>`
-      : `<span class="text-lg font-bold text-white">${formatPrice(finalPrice)}</span>`;
-
-    return `
-      <div class="product-card bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 hover:border-indigo-500 transition fade-in" style="animation-delay: ${index * 0.05}s">
-        <a href="product.html?id=${p.id}" class="block relative">
-          <div class="aspect-square overflow-hidden bg-neutral-900">
-            <img src="${imageUrl}" alt="${p.name}" 
-                 class="w-full h-full object-cover hover:scale-105 transition duration-500"
-                 onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">
-            ${badges}
-          </div>
-        </a>
-        <div class="p-3">
-          <p class="text-xs text-indigo-400 mb-1">${p.category_name || 'Catégorie'}</p>
-          <h3 class="text-sm font-medium text-white mb-1 line-clamp-2 hover:text-indigo-400 transition cursor-pointer" 
-              onclick="window.location.href='product.html?id=${p.id}'">${p.name}</h3>
-          <p class="text-xs text-neutral-500 mb-2">${p.supplier_company || p.supplier_name || 'Marque'}</p>
-          
-          <div class="flex items-center justify-between mb-3">
-            <div>${priceDisplay}</div>
-          </div>
-          
-          <div class="flex gap-2">
-            <button onclick="addToCart(${p.id})" 
-                    class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-sm transition flex items-center justify-center gap-2">
-              <i class="fas fa-cart-plus"></i>
-              <span>Ajouter</span>
-            </button>
-            <a href="product.html?id=${p.id}" 
-               class="px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded text-sm transition flex items-center justify-center">
-              <i class="fas fa-eye"></i>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="logo">
+                <i class="fas fa-store"></i>
+                BRANDIA
             </a>
-          </div>
-          
-          ${isNew ? `<p class="text-xs text-emerald-400 mt-2"><i class="fas fa-clock mr-1"></i>Ajouté ${formatDate(p.created_at)}</p>` : ''}
+            
+            <nav class="nav-links">
+                <a href="index.html">Accueil</a>
+                <a href="catalogue.html">Catalogue</a>
+                <a href="nouveautes.html" class="active">Nouveautés</a>
+                <a href="offres.html">Offres</a>
+                
+                <div class="dropdown-container">
+                    <a href="categories.html" style="display: flex; align-items: center; gap: 0.3rem;">
+                        Catégories <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                    </a>
+                    <div class="dropdown-menu" id="dropdown-categories-list">
+                        <div style="text-align: center; padding: 2rem; color: var(--gray);">
+                            <i class="fas fa-spinner fa-spin"></i> Chargement...
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="supplier-dashboard.html" class="btn-dashboard" id="dashboardBtn" style="display: none;">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+            </nav>
+
+            <div class="header-actions">
+                <select class="country-selector" id="countrySelector">
+                    <option value="">Chargement...</option>
+                </select>
+
+                <select class="lang-selector" id="langSwitch">
+                    <option value="fr">🇫🇷 FR</option>
+                    <option value="en">🇬🇧 EN</option>
+                </select>
+
+                <a href="panier.html" class="cart-btn">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-count" id="cart-count" style="display: none;">0</span>
+                </a>
+            </div>
         </div>
-      </div>
-    `;
-  }).join('');
-}
+    </header>
 
-function formatDate(dateString) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) return "aujourd'hui";
-  if (diffDays === 1) return "hier";
-  if (diffDays < 7) return `il y a ${diffDays} jours`;
-  return date.toLocaleDateString('fr-FR');
-}
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1 class="hero-title">Nos <span>Nouveautés</span></h1>
+            <p class="hero-subtitle">
+                Découvrez nos derniers produits ajoutés cette semaine
+            </p>
+            <p class="results-info" id="results-info">Chargement des produits...</p>
+        </section>
 
-// ==========================================
-// PANIER
-// ==========================================
-async function addToCart(productId) {
-  try {
-    const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
-    if (!response.success) throw new Error('Produit non trouvé');
-    
-    const product = response.data.product || response.data;
-    
-    BrandiaAPI.Cart.add({
-      id: product.id,
-      name: product.name,
-      price: parseFloat(product.final_price || product.price),
-      original_price: parseFloat(product.price),
-      has_promotion: product.has_promotion || false,
-      main_image_url: product.main_image_url,
-      quantity: 1
-    });
-    
-    showToast('Produit ajouté au panier !', 'success');
-    BrandiaAPI.Cart.updateBadge();
-    
-  } catch (error) {
-    console.error('[Nouveautés] Erreur ajout panier:', error);
-    showToast('Erreur lors de l\'ajout', 'error');
-  }
-}
+        <!-- Loading State -->
+        <div class="loading-grid" id="loading-state">
+            <div class="skeleton-card">
+                <div class="skeleton-image"></div>
+                <div class="skeleton-content">
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line thin"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-image"></div>
+                <div class="skeleton-content">
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line thin"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-image"></div>
+                <div class="skeleton-content">
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line thin"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-image"></div>
+                <div class="skeleton-content">
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line thin"></div>
+                </div>
+            </div>
+        </div>
 
-// ==========================================
-// HEADER & NAVIGATION
-// ==========================================
-function initCountrySelector() {
-  const selector = document.getElementById('countrySelector');
-  if (!selector) return;
-  
-  const savedCountry = localStorage.getItem('country') || 'FR';
-  selector.innerHTML = '';
-  
-  Object.entries(COUNTRIES)
-    .sort((a, b) => a[1].name.localeCompare(b[1].name, 'fr'))
-    .forEach(([code, country]) => {
-      const option = document.createElement('option');
-      option.value = code;
-      option.textContent = `${getFlagEmoji(code)} ${country.name}`;
-      if (code === savedCountry) option.selected = true;
-      selector.appendChild(option);
-    });
-  
-  selector.addEventListener('change', (e) => {
-    localStorage.setItem('country', e.target.value);
-    localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
-  });
-}
+        <!-- Error State -->
+        <div class="state-container" id="error-state">
+            <div class="state-icon" style="color: #ef4444;">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <h3 class="state-title">Erreur de chargement</h3>
+            <p class="state-text">Impossible de charger les nouveautés</p>
+            <button class="btn-retry" onclick="loadNewProducts()">
+                <i class="fas fa-redo"></i> Réessayer
+            </button>
+        </div>
 
-function initCategoriesDropdown() {
-  const dropdown = document.getElementById('dropdown-categories-list');
-  if (!dropdown) return;
-  
-  dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-    <a href="catalogue.html?category=${cat.slug}" class="flex items-center gap-3 px-4 py-3 text-sm text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors mx-2 mb-1">
-      <div class="w-8 h-8 bg-gradient-to-br ${cat.gradient} rounded-lg flex items-center justify-center flex-shrink-0">
-        <i class="fas ${cat.icon} text-white text-xs"></i>
-      </div>
-      <span class="font-medium truncate">${cat.name}</span>
-    </a>
-  `).join('');
-}
+        <!-- Empty State -->
+        <div class="state-container" id="empty-state">
+            <div class="state-icon" style="color: var(--gray);">
+                <i class="fas fa-box-open"></i>
+            </div>
+            <h3 class="state-title">Aucune nouveauté</h3>
+            <p class="state-text">Revenez plus tard pour découvrir nos nouveaux produits</p>
+            <a href="catalogue.html" class="btn-retry" style="text-decoration: none;">
+                Voir le catalogue
+            </a>
+        </div>
 
-function initAuth() {
-  if (typeof BrandiaAPI === 'undefined') return;
-  
-  const user = BrandiaAPI.Auth.getUser();
-  const authButtons = document.getElementById('auth-buttons');
-  const userMenu = document.getElementById('user-menu');
-  const supplierMenu = document.getElementById('supplier-menu');
-  
-  authButtons?.classList.add('hidden');
-  userMenu?.classList.add('hidden');
-  supplierMenu?.classList.add('hidden');
-  authButtons?.classList.remove('flex');
-  userMenu?.classList.remove('flex');
-  supplierMenu?.classList.remove('flex');
-  
-  if (user && user.email) {
-    if (user.role === 'supplier') {
-      supplierMenu?.classList.remove('hidden');
-      supplierMenu?.classList.add('flex');
-      const supplierName = document.getElementById('supplier-name');
-      if (supplierName) supplierName.textContent = user.first_name || user.email;
-    } else {
-      userMenu?.classList.remove('hidden');
-      userMenu?.classList.add('flex');
-      const userName = document.getElementById('user-name');
-      if (userName) userName.textContent = user.first_name || user.email;
-    }
-  } else {
-    authButtons?.classList.remove('hidden');
-    authButtons?.classList.add('flex');
-  }
-}
+        <!-- Products Grid -->
+        <div class="products-grid" id="products-grid" style="display: none;">
+            <!-- Products injected by JS -->
+        </div>
+    </main>
 
-// ==========================================
-// INITIALISATION
-// ==========================================
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('✅ Brandia Nouveautés chargé');
-  initCountrySelector();
-  initCategoriesDropdown();
-  initAuth();
-  BrandiaAPI.Cart.updateBadge();
-  await loadNewProducts();
-});
-</script>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <a href="index.html" class="footer-brand">
+                    <i class="fas fa-store"></i> BRANDIA
+                </a>
+                <p class="footer-desc">
+                    La marketplace des marques officielles. 
+                    Découvrez des produits authentiques directement auprès des créateurs.
+                </p>
+            </div>
+            <div>
+                <h4 class="footer-title">Acheter</h4>
+                <ul class="footer-links">
+                    <li><a href="catalogue.html">Catalogue</a></li>
+                    <li><a href="nouveautes.html">Nouveautés</a></li>
+                    <li><a href="offres.html">Offres</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Vendre</h4>
+                <ul class="footer-links">
+                    <li><a href="register.html?type=supplier">Devenir vendeur</a></li>
+                    <li><a href="supplier-dashboard.html">Espace fournisseur</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-title">Aide</h4>
+                <ul class="footer-links">
+                    <li><a href="contact.html">Contact</a></li>
+                    <li><a href="faq.html">FAQ</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            © 2026 Brandia – Marketplace officielle des marques
+        </div>
+    </footer>
 
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="assets/js/api.js"></script>
+    <script>
+        // Loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 500);
+        });
+
+        // Check if user is supplier and show dashboard button
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const dashboardBtn = document.getElementById('dashboardBtn');
+        
+        if (currentUser && currentUser.role === 'supplier') {
+            dashboardBtn.style.display = 'flex';
+        }
+
+        // Categories Data
+        const BRANDIA_CATEGORIES = [
+            { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques', icon: 'fa-spa', color: '#ec4899' },
+            { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: '#8b5cf6' },
+            { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', color: '#f43f5e' },
+            { slug: 'soins-capillaires', name: 'Soins capillaires', icon: 'fa-cut', color: '#f59e0b' },
+            { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', color: '#10b981' },
+            { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', color: '#3b82f6' },
+            { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', color: '#eab308' },
+            { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', color: '#f97316' }
+        ];
+
+        // Countries Data
+        const COUNTRIES = {
+            'FR': { name: 'France', currency: 'EUR', flag: '🇫🇷' },
+            'BE': { name: 'Belgique', currency: 'EUR', flag: '🇧🇪' },
+            'CH': { name: 'Suisse', currency: 'CHF', flag: '🇨🇭' },
+            'CA': { name: 'Canada', currency: 'CAD', flag: '🇨🇦' },
+            'DE': { name: 'Allemagne', currency: 'EUR', flag: '🇩🇪' },
+            'IT': { name: 'Italie', currency: 'EUR', flag: '🇮🇹' },
+            'ES': { name: 'Espagne', currency: 'EUR', flag: '🇪🇸' },
+            'US': { name: 'États-Unis', currency: 'USD', flag: '🇺🇸' }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initCountrySelector();
+            initCategoriesDropdown();
+            loadNewProducts();
+            updateCartBadge();
+        });
+
+        function initCountrySelector() {
+            const selector = document.getElementById('countrySelector');
+            const savedCountry = localStorage.getItem('country') || 'FR';
+            
+            selector.innerHTML = Object.entries(COUNTRIES)
+                .sort((a, b) => a[1].name.localeCompare(b[1].name, 'fr'))
+                .map(([code, country]) => `
+                    <option value="${code}" ${code === savedCountry ? 'selected' : ''}>
+                        ${country.flag} ${country.name}
+                    </option>
+                `).join('');
+            
+            selector.addEventListener('change', (e) => {
+                localStorage.setItem('country', e.target.value);
+                localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
+            });
+        }
+
+        function initCategoriesDropdown() {
+            const dropdown = document.getElementById('dropdown-categories-list');
+            dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
+                <a href="catalogue.html?category=${cat.slug}" class="dropdown-item">
+                    <div class="dropdown-icon" style="background: ${cat.color}">
+                        <i class="fas ${cat.icon}"></i>
+                    </div>
+                    <span>${cat.name}</span>
+                </a>
+            `).join('');
+        }
+
+        function isNewProduct(createdAt) {
+            if (!createdAt) return false;
+            const productDate = new Date(createdAt);
+            const now = new Date();
+            const diffDays = Math.floor((now - productDate) / (1000 * 60 * 60 * 24));
+            return diffDays <= 7;
+        }
+
+        function formatPrice(price, currency = 'EUR') {
+            return new Intl.NumberFormat('fr-FR', { 
+                style: 'currency', 
+                currency: currency 
+            }).format(price);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return "aujourd'hui";
+            if (diffDays === 1) return "hier";
+            if (diffDays < 7) return `il y a ${diffDays} jours`;
+            return date.toLocaleDateString('fr-FR');
+        }
+
+        async function loadNewProducts() {
+            const loadingState = document.getElementById('loading-state');
+            const errorState = document.getElementById('error-state');
+            const emptyState = document.getElementById('empty-state');
+            const productsGrid = document.getElementById('products-grid');
+            const resultsInfo = document.getElementById('results-info');
+
+            // Reset states
+            loadingState.style.display = 'grid';
+            errorState.classList.remove('active');
+            emptyState.classList.remove('active');
+            productsGrid.style.display = 'none';
+
+            try {
+                // Simuler un appel API (remplacer par votre vraie API)
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Données de démonstration
+                const demoProducts = [
+                    {
+                        id: 1,
+                        name: 'Casque Sans Fil Premium X-200',
+                        category_name: 'Audio',
+                        supplier_company: 'Tech Future',
+                        price: 299,
+                        final_price: 199,
+                        has_promotion: true,
+                        created_at: new Date(Date.now() - 86400000).toISOString(),
+                        main_image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'
+                    },
+                    {
+                        id: 2,
+                        name: 'Sérum Anti-Âge Luxe Beauty',
+                        category_name: 'Cosmétiques',
+                        supplier_company: 'Luxe Beauty',
+                        price: 89,
+                        final_price: 89,
+                        has_promotion: false,
+                        created_at: new Date(Date.now() - 172800000).toISOString(),
+                        main_image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&h=400&fit=crop'
+                    },
+                    {
+                        id: 3,
+                        name: 'Montre Connectée Pro',
+                        category_name: 'Montres',
+                        supplier_company: 'Time Master',
+                        price: 249,
+                        final_price: 199,
+                        has_promotion: true,
+                        created_at: new Date(Date.now() - 259200000).toISOString(),
+                        main_image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop'
+                    },
+                    {
+                        id: 4,
+                        name: 'Sac en Cuir Milano',
+                        category_name: 'Mode',
+                        supplier_company: 'Milano Leather',
+                        price: 189,
+                        final_price: 189,
+                        has_promotion: false,
+                        created_at: new Date().toISOString(),
+                        main_image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&h=400&fit=crop'
+                    }
+                ];
+
+                const newProducts = demoProducts.filter(p => isNewProduct(p.created_at));
+                
+                if (newProducts.length === 0) {
+                    loadingState.style.display = 'none';
+                    emptyState.classList.add('active');
+                    resultsInfo.textContent = 'Aucun produit récent';
+                    return;
+                }
+
+                renderProducts(newProducts);
+                
+                const newCount = newProducts.filter(p => isNewProduct(p.created_at)).length;
+                resultsInfo.textContent = `${newProducts.length} produit(s) dont ${newCount} nouveauté(s) cette semaine`;
+
+                loadingState.style.display = 'none';
+                productsGrid.style.display = 'grid';
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                loadingState.style.display = 'none';
+                errorState.classList.add('active');
+                resultsInfo.textContent = 'Erreur de chargement';
+            }
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('products-grid');
+            
+            const html = products.map((p, index) => {
+                const isNew = isNewProduct(p.created_at);
+                const hasPromo = p.has_promotion && p.final_price < p.price;
+                const discount = hasPromo ? Math.round(((p.price - p.final_price) / p.price) * 100) : 0;
+                
+                return `
+                    <div class="product-card fade-in" style="animation-delay: ${index * 0.1}s">
+                        <div class="product-image">
+                            <img src="${p.main_image_url}" alt="${p.name}" loading="lazy">
+                            <div class="product-badges">
+                                ${isNew ? '<span class="badge badge-new">New</span>' : ''}
+                                ${hasPromo ? `<span class="badge badge-promo">-${discount}%</span>` : ''}
+                            </div>
+                            <div class="product-actions">
+                                <button class="action-btn" onclick="addToWishlist(${p.id})">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="action-btn" onclick="quickView(${p.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="product-info">
+                            <div class="product-category">${p.category_name}</div>
+                            <h3 class="product-name" onclick="window.location.href='product.html?id=${p.id}'">${p.name}</h3>
+                            <p class="product-brand">${p.supplier_company}</p>
+                            <div class="product-price">
+                                <span class="price-current">${formatPrice(p.final_price)}</span>
+                                ${hasPromo ? `<span class="price-original">${formatPrice(p.price)}</span>` : ''}
+                            </div>
+                            ${isNew ? `
+                                <div class="product-date">
+                                    <i class="fas fa-clock"></i>
+                                    Ajouté ${formatDate(p.created_at)}
+                                </div>
+                            ` : ''}
+                            <div class="product-footer">
+                                <button class="btn-add-cart" onclick="addToCart(${p.id})">
+                                    <i class="fas fa-cart-plus"></i>
+                                    Ajouter
+                                </button>
+                                <a href="product.html?id=${p.id}" class="btn-view">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            grid.innerHTML = html;
+        }
+
+        function addToCart(productId) {
+            showToast('Produit ajouté au panier !', 'success');
+            updateCartBadge();
+        }
+
+        function addToWishlist(productId) {
+            showToast('Ajouté aux favoris !', 'success');
+        }
+
+        function quickView(productId) {
+            window.location.href = `product.html?id=${productId}`;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                ${message}
+            `;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function updateCartBadge() {
+            try {
+                const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+                const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const badge = document.getElementById('cart-count');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count === 0 ? 'none' : 'flex';
+                }
+            } catch (e) {
+                console.error('Erreur badge panier:', e);
+            }
+        }
+
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 50) {
+                header.style.background = 'rgba(15, 23, 42, 0.95)';
+            } else {
+                header.style.background = 'rgba(15, 23, 42, 0.8)';
+            }
+        });
+    </script>
 </body>
 </html>
