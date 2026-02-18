@@ -1,399 +1,41 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connexion - Brandia</title>
-  <meta name="description" content="Connectez-vous à votre compte Brandia - Marketplace des marques">
   
-  <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-  
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Font Awesome (CDN jsDelivr - plus fiable) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
   
-  <!-- Tailwind CSS (CDN jsDelivr - plus fiable) -->
-  <script src="https://cdn.jsdelivr.net/npm/tailwindcss-cdn@3.4.1/tailwindcss.js"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brandia: {
-              primary: '#6366f1',
-              secondary: '#8b5cf6',
-              accent: '#ec4899',
-              dark: '#0f172a',
-              darker: '#020617',
-              card: '#1e293b',
-              border: '#334155',
-              text: '#f8fafc',
-              muted: '#94a3b8',
-              success: '#10b981',
-              warning: '#f59e0b',
-              danger: '#ef4444',
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  
-  <!-- Styles critiques inline -->
   <style>
-    /* ========== VARIABLES & RESET ========== */
-    :root {
-      --brandia-primary: #6366f1;
-      --brandia-primary-hover: #4f46e5;
-      --brandia-secondary: #8b5cf6;
-      --brandia-accent: #ec4899;
-      --brandia-dark: #0f172a;
-      --brandia-darker: #020617;
-      --brandia-card: #1e293b;
-      --brandia-card-hover: #334155;
-      --brandia-border: #334155;
-      --brandia-text: #f8fafc;
-      --brandia-text-muted: #94a3b8;
-      --brandia-success: #10b981;
-      --brandia-warning: #f59e0b;
-      --brandia-danger: #ef4444;
-      --brandia-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      background: var(--brandia-dark);
+      background: #0f172a;
       min-height: 100vh;
-      color: var(--brandia-text);
-      line-height: 1.6;
+      color: #f8fafc;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 1rem;
     }
 
-    /* ========== BACKGROUND EFFECTS ========== */
-    .bg-gradient-mesh {
+    .bg {
       position: fixed;
       inset: 0;
-      background: 
-        radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
-        var(--brandia-dark);
+      background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                  #0f172a;
       z-index: -1;
     }
 
-    .bg-grid {
-      position: fixed;
-      inset: 0;
-      background-image: 
-        linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
-      background-size: 50px 50px;
-      z-index: -1;
-    }
-
-    /* ========== CONTAINER CENTRÉ ========== */
-    .login-container {
+    .container {
       width: 100%;
-      max-width: 420px;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ========== GLASS CARD ========== */
-    .glass {
-      background: rgba(30, 41, 59, 0.9);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--brandia-border);
-      border-radius: 20px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-
-    /* ========== LOGO BRANDIA COMPACT ========== */
-    @keyframes brandia-shimmer {
-      0% { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-
-    @keyframes brandia-pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 0.4; }
-      100% { transform: scale(0.95); opacity: 0.8; }
-    }
-
-    @keyframes brandia-shine {
-      0% { left: -100%; }
-      100% { left: 200%; }
-    }
-
-    .brandia-logo {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      margin-bottom: 1.5rem;
-    }
-
-    .brandia-icon-wrap {
-      position: relative;
-      width: 64px;
-      height: 64px;
-    }
-
-    .brandia-pulse {
-      position: absolute;
-      inset: -6px;
-      border-radius: 24px;
-      border: 1px solid #e879f9;
-      opacity: 0.3;
-      animation: brandia-pulse-ring 3s ease-in-out infinite;
-    }
-
-    .brandia-pulse:nth-child(2) {
-      inset: -12px;
-      border-radius: 30px;
-      animation-delay: 0.5s;
-    }
-
-    .brandia-icon-bg {
-      width: 64px;
-      height: 64px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #a855f7 0%, #e879f9 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 24px -6px rgba(168, 85, 247, 0.5);
-      transform: rotate(6deg);
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .brandia-icon-bg::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    }
-
-    .brandia-logo:hover .brandia-icon-bg {
-      transform: rotate(0deg) scale(1.05);
-      box-shadow: 0 12px 32px -8px rgba(168, 85, 247, 0.6);
-    }
-
-    .brandia-logo:hover .brandia-icon-bg::after {
-      animation: brandia-shine 0.6s ease;
-    }
-
-    .brandia-icon-svg {
-      width: 36px;
-      height: 36px;
-      display: block;
-    }
-
-    .brandia-text {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2rem;
-      font-weight: 800;
-      background: linear-gradient(90deg, #ffffff 0%, #e879f9 25%, #ffffff 50%, #e879f9 75%, #ffffff 100%);
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: brandia-shimmer 4s linear infinite;
-      letter-spacing: -0.02em;
-      line-height: 1;
-    }
-
-    .brandia-tagline {
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 500;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: #c084fc;
-    }
-
-    /* ========== FORM STYLES ========== */
-    .input-field {
-      background: var(--brandia-darker);
-      border: 1px solid var(--brandia-border);
-      border-radius: 10px;
-      padding: 0.75rem 1rem 0.75rem 2.5rem;
-      color: var(--brandia-text);
-      font-size: 0.9375rem;
-      width: 100%;
-      transition: all 0.2s;
-    }
-
-    .input-field:focus {
-      border-color: var(--brandia-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-      outline: none;
-    }
-
-    .input-field::placeholder {
-      color: var(--brandia-text-muted);
-    }
-
-    .input-icon {
-      position: absolute;
-      left: 0.875rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      transition: color 0.2s;
-    }
-
-    .input-field:focus + .input-icon,
-    .input-wrapper:focus-within .input-icon {
-      color: var(--brandia-primary);
-    }
-
-    .input-wrapper {
-      position: relative;
-    }
-
-    .btn-primary {
-      background: var(--brandia-gradient);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 0.75rem 1.5rem;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      width: 100%;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* ========== TABS ========== */
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid var(--brandia-border);
-      margin-bottom: 1.25rem;
-    }
-
-    .tab {
-      flex: 1;
-      padding: 0.875rem;
-      background: none;
-      border: none;
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-    }
-
-    .tab:hover {
-      color: var(--brandia-text);
-    }
-
-    .tab.active {
-      color: var(--brandia-primary);
-      border-bottom-color: var(--brandia-primary);
-    }
-
-    /* ========== CHECKBOX ========== */
-    .checkbox-custom {
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      border: 2px solid var(--brandia-border);
-      border-radius: 4px;
-      background: var(--brandia-darker);
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s;
-    }
-
-    .checkbox-custom:checked {
-      background: var(--brandia-primary);
-      border-color: var(--brandia-primary);
-    }
-
-    .checkbox-custom:checked::after {
-      content: '✓';
-      position: absolute;
-      color: white;
-      font-size: 10px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    /* ========== MESSAGES ========== */
-    .message {
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      text-align: center;
-      margin-top: 1rem;
-    }
-
-    .message-error {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      color: #f87171;
-    }
-
-    .message-success {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      color: #34d399;
-    }
-
-    /* ========== ANIMATIONS ========== */
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-
-    .shake {
-      animation: shake 0.5s ease-in-out;
+      max-width: 400px;
+      animation: fadeIn 0.5s ease-out;
     }
 
     @keyframes fadeIn {
@@ -401,58 +43,217 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .fade-in {
-      animation: fadeIn 0.5s ease-out;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .fa-spin {
-      animation: spin 1s linear infinite;
-    }
-
-    /* ========== ALREADY CONNECTED CARD ========== */
-    .connected-card {
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 16px;
-      padding: 1.25rem;
+    .logo {
+      text-align: center;
       margin-bottom: 1.5rem;
     }
 
-    .connected-icon {
-      width: 40px;
-      height: 40px;
-      background: rgba(99, 102, 241, 0.2);
-      border-radius: 50%;
+    .logo-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #a855f7 0%, #e879f9 100%);
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--brandia-primary);
-      font-size: 1rem;
-      flex-shrink: 0;
+      margin: 0 auto 0.75rem;
+      box-shadow: 0 8px 24px -6px rgba(168, 85, 247, 0.5);
     }
 
-    /* ========== TEST ACCOUNTS ========== */
+    .logo h1 {
+      font-size: 1.875rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #fff 0%, #e879f9 50%, #fff 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .logo p {
+      color: #c084fc;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.25rem;
+    }
+
+    .card {
+      background: rgba(30, 41, 59, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #334155;
+      margin-bottom: 1.25rem;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 0.75rem;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+
+    .tab.active { color: #6366f1; border-bottom-color: #6366f1; }
+
+    .form-group { margin-bottom: 1rem; }
+    
+    .form-label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 0.375rem;
+    }
+
+    .input-wrap { position: relative; }
+    
+    .input-icon {
+      position: absolute;
+      left: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 0.875rem;
+    }
+
+    .form-input {
+      width: 100%;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      color: #f8fafc;
+      font-size: 0.9375rem;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      outline: none;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      font-size: 0.8125rem;
+    }
+
+    .checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    .link {
+      color: #6366f1;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .btn {
+      width: 100%;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0.875rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert {
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
     .test-accounts {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
+      background: #1e293b;
+      border: 1px solid #334155;
       border-radius: 12px;
       padding: 1rem;
       margin-top: 1.25rem;
     }
 
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
     .test-btn {
-      background: var(--brandia-darker);
-      border: 1px solid var(--brandia-border);
+      background: #020617;
+      border: 1px solid #334155;
       border-radius: 8px;
       padding: 0.5rem;
       font-size: 0.75rem;
-      color: var(--brandia-text-muted);
+      color: #94a3b8;
       cursor: pointer;
-      transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -461,401 +262,204 @@
 
     .test-btn:hover {
       background: rgba(99, 102, 241, 0.1);
-      border-color: var(--brandia-primary);
-      color: var(--brandia-primary);
+      border-color: #6366f1;
+      color: #6366f1;
     }
 
-    /* ========== UTILITAIRES ========== */
-    .hidden {
-      display: none !important;
+    .back-link {
+      text-align: center;
+      margin-top: 1.25rem;
     }
 
-    /* ========== RESPONSIVE ========== */
-    @media (max-width: 480px) {
-      .login-container {
-        max-width: 100%;
-      }
-      
-      .glass {
-        padding: 1.5rem;
-      }
-      
-      .brandia-text {
-        font-size: 1.75rem;
-      }
+    .back-link a {
+      color: #94a3b8;
+      font-size: 0.8125rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
     }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-
-  <!-- Background Effects -->
-  <div class="bg-gradient-mesh"></div>
-  <div class="bg-grid"></div>
-
-  <div class="login-container fade-in">
-    
-    <!-- Logo -->
-    <a href="index.html" class="brandia-logo">
-      <div class="brandia-icon-wrap">
-        <div class="brandia-pulse"></div>
-        <div class="brandia-pulse"></div>
-        <div class="brandia-icon-bg">
-          <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
-                  stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
-                  stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
-            <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
-            <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
-          </svg>
-        </div>
+  <div class="bg"></div>
+  
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="36" height="36" viewBox="0 0 56 56" fill="none">
+          <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M24 26H30C32.5 26 34 27.5 34 30C34 32.5 32.5 34 30 34H24V26Z" fill="white"/>
+          <path d="M24 34H31C33.5 34 35 35.5 35 38C35 40.5 33.5 42 31 42H24V34Z" fill="white"/>
+          <rect x="22" y="24" width="4" height="20" rx="1" fill="white"/>
+        </svg>
       </div>
-      <span class="brandia-text">Brandia</span>
-      <span class="brandia-tagline">Connexion</span>
-    </a>
+      <h1>Brandia</h1>
+      <p>Connexion</p>
+    </div>
 
-    <!-- ALREADY CONNECTED NOTIFICATION -->
-    <div id="already-connected" class="connected-card hidden">
-      <div style="display: flex; align-items: flex-start; gap: 0.875rem;">
-        <div class="connected-icon">
-          <i class="fas fa-user-check"></i>
-        </div>
-        <div style="flex: 1;">
-          <h3 style="font-weight: 600; color: var(--brandia-text); margin-bottom: 0.25rem; font-size: 0.9375rem;">Déjà connecté</h3>
-          <p style="font-size: 0.8125rem; color: var(--brandia-text-muted); margin-bottom: 0.875rem;">
-            Vous êtes connecté en tant que <span id="connected-user-name" style="color: var(--brandia-primary); font-weight: 500;"></span>
-          </p>
-          <div style="display: flex; gap: 0.625rem;">
-            <a href="#" id="btn-continue" style="flex: 1; padding: 0.5rem 0.875rem; background: var(--brandia-primary); color: white; border-radius: 8px; font-size: 0.8125rem; text-align: center; text-decoration: none; transition: all 0.2s;">
-              Continuer
-            </a>
-            <button onclick="logoutAndShowLogin()" style="padding: 0.5rem 0.875rem; border: 1px solid var(--brandia-border); background: transparent; color: var(--brandia-text-muted); border-radius: 8px; font-size: 0.8125rem; cursor: pointer; transition: all 0.2s;">
-              Changer
-            </button>
-          </div>
-        </div>
+    <div id="connected-banner" class="card hidden" style="margin-bottom: 1rem; text-align: center;">
+      <div style="color: #6366f1; font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-user-check"></i></div>
+      <div style="font-weight: 600; margin-bottom: 0.25rem;">Déjà connecté</div>
+      <div id="connected-email" style="font-size: 0.875rem; color: #94a3b8; margin-bottom: 1rem;"></div>
+      <div style="display: flex; gap: 0.5rem;">
+        <a id="continue-btn" href="#" class="btn" style="flex: 1; padding: 0.5rem; font-size: 0.875rem;">Continuer</a>
+        <button onclick="logout()" style="flex: 1; padding: 0.5rem; border: 1px solid #334155; background: transparent; color: #94a3b8; border-radius: 8px; cursor: pointer;">Changer</button>
       </div>
     </div>
 
-    <!-- Login Form Card -->
-    <div id="login-card" class="glass p-6">
-      
-      <!-- Tabs -->
+    <div id="login-card" class="card">
       <div class="tabs">
         <button type="button" onclick="switchTab('client')" id="tab-client" class="tab active">
-          <i class="fas fa-user"></i>Client
+          <i class="fas fa-user" style="margin-right: 0.375rem;"></i>Client
         </button>
         <button type="button" onclick="switchTab('supplier')" id="tab-supplier" class="tab">
-          <i class="fas fa-store"></i>Fournisseur
+          <i class="fas fa-store" style="margin-right: 0.375rem;"></i>Fournisseur
         </button>
       </div>
 
-      <!-- Formulaire -->
       <form id="login-form" onsubmit="handleLogin(event)">
         <input type="hidden" id="user-type" value="client">
         
-        <!-- Email -->
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.8125rem; font-weight: 500; color: var(--brandia-text-muted); margin-bottom: 0.375rem;">
-            Adresse email
-          </label>
-          <div class="input-wrapper">
+        <div class="form-group">
+          <label class="form-label">Adresse email</label>
+          <div class="input-wrap">
             <i class="fas fa-envelope input-icon"></i>
-            <input 
-              type="email" 
-              id="email" 
-              required
-              class="input-field"
-              placeholder="vous@exemple.com"
-              autocomplete="email"
-            >
+            <input type="email" id="email" class="form-input" placeholder="vous@exemple.com" required>
           </div>
         </div>
 
-        <!-- Password -->
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.8125rem; font-weight: 500; color: var(--brandia-text-muted); margin-bottom: 0.375rem;">
-            Mot de passe
-          </label>
-          <div class="input-wrapper">
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <div class="input-wrap">
             <i class="fas fa-lock input-icon"></i>
-            <input 
-              type="password" 
-              id="password" 
-              required
-              class="input-field"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              style="padding-right: 2.5rem;"
-            >
-            <button 
-              type="button" 
-              onclick="togglePassword()"
-              style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--brandia-text-muted); cursor: pointer; padding: 0.25rem;"
-            >
+            <input type="password" id="password" class="form-input" placeholder="••••••••" required style="padding-right: 2.5rem;">
+            <button type="button" onclick="togglePassword()" class="password-toggle">
               <i class="fas fa-eye" id="eye-icon"></i>
             </button>
           </div>
         </div>
 
-        <!-- Options -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; font-size: 0.8125rem;">
-          <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--brandia-text-muted); cursor: pointer;">
-            <input type="checkbox" id="remember-me" class="checkbox-custom">
+        <div class="form-options">
+          <label class="checkbox-wrap">
+            <input type="checkbox" id="remember-me">
             <span>Se souvenir de moi</span>
           </label>
-          <a href="#" onclick="showForgotPassword()" style="color: var(--brandia-primary); text-decoration: none;">
-            Mot de passe oublié ?
-          </a>
+          <a href="#" onclick="alert('Contactez support@brandia.company')" class="link">Mot de passe oublié ?</a>
         </div>
 
-        <!-- Submit Button -->
-        <button type="submit" id="submit-btn" class="btn-primary">
+        <button type="submit" id="submit-btn" class="btn">
           <span id="btn-text">Se connecter</span>
           <i class="fas fa-arrow-right" id="btn-icon"></i>
         </button>
       </form>
 
-      <!-- Register Link -->
-      <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--brandia-border); text-align: center;">
-        <p style="font-size: 0.8125rem; color: var(--brandia-text-muted);">
-          Pas encore de compte ? 
-          <a href="register.html" style="color: var(--brandia-primary); font-weight: 500; text-decoration: none;">
-            S'inscrire
-          </a>
-        </p>
+      <div style="text-align: center; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #334155; font-size: 0.8125rem; color: #94a3b8;">
+        Pas encore de compte ? <a href="register.html" class="link">S'inscrire</a>
       </div>
 
-      <!-- Messages -->
-      <div id="error-message" class="message message-error hidden"></div>
-      <div id="success-message" class="message message-success hidden"></div>
+      <div id="error-msg" class="alert alert-error hidden"></div>
+      <div id="success-msg" class="alert alert-success hidden"></div>
     </div>
 
-    <!-- Back to Home -->
-    <div style="text-align: center; margin-top: 1.25rem;">
-      <a href="index.html" style="color: var(--brandia-text-muted); font-size: 0.8125rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-        <i class="fas fa-arrow-left"></i>Retour à l'accueil
-      </a>
-    </div>
-
-    <!-- Test Accounts -->
     <div class="test-accounts">
-      <p style="font-size: 0.6875rem; color: var(--brandia-text-muted); text-align: center; margin-bottom: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em;">
-        Comptes de test rapide
-      </p>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-        <button type="button" onclick="fillTestAccount('client')" class="test-btn">
+      <div style="font-size: 0.6875rem; color: #94a3b8; text-align: center; margin-bottom: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em;">Comptes de test rapide</div>
+      <div class="test-grid">
+        <button type="button" onclick="fillTest('client')" class="test-btn">
           <i class="fas fa-user"></i>Client Test
         </button>
-        <button type="button" onclick="fillTestAccount('supplier')" class="test-btn">
+        <button type="button" onclick="fillTest('supplier')" class="test-btn">
           <i class="fas fa-store"></i>Fournisseur Test
         </button>
       </div>
     </div>
+
+    <div class="back-link">
+      <a href="index.html"><i class="fas fa-arrow-left"></i> Retour à l'accueil</a>
+    </div>
   </div>
 
-  <!-- Scripts -->
   <script src="assets/js/api.js"></script>
-  
   <script>
-    // ==========================================
-    // CONFIGURATION
-    // ==========================================
-    const API_URL = window.location.hostname === 'localhost' 
-      ? 'http://localhost:4000' 
-      : 'https://brandia-1.onrender.com';
-
-    // Fallback API si api.js non chargé
-    const BrandiaAPI = window.BrandiaAPI || {
+    const API = window.BrandiaAPI || {
       Auth: {
-        isLoggedIn: () => {
-          const token = localStorage.getItem('brandia_token') || localStorage.getItem('token');
-          return !!token;
-        },
-        getUser: () => {
-          try { 
-            return JSON.parse(localStorage.getItem('brandia_user') || localStorage.getItem('user')); 
-          } catch(e) { 
-            return null; 
-          }
-        },
+        isLoggedIn: () => !!localStorage.getItem('token'),
+        getUser: () => { try { return JSON.parse(localStorage.getItem('user')); } catch(e) { return null; } },
         login: async (email, password) => {
-          const response = await fetch(`${API_URL}/api/auth/login`, {
+          const base = window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://brandia-1.onrender.com';
+          const res = await fetch(`${base}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
           });
-          return await response.json();
+          return await res.json();
         },
-        logout: () => {
-          localStorage.removeItem('brandia_token');
-          localStorage.removeItem('token');
-          localStorage.removeItem('brandia_user');
-          localStorage.removeItem('user');
-          localStorage.removeItem('brandia_refresh_token');
-          localStorage.removeItem('refreshToken');
-        }
+        logout: () => { localStorage.removeItem('token'); localStorage.removeItem('user'); }
       }
     };
 
-    // ==========================================
-    // INITIALISATION
-    // ==========================================
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('[Login] Initialisation...');
+    function checkConnected() {
+      if (!API.Auth.isLoggedIn()) return false;
+      const user = API.Auth.getUser();
+      if (!user) { API.Auth.logout(); return false; }
       
-      if (checkAlreadyConnected()) {
-        return;
-      }
-      
-      document.getElementById('login-card').classList.remove('hidden');
-      document.getElementById('already-connected').classList.add('hidden');
-      document.getElementById('email').focus();
-    });
-
-    // ==========================================
-    // GESTION DÉJÀ CONNECTÉ
-    // ==========================================
-    function checkAlreadyConnected() {
-      if (!BrandiaAPI.Auth.isLoggedIn()) {
-        return false;
-      }
-      
-      const user = BrandiaAPI.Auth.getUser();
-      if (!user) {
-        BrandiaAPI.Auth.logout();
-        return false;
-      }
-      
-      document.getElementById('already-connected').classList.remove('hidden');
+      document.getElementById('connected-banner').classList.remove('hidden');
       document.getElementById('login-card').classList.add('hidden');
+      document.getElementById('connected-email').textContent = user.email;
       
-      const userName = `${user.first_name || ''} ${user.last_name || ''} (${user.email})`.trim() || 'Utilisateur';
-      document.getElementById('connected-user-name').textContent = userName;
-      
-      const continueBtn = document.getElementById('btn-continue');
-      const role = user.role || 'client';
-      
-      if (role === 'supplier') {
-        continueBtn.href = 'supplier/dashboard.html';
-        continueBtn.textContent = 'Espace Fournisseur';
-      } else if (role === 'admin') {
-        continueBtn.href = 'admin/dashboard.html';
-        continueBtn.textContent = 'Espace Admin';
-      } else {
-        continueBtn.href = 'index.html';
-        continueBtn.textContent = 'Continuer mes achats';
-      }
-      
+      const btn = document.getElementById('continue-btn');
+      btn.href = user.role === 'supplier' ? 'supplier/dashboard.html' : 'index.html';
+      btn.textContent = user.role === 'supplier' ? 'Espace Fournisseur' : 'Continuer';
       return true;
     }
 
-    function logoutAndShowLogin() {
-      BrandiaAPI.Auth.logout();
-      document.getElementById('already-connected').classList.add('hidden');
-      document.getElementById('login-card').classList.remove('hidden');
-      showSuccess('Déconnecté avec succès');
-      document.getElementById('email').focus();
+    function logout() {
+      API.Auth.logout();
+      location.reload();
     }
 
-    // ==========================================
-    // TABS
-    // ==========================================
     function switchTab(type) {
       document.getElementById('user-type').value = type;
-      
-      document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-      });
-      
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.getElementById('tab-' + type).classList.add('active');
-      
-      const emailInput = document.getElementById('email');
-      if (type === 'supplier') {
-        emailInput.placeholder = 'fournisseur@votremarque.com';
-      } else {
-        emailInput.placeholder = 'vous@exemple.com';
-      }
-      
-      hideMessages();
+      document.getElementById('email').placeholder = type === 'supplier' ? 'fournisseur@marque.com' : 'vous@exemple.com';
     }
 
-    // ==========================================
-    // PASSWORD VISIBILITY
-    // ==========================================
     function togglePassword() {
       const input = document.getElementById('password');
       const icon = document.getElementById('eye-icon');
-      
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-      }
+      input.type = input.type === 'password' ? 'text' : 'password';
+      icon.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
     }
 
-    // ==========================================
-    // TEST ACCOUNTS
-    // ==========================================
-    function fillTestAccount(type) {
+    function fillTest(type) {
       switchTab(type);
-      
-      if (type === 'client') {
-        document.getElementById('email').value = 'test@brandia.com';
-        document.getElementById('password').value = 'Test1234!';
-      } else {
-        document.getElementById('email').value = 'supplier@brandia.com';
-        document.getElementById('password').value = 'Supplier123!';
-      }
-      
-      hideMessages();
+      document.getElementById('email').value = type === 'client' ? 'test@brandia.com' : 'supplier@brandia.com';
+      document.getElementById('password').value = type === 'client' ? 'Test1234!' : 'Supplier123!';
     }
 
-    // ==========================================
-    // MESSAGES
-    // ==========================================
     function showError(msg) {
-      const el = document.getElementById('error-message');
-      el.textContent = msg;
-      el.classList.remove('hidden');
-      document.getElementById('success-message').classList.add('hidden');
-      
-      const card = document.getElementById('login-card');
-      card.classList.add('shake');
-      setTimeout(() => card.classList.remove('shake'), 500);
+      document.getElementById('error-msg').textContent = msg;
+      document.getElementById('error-msg').classList.remove('hidden');
+      document.getElementById('success-msg').classList.add('hidden');
     }
 
     function showSuccess(msg) {
-      const el = document.getElementById('success-message');
-      el.textContent = msg;
-      el.classList.remove('hidden');
-      document.getElementById('error-message').classList.add('hidden');
+      document.getElementById('success-msg').textContent = msg;
+      document.getElementById('success-msg').classList.remove('hidden');
+      document.getElementById('error-msg').classList.add('hidden');
     }
 
-    function hideMessages() {
-      document.getElementById('error-message').classList.add('hidden');
-      document.getElementById('success-message').classList.add('hidden');
-    }
-
-    function showForgotPassword() {
-      showError('Contactez le support à support@brandia.company pour réinitialiser votre mot de passe');
-    }
-
-    // ==========================================
-    // LOGIN PRINCIPAL
-    // ==========================================
     async function handleLogin(e) {
       e.preventDefault();
-      hideMessages();
+      document.getElementById('error-msg').classList.add('hidden');
       
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const submitBtn = document.getElementById('submit-btn');
+      const btn = document.getElementById('submit-btn');
       const btnText = document.getElementById('btn-text');
       const btnIcon = document.getElementById('btn-icon');
       
@@ -864,73 +468,46 @@
         return;
       }
       
-      submitBtn.disabled = true;
+      btn.disabled = true;
       btnText.textContent = 'Connexion...';
-      btnIcon.className = 'fas fa-spinner fa-spin';
+      btnIcon.className = 'fas fa-spinner spinner';
       
       try {
-        console.log(`[Login] Tentative: ${email}`);
-        
-        const result = await BrandiaAPI.Auth.login(email, password);
+        console.log('[Login] Tentative:', email);
+        const result = await API.Auth.login(email, password);
         console.log('[Login] Résultat:', result);
         
         if (result.success && result.data) {
           const user = result.data.user || result.data;
           const token = result.data.accessToken || result.data.token;
           
-          if (!user || !token) {
-            throw new Error('Réponse invalide du serveur');
-          }
-          
-          localStorage.setItem('brandia_token', token);
           localStorage.setItem('token', token);
-          localStorage.setItem('brandia_user', JSON.stringify(user));
           localStorage.setItem('user', JSON.stringify(user));
           
           showSuccess('Connexion réussie ! Redirection...');
-          
           setTimeout(() => {
-            const role = user.role || 'client';
-            let redirectUrl = 'index.html';
-            
-            if (role === 'supplier') {
-              redirectUrl = 'supplier/dashboard.html';
-            } else if (role === 'admin') {
-              redirectUrl = 'admin/dashboard.html';
-            }
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const redirect = urlParams.get('redirect');
-            if (redirect) {
-              redirectUrl = redirect;
-            }
-            
-            window.location.href = redirectUrl;
+            window.location.href = user.role === 'supplier' ? 'supplier/dashboard.html' : 'index.html';
           }, 800);
-          
         } else {
-          const msg = result.message || 'Email ou mot de passe incorrect';
-          showError(msg);
-          resetButton();
+          showError(result.message || 'Email ou mot de passe incorrect');
+          btn.disabled = false;
+          btnText.textContent = 'Se connecter';
+          btnIcon.className = 'fas fa-arrow-right';
         }
-        
-      } catch (error) {
-        console.error('[Login] Erreur:', error);
-        showError('Erreur de connexion. Vérifiez votre connexion internet.');
-        resetButton();
+      } catch (err) {
+        console.error('[Login] Erreur:', err);
+        showError('Erreur serveur (500). Le backend a un problème. Vérifiez les logs Render.');
+        btn.disabled = false;
+        btnText.textContent = 'Se connecter';
+        btnIcon.className = 'fas fa-arrow-right';
       }
     }
 
-    function resetButton() {
-      const submitBtn = document.getElementById('submit-btn');
-      const btnText = document.getElementById('btn-text');
-      const btnIcon = document.getElementById('btn-icon');
-      
-      submitBtn.disabled = false;
-      btnText.textContent = 'Se connecter';
-      btnIcon.className = 'fas fa-arrow-right';
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!checkConnected()) {
+        document.getElementById('email').focus();
+      }
+    });
   </script>
-
 </body>
 </html>

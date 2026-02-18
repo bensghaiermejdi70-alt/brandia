@@ -1,329 +1,200 @@
 // ============================================
-// AUTH CONTROLLER - v2.2 CORRIGÉ (Export compatible)
+// ROUTES PRINCIPALES - API Brandia v3.3 CORRIGÉ
 // ============================================
 
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { env } = require('../../config/env');
-const AuthModel = require('./auth.model');
-const logger = require('../../utils/logger');
+const express = require('express');
+const router = express.Router();
 
-// Générer les tokens JWT
-const generateTokens = (user) => {
-    const payload = {
-        userId: user.id,
-        email: user.email,
-        role: user.role
-    };
+// ============================================
+// IMPORTS
+// ============================================
 
-    const accessToken = jwt.sign(payload, env.JWT.SECRET, {
-        expiresIn: env.JWT.ACCESS_EXPIRES_IN || '7d'
+const authController = require('../modules/auth/auth.controller');
+const orderRoutes = require('../modules/orders/order.routes');
+const paymentRoutes = require('../modules/payments/payment.routes');
+const countryRoutes = require('../modules/countries/country.routes');
+
+// 🔥 Import du middleware
+const { authenticate } = require('../middlewares/auth.middleware');
+
+console.log('[Routes Index] Loading v3.3...');
+console.log('[Routes Index] AuthController methods:', Object.keys(authController));
+
+// ============================================
+// ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
+// ============================================
+
+// Health check
+router.get('/health', (req, res) => {
+    res.json({
+        success: true,
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        service: 'brandia-api',
+        version: '3.3.0'
     });
+});
 
-    const refreshToken = jwt.sign(payload, env.JWT.REFRESH_SECRET, {
-        expiresIn: env.JWT.REFRESH_EXPIRES_IN || '30d'
-    });
-
-    return { accessToken, refreshToken };
-};
-
-const AuthController = {
-    // ==========================================
-    // INSCRIPTION
-    // ==========================================
-    register: async (req, res) => {
-        try {
-            const { email, password, first_name, last_name, country_code, role = 'client' } = req.body;
-
-            // Validation
-            if (!email || !password || !first_name || !last_name) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Tous les champs sont requis'
-                });
-            }
-
-            // Vérifier si l'email existe déjà
-            const existingUser = await AuthModel.findByEmail(email);
-            if (existingUser) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'Cet email est déjà utilisé'
-                });
-            }
-
-            // Hasher le mot de passe
-            const password_hash = await bcrypt.hash(password, 10);
-
-            // Créer l'utilisateur
-            const user = await AuthModel.createUser({
-                email: email.toLowerCase(),
-                password_hash,
-                first_name,
-                last_name,
-                country_code: country_code || 'FR',
-                role
-            });
-
-            // Si c'est un fournisseur, créer le profil supplier
-            if (role === 'supplier') {
-                const db = require('../../config/db');
-                await db.query(
-                    `INSERT INTO suppliers (user_id, company_name, created_at, updated_at)
-                     VALUES ($1, $2, NOW(), NOW())`,
-                    [user.id, first_name || 'Ma Société']
-                );
-            }
-
-            // Générer les tokens
-            const tokens = generateTokens(user);
-
-            logger.info(`✅ Nouvel utilisateur inscrit: ${email} (role: ${role})`);
-
-            res.status(201).json({
-                success: true,
-                message: 'Inscription réussie',
-                data: {
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        role: user.role
-                    },
-                    ...tokens
-                }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur inscription:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
-    },
-
-    // ==========================================
-    // CONNEXION
-    // ==========================================
-    login: async (req, res) => {
-        try {
-            const { email, password } = req.body;
-
-            // Validation
-            if (!email || !password) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email et mot de passe requis'
-                });
-            }
-
-            // Trouver l'utilisateur avec infos supplier
-            const db = require('../../config/db');
-            const result = await db.query(
-                `SELECT u.*, s.id as supplier_id, s.company_name as supplier_company
-                 FROM users u
-                 LEFT JOIN suppliers s ON s.user_id = u.id
-                 WHERE u.email = $1 AND u.is_active = true
-                 LIMIT 1`,
-                [email.toLowerCase()]
-            );
-
-            const user = result.rows[0];
-
-            if (!user) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Email ou mot de passe incorrect'
-                });
-            }
-
-            // Vérifier le mot de passe
-            const isValidPassword = await bcrypt.compare(password, user.password_hash);
-            if (!isValidPassword) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Email ou mot de passe incorrect'
-                });
-            }
-
-            // Mettre à jour last_login
-            await db.query(
-                'UPDATE users SET last_login = NOW() WHERE id = $1',
-                [user.id]
-            );
-
-            // Générer les tokens
-            const tokens = generateTokens(user);
-
-            logger.info(`✅ Connexion réussie: ${email} (role: ${user.role})`);
-
-            res.json({
-                success: true,
-                message: 'Connexion réussie',
-                data: {
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        role: user.role,
-                        supplier_id: user.supplier_id || null,
-                        supplier_company: user.supplier_company || null
-                    },
-                    ...tokens
-                }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur connexion:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
-    },
-
-    // ==========================================
-    // RAFRAÎCHIR TOKEN
-    // ==========================================
-    refresh: async (req, res) => {
-        try {
-            const { refreshToken } = req.body;
-
-            if (!refreshToken) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Refresh token manquant'
-                });
-            }
-
-            // Vérifier le refresh token
-            const decoded = jwt.verify(refreshToken, env.JWT.REFRESH_SECRET);
-            
-            // Vérifier que l'utilisateur existe toujours
-            const user = await AuthModel.findById(decoded.userId);
-            if (!user) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Utilisateur non trouvé'
-                });
-            }
-
-            // Générer de nouveaux tokens
-            const tokens = generateTokens(user);
-
-            res.json({
-                success: true,
-                data: tokens
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur refresh token:', error);
-            res.status(401).json({
-                success: false,
-                message: 'Refresh token invalide'
-            });
-        }
-    },
-
-    // Alias pour compatibilité
-    refreshToken: async (req, res) => {
-        return AuthController.refresh(req, res);
-    },
-
-    // ==========================================
-    // PROFIL UTILISATEUR (getMe / me)
-    // ==========================================
-    getMe: async (req, res) => {
-        try {
-            const userId = req.user?.userId || req.user?.id;
-
-            if (!userId) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'ID utilisateur manquant'
-                });
-            }
-
-            const db = require('../../config/db');
-            const result = await db.query(
-                `SELECT u.id, u.email, u.first_name, u.last_name, u.role, 
-                        u.country_code, u.created_at, u.last_login,
-                        s.id as supplier_id, s.company_name as supplier_company, 
-                        s.logo_url as supplier_logo
-                 FROM users u
-                 LEFT JOIN suppliers s ON s.user_id = u.id
-                 WHERE u.id = $1 AND u.is_active = true
-                 LIMIT 1`,
-                [userId]
-            );
-
-            const user = result.rows[0];
-            
-            if (!user) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Utilisateur non trouvé'
-                });
-            }
-
-            res.json({
-                success: true,
-                data: { 
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        role: user.role,
-                        country_code: user.country_code,
-                        created_at: user.created_at,
-                        last_login: user.last_login,
-                        supplier_id: user.supplier_id || null,
-                        supplier_company: user.supplier_company || null,
-                        supplier_logo: user.supplier_logo || null
-                    }
-                }
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur profil:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
-    },
-
-    // Alias pour compatibilité
-    me: async (req, res) => {
-        return AuthController.getMe(req, res);
-    },
-
-    // ==========================================
-    // DÉCONNEXION
-    // ==========================================
-    logout: async (req, res) => {
-        try {
-            const userId = req.user?.userId || req.user?.id;
-            logger.info(`✅ Déconnexion: ${userId}`);
-            
-            res.json({
-                success: true,
-                message: 'Déconnexion réussie'
-            });
-
-        } catch (error) {
-            logger.error('❌ Erreur déconnexion:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur'
-            });
-        }
+// Auth - Register/Login (publiques)
+router.post('/auth/register', async (req, res, next) => {
+    try {
+        console.log('[Routes] POST /auth/register - Body:', { email: req.body.email, role: req.body.role });
+        await authController.register(req, res);
+    } catch (error) {
+        console.error('[Routes] Register error:', error);
+        next(error);
     }
-};
+});
 
-// 🔥 EXPORT EXPLICITE - L'objet complet avec toutes les méthodes
-module.exports = AuthController;
+router.post('/auth/login', async (req, res, next) => {
+    try {
+        console.log('[Routes] POST /auth/login - Email:', req.body.email);
+        await authController.login(req, res);
+    } catch (error) {
+        console.error('[Routes] Login error:', error);
+        next(error);
+    }
+});
+
+router.post('/auth/refresh', async (req, res, next) => {
+    try {
+        await authController.refresh(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Categories (100% publique)
+router.get('/categories', async (req, res, next) => {
+    try {
+        const result = await db.query(`
+            SELECT id, name, slug, icon, gradient, parent_id, sort_order, is_active
+            FROM categories
+            WHERE is_active = true OR is_active IS NULL
+            ORDER BY sort_order ASC, name ASC
+        `);
+        
+        res.json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('[Categories] Error:', error);
+        next(error);
+    }
+});
+
+// Promotions publiques
+router.get('/public/promotions/active', async (req, res, next) => {
+    try {
+        const db = require('../config/db');
+        
+        const result = await db.query(`
+            SELECT 
+                p.*,
+                s.company_name as brand_name,
+                s.logo_url as brand_logo,
+                COUNT(pp.product_id) as products_count
+            FROM promotions p
+            JOIN suppliers s ON p.supplier_id = s.user_id
+            LEFT JOIN promotion_products pp ON pp.promotion_id = p.id
+            WHERE p.status = 'active'
+                AND p.start_date <= NOW()
+                AND p.end_date >= NOW()
+            GROUP BY p.id, s.company_name, s.logo_url
+            ORDER BY p.created_at DESC
+            LIMIT 20
+        `);
+        
+        res.json({
+            success: true,
+            data: result.rows
+        });
+        
+    } catch (error) {
+        console.error('[Public Promotions] Error:', error);
+        next(error);
+    }
+});
+
+// ============================================
+// ROUTES PROTÉGÉES (AVEC AUTHENTIFICATION)
+// ============================================
+
+// Auth - Profil et Logout (protégés)
+router.get('/auth/me', authenticate, async (req, res, next) => {
+    try {
+        console.log('[Routes] GET /auth/me - User:', req.user?.userId);
+        await authController.getMe(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/auth/logout', authenticate, async (req, res, next) => {
+    try {
+        await authController.logout(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Orders (protégé)
+router.use('/orders', authenticate, orderRoutes);
+
+// Payments (protégé)
+router.use('/payments', authenticate, paymentRoutes);
+
+// Countries (publique)
+router.use('/countries', countryRoutes);
+
+// ============================================
+// DOCUMENTATION API (publique)
+// ============================================
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        service: 'Brandia API',
+        version: '3.3.0',
+        status: 'operational',
+        timestamp: new Date().toISOString(),
+        endpoints: {
+            public: {
+                health: 'GET /api/health',
+                categories: 'GET /api/categories',
+                products: 'GET /api/products',
+                promotions: 'GET /api/public/promotions/active',
+                supplier_campaigns: 'GET /api/supplier/public/campaigns?supplier=X&product=Y'
+            },
+            authentication: {
+                register: 'POST /api/auth/register',
+                login: 'POST /api/auth/login',
+                refresh: 'POST /api/auth/refresh',
+                me: 'GET /api/auth/me (protected)',
+                logout: 'POST /api/auth/logout (protected)'
+            },
+            protected: {
+                orders: '/api/orders/*',
+                payments: '/api/payments/*',
+                supplier_dashboard: '/api/supplier/*'
+            }
+        }
+    });
+});
+
+// ============================================
+// GESTION ERREURS 404
+// ============================================
+router.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Endpoint non trouvé',
+        path: req.path,
+        method: req.method,
+        tip: 'Consultez GET /api pour la documentation'
+    });
+});
+
+console.log('[Routes Index] ✅ Loaded successfully');
+
+module.exports = router;
