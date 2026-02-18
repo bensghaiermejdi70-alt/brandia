@@ -1,11 +1,12 @@
 // ============================================
-// APP.JS - Configuration Express Brandia v3.4 CORRIGÉ
+// APP.JS - Configuration Express Brandia v3.5 CORRIGÉ (Chemins Render)
 // ============================================
 
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -42,32 +43,65 @@ app.use(cors({
 }));
 
 // ============================================
-// FICHIERS STATIQUES - AVANT LES ROUTES API
+// 🔥 DÉTECTION DU DOSSIER FRONTEND
 // ============================================
 
-const publicPath = path.join(__dirname, '../public');
-console.log('[App] Serving static files from:', publicPath);
+function findFrontendPath() {
+    const possiblePaths = [
+        // Structure Render (frontend à la racine du projet)
+        path.join(__dirname, '../../frontend'),
+        path.join(__dirname, '../frontend'),
+        // Structure locale/backendpro
+        path.join(__dirname, '../public'),
+        path.join(__dirname, '../../public'),
+        // Dossier courant
+        path.join(process.cwd(), 'frontend'),
+        path.join(process.cwd(), 'public')
+    ];
 
-app.use(express.static(publicPath));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+    for (const testPath of possiblePaths) {
+        console.log(`[App] Checking path: ${testPath}`);
+        if (fs.existsSync(testPath) && fs.existsSync(path.join(testPath, 'index.html'))) {
+            console.log(`[App] ✅ Frontend found at: ${testPath}`);
+            return testPath;
+        }
+    }
+
+    console.warn('[App] ⚠️ No frontend folder found, serving API only');
+    return null;
+}
+
+const publicPath = findFrontendPath();
+
+// ============================================
+// FICHIERS STATIQUES
+// ============================================
+
+if (publicPath) {
+    app.use(express.static(publicPath));
+    app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+    console.log(`[App] Serving static files from: ${publicPath}`);
+} else {
+    console.log('[App] Running in API-only mode');
+}
 
 // ============================================
 // ROUTES API
 // ============================================
 
-console.log('[App] Loading routes...');
+console.log('[App] Loading API routes...');
 
 // 1. Health check (public)
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        frontend: publicPath ? 'connected' : 'not found'
     });
 });
 
 // 2. Supplier routes (public campaigns + protected)
-// ✅ CORRIGÉ : modules (pluriel) et non module (singulier)
 const supplierRoutes = require('./modules/supplier/supplier.routes');
 app.use('/api/supplier', supplierRoutes);
 console.log('[App] ✅ Supplier routes mounted at /api/supplier');
@@ -83,20 +117,45 @@ app.use('/api', indexRoutes);
 console.log('[App] ✅ Index routes mounted at /api');
 
 // ============================================
-// ROUTE CATCH-ALL POUR LE FRONTEND
+// ROUTE CATCH-ALL POUR LE FRONTEND (SPA)
 // ============================================
 
-app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({
-            success: false,
-            message: 'API endpoint non trouvé',
-            path: req.path
+if (publicPath) {
+    app.get('*', (req, res) => {
+        // Ne pas interférer avec les routes API
+        if (req.path.startsWith('/api/')) {
+            return res.status(404).json({
+                success: false,
+                message: 'API endpoint non trouvé',
+                path: req.path
+            });
+        }
+        
+        // Servir index.html pour les routes client-side
+        const indexPath = path.join(publicPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Frontend not found'
+            });
+        }
+    });
+} else {
+    // Fallback si pas de frontend
+    app.get('/', (req, res) => {
+        res.json({
+            success: true,
+            message: 'Brandia API is running',
+            endpoints: {
+                health: '/api/health',
+                products: '/api/products',
+                supplier: '/api/supplier'
+            }
         });
-    }
-    
-    res.sendFile(path.join(publicPath, 'index.html'));
-});
+    });
+}
 
 // ============================================
 // ERROR HANDLING
