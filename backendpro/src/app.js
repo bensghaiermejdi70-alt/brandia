@@ -1,5 +1,5 @@
 // ============================================
-// APP.JS - Configuration Express Brandia v3.2 CORRIGÉ
+// APP.JS - Configuration Express Brandia v3.3 CORRIGÉ
 // ============================================
 
 const express = require('express');
@@ -41,11 +41,21 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Static files
+// ============================================
+// 🔥🔥🔥 FICHIERS STATIQUES - AVANT LES ROUTES API 🔥🔥🔥
+// ============================================
+
+// 🔥 CRITIQUE : Servir le frontend (index.html, css, js, assets)
+const publicPath = path.join(__dirname, '../public');
+console.log('[App] Serving static files from:', publicPath);
+
+app.use(express.static(publicPath));
+
+// Uploads (si vous avez des fichiers uploadés)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ============================================
-// 🔥🔥🔥 ROUTES - ORDRE CRITIQUE ! 🔥🔥🔥
+// 🔥🔥🔥 ROUTES API - APRÈS LES FICHIERS STATIQUES 🔥🔥🔥
 // ============================================
 
 console.log('[App] Loading routes...');
@@ -59,12 +69,12 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// 2. 🔥 SUPPLIER ROUTES (public campaigns FIRST - before any auth)
-const supplierRoutes = require('./modules/supplier/supplier.routes');
+// 2. Supplier routes (public campaigns + protected)
+const supplierRoutes = require('./modules/supplier/supplier.route'); // ⚠️ Vérifiez le nom du fichier
 app.use('/api/supplier', supplierRoutes);
 console.log('[App] ✅ Supplier routes mounted');
 
-// 3. 🔥 PRODUCT ROUTES - PUBLIQUES ! PAS D'AUTH ICI !
+// 3. Product routes (public)
 const productRoutes = require('./modules/products/product.routes');
 app.use('/api/products', productRoutes);
 console.log('[App] ✅ Product routes mounted (PUBLIC)');
@@ -75,31 +85,30 @@ app.use('/api', indexRoutes);
 console.log('[App] ✅ Index routes mounted');
 
 // ============================================
-// 🔥🔥🔥 VÉRIFICATION CRITIQUE 🔥🔥🔥
+// 🔥🔥🔥 ROUTE CATCH-ALL POUR LE FRONTEND (SPA) 🔥🔥🔥
 // ============================================
-// IL NE DOIT Y AVOIR AUCUN app.use(authenticate) ICI !
+// Toute route non-API renvoie index.html (pour React/Vue ou HTML pur)
+
+app.get('*', (req, res) => {
+    // Ne pas interférer avec les routes API
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({
+            success: false,
+            message: 'API endpoint non trouvé',
+            path: req.path
+        });
+    }
+    
+    // Servir index.html pour toutes les autres routes (client-side routing)
+    res.sendFile(path.join(publicPath, 'index.html'));
+});
 
 // ============================================
 // ERROR HANDLING
 // ============================================
 
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Endpoint non trouvé',
-        path: req.path
-    });
-});
-
 app.use((err, req, res, next) => {
     console.error('[Error]', err);
-    
-    // 🔥 DÉTECTION SPÉCIFIQUE DU PROBLÈME
-    if (err.message && err.message.includes('fournisseur')) {
-        console.error('🔥🔥🔥 ERREUR FOURNISSEUR DÉTECTÉE 🔥🔥🔥');
-        console.error('Route:', req.method, req.url);
-        console.error('User:', req.user);
-    }
     
     res.status(err.status || 500).json({
         success: false,

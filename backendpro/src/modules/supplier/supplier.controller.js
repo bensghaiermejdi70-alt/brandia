@@ -1,10 +1,13 @@
 // ============================================
-// SUPPLIER CONTROLLER - v5.2 CORRIGÉ ET COMPLET
+// SUPPLIER CONTROLLER - v5.3 CORRIGÉ ET COMPLET
 // ============================================
 
 const db = require("../../config/db");
 
-// Configuration Cloudinary (optionnelle - si pas configurée, les uploads échoueront gracieusement)
+// ============================================
+// CONFIGURATION CLOUDINARY (optionnel)
+// ============================================
+
 let cloudinary, CloudinaryStorage, multer;
 let uploadImageMiddleware, uploadVideoMiddleware;
 
@@ -13,58 +16,67 @@ try {
     CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage;
     multer = require('multer');
 
-    cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
-    });
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET
+        });
 
-    // Storage Cloudinary pour images produits
-    const imageStorage = new CloudinaryStorage({
-        cloudinary: cloudinary,
-        params: {
-            folder: 'brandia/products',
-            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-            transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto' }]
-        }
-    });
+        const imageStorage = new CloudinaryStorage({
+            cloudinary: cloudinary,
+            params: {
+                folder: 'brandia/products',
+                allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto' }]
+            }
+        });
 
-    // Storage Cloudinary pour vidéos campagnes
-    const videoStorage = new CloudinaryStorage({
-        cloudinary: cloudinary,
-        params: {
-            folder: 'brandia/campaigns',
-            resource_type: 'video',
-            allowed_formats: ['mp4', 'mov', 'webm'],
-            transformation: [{ width: 720, crop: 'limit', quality: 'auto' }]
-        }
-    });
+        const videoStorage = new CloudinaryStorage({
+            cloudinary: cloudinary,
+            params: {
+                folder: 'brandia/campaigns',
+                resource_type: 'video',
+                allowed_formats: ['mp4', 'mov', 'webm'],
+                transformation: [{ width: 720, crop: 'limit', quality: 'auto' }]
+            }
+        });
 
-    uploadImageMiddleware = multer({ 
-        storage: imageStorage, 
-        limits: { fileSize: 5 * 1024 * 1024 }
-    }).single('media');
+        uploadImageMiddleware = multer({ 
+            storage: imageStorage, 
+            limits: { fileSize: 5 * 1024 * 1024 }
+        }).single('media');
 
-    uploadVideoMiddleware = multer({ 
-        storage: videoStorage, 
-        limits: { fileSize: 50 * 1024 * 1024 }
-    }).single('media');
+        uploadVideoMiddleware = multer({ 
+            storage: videoStorage, 
+            limits: { fileSize: 50 * 1024 * 1024 }
+        }).single('media');
 
-    console.log('[Supplier Controller] ✅ Cloudinary configured');
+        console.log('[Supplier Controller] ✅ Cloudinary configured');
+    } else {
+        throw new Error('Cloudinary not configured');
+    }
 } catch (err) {
-    console.warn('[Supplier Controller] ⚠️ Cloudinary not configured:', err.message);
-    // Fallback : multer sans storage (les fichiers seront rejetés ou gérés différemment)
+    console.warn('[Supplier Controller] ⚠️ Cloudinary not available:', err.message);
+    
+    // Fallback : multer avec stockage local
     try {
         multer = require('multer');
         const upload = multer({ dest: 'uploads/' });
         uploadImageMiddleware = upload.single('media');
         uploadVideoMiddleware = upload.single('media');
+        console.log('[Supplier Controller] ✅ Using local storage');
     } catch (multerErr) {
         console.error('[Supplier Controller] ❌ Multer not available');
+        // Middlewares factices qui passent au suivant
         uploadImageMiddleware = (req, res, next) => next();
         uploadVideoMiddleware = (req, res, next) => next();
     }
 }
+
+// ============================================
+// CLASSE CONTROLLER
+// ============================================
 
 class SupplierController {
 
@@ -273,17 +285,13 @@ class SupplierController {
         }
     }
 
-    /* ================= UPLOADS CLOUDINARY ================= */
+    /* ================= UPLOADS ================= */
 
     async uploadImage(req, res) {
         try {
-            console.log('[Upload Image] Début upload');
-            
             if (!req.file) {
                 return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
             }
-            
-            console.log('[Upload Image] Fichier reçu:', req.file.originalname, '->', req.file.path || req.file.filename);
             
             const result = {
                 success: true,
@@ -295,7 +303,6 @@ class SupplierController {
                 }
             };
             
-            console.log('[Upload Image] Succès:', result.data.url);
             res.json(result);
             
         } catch (error) {
@@ -306,13 +313,9 @@ class SupplierController {
 
     async uploadCampaignVideo(req, res) {
         try {
-            console.log('[Upload Video] Début upload');
-            
             if (!req.file) {
                 return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
             }
-            
-            console.log('[Upload Video] Fichier reçu:', req.file.originalname);
             
             const result = {
                 success: true,
@@ -324,7 +327,6 @@ class SupplierController {
                 }
             };
             
-            console.log('[Upload Video] Succès:', result.data.url);
             res.json(result);
             
         } catch (error) {
@@ -384,7 +386,6 @@ class SupplierController {
             const supplierId = supplierResult.rows[0].id;
             const { name, price, stock_quantity, description, category_id, main_image_url } = req.body;
 
-            // Générer un slug unique
             const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
             const timestamp = Date.now();
             const slug = `${baseSlug}-${timestamp}`;
@@ -1058,7 +1059,7 @@ class SupplierController {
         }
     }
 
-    /* ================= PUBLIC CAMPAGNES ================= */
+    /* ================= PUBLIC CAMPAGNES (pour le frontend) ================= */
 
     async getActiveCampaignForProduct(req, res) {
         try {
@@ -1189,7 +1190,7 @@ class SupplierController {
         }
     }
 
-    /* ================= PARAMÈTRES PUBLICITÉ (BRANDIA) ================= */
+    /* ================= PARAMÈTRES PUBLICITÉ ================= */
 
     async getAdSettings(req, res) {
         try {
@@ -1213,7 +1214,6 @@ class SupplierController {
             `, [supplierId]);
 
             if (result.rows.length === 0) {
-                // Créer les paramètres par défaut si inexistant
                 await db.query(`
                     INSERT INTO supplier_ad_settings (supplier_id, max_ads_per_session, notes)
                     VALUES ($1, 1, 'Configuration par défaut')
