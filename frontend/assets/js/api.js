@@ -71,81 +71,172 @@
   };
 
   // ============================================
-  // FETCH API CORE
-  // ============================================
-  
-  async function apiFetch(endpoint, options = {}, retryCount = 0) {
+// FETCH API CORE - CORRIGÉ v3.3 (Refresh Token)
+// ============================================
+
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+function subscribeTokenRefresh(callback) {
+    refreshSubscribers.push(callback);
+}
+
+function onTokenRefreshed(newToken) {
+    refreshSubscribers.forEach(callback => callback(newToken));
+    refreshSubscribers = [];
+}
+
+async function refreshAccessToken() {
+    try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+            throw new Error('No refresh token');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken })
+        });
+
+        if (!response.ok) {
+            throw new Error('Refresh failed');
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.data?.accessToken) {
+            storage.setToken(data.data.accessToken);
+            if (data.data.refreshToken) {
+                localStorage.setItem('refreshToken', data.data.refreshToken);
+            }
+            return data.data.accessToken;
+        }
+        
+        throw new Error('Invalid refresh response');
+        
+    } catch (error) {
+        console.error('[Token Refresh] Failed:', error);
+        storage.clear();
+        window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
+        throw error;
+    }
+}
+
+async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
     const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
+        'Content-Type': 'application/json',
+        ...options.headers
     };
 
     const token = storage.getToken();
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
     try {
-      console.log(`[API] ${options.method || 'GET'} ${url}`);
-      
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        signal: controller.signal
-      });
+        console.log(`[API] ${options.method || 'GET'} ${url}`);
+        
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            signal: controller.signal
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      if (response.status === 401) {
-        storage.clear();
-        if (!window.location.pathname.includes('login')) {
-          window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
-          return { success: false, message: 'Session expirée' };
+        // 🔥 GESTION TOKEN EXPIRÉ (401)
+        if (response.status === 401) {
+            const errorData = await response.json().catch(() => ({}));
+            
+            // Si c'est une erreur de token expiré
+            if (errorData.message?.includes('expired') || errorData.code === 'TOKEN_EXPIRED') {
+                console.warn('[API] Token expired, attempting refresh...');
+                
+                // Si déjà en cours de refresh, attendre
+                if (isRefreshing) {
+                    return new Promise((resolve) => {
+                        subscribeTokenRefresh((newToken) => {
+                            // Retry avec nouveau token
+                            headers['Authorization'] = `Bearer ${newToken}`;
+                            resolve(fetch(url, { ...options, headers }).then(r => r.json()));
+                        });
+                    });
+                }
+                
+                // Sinon, lancer le refresh
+                isRefreshing = true;
+                
+                try {
+                    const newToken = await refreshAccessToken();
+                    onTokenRefreshed(newToken);
+                    
+                    // Retry la requête originale
+                    headers['Authorization'] = `Bearer ${newToken}`;
+                    const retryResponse = await fetch(url, { ...options, headers });
+                    
+                    if (!retryResponse.ok) {
+                        throw new Error(`Retry failed: ${retryResponse.status}`);
+                    }
+                    
+                    return await retryResponse.json();
+                    
+                } catch (refreshError) {
+                    throw refreshError;
+                } finally {
+                    isRefreshing = false;
+                }
+            }
+            
+            // Autre erreur 401 (pas expired, mais invalide)
+            storage.clear();
+            if (!window.location.pathname.includes('login')) {
+                window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
+            }
+            return { success: false, message: 'Session invalide' };
         }
-      }
 
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { message: `Erreur serveur (${response.status})` };
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch {
+                errorData = { message: `Erreur serveur (${response.status})` };
+            }
+            throw new Error(errorData.message || `Erreur ${response.status}`);
         }
-        throw new Error(errorData.message || `Erreur ${response.status}`);
-      }
 
-      if (response.status === 204) {
-        return { success: true };
-      }
+        if (response.status === 204) {
+            return { success: true };
+        }
 
-      return await response.json();
+        return await response.json();
 
     } catch (error) {
-      clearTimeout(timeoutId);
-      
-      if (retryCount === 0 && (error.name === 'TypeError' || error.name === 'AbortError')) {
-        console.warn(`[API] Retry ${url}...`);
-        await new Promise(r => setTimeout(r, 1500));
-        return apiFetch(endpoint, options, retryCount + 1);
-      }
+        clearTimeout(timeoutId);
+        
+        if (retryCount === 0 && (error.name === 'TypeError' || error.name === 'AbortError')) {
+            console.warn(`[API] Retry ${url}...`);
+            await new Promise(r => setTimeout(r, 1500));
+            return apiFetch(endpoint, options, retryCount + 1);
+        }
 
-      let userMessage = error.message;
-      if (error.name === 'AbortError') {
-        userMessage = 'Le serveur met trop de temps à répondre.';
-      } else if (error.message === 'Failed to fetch') {
-        userMessage = 'Connexion impossible. Vérifiez votre internet.';
-      }
-      
-      console.error('[API Error]', error);
-      throw new Error(userMessage);
+        let userMessage = error.message;
+        if (error.name === 'AbortError') {
+            userMessage = 'Le serveur met trop de temps à répondre.';
+        } else if (error.message === 'Failed to fetch') {
+            userMessage = 'Connexion impossible. Vérifiez votre internet.';
+        }
+        
+        console.error('[API Error]', error);
+        throw new Error(userMessage);
     }
-  }
-
+}
   // ============================================
   // AUTH API
   // ============================================
