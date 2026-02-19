@@ -1826,10 +1826,14 @@
   <script src="../assets/js/api.js"></script>
   
   <script>
-    // ========== CONFIGURATION ==========
+    // ============================================
+    // CONFIGURATION
+    // ============================================
     const API_BASE_URL = 'https://brandia-1.onrender.com/api';
     
-    // ========== STATE ==========
+    // ============================================
+    // STATE
+    // ============================================
     let currentUser = null;
     let supplierData = null;
     let products = [];
@@ -1837,7 +1841,78 @@
     let campaigns = [];
     let charts = {};
 
-    // ========== INITIALIZATION ==========
+    // ============================================
+    // AUTHENTIFICATION UNIFIÉE
+    // ============================================
+    
+    // 🔥 FONCTION CLÉ: Récupère le token depuis n'importe quelle clé
+    function getAuthToken() {
+      // Priorité à BrandiaAPI si disponible
+      if (window.BrandiaAPI && BrandiaAPI.storage) {
+        return BrandiaAPI.storage.getToken();
+      }
+      // Fallback sur les deux clés possibles
+      return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
+    }
+    
+    // 🔥 FONCTION CLÉ: Récupère l'utilisateur depuis n'importe quelle clé
+    function getAuthUser() {
+      if (window.BrandiaAPI && BrandiaAPI.storage) {
+        return BrandiaAPI.storage.getUser();
+      }
+      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+      if (userStr) {
+        try {
+          return JSON.parse(userStr);
+        } catch(e) {
+          return null;
+        }
+      }
+      return null;
+    }
+    
+    function checkAuth() {
+      const token = getAuthToken();
+      const user = getAuthUser();
+      
+      console.log('[Dashboard] Token présent:', !!token);
+      console.log('[Dashboard] User:', user);
+      
+      if (!token || !user) {
+        window.location.href = '../login.html?redirect=supplier/dashboard.html';
+        return false;
+      }
+      
+      currentUser = user;
+      
+      if (currentUser.role !== 'supplier') {
+        showToast('Accès réservé aux fournisseurs', 'error');
+        setTimeout(() => {
+          window.location.href = '../index.html';
+        }, 2000);
+        return false;
+      }
+      
+      return true;
+    }
+
+    function logout() {
+      if (window.BrandiaAPI && BrandiaAPI.Auth) {
+        BrandiaAPI.Auth.logout();
+      } else {
+        // Nettoyage complet de toutes les clés possibles
+        localStorage.removeItem('brandia_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('brandia_user');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '../login.html';
+      }
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
     document.addEventListener('DOMContentLoaded', async () => {
       console.log('[Dashboard] Initialisation...');
       
@@ -1859,45 +1934,16 @@
       updateUI();
     });
 
-    // ========== AUTHENTIFICATION ==========
-    function checkAuth() {
-      const token = localStorage.getItem('brandia_token');
-      const user = localStorage.getItem('brandia_user');
-      
-      if (!token || !user) {
-        window.location.href = '../login.html?redirect=supplier/dashboard.html';
-        return false;
-      }
-      
-      currentUser = JSON.parse(user);
-      
-      if (currentUser.role !== 'supplier') {
-        showToast('Accès réservé aux fournisseurs', 'error');
-        setTimeout(() => {
-          window.location.href = '../index.html';
-        }, 2000);
-        return false;
-      }
-      
-      return true;
-    }
-
-    function logout() {
-      if (window.BrandiaAPI && BrandiaAPI.Auth) {
-        BrandiaAPI.Auth.logout();
-      } else {
-        localStorage.removeItem('brandia_token');
-        localStorage.removeItem('brandia_user');
-        window.location.href = '../login.html';
-      }
-    }
-
-    // ========== DATA LOADING ==========
+    // ============================================
+    // DATA LOADING
+    // ============================================
     async function loadUserData() {
       try {
+        const token = getAuthToken();
+        
         const response = await fetch(`${API_BASE_URL}/supplier/profile`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -1913,10 +1959,11 @@
 
     async function loadDashboardData() {
       try {
-        // Charger les statistiques
+        const token = getAuthToken();
+        
         const statsResponse = await fetch(`${API_BASE_URL}/supplier/stats`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -1938,9 +1985,11 @@
 
     async function loadProducts() {
       try {
+        const token = getAuthToken();
+        
         const response = await fetch(`${API_BASE_URL}/supplier/products`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -1958,9 +2007,11 @@
 
     async function loadOrders() {
       try {
+        const token = getAuthToken();
+        
         const response = await fetch(`${API_BASE_URL}/supplier/orders`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -1978,7 +2029,9 @@
       }
     }
 
-    // ========== UI UPDATES ==========
+    // ============================================
+    // UI UPDATES
+    // ============================================
     function updateUI() {
       updateUserInfo();
     }
@@ -2004,22 +2057,21 @@
       document.getElementById('kpi-products').textContent = stats.products;
     }
 
-    // ========== NAVIGATION ==========
+    // ============================================
+    // NAVIGATION
+    // ============================================
     function showSection(sectionName) {
-      // Cacher toutes les sections
       document.querySelectorAll('.section-content').forEach(section => {
         section.classList.add('hidden');
         section.classList.remove('active');
       });
       
-      // Afficher la section demandée
       const targetSection = document.getElementById(`section-${sectionName}`);
       if (targetSection) {
         targetSection.classList.remove('hidden');
         targetSection.classList.add('active');
       }
       
-      // Mettre à jour la navigation
       document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
         if (item.dataset.section === sectionName) {
@@ -2027,7 +2079,6 @@
         }
       });
       
-      // Fermer le sidebar sur mobile
       if (window.innerWidth <= 1024) {
         document.getElementById('sidebar').classList.remove('open');
       }
@@ -2054,20 +2105,20 @@
     }
 
     function switchTab(tabId) {
-      // Mettre à jour les onglets
       document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.remove('active');
       });
       event.target.classList.add('active');
       
-      // Afficher le contenu
       document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
       });
       document.getElementById(tabId).classList.add('active');
     }
 
-    // ========== PRODUCTS ==========
+    // ============================================
+    // PRODUCTS
+    // ============================================
     function renderProductsTable() {
       const tbody = document.getElementById('products-table');
       
@@ -2171,6 +2222,7 @@
       };
       
       try {
+        const token = getAuthToken();
         const url = productId 
           ? `${API_BASE_URL}/supplier/products/${productId}`
           : `${API_BASE_URL}/supplier/products`;
@@ -2181,7 +2233,7 @@
           method,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(productData)
         });
@@ -2205,10 +2257,11 @@
       if (!product) return;
       
       try {
+        const token = getAuthToken();
         const response = await fetch(`${API_BASE_URL}/supplier/products/${productId}/toggle`, {
           method: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -2228,10 +2281,11 @@
       }
       
       try {
+        const token = getAuthToken();
         const response = await fetch(`${API_BASE_URL}/supplier/products/${productId}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -2245,7 +2299,9 @@
       }
     }
 
-    // ========== ORDERS ==========
+    // ============================================
+    // ORDERS
+    // ============================================
     function renderOrdersTable() {
       const tbody = document.getElementById('orders-table-all');
       
@@ -2348,7 +2404,9 @@
       return labels[status] || status;
     }
 
-    // ========== IMPORT CSV ==========
+    // ============================================
+    // IMPORT CSV
+    // ============================================
     function openImportModal() {
       document.getElementById('import-modal').classList.add('active');
     }
@@ -2384,11 +2442,12 @@
         }
         
         try {
+          const token = getAuthToken();
           const response = await fetch(`${API_BASE_URL}/supplier/products/import`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+              'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ products })
           });
@@ -2420,10 +2479,11 @@
       a.click();
     }
 
-    // ========== CAMPAIGNS ==========
+    // ============================================
+    // CAMPAIGNS
+    // ============================================
     function openCampaignModal() {
       document.getElementById('campaign-modal').classList.add('active');
-      // Charger les produits dans le select
       const select = document.getElementById('campaign-products');
       select.innerHTML = '<option value="all">Tous les produits</option>' +
         products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
@@ -2443,11 +2503,12 @@
       };
       
       try {
+        const token = getAuthToken();
         const response = await fetch(`${API_BASE_URL}/supplier/campaigns`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('brandia_token')}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(campaignData)
         });
@@ -2464,9 +2525,10 @@
       }
     }
 
-    // ========== CHARTS ==========
+    // ============================================
+    // CHARTS
+    // ============================================
     function initCharts() {
-      // Graphique des ventes
       const salesCtx = document.getElementById('salesChart').getContext('2d');
       charts.sales = new Chart(salesCtx, {
         type: 'line',
@@ -2510,7 +2572,6 @@
         }
       });
       
-      // Graphique des catégories
       const categoryCtx = document.getElementById('categoryChart').getContext('2d');
       charts.category = new Chart(categoryCtx, {
         type: 'doughnut',
@@ -2537,7 +2598,9 @@
       });
     }
 
-    // ========== UTILITAIRES ==========
+    // ============================================
+    // UTILITAIRES
+    // ============================================
     function formatCurrency(amount) {
       return new Intl.NumberFormat('fr-FR', {
         style: 'currency',
@@ -2569,7 +2632,6 @@
     }
 
     function toggleUserMenu() {
-      // Menu utilisateur dropdown
       showToast('Menu utilisateur', 'info');
     }
 

@@ -383,131 +383,164 @@
   </div>
 
   <script src="assets/js/api.js"></script>
-  <script>
-    const API = window.BrandiaAPI || {
-      Auth: {
-        isLoggedIn: () => !!localStorage.getItem('token'),
-        getUser: () => { try { return JSON.parse(localStorage.getItem('user')); } catch(e) { return null; } },
-        login: async (email, password) => {
-          const base = window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://brandia-1.onrender.com';
-          const res = await fetch(`${base}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-          return await res.json();
-        },
-        logout: () => { localStorage.removeItem('token'); localStorage.removeItem('user'); }
+<script>
+  // Vérifier si déjà connecté
+  function checkConnected() {
+    let user = null;
+    let token = null;
+    
+    if (window.BrandiaAPI && BrandiaAPI.Auth) {
+      user = BrandiaAPI.Auth.getUser();
+      token = BrandiaAPI.Auth.isLoggedIn();
+    } else {
+      token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+      if (userStr) {
+        try {
+          user = JSON.parse(userStr);
+        } catch(e) {}
       }
-    };
+    }
+    
+    if (!token || !user) return false;
+    
+    document.getElementById('connected-banner').classList.remove('hidden');
+    document.getElementById('login-card').classList.add('hidden');
+    document.getElementById('connected-email').textContent = user.email;
+    
+    const btn = document.getElementById('continue-btn');
+    if (user.role === 'supplier') {
+      btn.href = 'supplier/dashboard.html';
+      btn.textContent = 'Espace Fournisseur';
+    } else {
+      btn.href = 'index.html';
+      btn.textContent = 'Continuer';
+    }
+    return true;
+  }
 
-    function checkConnected() {
-      if (!API.Auth.isLoggedIn()) return false;
-      const user = API.Auth.getUser();
-      if (!user) { API.Auth.logout(); return false; }
+  function logout() {
+    if (window.BrandiaAPI && BrandiaAPI.Auth) {
+      BrandiaAPI.Auth.logout();
+    } else {
+      localStorage.removeItem('token');
+      localStorage.removeItem('brandia_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('brandia_user');
+      window.location.href = 'index.html';
+    }
+  }
+
+  function switchTab(type) {
+    document.getElementById('user-type').value = type;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + type).classList.add('active');
+    document.getElementById('email').placeholder = type === 'supplier' ? 'fournisseur@marque.com' : 'vous@exemple.com';
+  }
+
+  function togglePassword() {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('eye-icon');
+    input.type = input.type === 'password' ? 'text' : 'password';
+    icon.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+  }
+
+  function fillTest(type) {
+    switchTab(type);
+    document.getElementById('email').value = type === 'client' ? 'test@brandia.com' : 'supplier@brandia.com';
+    document.getElementById('password').value = type === 'client' ? 'Test1234!' : 'Supplier123!';
+  }
+
+  function showError(msg) {
+    document.getElementById('error-msg').textContent = msg;
+    document.getElementById('error-msg').classList.remove('hidden');
+    document.getElementById('success-msg').classList.add('hidden');
+  }
+
+  function showSuccess(msg) {
+    document.getElementById('success-msg').textContent = msg;
+    document.getElementById('success-msg').classList.remove('hidden');
+    document.getElementById('error-msg').classList.add('hidden');
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    document.getElementById('error-msg').classList.add('hidden');
+    
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnIcon = document.getElementById('btn-icon');
+    
+    if (!email || !password) {
+      showError('Veuillez remplir tous les champs');
+      return;
+    }
+    
+    btn.disabled = true;
+    btnText.textContent = 'Connexion...';
+    btnIcon.className = 'fas fa-spinner spinner';
+    
+    try {
+      console.log('[Login] Tentative:', email);
       
-      document.getElementById('connected-banner').classList.remove('hidden');
-      document.getElementById('login-card').classList.add('hidden');
-      document.getElementById('connected-email').textContent = user.email;
-      
-      const btn = document.getElementById('continue-btn');
-      btn.href = user.role === 'supplier' ? 'supplier/dashboard.html' : 'index.html';
-      btn.textContent = user.role === 'supplier' ? 'Espace Fournisseur' : 'Continuer';
-      return true;
-    }
-
-    function logout() {
-      API.Auth.logout();
-      location.reload();
-    }
-
-    function switchTab(type) {
-      document.getElementById('user-type').value = type;
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById('tab-' + type).classList.add('active');
-      document.getElementById('email').placeholder = type === 'supplier' ? 'fournisseur@marque.com' : 'vous@exemple.com';
-    }
-
-    function togglePassword() {
-      const input = document.getElementById('password');
-      const icon = document.getElementById('eye-icon');
-      input.type = input.type === 'password' ? 'text' : 'password';
-      icon.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
-    }
-
-    function fillTest(type) {
-      switchTab(type);
-      document.getElementById('email').value = type === 'client' ? 'test@brandia.com' : 'supplier@brandia.com';
-      document.getElementById('password').value = type === 'client' ? 'Test1234!' : 'Supplier123!';
-    }
-
-    function showError(msg) {
-      document.getElementById('error-msg').textContent = msg;
-      document.getElementById('error-msg').classList.remove('hidden');
-      document.getElementById('success-msg').classList.add('hidden');
-    }
-
-    function showSuccess(msg) {
-      document.getElementById('success-msg').textContent = msg;
-      document.getElementById('success-msg').classList.remove('hidden');
-      document.getElementById('error-msg').classList.add('hidden');
-    }
-
-    async function handleLogin(e) {
-      e.preventDefault();
-      document.getElementById('error-msg').classList.add('hidden');
-      
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const btn = document.getElementById('submit-btn');
-      const btnText = document.getElementById('btn-text');
-      const btnIcon = document.getElementById('btn-icon');
-      
-      if (!email || !password) {
-        showError('Veuillez remplir tous les champs');
-        return;
-      }
-      
-      btn.disabled = true;
-      btnText.textContent = 'Connexion...';
-      btnIcon.className = 'fas fa-spinner spinner';
-      
-      try {
-        console.log('[Login] Tentative:', email);
-        const result = await API.Auth.login(email, password);
-        console.log('[Login] Résultat:', result);
+      let result;
+      if (window.BrandiaAPI && BrandiaAPI.Auth) {
+        result = await BrandiaAPI.Auth.login(email, password);
+      } else {
+        // Fallback si api.js pas chargé
+        const base = window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://brandia-1.onrender.com';
+        const res = await fetch(`${base}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        result = await res.json();
         
         if (result.success && result.data) {
-          const user = result.data.user || result.data;
           const token = result.data.accessToken || result.data.token;
-          
+          const user = result.data.user || result.data;
           localStorage.setItem('token', token);
+          localStorage.setItem('brandia_token', token);
           localStorage.setItem('user', JSON.stringify(user));
-          
-          showSuccess('Connexion réussie ! Redirection...');
-          setTimeout(() => {
-            window.location.href = user.role === 'supplier' ? 'supplier/dashboard.html' : 'index.html';
-          }, 800);
-        } else {
-          showError(result.message || 'Email ou mot de passe incorrect');
-          btn.disabled = false;
-          btnText.textContent = 'Se connecter';
-          btnIcon.className = 'fas fa-arrow-right';
+          localStorage.setItem('brandia_user', JSON.stringify(user));
         }
-      } catch (err) {
-        console.error('[Login] Erreur:', err);
-        showError('Erreur serveur (500). Le backend a un problème. Vérifiez les logs Render.');
+      }
+      
+      console.log('[Login] Résultat:', result);
+      
+      if (result.success) {
+        const user = result.data?.user || result.data;
+        showSuccess('Connexion réussie ! Redirection...');
+        
+        setTimeout(() => {
+          if (user?.role === 'supplier') {
+            window.location.href = 'supplier/dashboard.html';
+          } else {
+            window.location.href = 'index.html';
+          }
+        }, 800);
+      } else {
+        showError(result.message || 'Email ou mot de passe incorrect');
         btn.disabled = false;
         btnText.textContent = 'Se connecter';
         btnIcon.className = 'fas fa-arrow-right';
       }
+    } catch (err) {
+      console.error('[Login] Erreur:', err);
+      showError('Erreur serveur. Vérifiez votre connexion.');
+      btn.disabled = false;
+      btnText.textContent = 'Se connecter';
+      btnIcon.className = 'fas fa-arrow-right';
     }
+  }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      if (!checkConnected()) {
-        document.getElementById('email').focus();
-      }
-    });
-  </script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!checkConnected()) {
+      document.getElementById('email').focus();
+    }
+  });
+</script>
 </body>
 </html>

@@ -1440,78 +1440,78 @@
           <a href="#about" class="nav-link">À propos</a>
         </nav>
 
-        <!-- Actions -->
-        <div class="header-actions">
-          <select class="country-selector" id="countrySelector">
-            <option value="">🌍 Chargement...</option>
-          </select>
+             <!-- Actions -->
+<div class="header-actions">
+  <select class="country-selector" id="countrySelector">
+    <option value="">🌍 Chargement...</option>
+  </select>
 
-          <select class="lang-switch" id="langSwitch">
-            <option value="fr">🇫🇷 FR</option>
-            <option value="en">🇬🇧 EN</option>
-          </select>
+  <select class="lang-switch" id="langSwitch">
+    <option value="fr">🇫🇷 FR</option>
+    <option value="en">🇬🇧 EN</option>
+  </select>
 
-          <!-- Non connecté -->
-          <div class="auth-buttons" id="auth-buttons">
-            <a href="login.html" class="btn-login">Connexion</a>
-            <div class="btn-register" style="position: relative;">
-              <span>Inscription</span>
-              <i class="fas fa-chevron-down text-xs"></i>
-              <div class="register-dropdown">
-                <a href="register.html?type=client" class="register-option">
-                  <div class="register-option-icon client">
-                    <i class="fas fa-user"></i>
-                  </div>
-                  <div>
-                    <div style="font-weight: 600; color: var(--brandia-text);">Client</div>
-                    <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Acheteur</div>
-                  </div>
-                </a>
-                <div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>
-                <a href="register.html?type=supplier" class="register-option">
-                  <div class="register-option-icon supplier">
-                    <i class="fas fa-store"></i>
-                  </div>
-                  <div>
-                    <div style="font-weight: 600; color: var(--brandia-text);">Partenaire</div>
-                    <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Vendeur / Marque</div>
-                  </div>
-                </a>
-              </div>
-            </div>
+  <!-- Non connecté -->
+  <div class="auth-buttons" id="auth-buttons" style="display: flex;">
+    <a href="login.html" class="btn-login">Connexion</a>
+    <div class="btn-register" style="position: relative;">
+      <span>Inscription</span>
+      <i class="fas fa-chevron-down text-xs"></i>
+      <div class="register-dropdown">
+        <a href="register.html?type=client" class="register-option">
+          <div class="register-option-icon client">
+            <i class="fas fa-user"></i>
           </div>
-
-          <!-- Client connecté -->
-          <div class="user-menu" id="user-menu">
-            <span class="user-name" id="user-name"></span>
-            <button class="btn-logout" onclick="logout()">
-              <i class="fas fa-sign-out-alt"></i>
-            </button>
+          <div>
+            <div style="font-weight: 600; color: var(--brandia-text);">Client</div>
+            <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Acheteur</div>
           </div>
-
-          <!-- Fournisseur connecté -->
-          <div class="supplier-menu" id="supplier-menu">
-            <a href="supplier/dashboard.html" class="btn-dashboard">
-              <i class="fas fa-chart-line"></i>
-              <span>Dashboard</span>
-            </a>
-            <span class="user-name" id="supplier-name"></span>
-            <button class="btn-logout" onclick="logout()">
-              <i class="fas fa-sign-out-alt"></i>
-            </button>
+        </a>
+        <div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>
+        <a href="register.html?type=supplier" class="register-option">
+          <div class="register-option-icon supplier">
+            <i class="fas fa-store"></i>
           </div>
+          <div>
+            <div style="font-weight: 600; color: var(--brandia-text);">Partenaire</div>
+            <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Vendeur / Marque</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
 
-          <!-- Panier -->
-          <a href="panier.html" class="cart-link">
-            <i class="fas fa-shopping-bag text-xl"></i>
-            <span class="cart-badge hidden" id="cart-count">0</span>
-          </a>
+  <!-- Client connecté -->
+  <div class="user-menu" id="user-menu" style="display: none;">
+    <span class="user-name" id="user-name"></span>
+    <button class="btn-logout" onclick="logout()">
+      <i class="fas fa-sign-out-alt"></i>
+    </button>
+  </div>
 
-          <!-- Mobile Toggle -->
-          <button class="mobile-toggle" onclick="toggleMobileMenu()">
-            <i class="fas fa-bars"></i>
-          </button>
-        </div>
+  <!-- Fournisseur connecté -->
+  <div class="supplier-menu" id="supplier-menu" style="display: none;">
+    <a href="supplier/dashboard.html" class="btn-dashboard">
+      <i class="fas fa-chart-line"></i>
+      <span>Dashboard</span>
+    </a>
+    <span class="user-name" id="supplier-name"></span>
+    <button class="btn-logout" onclick="logout()">
+      <i class="fas fa-sign-out-alt"></i>
+    </button>
+  </div>
+
+  <!-- Panier -->
+  <a href="panier.html" class="cart-link">
+    <i class="fas fa-shopping-bag text-xl"></i>
+    <span class="cart-badge hidden" id="cart-count">0</span>
+  </a>
+
+  <!-- Mobile Toggle -->
+  <button class="mobile-toggle" onclick="toggleMobileMenu()">
+    <i class="fas fa-bars"></i>
+  </button>
+</div>
       </div>
     </div>
   </header>
@@ -2177,31 +2177,53 @@
       badge.classList.toggle('hidden', count === 0);
     }
 
+    
     // ========== AUTH ==========
-    function initAuth() {
-      const user = BrandiaAPI.Auth.getUser();
-      
-      document.getElementById('auth-buttons').classList.add('hidden');
-      document.getElementById('user-menu').classList.remove('active');
-      document.getElementById('supplier-menu').classList.remove('active');
-      
-      if (user?.email) {
-        if (user.role === 'supplier') {
-          document.getElementById('supplier-menu').classList.add('active');
-          document.getElementById('supplier-name').textContent = user.first_name || user.email;
-        } else {
-          document.getElementById('user-menu').classList.add('active');
-          document.getElementById('user-name').textContent = user.first_name || user.email;
-        }
-      } else {
-        document.getElementById('auth-buttons').classList.remove('hidden');
+function initAuth() {
+  // Utiliser BrandiaAPI si disponible, sinon fallback
+  let user = null;
+  let isLoggedIn = false;
+  
+  if (window.BrandiaAPI && BrandiaAPI.Auth) {
+    user = BrandiaAPI.Auth.getUser();
+    isLoggedIn = BrandiaAPI.Auth.isLoggedIn();
+  } else {
+    // Fallback direct
+    const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+    const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+    if (userStr) {
+      try {
+        user = JSON.parse(userStr);
+        isLoggedIn = !!token;
+      } catch(e) {
+        console.error('Erreur parsing user:', e);
       }
     }
-
-    function logout() {
-      BrandiaAPI.Auth.logout();
+  }
+  
+  console.log('[Auth] isLoggedIn:', isLoggedIn, 'Role:', user?.role);
+  
+  const authButtons = document.getElementById('auth-buttons');
+  const userMenu = document.getElementById('user-menu');
+  const supplierMenu = document.getElementById('supplier-menu');
+  
+  // Reset
+  authButtons.style.display = 'none';
+  userMenu.style.display = 'none';
+  supplierMenu.style.display = 'none';
+  
+  if (isLoggedIn && user) {
+    if (user.role === 'supplier') {
+      supplierMenu.style.display = 'flex';
+      document.getElementById('supplier-name').textContent = user.first_name || user.company_name || user.email;
+    } else {
+      userMenu.style.display = 'flex';
+      document.getElementById('user-name').textContent = user.first_name || user.email;
     }
-
+  } else {
+    authButtons.style.display = 'flex';
+  }
+}
     // ========== INIT ==========
     document.addEventListener('DOMContentLoaded', () => {
       initCountries();
