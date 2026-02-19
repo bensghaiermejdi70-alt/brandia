@@ -1,6 +1,7 @@
 // ============================================
-// BRANDIA API CLIENT - v3.1 UNIFIÉ
+// BRANDIA API CLIENT - v3.2 UNIFIÉ
 // Supporte: token/user ET brandia_token/brandia_user
+// AJOUT: UploadAPI pour images et vidéos
 // ============================================
 
 (function() {
@@ -31,13 +32,11 @@
   // ============================================
   
   const storage = {
-    // 🔥 NOUVEAU: Essaie les deux clés pour maximiser la compatibilité
     getToken: () => {
       return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
     },
     
     setToken: (token) => {
-      // Stocke dans les deux clés pour compatibilité maximale
       localStorage.setItem('token', token);
       localStorage.setItem('brandia_token', token);
     },
@@ -273,6 +272,59 @@
     getMyOrders: async () => await apiFetch('/orders'),
     
     getById: async (id) => await apiFetch(`/orders/${id}`)
+  };
+
+  // ============================================
+  // UPLOAD API (🔥 NOUVEAU - v3.2)
+  // ============================================
+  
+  const UploadAPI = {
+    uploadImage: async (formData) => {
+      try {
+        const token = storage.getToken();
+        const response = await fetch(`${API_BASE_URL}/supplier/upload-image`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+            // NE PAS mettre Content-Type, le navigateur le gère pour FormData
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+          throw new Error(error.message || `Erreur ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('[Upload] Error:', error);
+        return { success: false, message: error.message };
+      }
+    },
+    
+    uploadVideo: async (formData) => {
+      try {
+        const token = storage.getToken();
+        const response = await fetch(`${API_BASE_URL}/supplier/upload-video`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+          throw new Error(error.message || `Erreur ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('[Upload Video] Error:', error);
+        return { success: false, message: error.message };
+      }
+    }
   };
 
   // ============================================
@@ -588,6 +640,7 @@
     Products: ProductsAPI,
     Categories: CategoriesAPI,
     Orders: OrdersAPI,
+    Upload: UploadAPI,  // 🔥 NOUVEAU
     Cart: CartAPI,
     Supplier: SupplierAPI,
     storage: storage,
@@ -595,7 +648,7 @@
       baseURL: API_BASE, 
       isLocal: isLocal, 
       apiURL: API_BASE_URL,
-      version: '3.1-unified'
+      version: '3.2-unified'
     }
   };
 
@@ -605,5 +658,5 @@
   window.getUser = () => BrandiaAPI.Auth.getUser();
   window.isSupplier = () => BrandiaAPI.Auth.isSupplier();
 
-  console.log('[Brandia API] ✅ Loaded v3.1 - Unified Storage (token + brandia_token)');
+  console.log('[Brandia API] ✅ Loaded v3.2 - Unified Storage + UploadAPI');
 })();

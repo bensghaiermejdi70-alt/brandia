@@ -1,5 +1,6 @@
 // ============================================
-// ROUTES PRINCIPALES - API Brandia v3.2 CORRIGÉ
+// ROUTES PRINCIPALES - API Brandia v3.3 CORRIGÉ
+// Ajout des routes Supplier manquantes
 // ============================================
 
 const express = require('express');
@@ -14,23 +15,26 @@ const orderRoutes = require('../modules/orders/order.routes');
 const paymentRoutes = require('../modules/payments/payment.routes');
 const countryRoutes = require('../modules/countries/country.routes');
 
+// 🔥 NOUVEAU: Import des routes Supplier
+const supplierRoutes = require('../modules/supplier/supplier.routes');
+
 // 🔥 Import du middleware (uniquement pour routes spécifiques)
 const { authenticate } = require('../middlewares/auth.middleware');
 
-console.log('[Routes Index] Loading v3.2...');
+console.log('[Routes Index] Loading v3.3...');
 
 // ============================================
 // ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
 // ============================================
 
-// Health check (déjà dans app.js mais gardé pour compatibilité)
+// Health check
 router.get('/health', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
         timestamp: new Date().toISOString(),
         service: 'brandia-api',
-        version: '3.2.0'
+        version: '3.3.0'
     });
 });
 
@@ -114,7 +118,16 @@ router.get('/public/promotions/active', async (req, res, next) => {
 });
 
 // ============================================
-// 🔥 ROUTES PROTÉGÉES (AVEC AUTHENTIFICATION)
+// 🔥 ROUTES SUPPLIER (MIXTE: publique + protégée)
+// ============================================
+// IMPORTANT: supplier.routes.js gère lui-même la séparation
+// des routes publiques (avant middleware) et protégées (après)
+router.use('/supplier', supplierRoutes);
+
+console.log('[Routes Index] ✅ Supplier routes mounted at /api/supplier');
+
+// ============================================
+// ROUTES PROTÉGÉES (AVEC AUTHENTIFICATION)
 // ============================================
 
 // Auth - Profil et Logout (protégés)
@@ -134,10 +147,8 @@ router.post('/auth/logout', authenticate, async (req, res, next) => {
     }
 });
 
-// Orders (protégé - mais on passe authenticate comme middleware de route)
-// 🔥 CORRECTION: On s'assure que orderRoutes n'a pas de conflit
+// Orders (protégé)
 router.use('/orders', authenticate, (req, res, next) => {
-    // Middleware de transition pour catcher les erreurs
     next();
 }, orderRoutes);
 
@@ -146,8 +157,7 @@ router.use('/payments', authenticate, (req, res, next) => {
     next();
 }, paymentRoutes);
 
-// Countries (publique - pas d'authentification requise)
-// 🔥 CORRECTION: Déplacé avant les routes protégées pour clarté
+// Countries (publique)
 router.use('/countries', countryRoutes);
 
 // ============================================
@@ -157,7 +167,7 @@ router.get('/', (req, res) => {
     res.json({
         success: true,
         service: 'Brandia API',
-        version: '3.2.0',
+        version: '3.3.0',
         status: 'operational',
         timestamp: new Date().toISOString(),
         endpoints: {
@@ -166,7 +176,12 @@ router.get('/', (req, res) => {
                 categories: 'GET /api/categories',
                 products: 'GET /api/products',
                 promotions: 'GET /api/public/promotions/active',
-                supplier_campaigns: 'GET /api/supplier/public/campaigns?supplier=X&product=Y'
+                supplier_public: {
+                    campaigns: 'GET /api/supplier/public/campaigns?supplier=X&product=Y',
+                    campaign_view: 'POST /api/supplier/public/campaigns/view',
+                    campaign_click: 'POST /api/supplier/public/campaigns/click',
+                    ad_settings: 'GET /api/supplier/public/ad-settings?supplier=X'
+                }
             },
             authentication: {
                 register: 'POST /api/auth/register',
@@ -178,7 +193,7 @@ router.get('/', (req, res) => {
             protected: {
                 orders: '/api/orders/*',
                 payments: '/api/payments/*',
-                supplier_dashboard: '/api/supplier/*'
+                supplier_dashboard: '/api/supplier/* (stats, products, orders, campaigns, etc.)'
             }
         }
     });
@@ -197,6 +212,6 @@ router.use((req, res) => {
     });
 });
 
-console.log('[Routes Index] ✅ Loaded successfully');
+console.log('[Routes Index] ✅ Loaded successfully v3.3');
 
 module.exports = router;

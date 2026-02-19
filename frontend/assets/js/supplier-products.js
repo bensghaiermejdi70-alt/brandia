@@ -408,154 +408,420 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // SAUVEGARDE
-  // ==========================================
-  save: async function() {
-    const nameInput = document.getElementById('product-name');
-    const descInput = document.getElementById('product-description');
-    const priceInput = document.getElementById('product-price');
-    const stockInput = document.getElementById('product-stock');
-    const catInput = document.getElementById('product-category-select');
+// SAUVEGARDE PRODUIT - CORRIGÉE v3.2
+// ==========================================
 
-    const data = {
-      name: nameInput?.value?.trim(),
-      description: descInput?.value?.trim() || '',
-      price: parseFloat(priceInput?.value),
-      stock_quantity: parseInt(stockInput?.value) || 0,
-      category_id: parseInt(catInput?.value) || null,
-      main_image_url: this.state.uploadedImage?.url || null,
-      is_active: true
-    };
-
-    if (!data.name || data.name.length < 2) {
-      return alert('Le nom du produit doit contenir au moins 2 caractères');
-    }
-
-    if (isNaN(data.price) || data.price <= 0) {
-      return alert('Veuillez saisir un prix valide');
-    }
-
-    if (data.stock_quantity < 0) {
-      return alert('Le stock ne peut pas être négatif');
-    }
-
+save: async function() {
+    console.log('[Products] ========== SAUVEGARDE DÉMARRÉE ==========');
+    
     try {
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(true);
-      }
+        // ==========================================
+        // 1. RÉCUPÉRATION DES CHAMPS
+        // ==========================================
+        
+        const nameInput = document.getElementById('product-name');
+        const descInput = document.getElementById('product-description');
+        const priceInput = document.getElementById('product-price');
+        const stockInput = document.getElementById('product-stock');
+        const catInput = document.getElementById('product-category-select');
+        const comparePriceInput = document.getElementById('product-compare-price');
+        const skuInput = document.getElementById('product-sku');
 
-      let response;
-      if (this.state.editingId) {
-        response = await BrandiaAPI.Supplier.updateProduct(this.state.editingId, data);
-        if (response.success) {
-          this.showToast('Produit mis à jour', 'success');
-        } else {
-          throw new Error(response.message || 'Erreur mise à jour');
-        }
-      } else {
-        response = await BrandiaAPI.Supplier.createProduct(data);
-        if (response.success) {
-          this.showToast('Produit créé avec succès', 'success');
-        } else {
-          throw new Error(response.message || 'Erreur création');
-        }
-      }
+        // ==========================================
+        // 2. VALIDATION DES DONNÉES
+        // ==========================================
+        
+        const name = nameInput?.value?.trim();
+        const description = descInput?.value?.trim() || '';
+        const price = parseFloat(priceInput?.value);
+        const stock_quantity = parseInt(stockInput?.value) || 0;
+        const category_id = parseInt(catInput?.value) || null;
+        const compare_price = comparePriceInput?.value ? parseFloat(comparePriceInput.value) : null;
+        const sku = skuInput?.value?.trim() || null;
 
-      if (window.DashboardApp && window.DashboardApp.closeModal) {
+        // Validation nom
+        if (!name || name.length < 2) {
+            this.showToast('Le nom du produit doit contenir au moins 2 caractères', 'error');
+            nameInput?.focus();
+            return false;
+        }
+
+        // Validation prix
+        if (isNaN(price) || price <= 0) {
+            this.showToast('Veuillez saisir un prix valide supérieur à 0', 'error');
+            priceInput?.focus();
+            return false;
+        }
+
+        // Validation prix comparé (si fourni)
+        if (compare_price !== null && (isNaN(compare_price) || compare_price <= 0)) {
+            this.showToast('Le prix barré doit être un nombre positif', 'error');
+            comparePriceInput?.focus();
+            return false;
+        }
+
+        if (compare_price !== null && compare_price <= price) {
+            this.showToast('Le prix barré doit être supérieur au prix de vente', 'error');
+            comparePriceInput?.focus();
+            return false;
+        }
+
+        // Validation stock
+        if (stock_quantity < 0) {
+            this.showToast('Le stock ne peut pas être négatif', 'error');
+            stockInput?.focus();
+            return false;
+        }
+
+        // Validation catégorie
+        if (!category_id) {
+            this.showToast('Veuillez sélectionner une catégorie', 'error');
+            catInput?.focus();
+            return false;
+        }
+
+        // ==========================================
+        // 3. GESTION DE L'IMAGE
+        // ==========================================
+        
+        let main_image_url = null;
+        
+        // Si nouvelle image uploadée
+        if (this.state.uploadedImage && this.state.uploadedImage.url) {
+            main_image_url = this.state.uploadedImage.url;
+            console.log('[Products Save] Nouvelle image:', main_image_url);
+        } 
+        // Si édition et image existante non modifiée
+        else if (this.state.editingId) {
+            const existingProduct = this.state.products.find(p => p.id === this.state.editingId);
+            if (existingProduct && existingProduct.main_image_url) {
+                main_image_url = existingProduct.main_image_url;
+                console.log('[Products Save] Image existante conservée:', main_image_url);
+            }
+        }
+
+        // ==========================================
+        // 4. PRÉPARATION DES DONNÉES
+        // ==========================================
+        
+        const productData = {
+            name: name,
+            description: description,
+            price: price,
+            stock_quantity: stock_quantity,
+            category_id: category_id,
+            main_image_url: main_image_url,
+            is_active: true
+        };
+
+        // Ajouter les champs optionnels seulement s'ils ont une valeur
+        if (compare_price !== null && !isNaN(compare_price)) {
+            productData.compare_price = compare_price;
+        }
+        
+        if (sku) {
+            productData.sku = sku;
+        }
+
+        console.log('[Products Save] Données envoyées:', productData);
+
+        // ==========================================
+        // 5. ENVOI À L'API
+        // ==========================================
+        
+        this.showLoading(true);
+        
+        let response;
+        
+        if (this.state.editingId) {
+            // MISE À JOUR
+            console.log('[Products Save] Mise à jour produit ID:', this.state.editingId);
+            response = await BrandiaAPI.Supplier.updateProduct(this.state.editingId, productData);
+            
+            if (response.success) {
+                // Mettre à jour le produit dans le state local
+                const index = this.state.products.findIndex(p => p.id === this.state.editingId);
+                if (index !== -1) {
+                    this.state.products[index] = { 
+                        ...this.state.products[index], 
+                        ...response.data,
+                        main_image_url: main_image_url || this.state.products[index].main_image_url
+                    };
+                }
+                this.showToast('Produit mis à jour avec succès ✓', 'success');
+            } else {
+                throw new Error(response.message || 'Erreur lors de la mise à jour');
+            }
+            
+        } else {
+            // CRÉATION
+            console.log('[Products Save] Création nouveau produit');
+            response = await BrandiaAPI.Supplier.createProduct(productData);
+            
+            if (response.success && response.data) {
+                // Ajouter le nouveau produit au state
+                this.state.products.unshift(response.data);
+                this.showToast('Produit créé avec succès ✓', 'success');
+            } else {
+                throw new Error(response.message || 'Erreur lors de la création');
+            }
+        }
+
+        // ==========================================
+        // 6. FERMETURE MODAL ET RAFRAÎCHISSEMENT
+        // ==========================================
+        
+        this.closeProductModal();
+        this.renderProducts();
+        this.updateProductCount();
+        
+        // Reset le state d'upload pour la prochaine fois
+        this.state.uploadedImage = null;
+        
+        console.log('[Products Save] ========== SAUVEGARDE TERMINÉE ==========');
+        return true;
+
+    } catch (error) {
+        console.error('[Products Save] ERREUR:', error);
+        
+        let errorMessage = 'Erreur lors de l\'enregistrement';
+        
+        // Messages d'erreur spécifiques
+        if (error.message.includes('duplicate key')) {
+            errorMessage = 'Un produit avec ce nom existe déjà';
+        } else if (error.message.includes('foreign key')) {
+            errorMessage = 'Catégorie invalide';
+        } else if (error.message.includes('not null')) {
+            errorMessage = 'Tous les champs obligatoires doivent être remplis';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        this.showToast(errorMessage, 'error');
+        return false;
+        
+    } finally {
+        this.showLoading(false);
+    }
+},
+
+// ==========================================
+// FERMETURE MODAL PRODUIT
+// ==========================================
+
+closeProductModal: function() {
+    // Utiliser DashboardApp si disponible
+    if (window.DashboardApp && window.DashboardApp.closeModal) {
         window.DashboardApp.closeModal('product-modal');
-      } else {
+    } else {
+        // Fallback direct
         const modal = document.getElementById('product-modal');
         if (modal) {
-          modal.classList.add('hidden');
-          document.body.style.overflow = '';
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
         }
-      }
-      
-      await this.loadProducts();
-    } catch (error) {
-      console.error('Save error:', error);
-      alert(error.message || 'Erreur lors de l\'enregistrement');
-    } finally {
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(false);
-      }
     }
-  },
+    
+    // Reset du formulaire
+    const form = document.getElementById('product-form');
+    if (form) {
+        form.reset();
+    }
+    
+    // Reset des états
+    this.state.editingId = null;
+    this.state.uploadedImage = null;
+    
+    // Cacher la preview
+    const previewContainer = document.getElementById('image-preview-container');
+    if (previewContainer) {
+        previewContainer.classList.add('hidden');
+    }
+    
+    console.log('[Products] Modal fermé et formulaire reset');
+},
 
-  // ==========================================
-  // UPLOAD IMAGE - CORRIGÉ
-  // ==========================================
-  handleImageSelect: async function(event) {
+// ==========================================
+// AFFICHAGE LOADING
+// ==========================================
+
+showLoading: function(show) {
+    if (window.DashboardApp && window.DashboardApp.showLoading) {
+        window.DashboardApp.showLoading(show);
+    } else {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.toggle('hidden', !show);
+        }
+    }
+},
+
+// ==========================================
+// AFFICHAGE TOAST
+// ==========================================
+
+showToast: function(message, type = 'success') {
+    if (window.DashboardApp && window.DashboardApp.showToast) {
+        window.DashboardApp.showToast(message, type);
+    } else if (window.showToast) {
+        window.showToast(message, type);
+    } else {
+        console.log(`[${type}] ${message}`);
+        // Fallback alert si aucun système de toast
+        if (type === 'error') {
+            alert(message);
+        }
+    }
+},
+
+ // ==========================================
+// UPLOAD IMAGE - CORRIGÉ v3.2
+// Utilise BrandiaAPI.Upload.uploadImage()
+// ==========================================
+
+handleImageSelect: async function(event) {
     const file = event.target.files[0];
     if (!file) return;
 
+    // Validation taille (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      return alert('L\'image ne doit pas dépasser 5MB');
+        return this.showToast('L\'image ne doit pas dépasser 5MB', 'error');
     }
 
-    // Vérifier le type
+    // Validation type MIME
     if (!file.type.startsWith('image/')) {
-      return alert('Veuillez sélectionner une image valide');
+        return this.showToast('Veuillez sélectionner une image valide (JPG, PNG, WebP)', 'error');
     }
 
     try {
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(true);
-      }
-      
-      const formData = new FormData();
-      formData.append('media', file);
-
-      console.log('[Upload] Envoi vers:', BrandiaAPI.config.apiURL + '/supplier/upload-image');
-      console.log('[Upload] Fichier:', file.name, file.type, file.size);
-
-      const response = await fetch(BrandiaAPI.config.apiURL + '/supplier/upload-image', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      console.log('[Upload] Status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Upload] Server error:', errorText);
-        throw new Error(`Erreur serveur ${response.status}: ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('[Upload] Résultat:', result);
-
-      if (result.success) {
-        // 🔥 CORRECTION : Gérer différents formats de réponse
-        const imageUrl = result.data?.url || result.data?.secure_url || result.data || result.url;
-        
-        if (!imageUrl) {
-          throw new Error('URL image non trouvée dans la réponse');
+        // Afficher le loading global si disponible
+        if (window.DashboardApp && window.DashboardApp.showLoading) {
+            window.DashboardApp.showLoading(true);
         }
         
-        this.state.uploadedImage = { url: imageUrl };
-        const preview = document.getElementById('image-preview');
-        const container = document.getElementById('image-preview-container');
+        // Préparer le FormData
+        const formData = new FormData();
+        formData.append('media', file); // 'media' = nom attendu par le backend
+
+        console.log('[Products Upload] Envoi image:', file.name, file.type, (file.size/1024).toFixed(1) + 'KB');
+        console.log('[Products Upload] Endpoint:', BrandiaAPI.config.apiURL + '/supplier/upload-image');
         
-        if (preview) preview.src = imageUrl;
-        if (container) container.classList.remove('hidden');
+        // 🔥 UTILISER LE NOUVEAU UploadAPI (v3.2)
+        const result = await BrandiaAPI.Upload.uploadImage(formData);
         
-        this.showToast('Image uploadée avec succès', 'success');
-      } else {
-        throw new Error(result.message || 'Erreur upload');
-      }
+        console.log('[Products Upload] Résultat:', result);
+
+        if (result.success) {
+            // 🔥 CORRECTION: Gérer différents formats de réponse possible
+            const imageUrl = result.data?.url || 
+                           result.data?.secure_url || 
+                           result.url || 
+                           result.secure_url;
+            
+            if (!imageUrl) {
+                console.error('[Products Upload] URL non trouvée dans:', result);
+                throw new Error('URL image non trouvée dans la réponse serveur');
+            }
+            
+            // Stocker l'URL pour la sauvegarde du produit
+            this.state.uploadedImage = { 
+                url: imageUrl,
+                public_id: result.data?.public_id || null
+            };
+            
+            // Mettre à jour la preview
+            const preview = document.getElementById('image-preview');
+            const container = document.getElementById('image-preview-container');
+            
+            if (preview) {
+                preview.src = imageUrl;
+                preview.onerror = () => {
+                    console.warn('[Products Upload] Erreur chargement preview, fallback');
+                    preview.src = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400';
+                };
+            }
+            
+            if (container) {
+                container.classList.remove('hidden');
+            }
+            
+            this.showToast('Image uploadée avec succès ✓', 'success');
+            
+        } else {
+            // Le serveur a répondu mais avec success: false
+            throw new Error(result.message || 'Erreur lors de l\'upload');
+        }
+        
     } catch (error) {
-      console.error('[Upload] Error:', error);
-      this.showToast('Erreur upload image: ' + error.message, 'error');
+        console.error('[Products Upload] Error:', error);
+        
+        // Message d'erreur utilisateur friendly
+        let errorMsg = 'Erreur upload image';
+        
+        if (error.message.includes('413')) {
+            errorMsg = 'Image trop lourde (max 5MB)';
+        } else if (error.message.includes('401')) {
+            errorMsg = 'Session expirée, veuillez vous reconnecter';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMsg = 'Connexion impossible au serveur';
+        } else if (error.message) {
+            errorMsg = error.message;
+        }
+        
+        this.showToast(errorMsg, 'error');
+        
+        // Reset du champ file pour permettre réessai
+        const fileInput = event.target;
+        if (fileInput) fileInput.value = '';
+        
     } finally {
-      if (window.DashboardApp && window.DashboardApp.showLoading) {
-        window.DashboardApp.showLoading(false);
-      }
+        // Cacher le loading
+        if (window.DashboardApp && window.DashboardApp.showLoading) {
+            window.DashboardApp.showLoading(false);
+        }
     }
-  },
+},
+
+// ==========================================
+// SUPPRESSION IMAGE UPLOADÉE
+// ==========================================
+
+removeUploadedImage: function() {
+    this.state.uploadedImage = null;
+    
+    const preview = document.getElementById('image-preview');
+    const container = document.getElementById('image-preview-container');
+    const fileInput = document.getElementById('product-image');
+    
+    if (preview) preview.src = '';
+    if (container) container.classList.add('hidden');
+    if (fileInput) fileInput.value = '';
+    
+    console.log('[Products] Image removed');
+},
+
+// ==========================================
+// VALIDATION AVANT SAUVEGARDE
+// ==========================================
+
+validateImageBeforeSave: function() {
+    // Si on édite un produit existant et qu'on n'a pas changé l'image
+    if (this.state.editingId && !this.state.uploadedImage) {
+        const product = this.state.products.find(p => p.id === this.state.editingId);
+        if (product && product.main_image_url) {
+            // Garder l'image existante
+            return { valid: true, url: product.main_image_url };
+        }
+    }
+    
+    // Si nouvelle image uploadée
+    if (this.state.uploadedImage && this.state.uploadedImage.url) {
+        return { valid: true, url: this.state.uploadedImage.url };
+    }
+    
+    // Pas d'image requise (produit sans image)
+    return { valid: true, url: null };
+},
 
   // ==========================================
   // IMPORT CSV

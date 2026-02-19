@@ -620,13 +620,13 @@ window.SupplierCampaigns = {
   
   uploadMediaToCloudinary: async function() {
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
-      if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
-        return {
-          url: this.state.uploadedMedia.existingUrl,
-          type: this.state.uploadedMedia.existingType
-        };
-      }
-      return null;
+        if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
+            return {
+                url: this.state.uploadedMedia.existingUrl,
+                type: this.state.uploadedMedia.existingType
+            };
+        }
+        return null;
     }
 
     const file = this.state.uploadedMedia.file;
@@ -638,47 +638,30 @@ window.SupplierCampaigns = {
     formData.append('media', file);
 
     try {
-      this.showLoading(true);
-      
-      const endpoint = type === 'video' ? '/supplier/upload-video' : '/supplier/upload-image';
-      const fullUrl = BrandiaAPI.config.apiURL + endpoint;
-      
-      console.log('[Campaigns Upload] URL:', fullUrl);
-
-      const response = await fetch(fullUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token')
-        },
-        body: formData
-      });
-
-      console.log('[Campaigns Upload] Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Campaigns Upload] Server error:', errorText);
-        throw new Error('Erreur serveur ' + response.status + ': ' + errorText);
-      }
-
-      const result = await response.json();
-      console.log('[Campaigns Upload] Success:', result);
-
-      if (result.success) {
-        const mediaUrl = result.data?.url || result.data?.secure_url;
-        if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
+        this.showLoading(true);
         
-        return { url: mediaUrl, type: type };
-      } else {
-        throw new Error(result.message || 'Erreur upload');
-      }
+        // 🔥 UTILISER UploadAPI au lieu de fetch manuel
+        const result = type === 'video' 
+            ? await BrandiaAPI.Upload.uploadVideo(formData)
+            : await BrandiaAPI.Upload.uploadImage(formData);
+        
+        console.log('[Campaigns Upload] Success:', result);
+
+        if (result.success) {
+            const mediaUrl = result.data?.url || result.data?.secure_url;
+            if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
+            
+            return { url: mediaUrl, type: type };
+        } else {
+            throw new Error(result.message || 'Erreur upload');
+        }
     } catch (error) {
-      console.error('[Campaigns Upload] Error:', error);
-      throw error;
+        console.error('[Campaigns Upload] Error:', error);
+        throw error;
     } finally {
-      this.showLoading(false);
+        this.showLoading(false);
     }
-  },
+},
 
   showLoading: function(show) {
     if (window.showLoading) {
