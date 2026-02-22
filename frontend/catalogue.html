@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- Tailwind CSS (development only – replace with a proper build for production) -->
+<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
@@ -1066,6 +1066,7 @@ tailwind.config = {
 <!-- Logo -->
 <a href="index.html" class="brandia-logo">
 <div class="brandia-icon-wrap">
+<div class="brandia-pulse"></div>
 <div class="brandia-icon-bg">
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: white;">
 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
@@ -1127,6 +1128,7 @@ tailwind.config = {
 <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Vendeur / Marque</div>
 </div>
 </a>
+</div>
 </div>
 </div>
 <!-- Client connecté -->
@@ -1286,7 +1288,7 @@ tailwind.config = {
 <!-- Scripts -->
 <script src="assets/js/api.js"></script>
 <script>
-/* ========== CONFIGURATION ========== */
+// ========== CONFIGURATION ==========
 const BRANDIA_CATEGORIES = [
   { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
   { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
@@ -1310,6 +1312,8 @@ const BRANDIA_CATEGORIES = [
   { slug: 'artisanat-local', name: 'Artisanat local', icon: 'fa-hands', gradient: 'from-orange-400 to-amber-500' },
   { slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle', gradient: 'from-cyan-500 to-blue-600' }
 ];
+
+// CORRECTION: Apostrophes échappées dans les noms de pays
 const COUNTRIES = {
   'AF': { name: 'Afghanistan', currency: 'AFN' },
   'AL': { name: 'Albanie', currency: 'ALL' },
@@ -1502,6 +1506,7 @@ const COUNTRIES = {
   'ZM': { name: 'Zambie', currency: 'ZMW' },
   'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
 };
+
 // ========== UTILITAIRES ==========
 function getFlagEmoji(countryCode) {
   const codePoints = countryCode
@@ -1891,8 +1896,7 @@ function updateCategory(slug) {
   CatalogueApp.loadProducts();
   if (cleanSlug) {
     window.history.replaceState({}, '', `?category=${encodeURIComponent(cleanSlug)}`);
-    const cat = BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug);
-    document.title = `${cat?.name || 'Catalogue'} - Brandia`;
+    document.title = `${BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug)?.name || 'Catalogue'} - Brandia`;
   } else {
     window.history.replaceState({}, '', window.location.pathname);
     document.title = 'Catalogue - Brandia';
@@ -1909,6 +1913,7 @@ function updateCategory(slug) {
 }
 function updatePageTitle() {
   const pageTitle = document.getElementById('page-title');
+  const catCount = document.getElementById('cat-count');
   if (CatalogueApp.state.filters.category) {
     const category = BRANDIA_CATEGORIES.find(c => c.slug === CatalogueApp.state.filters.category);
     if (category) {
@@ -1919,6 +1924,7 @@ function updatePageTitle() {
     pageTitle.textContent = 'Catalogue';
     document.title = 'Catalogue - Brandia';
   }
+  if (catCount) catCount.textContent = BRANDIA_CATEGORIES.length;
 }
 function initSearch() {
   const searchInput = document.getElementById('search-input');
