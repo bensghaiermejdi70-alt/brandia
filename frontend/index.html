@@ -32,10 +32,10 @@
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
-        },
-      },
-    };
+          }
+        }
+      }
+    }
   </script>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -62,1223 +62,213 @@
       --brandia-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
     }
     /* ========== BASE STYLES ========== */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background-color: var(--brandia-dark);
-      color: var(--brandia-text);
-      line-height: 1.6;
-      overflow-x: hidden;
-      min-width: 320px;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--brandia-dark); color: var(--brandia-text); line-height: 1.6; overflow-x: hidden; min-width: 320px; }
     /* ========== CONTAINER ========== */
-    .container {
-      width: 100%;
-      max-width: 1280px;
-      margin-left: auto;
-      margin-right: auto;
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-    @media (min-width: 640px) {
-      .container {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-      }
-    }
-    @media (min-width: 1024px) {
-      .container {
-        padding-left: 2rem;
-        padding-right: 2rem;
-      }
-    }
+    .container { width: 100%; max-width: 1280px; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1.5rem; }
+    @media (min-width: 640px) { .container { padding-left: 1.5rem; padding-right: 1.5rem; } }
+    @media (min-width: 1024px) { .container { padding-left: 2rem; padding-right: 2rem; } }
     /* ========== HEADER STYLES ========== */
-    .header {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--brandia-border);
-    }
-    .header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 0;
-      gap: 1rem;
-    }
+    .header { position: sticky; top: 0; z-index: 50; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--brandia-border); }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; gap: 1rem; }
     /* Logo Brandia */
-    .brandia-logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      text-decoration: none;
-      transition: transform 0.3s ease;
-    }
-    .brandia-logo:hover {
-      transform: scale(1.02);
-    }
-    .brandia-icon-wrap {
-      position: relative;
-      width: 40px;
-      height: 40px;
-      flex-shrink: 0;
-    }
-    .brandia-pulse {
-      position: absolute;
-      inset: -4px;
-      border-radius: 12px;
-      background: var(--brandia-gradient);
-      opacity: 0.3;
-      filter: blur(8px);
-      animation: pulse-glow 3s ease-in-out infinite;
-    }
-    @keyframes pulse-glow {
-      0%, 100% {
-        transform: scale(1);
-        opacity: 0.3;
-      }
-      50% {
-        transform: scale(1.1);
-        opacity: 0.5;
-      }
-    }
-    .brandia-icon-bg {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: var(--brandia-gradient);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.5);
-      position: relative;
-      overflow: hidden;
-    }
-    .brandia-icon-bg::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-      animation: shine 3s infinite;
-    }
-    @keyframes shine {
-      0% {
-        left: -100%;
-      }
-      50%, 100% {
-        left: 200%;
-      }
-    }
-    .brandia-icon-svg {
-      width: 24px;
-      height: 24px;
-      color: white;
-    }
-    .brandia-text {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.5rem;
-      font-weight: 800;
-      background: var(--brandia-gradient);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.02em;
-    }
+    .brandia-logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; transition: transform 0.3s ease; }
+    .brandia-logo:hover { transform: scale(1.02); }
+    .brandia-icon-wrap { position: relative; width: 40px; height: 40px; flex-shrink: 0; }
+    .brandia-pulse { position: absolute; inset: -4px; border-radius: 12px; background: var(--brandia-gradient); opacity: 0.3; filter: blur(8px); animation: pulse-glow 3s ease-in-out infinite; }
+    @keyframes pulse-glow { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.1); opacity: 0.5; } }
+    .brandia-icon-bg { width: 40px; height: 40px; border-radius: 10px; background: var(--brandia-gradient); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.5); position: relative; overflow: hidden; }
+    .brandia-icon-bg::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shine 3s infinite; }
+    @keyframes shine { 0% { left: -100%; } 50%, 100% { left: 200%; } }
+    .brandia-icon-svg { width: 24px; height: 24px; color: white; }
+    .brandia-text { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; background: var(--brandia-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; }
     /* Navigation */
-    .nav-desktop {
-      display: none;
-      align-items: center;
-      gap: 2rem;
-    }
-    @media (min-width: 1024px) {
-      .nav-desktop {
-        display: flex;
-      }
-    }
-    .nav-link {
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: all 0.2s;
-      position: relative;
-    }
-    .nav-link:hover {
-      color: var(--brandia-text);
-    }
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: var(--brandia-gradient);
-      transition: width 0.3s;
-    }
-    .nav-link:hover::after {
-      width: 100%;
-    }
+    .nav-desktop { display: none; align-items: center; gap: 2rem; }
+    @media (min-width: 1024px) { .nav-desktop { display: flex; } }
+    .nav-link { color: var(--brandia-text-muted); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; position: relative; }
+    .nav-link:hover { color: var(--brandia-text); }
+    .nav-link::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px; background: var(--brandia-gradient); transition: width 0.3s; }
+    .nav-link:hover::after { width: 100%; }
     /* Dropdown */
-    .dropdown {
-      position: relative;
-    }
-    .dropdown-trigger {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      padding: 0.5rem 0;
-    }
-    .dropdown-menu {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      left: 0;
-      width: 320px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 12px;
-      padding: 0.75rem;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px);
-      transition: all 0.2s;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      max-height: 60vh;
-      overflow-y: auto;
-    }
-    .dropdown:hover .dropdown-menu {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-    .dropdown-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.625rem;
-      border-radius: 8px;
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      transition: all 0.2s;
-    }
-    .dropdown-item:hover {
-      background: var(--brandia-card-hover);
-      color: var(--brandia-text);
-    }
-    .dropdown-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.875rem;
-    }
+    .dropdown { position: relative; }
+    .dropdown-trigger { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem 0; }
+    .dropdown-menu { position: absolute; top: calc(100% + 0.5rem); left: 0; width: 320px; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 12px; padding: 0.75rem; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); max-height: 60vh; overflow-y: auto; }
+    .dropdown:hover .dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+    .dropdown-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem; border-radius: 8px; color: var(--brandia-text-muted); text-decoration: none; font-size: 0.875rem; transition: all 0.2s; }
+    .dropdown-item:hover { background: var(--brandia-card-hover); color: var(--brandia-text); }
+    .dropdown-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; }
     /* ============================================ BLOC 1: HEADER ACTIONS - CORRIGÉ ============================================ */
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .country-selector {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.5rem 0.75rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .country-selector:hover {
-      border-color: var(--brandia-primary);
-    }
-    .lang-switch {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.5rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+    .country-selector { background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--brandia-text); font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
+    .country-selector:hover { border-color: var(--brandia-primary); }
+    .lang-switch { background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 8px; padding: 0.5rem; color: var(--brandia-text); font-size: 0.875rem; cursor: pointer; }
     /* Auth Buttons - Non connecté */
-    .auth-buttons {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .btn-login {
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      transition: all 0.2s;
-    }
-    .btn-login:hover {
-      color: var(--brandia-text);
-      background: var(--brandia-card);
-    }
-    .btn-register {
-      background: var(--brandia-primary);
-      color: white;
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 600;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-      position: relative;
-      cursor: pointer;
-      border: none;
-    }
-    .btn-register:hover {
-      background: var(--brandia-primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
-    }
-    .register-dropdown {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      width: 240px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 12px;
-      padding: 0.5rem;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px);
-      transition: all 0.2s;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      z-index: 100;
-    }
-    .btn-register:hover .register-dropdown {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-    .register-option {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem;
-      border-radius: 8px;
-      color: var(--brandia-text);
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .register-option:hover {
-      background: var(--brandia-card-hover);
-    }
-    .register-option-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .register-option-icon.client {
-      background: rgba(99, 102, 241, 0.2);
-      color: var(--brandia-primary);
-    }
-    .register-option-icon.supplier {
-      background: rgba(16, 185, 129, 0.2);
-      color: var(--brandia-success);
-    }
+    .auth-buttons { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-login { color: var(--brandia-text-muted); text-decoration: none; font-size: 0.875rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 8px; transition: all 0.2s; }
+    .btn-login:hover { color: var(--brandia-text); background: var(--brandia-card); }
+    .btn-register { background: var(--brandia-primary); color: white; text-decoration: none; font-size: 0.875rem; font-weight: 600; padding: 0.5rem 1rem; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; position: relative; cursor: pointer; border: none; }
+    .btn-register:hover { background: var(--brandia-primary-hover); transform: translateY(-1px); box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4); }
+    .register-dropdown { position: absolute; top: calc(100% + 0.5rem); right: 0; width: 240px; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 12px; padding: 0.5rem; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); z-index: 100; }
+    .btn-register:hover .register-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+    .register-option { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 8px; color: var(--brandia-text); text-decoration: none; transition: all 0.2s; }
+    .register-option:hover { background: var(--brandia-card-hover); }
+    .register-option-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .register-option-icon.client { background: rgba(99, 102, 241, 0.2); color: var(--brandia-primary); }
+    .register-option-icon.supplier { background: rgba(16, 185, 129, 0.2); color: var(--brandia-success); }
     /* ============================================ BLOC 2: USER MENU & SUPPLIER MENU - CORRIGÉ Styles pour utilisateurs connectés ============================================ */
     /* Menu Client Connecté */
-    .user-menu {
-      display: none;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.375rem 0.75rem;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-    }
-    .user-menu.active {
-      display: flex !important;
-    }
-    .user-avatar {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 0.875rem;
-    }
-    .user-name {
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      font-weight: 500;
-      max-width: 120px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .btn-logout {
-      width: 32px;
-      height: 32px;
-      background: transparent;
-      border: 1px solid var(--brandia-border);
-      border-radius: 6px;
-      color: var(--brandia-danger);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: 0.875rem;
-    }
-    .btn-logout:hover {
-      background: rgba(239, 68, 68, 0.1);
-      border-color: var(--brandia-danger);
-    }
+    .user-menu { display: none; align-items: center; gap: 0.75rem; padding: 0.375rem 0.75rem; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 8px; }
+    .user-menu.active { display: flex !important; }
+    .user-avatar { width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.875rem; }
+    .user-name { color: var(--brandia-text); font-size: 0.875rem; font-weight: 500; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn-logout { width: 32px; height: 32px; background: transparent; border: 1px solid var(--brandia-border); border-radius: 6px; color: var(--brandia-danger); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 0.875rem; }
+    .btn-logout:hover { background: rgba(239, 68, 68, 0.1); border-color: var(--brandia-danger); }
     /* Menu Fournisseur Connecté */
-    .supplier-menu {
-      display: none;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .supplier-menu.active {
-      display: flex !important;
-    }
-    .btn-dashboard {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--brandia-success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .btn-dashboard:hover {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: var(--brandia-success);
-    }
+    .supplier-menu { display: none; align-items: center; gap: 0.75rem; }
+    .supplier-menu.active { display: flex !important; }
+    .btn-dashboard { display: flex; align-items: center; gap: 0.5rem; background: rgba(16, 185, 129, 0.1); color: var(--brandia-success); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; text-decoration: none; transition: all 0.2s; }
+    .btn-dashboard:hover { background: rgba(16, 185, 129, 0.2); border-color: var(--brandia-success); }
     /* Cart */
-    .cart-link {
-      position: relative;
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      padding: 0.5rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .cart-link:hover {
-      color: var(--brandia-text);
-    }
-    .cart-badge {
-      position: absolute;
-      top: -2px;
-      right: -2px;
-      width: 18px;
-      height: 18px;
-      background: var(--brandia-primary);
-      color: white;
-      border-radius: 50%;
-      font-size: 0.625rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .cart-badge.hidden {
-      display: none !important;
-    }
+    .cart-link { position: relative; color: var(--brandia-text-muted); text-decoration: none; padding: 0.5rem; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .cart-link:hover { color: var(--brandia-text); }
+    .cart-badge { position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: var(--brandia-primary); color: white; border-radius: 50%; font-size: 0.625rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .cart-badge.hidden { display: none !important; }
     /* Mobile Toggle */
-    .mobile-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      color: var(--brandia-text);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .mobile-toggle:hover {
-      border-color: var(--brandia-primary);
-    }
-    @media (min-width: 1024px) {
-      .mobile-toggle {
-        display: none;
-      }
-    }
+    .mobile-toggle { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 8px; color: var(--brandia-text); cursor: pointer; transition: all 0.2s; }
+    .mobile-toggle:hover { border-color: var(--brandia-primary); }
+    @media (min-width: 1024px) { .mobile-toggle { display: none; } }
     /* ========== HERO SECTION ========== */
-    .hero {
-      padding: 4rem 0;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
-      pointer-events: none;
-    }
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 3rem;
-      align-items: center;
-      position: relative;
-      z-index: 1;
-    }
-    @media (min-width: 1024px) {
-      .hero-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    .hero-content h1 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2.5rem;
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1.5rem;
-    }
-    @media (min-width: 640px) {
-      .hero-content h1 {
-        font-size: 3.5rem;
-      }
-    }
-    .hero-content h1 span {
-      background: var(--brandia-gradient);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .hero-content p {
-      color: var(--brandia-text-muted);
-      font-size: 1.125rem;
-      margin-bottom: 2rem;
-      max-width: 480px;
-    }
-    .hero-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    .btn-primary {
-      background: var(--brandia-gradient);
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 1rem 2rem;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.3s;
-      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.6);
-    }
-    .btn-secondary {
-      background: transparent;
-      color: var(--brandia-text);
-      border: 1px solid var(--brandia-border);
-      text-decoration: none;
-      font-weight: 600;
-      padding: 1rem 2rem;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.3s;
-    }
-    .btn-secondary:hover {
-      border-color: var(--brandia-primary);
-      background: var(--brandia-card);
-    }
-    .hero-image {
-      position: relative;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-    .hero-image::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(15, 23, 42, 0.5) 0%, transparent 50%);
-      pointer-events: none;
-    }
-    .hero-image img {
-      width: 100%;
-      height: 400px;
-      object-fit: cover;
-    }
-    @media (min-width: 1024px) {
-      .hero-image img {
-        height: 500px;
-      }
-    }
+    .hero { padding: 4rem 0; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.1) 0%, transparent 50%); pointer-events: none; }
+    .hero-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; align-items: center; position: relative; z-index: 1; }
+    @media (min-width: 1024px) { .hero-grid { grid-template-columns: 1fr 1fr; } }
+    .hero-content h1 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem; }
+    @media (min-width: 640px) { .hero-content h1 { font-size: 3.5rem; } }
+    .hero-content h1 span { background: var(--brandia-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-content p { color: var(--brandia-text-muted); font-size: 1.125rem; margin-bottom: 2rem; max-width: 480px; }
+    .hero-buttons { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .btn-primary { background: var(--brandia-gradient); color: white; text-decoration: none; font-weight: 600; padding: 1rem 2rem; border-radius: 12px; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s; box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.6); }
+    .btn-secondary { background: transparent; color: var(--brandia-text); border: 1px solid var(--brandia-border); text-decoration: none; font-weight: 600; padding: 1rem 2rem; border-radius: 12px; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s; }
+    .btn-secondary:hover { border-color: var(--brandia-primary); background: var(--brandia-card); }
+    .hero-image { position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    .hero-image::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(15, 23, 42, 0.5) 0%, transparent 50%); pointer-events: none; }
+    .hero-image img { width: 100%; height: 400px; object-fit: cover; }
+    @media (min-width: 1024px) { .hero-image img { height: 500px; } }
     /* ========== STATS SECTION ========== */
-    .stats {
-      padding: 3rem 0;
-      background: rgba(30, 41, 59, 0.5);
-      border-top: 1px solid var(--brandia-border);
-      border-bottom: 1px solid var(--brandia-border);
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 2rem;
-    }
-    @media (min-width: 768px) {
-      .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
-    .stat-item {
-      text-align: center;
-    }
-    .stat-value {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2.5rem;
-      font-weight: 800;
-      background: var(--brandia-gradient);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      line-height: 1;
-      margin-bottom: 0.5rem;
-    }
-    .stat-label {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-    }
+    .stats { padding: 3rem 0; background: rgba(30, 41, 59, 0.5); border-top: 1px solid var(--brandia-border); border-bottom: 1px solid var(--brandia-border); }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; }
+    @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+    .stat-item { text-align: center; }
+    .stat-value { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 800; background: var(--brandia-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; margin-bottom: 0.5rem; }
+    .stat-label { color: var(--brandia-text-muted); font-size: 0.875rem; }
     /* ========== SECTIONS COMMUNES ========== */
-    .section {
-      padding: 5rem 0;
-    }
-    .section-header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 2.5rem;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-    .section-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.875rem;
-      font-weight: 700;
-    }
-    @media (min-width: 640px) {
-      .section-title {
-        font-size: 2.25rem;
-      }
-    }
-    .section-subtitle {
-      color: var(--brandia-text-muted);
-      margin-top: 0.5rem;
-    }
-    .link-arrow {
-      color: var(--brandia-primary);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-    }
-    .link-arrow:hover {
-      gap: 0.75rem;
-    }
+    .section { padding: 5rem 0; }
+    .section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2.5rem; gap: 1rem; flex-wrap: wrap; }
+    .section-title { font-family: 'Outfit', sans-serif; font-size: 1.875rem; font-weight: 700; }
+    @media (min-width: 640px) { .section-title { font-size: 2.25rem; } }
+    .section-subtitle { color: var(--brandia-text-muted); margin-top: 0.5rem; }
+    .link-arrow { color: var(--brandia-primary); text-decoration: none; font-size: 0.875rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s; }
+    .link-arrow:hover { gap: 0.75rem; }
     /* ========== CATEGORIES ========== */
-    .categories-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-    }
-    @media (min-width: 640px) {
-      .categories-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-    @media (min-width: 1024px) {
-      .categories-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
-    @media (min-width: 1280px) {
-      .categories-grid {
-        grid-template-columns: repeat(6, 1fr);
-      }
-    }
-    .category-card {
-      display: block;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 16px;
-      overflow: hidden;
-      text-decoration: none;
-      transition: all 0.3s;
-    }
-    .category-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--brandia-primary);
-      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
-    }
-    .category-image {
-      position: relative;
-      height: 120px;
-      overflow: hidden;
-    }
-    .category-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s;
-    }
-    .category-card:hover .category-image img {
-      transform: scale(1.1);
-    }
-    .category-image::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, var(--brandia-card) 0%, transparent 60%);
-    }
-    .category-icon {
-      position: absolute;
-      top: 0.75rem;
-      left: 0.75rem;
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      color: white;
-      z-index: 2;
-    }
-    .category-info {
-      padding: 1rem;
-    }
-    .category-name {
-      color: var(--brandia-text);
-      font-weight: 600;
-      font-size: 0.875rem;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+    .categories-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (min-width: 640px) { .categories-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .categories-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1280px) { .categories-grid { grid-template-columns: repeat(6, 1fr); } }
+    .category-card { display: block; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 16px; overflow: hidden; text-decoration: none; transition: all 0.3s; }
+    .category-card:hover { transform: translateY(-4px); border-color: var(--brandia-primary); box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3); }
+    .category-image { position: relative; height: 120px; overflow: hidden; }
+    .category-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .category-card:hover .category-image img { transform: scale(1.1); }
+    .category-image::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--brandia-card) 0%, transparent 60%); }
+    .category-icon { position: absolute; top: 0.75rem; left: 0.75rem; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: white; z-index: 2; }
+    .category-info { padding: 1rem; }
+    .category-name { color: var(--brandia-text); font-weight: 600; font-size: 0.875rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     /* ========== PRODUCTS GRID ========== */
-    .products-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-    @media (min-width: 640px) {
-      .products-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (min-width: 1024px) {
-      .products-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
-    .product-card {
-      display: block;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 16px;
-      overflow: hidden;
-      text-decoration: none;
-      transition: all 0.3s;
-    }
-    .product-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--brandia-primary);
-      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
-    }
-    .product-image {
-      position: relative;
-      aspect-ratio: 1;
-      overflow: hidden;
-    }
-    .product-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s;
-    }
-    .product-card:hover .product-image img {
-      transform: scale(1.05);
-    }
-    .product-badge {
-      position: absolute;
-      top: 0.75rem;
-      left: 0.75rem;
-      background: var(--brandia-danger);
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.375rem 0.75rem;
-      border-radius: 20px;
-      z-index: 2;
-    }
-    .product-info {
-      padding: 1.25rem;
-    }
-    .product-category {
-      color: var(--brandia-primary);
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.5rem;
-    }
-    .product-name {
-      color: var(--brandia-text);
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      line-height: 1.4;
-    }
-    .product-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .product-price {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .price-current {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-    .price-current.promo {
-      color: var(--brandia-success);
-    }
-    .price-original {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      text-decoration: line-through;
-    }
-    .btn-add-cart {
-      width: 40px;
-      height: 40px;
-      background: var(--brandia-primary);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-add-cart:hover {
-      background: var(--brandia-primary-hover);
-      transform: scale(1.05);
-    }
+    .products-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+    @media (min-width: 640px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .products-grid { grid-template-columns: repeat(4, 1fr); } }
+    .product-card { display: block; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 16px; overflow: hidden; text-decoration: none; transition: all 0.3s; }
+    .product-card:hover { transform: translateY(-4px); border-color: var(--brandia-primary); box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3); }
+    .product-image { position: relative; aspect-ratio: 1; overflow: hidden; }
+    .product-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .product-card:hover .product-image img { transform: scale(1.05); }
+    .product-badge { position: absolute; top: 0.75rem; left: 0.75rem; background: var(--brandia-danger); color: white; font-size: 0.75rem; font-weight: 700; padding: 0.375rem 0.75rem; border-radius: 20px; z-index: 2; }
+    .product-info { padding: 1.25rem; }
+    .product-category { color: var(--brandia-primary); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .product-name { color: var(--brandia-text); font-weight: 600; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+    .product-footer { display: flex; align-items: center; justify-content: space-between; }
+    .product-price { display: flex; align-items: center; gap: 0.5rem; }
+    .price-current { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; }
+    .price-current.promo { color: var(--brandia-success); }
+    .price-original { color: var(--brandia-text-muted); font-size: 0.875rem; text-decoration: line-through; }
+    .btn-add-cart { width: 40px; height: 40px; background: var(--brandia-primary); color: white; border: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+    .btn-add-cart:hover { background: var(--brandia-primary-hover); transform: scale(1.05); }
     /* ========== WHY BRANDIA ========== */
-    .why-section {
-      background: var(--brandia-gradient-subtle);
-      border-top: 1px solid var(--brandia-border);
-    }
-    .why-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 3rem;
-      align-items: center;
-    }
-    @media (min-width: 1024px) {
-      .why-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    .why-content h2 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-    }
-    .why-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-    .why-item {
-      display: flex;
-      gap: 1rem;
-    }
-    .why-icon {
-      width: 56px;
-      height: 56px;
-      background: rgba(99, 102, 241, 0.1);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--brandia-primary);
-      font-size: 1.5rem;
-      flex-shrink: 0;
-    }
-    .why-text h3 {
-      color: var(--brandia-text);
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-    .why-text p {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      line-height: 1.6;
-    }
-    .why-image {
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-    .why-image img {
-      width: 100%;
-      height: 400px;
-      object-fit: cover;
-    }
-    @media (min-width: 1024px) {
-      .why-image img {
-        height: 100%;
-        min-height: 500px;
-      }
-    }
+    .why-section { background: var(--brandia-gradient-subtle); border-top: 1px solid var(--brandia-border); }
+    .why-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; align-items: center; }
+    @media (min-width: 1024px) { .why-grid { grid-template-columns: 1fr 1fr; } }
+    .why-content h2 { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; margin-bottom: 2rem; }
+    .why-list { display: flex; flex-direction: column; gap: 1.5rem; }
+    .why-item { display: flex; gap: 1rem; }
+    .why-icon { width: 56px; height: 56px; background: rgba(99, 102, 241, 0.1); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: var(--brandia-primary); font-size: 1.5rem; flex-shrink: 0; }
+    .why-text h3 { color: var(--brandia-text); font-weight: 600; margin-bottom: 0.25rem; }
+    .why-text p { color: var(--brandia-text-muted); font-size: 0.875rem; line-height: 1.6; }
+    .why-image { border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    .why-image img { width: 100%; height: 400px; object-fit: cover; }
+    @media (min-width: 1024px) { .why-image img { height: 100%; min-height: 500px; } }
     /* ========== LOADER ========== */
-    .loader {
-      display: flex;
-      justify-content: center;
-      padding: 3rem;
-    }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 3px solid var(--brandia-border);
-      border-top-color: var(--brandia-primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+    .loader { display: flex; justify-content: center; padding: 3rem; }
+    .spinner { width: 48px; height: 48px; border: 3px solid var(--brandia-border); border-top-color: var(--brandia-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     /* ========== FOOTER ========== */
-    .footer {
-      background: var(--brandia-darker);
-      border-top: 1px solid var(--brandia-border);
-      padding: 4rem 0 2rem;
-    }
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 2.5rem;
-      margin-bottom: 3rem;
-    }
-    @media (min-width: 640px) {
-      .footer-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (min-width: 1024px) {
-      .footer-grid {
-        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-      }
-    }
-    .footer-brand {
-      max-width: 300px;
-    }
-    .footer-logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-    }
-    .footer-logo-icon {
-      width: 36px;
-      height: 36px;
-      background: var(--brandia-gradient);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1rem;
-    }
-    .footer-logo-text {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-    .footer-desc {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
-    .footer-social {
-      display: flex;
-      gap: 0.75rem;
-    }
-    .social-link {
-      width: 40px;
-      height: 40px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .social-link:hover {
-      background: var(--brandia-primary);
-      border-color: var(--brandia-primary);
-      color: white;
-    }
-    .footer-title {
-      color: var(--brandia-text);
-      font-weight: 600;
-      margin-bottom: 1.25rem;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .footer-links {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    .footer-link {
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      transition: all 0.2s;
-    }
-    .footer-link:hover {
-      color: var(--brandia-primary);
-    }
-    .footer-bottom {
-      border-top: 1px solid var(--brandia-border);
-      padding-top: 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      align-items: center;
-      text-align: center;
-    }
-    @media (min-width: 640px) {
-      .footer-bottom {
-        flex-direction: row;
-        justify-content: space-between;
-        text-align: left;
-      }
-    }
-    .footer-copyright {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-    }
-    .footer-payments {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    .payment-icon {
-      color: var(--brandia-text-muted);
-      font-size: 1.5rem;
-    }
+    .footer { background: var(--brandia-darker); border-top: 1px solid var(--brandia-border); padding: 4rem 0 2rem; }
+    .footer-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; margin-bottom: 3rem; }
+    @media (min-width: 640px) { .footer-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; } }
+    .footer-brand { max-width: 300px; }
+    .footer-logo { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .footer-logo-icon { width: 36px; height: 36px; background: var(--brandia-gradient); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1rem; }
+    .footer-logo-text { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; }
+    .footer-desc { color: var(--brandia-text-muted); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.5rem; }
+    .footer-social { display: flex; gap: 0.75rem; }
+    .social-link { width: 40px; height: 40px; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--brandia-text-muted); text-decoration: none; transition: all 0.2s; }
+    .social-link:hover { background: var(--brandia-primary); border-color: var(--brandia-primary); color: white; }
+    .footer-title { color: var(--brandia-text); font-weight: 600; margin-bottom: 1.25rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer-links { display: flex; flex-direction: column; gap: 0.75rem; }
+    .footer-link { color: var(--brandia-text-muted); text-decoration: none; font-size: 0.875rem; transition: all 0.2s; }
+    .footer-link:hover { color: var(--brandia-primary); }
+    .footer-bottom { border-top: 1px solid var(--brandia-border); padding-top: 2rem; display: flex; flex-direction: column; gap: 1rem; align-items: center; text-align: center; }
+    @media (min-width: 640px) { .footer-bottom { flex-direction: row; justify-content: space-between; text-align: left; } }
+    .footer-copyright { color: var(--brandia-text-muted); font-size: 0.875rem; }
+    .footer-payments { display: flex; align-items: center; gap: 1rem; }
+    .payment-icon { color: var(--brandia-text-muted); font-size: 1.5rem; }
     /* ========== TOAST ========== */
-    .toast-container {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    .toast {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-left: 4px solid var(--brandia-primary);
-      border-radius: 12px;
-      padding: 1rem 1.5rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-      animation: slideIn 0.3s ease;
-    }
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-    .toast.success {
-      border-left-color: var(--brandia-success);
-    }
-    .toast.error {
-      border-left-color: var(--brandia-danger);
-    }
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 100; display: flex; flex-direction: column; gap: 0.75rem; }
+    .toast { background: var(--brandia-card); border: 1px solid var(--brandia-border); border-left: 4px solid var(--brandia-primary); border-radius: 12px; padding: 1rem 1.5rem; color: var(--brandia-text); font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5); animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast.success { border-left-color: var(--brandia-success); }
+    .toast.error { border-left-color: var(--brandia-danger); }
     /* ========== SKELETON LOADING ========== */
-    .skeleton {
-      background: linear-gradient(90deg, var(--brandia-card) 25%, var(--brandia-card-hover) 50%, var(--brandia-card) 75%);
-      background-size: 200% 100%;
-      animation: skeleton 1.5s infinite;
-      border-radius: 8px;
-    }
-    @keyframes skeleton {
-      0% {
-        background-position: 200% 0;
-      }
-      100% {
-        background-position: -200% 0;
-      }
-    }
+    .skeleton { background: linear-gradient(90deg, var(--brandia-card) 25%, var(--brandia-card-hover) 50%, var(--brandia-card) 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; border-radius: 8px; }
+    @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     /* ========== MOBILE MENU ========== */
-    .mobile-menu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--brandia-dark);
-      z-index: 100;
-      padding: 1.5rem;
-      transform: translateX(-100%);
-      transition: transform 0.3s;
-      overflow-y: auto;
-    }
-    .mobile-menu.open {
-      transform: translateX(0);
-    }
-    .mobile-menu-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-    .mobile-menu-close {
-      width: 40px;
-      height: 40px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 10px;
-      color: var(--brandia-text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .mobile-nav {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .mobile-nav-link {
-      color: var(--brandia-text);
-      text-decoration: none;
-      font-size: 1.125rem;
-      font-weight: 500;
-      padding: 1rem;
-      border-radius: 12px;
-      transition: all 0.2s;
-    }
-    .mobile-nav-link:hover {
-      background: var(--brandia-card);
-    }
+    .mobile-menu { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--brandia-dark); z-index: 100; padding: 1.5rem; transform: translateX(-100%); transition: transform 0.3s; overflow-y: auto; }
+    .mobile-menu.open { transform: translateX(0); }
+    .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .mobile-menu-close { width: 40px; height: 40px; background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 10px; color: var(--brandia-text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .mobile-nav { display: flex; flex-direction: column; gap: 0.5rem; }
+    .mobile-nav-link { color: var(--brandia-text); text-decoration: none; font-size: 1.125rem; font-weight: 500; padding: 1rem; border-radius: 12px; transition: all 0.2s; }
+    .mobile-nav-link:hover { background: var(--brandia-card); }
     /* ========== UTILITAIRES ========== */
-    .hidden {
-      display: none !important;
-    }
-    .fade-in {
-      animation: fadeIn 0.5s ease;
-    }
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    .hidden { display: none !important; }
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: var(--brandia-dark);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--brandia-border);
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--brandia-card-hover);
-    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--brandia-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--brandia-border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--brandia-card-hover); }
   </style>
 </head>
 <body>
@@ -1309,9 +299,7 @@
               <span>Catégories</span>
               <i class="fas fa-chevron-down text-xs"></i>
             </div>
-            <div class="dropdown-menu" id="dropdown-categories">
-              <!-- Injecté par JS -->
-            </div>
+            <div class="dropdown-menu" id="dropdown-categories"></div>
           </div>
           <a href="offres.html" class="nav-link">Offres</a>
           <a href="#about" class="nav-link">À propos</a>
@@ -1421,8 +409,14 @@
           <h1>Achetez directement<br><span>chez les marques</span></h1>
           <p>Produits authentiques, livraison par la marque, commission réduite. Découvrez des milliers de produits originaux directement auprès des créateurs.</p>
           <div class="hero-buttons">
-            <a href="catalogue.html" class="btn-primary">Explorer le catalogue</a>
-            <a href="register.html?type=supplier" class="btn-secondary">Devenir vendeur</a>
+            <a href="catalogue.html" class="btn-primary">
+              <span>Explorer le catalogue</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a href="register.html?type=supplier" class="btn-secondary">
+              <span>Devenir vendeur</span>
+              <i class="fas fa-store"></i>
+            </a>
           </div>
         </div>
         <div class="hero-image fade-in">
@@ -1482,9 +476,7 @@
       <div class="loader" id="featured-loader">
         <div class="spinner"></div>
       </div>
-      <div class="products-grid hidden" id="featured-products-grid">
-        <!-- Injecté par JS -->
-      </div>
+      <div class="products-grid hidden" id="featured-products-grid"></div>
     </div>
   </section>
   <!-- ========== WHY BRANDIA SECTION ========== -->
@@ -1618,6 +610,7 @@
       'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
       'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80'
     };
+
     const BRANDIA_CATEGORIES = [
       { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', color: 'from-pink-500 to-rose-500' },
       { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: 'from-purple-500 to-indigo-500' },
@@ -1634,25 +627,19 @@
     ];
 
     // ========== UTILITAIRES AUTH UNIFIÉS ==========
-    /** * 🔥 Récupère le token depuis n'importe quelle source * Priorité: BrandiaAPI > localStorage (token ou brandia_token) */
     function getAuthToken() {
-      // 1. Essayer BrandiaAPI d'abord
       if (window.BrandiaAPI && BrandiaAPI.storage && BrandiaAPI.storage.getToken) {
         const apiToken = BrandiaAPI.storage.getToken();
         if (apiToken) return apiToken;
       }
-      // 2. Fallback sur localStorage avec les deux clés possibles
       return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
     }
 
-    /** * 🔥 Récupère l'utilisateur depuis n'importe quelle source * Priorité: BrandiaAPI > localStorage (user ou brandia_user) */
     function getAuthUser() {
-      // 1. Essayer BrandiaAPI d'abord
       if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.getUser) {
         const apiUser = BrandiaAPI.Auth.getUser();
         if (apiUser) return apiUser;
       }
-      // 2. Fallback sur localStorage avec les deux clés possibles
       const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
       if (userStr) {
         try {
@@ -1665,26 +652,21 @@
       return null;
     }
 
-    /** * 🔥 Vérifie si l'utilisateur est connecté */
     function isAuthenticated() {
       return !!getAuthToken() && !!getAuthUser();
     }
 
-    /** * 🔥 Déconnexion unifiée * Nettoie toutes les sources possibles */
     function logout() {
       console.log('[Auth] Déconnexion...');
-      // 1. Utiliser BrandiaAPI si disponible
       if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.logout) {
         BrandiaAPI.Auth.logout();
         return;
       }
-      // 2. Fallback: nettoyer manuellement toutes les clés localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('brandia_token');
       localStorage.removeItem('user');
       localStorage.removeItem('brandia_user');
       localStorage.removeItem('refreshToken');
-      // 3. Redirection
       window.location.href = 'index.html';
     }
 
@@ -1692,17 +674,16 @@
     function formatPrice(price, currency = 'EUR') {
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(price || 0);
     }
+
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-        <span>${message}</span>
-      `;
+      toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> <span>${message}</span>`;
       container.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
+
     function getFlagEmoji(countryCode) {
       const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
       return String.fromCodePoint(...codePoints);
@@ -1716,7 +697,6 @@
     }
 
     // ========== AUTHENTIFICATION - INITIALISATION ==========
-    /** * 🔥 FONCTION CLÉ: Initialise l'affichage selon l'état de connexion * Appelée au chargement de la page */
     function initAuth() {
       console.log('[Auth] Initialisation...');
       const token = getAuthToken();
@@ -1725,51 +705,39 @@
       console.log('[Auth] Token présent:', !!token);
       console.log('[Auth] User:', user);
       console.log('[Auth] Connecté:', isLoggedIn);
-      // Récupérer les éléments du DOM
+
       const authButtons = document.getElementById('auth-buttons');
       const userMenu = document.getElementById('user-menu');
       const supplierMenu = document.getElementById('supplier-menu');
       const mobileLoginLink = document.getElementById('mobile-login-link');
       const mobileRegisterLink = document.getElementById('mobile-register-link');
-      // Réinitialiser tous les états (tout cacher d'abord)
+
       authButtons.style.display = 'none';
       userMenu.style.display = 'none';
       userMenu.classList.remove('active');
       supplierMenu.style.display = 'none';
       supplierMenu.classList.remove('active');
+
       if (isLoggedIn && user) {
-        // ========== UTILISATEUR CONNECTÉ ==========
-        console.log('[Auth] Role:', user.role);
         if (user.role === 'supplier') {
-          // 🔥 FOURNISSEUR: Afficher menu fournisseur
           supplierMenu.style.display = 'flex';
           supplierMenu.classList.add('active');
-          // Mettre à jour les infos
           const displayName = user.first_name || user.company_name || user.email || 'Fournisseur';
           document.getElementById('supplier-name').textContent = displayName;
           document.getElementById('supplier-avatar').textContent = displayName.charAt(0).toUpperCase();
-          console.log('[Auth] Menu fournisseur affiché');
         } else {
-          // 🔥 CLIENT: Afficher menu client
           userMenu.style.display = 'flex';
           userMenu.classList.add('active');
-          // Mettre à jour les infos
           const displayName = user.first_name || user.email || 'Client';
           document.getElementById('user-name').textContent = displayName;
           document.getElementById('user-avatar').textContent = displayName.charAt(0).toUpperCase();
-          console.log('[Auth] Menu client affiché');
         }
-        // Masquer les liens mobile connexion/inscription
         if (mobileLoginLink) mobileLoginLink.style.display = 'none';
         if (mobileRegisterLink) mobileRegisterLink.style.display = 'none';
       } else {
-        // ========== NON CONNECTÉ ==========
-        // Afficher les boutons connexion/inscription
         authButtons.style.display = 'flex';
-        // Afficher les liens mobile
         if (mobileLoginLink) mobileLoginLink.style.display = 'block';
         if (mobileRegisterLink) mobileRegisterLink.style.display = 'block';
-        console.log('[Auth] Boutons connexion affichés');
       }
     }
 
@@ -1976,23 +944,15 @@
       selector.addEventListener('change', (e) => {
         localStorage.setItem('country', e.target.value);
         localStorage.setItem('currency', countries[e.target.value].currency);
-        // Mettre à jour le lien du catalogue
-        const heroLink = document.querySelector('.btn-primary');
-        if (heroLink) {
-          heroLink.href = `catalogue.html?country=${e.target.value}`;
-        }
-        // Charger les catégories et produits selon le pays
-        loadCategories(e.target.value);
-        loadFeaturedProducts(e.target.value);
       });
     }
 
     // ========== CATEGORIES ==========
-    function loadCategories(countryCode = 'FR') {
+    function loadCategories() {
       const grid = document.getElementById('categories-grid');
       const dropdown = document.getElementById('dropdown-categories');
       const html = BRANDIA_CATEGORIES.map((cat, i) => `
-        <a href="catalogue.html?category=${cat.slug}&country=${countryCode}" class="category-card fade-in" style="animation-delay: ${i * 0.05}s">
+        <a href="catalogue.html?category=${cat.slug}" class="category-card fade-in" style="animation-delay: ${i * 0.05}s">
           <div class="category-image">
             <img src="${CATEGORY_IMAGES[cat.slug]}" alt="${cat.name}" loading="lazy">
             <div class="category-icon bg-gradient-to-br ${cat.color}">
@@ -2007,7 +967,7 @@
       grid.innerHTML = html;
       if (dropdown) {
         dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-          <a href="catalogue.html?category=${cat.slug}&country=${countryCode}" class="dropdown-item">
+          <a href="catalogue.html?category=${cat.slug}" class="dropdown-item">
             <div class="dropdown-icon bg-gradient-to-br ${cat.color}">
               <i class="fas ${cat.icon} text-white"></i>
             </div>
@@ -2018,15 +978,15 @@
     }
 
     // ========== FEATURED PRODUCTS ==========
-    async function loadFeaturedProducts(countryCode = 'FR') {
+    async function loadFeaturedProducts() {
       const container = document.getElementById('featured-products-grid');
       const loader = document.getElementById('featured-loader');
       try {
         let response;
         try {
-          response = await BrandiaAPI.Products.getFeaturedWithPromotions(countryCode);
+          response = await BrandiaAPI.Products.getFeaturedWithPromotions();
         } catch (e) {
-          response = await BrandiaAPI.Products.getFeatured(countryCode);
+          response = await BrandiaAPI.Products.getFeatured();
         }
         if (!response.success || !response.data) throw new Error('Erreur API');
         const products = response.data.products || response.data;
@@ -2044,7 +1004,7 @@
             <div class="product-card">
               <div class="product-image">
                 <a href="product.html?id=${p.id}">
-                  <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" alt="${p.name}" loading="lazy">
+                  <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'" alt="${p.name}" loading="lazy">
                 </a>
                 ${hasPromo ? `<span class="product-badge">-${Math.round((1 - finalPrice/originalPrice) * 100)}%</span>` : ''}
               </div>
@@ -2081,44 +1041,37 @@
       }
     }
 
-    // ========== INIT ==========
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('[App] Page chargée, initialisation...');
-      initAuth();
-      // 🔥 Initialiser l'auth en premier
-      initCountries();
-      loadCategories();
-      loadFeaturedProducts();
-      updateCartBadge();
-    });
-
-    // ========== CART FUNCTIONS ==========
-    function addToCart(productId, event) {
+    async function addToCart(productId, event) {
       event.preventDefault();
       event.stopPropagation();
       try {
         const response = await BrandiaAPI.Products.getById(productId);
         if (!response.success) throw new Error('Produit non trouvé');
         const p = response.data.product || response.data;
-        BrandiaAPI.Cart.add({
-          id: p.id,
-          name: p.name,
-          price: parseFloat(p.final_price || p.price),
-          main_image_url: p.main_image_url,
-          quantity: 1
-        });
+        BrandiaAPI.Cart.add({ id: p.id, name: p.name, price: parseFloat(p.final_price || p.price), main_image_url: p.main_image_url, quantity: 1 });
         showToast('Produit ajouté au panier !', 'success');
         updateCartBadge();
       } catch (error) {
         showToast('Erreur: ' + error.message, 'error');
       }
     }
+
     function updateCartBadge() {
       const count = BrandiaAPI.Cart.getCount();
       const badge = document.getElementById('cart-count');
       badge.textContent = count > 99 ? '99+' : count;
       badge.classList.toggle('hidden', count === 0);
     }
+
+    // ========== INIT ==========
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('[App] Page chargée, initialisation...');
+      initAuth();
+      initCountries();
+      loadCategories();
+      loadFeaturedProducts();
+      updateCartBadge();
+    });
   </script>
 </body>
 </html>
