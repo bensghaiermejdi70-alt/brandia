@@ -517,19 +517,21 @@ tailwind.config = {
   color: var(--brandia-text);
   font-weight: 500;
 }
-/* ========== PRICE INPUTS ========== */
+/* ========== PRICE INPUTS - CORRIGÉ ========== */
 .price-inputs {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   margin-bottom: 0.75rem;
-  max-width: 200px;
+  width: 100%;
 }
 .price-input {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   background: var(--brandia-dark);
   border: 1px solid var(--brandia-border);
   border-radius: 8px;
-  padding: 0.3rem;
+  padding: 0.625rem 0.75rem;
   color: var(--brandia-text);
   font-size: 0.875rem;
   outline: none;
@@ -539,6 +541,10 @@ tailwind.config = {
 .price-input:focus {
   border-color: var(--brandia-primary);
 }
+.price-input::placeholder {
+  color: var(--brandia-text-muted);
+  font-size: 0.75rem;
+}
 /* ========== BUTTONS ========== */
 .btn-apply {
   width: 100%;
@@ -546,7 +552,7 @@ tailwind.config = {
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.5rem;
+  padding: 0.625rem;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -1210,15 +1216,15 @@ tailwind.config = {
 <span class="filter-option-text">Uniquement en promo</span>
 </label>
 </div>
-<!-- Filtre Prix -->
+<!-- Filtre Prix - CORRIGÉ -->
 <div class="filter-card">
 <h3 class="filter-title">
 <span>Prix</span>
 <button onclick="resetPrice()" class="filter-reset">Réinitialiser</button>
 </h3>
 <div class="price-inputs">
-<input type="number" id="price-min" placeholder="Min €" class="price-input">
-<input type="number" id="price-max" placeholder="Max €" class="price-input">
+<input type="number" id="price-min" placeholder="Min €" class="price-input" min="0" step="0.01">
+<input type="number" id="price-max" placeholder="Max €" class="price-input" min="0" step="0.01">
 </div>
 <button onclick="applyPrice()" class="btn-apply">Appliquer</button>
 </div>
@@ -1348,7 +1354,7 @@ const COUNTRIES = {
   'CG': { name: 'Congo', currency: 'XAF' },
   'CD': { name: 'Congo (RDC)', currency: 'CDF' },
   'CR': { name: 'Costa Rica', currency: 'CRC' },
-  'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+  'CI': { name: 'Côte d'Ivoire', currency: 'XOF' },
   'HR': { name: 'Croatie', currency: 'EUR' },
   'CU': { name: 'Cuba', currency: 'CUP' },
   'CY': { name: 'Chypre', currency: 'EUR' },
