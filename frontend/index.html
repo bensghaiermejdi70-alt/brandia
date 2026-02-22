@@ -2,7 +2,7 @@
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Brandia – La marketplace des marques</title>
   <meta name="description" content="Produits officiels, livraison par la marque.">
   
@@ -11,34 +11,6 @@
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brandia: {
-              primary: '#6366f1',
-              secondary: '#8b5cf6',
-              accent: '#ec4899',
-              dark: '#0f172a',
-              darker: '#020617',
-              card: '#1e293b',
-              border: '#334155',
-              text: '#f8fafc',
-              muted: '#94a3b8',
-              success: '#10b981',
-              warning: '#f59e0b',
-              danger: '#ef4444',
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -47,27 +19,13 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* ========== VARIABLES COULEURS BRANDIA ========== */
+    /* Variables centralisées */
     :root {
       --brandia-primary: #6366f1;
-      --brandia-primary-hover: #4f46e5;
-      --brandia-secondary: #8b5cf6;
-      --brandia-accent: #ec4899;
-      --brandia-dark: #0f172a;
-      --brandia-darker: #020617;
-      --brandia-card: #1e293b;
-      --brandia-card-hover: #334155;
-      --brandia-border: #334155;
-      --brandia-text: #f8fafc;
-      --brandia-text-muted: #94a3b8;
-      --brandia-success: #10b981;
-      --brandia-warning: #f59e0b;
-      --brandia-danger: #ef4444;
-      --brandia-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      --brandia-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      --brandia-gradient: linear-gradient(135deg, var(--brandia-primary) 0%, #8b5cf6 50%, #ec4899 100%);
     }
 
-    /* ========== BASE STYLES ========== */
+    /* Base styles */
     * {
       margin: 0;
       padding: 0;
@@ -83,31 +41,28 @@
       min-width: 320px;
     }
 
-    /* ========== CONTAINER ========== */
+    /* Container */
     .container {
       width: 100%;
       max-width: 1280px;
       margin-left: auto;
       margin-right: auto;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding: 1rem;
     }
 
     @media (min-width: 640px) {
       .container {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+        padding: 1.5rem;
       }
     }
 
     @media (min-width: 1024px) {
       .container {
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding: 2rem;
       }
     }
 
-    /* ========== HEADER STYLES ========== */
+    /* Header */
     .header {
       position: sticky;
       top: 0;
@@ -125,7 +80,7 @@
       gap: 1rem;
     }
 
-    /* Logo Brandia */
+    /* Logo */
     .brandia-logo {
       display: flex;
       align-items: center;
@@ -136,74 +91,6 @@
 
     .brandia-logo:hover {
       transform: scale(1.02);
-    }
-
-    .brandia-icon-wrap {
-      position: relative;
-      width: 40px;
-      height: 40px;
-      flex-shrink: 0;
-    }
-
-    .brandia-pulse {
-      position: absolute;
-      inset: -4px;
-      border-radius: 12px;
-      background: var(--brandia-gradient);
-      opacity: 0.3;
-      filter: blur(8px);
-      animation: pulse-glow 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.1); opacity: 0.5; }
-    }
-
-    .brandia-icon-bg {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: var(--brandia-gradient);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.5);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .brandia-icon-bg::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-      animation: shine 3s infinite;
-    }
-
-    @keyframes shine {
-      0% { left: -100%; }
-      50%, 100% { left: 200%; }
-    }
-
-    .brandia-icon-svg {
-      width: 24px;
-      height: 24px;
-      color: white;
-    }
-
-    .brandia-text {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.5rem;
-      font-weight: 800;
-      background: var(--brandia-gradient);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.02em;
     }
 
     /* Navigation */
@@ -301,51 +188,7 @@
       color: var(--brandia-text);
     }
 
-    .dropdown-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.875rem;
-    }
-
-    /* ============================================
-       BLOC 1: HEADER ACTIONS - CORRIGÉ
-       ============================================ */
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .country-selector {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.5rem 0.75rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .country-selector:hover {
-      border-color: var(--brandia-primary);
-    }
-
-    .lang-switch {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.5rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
-
-    /* Auth Buttons - Non connecté */
+    /* Auth Buttons */
     .auth-buttons {
       display: flex;
       align-items: center;
@@ -368,10 +211,9 @@
     }
 
     .btn-register {
-      background: var(--brandia-primary);
+      background: var(--brandia-gradient);
       color: white;
       text-decoration: none;
-      font-size: 0.875rem;
       font-weight: 600;
       padding: 0.5rem 1rem;
       border-radius: 8px;
@@ -379,80 +221,15 @@
       align-items: center;
       gap: 0.5rem;
       transition: all 0.2s;
-      position: relative;
-      cursor: pointer;
-      border: none;
     }
 
     .btn-register:hover {
-      background: var(--brandia-primary-hover);
+      background: var(--brandia-primary);
       transform: translateY(-1px);
       box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
     }
 
-    .register-dropdown {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      width: 240px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 12px;
-      padding: 0.5rem;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px);
-      transition: all 0.2s;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      z-index: 100;
-    }
-
-    .btn-register:hover .register-dropdown {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-
-    .register-option {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem;
-      border-radius: 8px;
-      color: var(--brandia-text);
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-
-    .register-option:hover {
-      background: var(--brandia-card-hover);
-    }
-
-    .register-option-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .register-option-icon.client {
-      background: rgba(99, 102, 241, 0.2);
-      color: var(--brandia-primary);
-    }
-
-    .register-option-icon.supplier {
-      background: rgba(16, 185, 129, 0.2);
-      color: var(--brandia-success);
-    }
-
-    /* ============================================
-       BLOC 2: USER MENU & SUPPLIER MENU - CORRIGÉ
-       Styles pour utilisateurs connectés
-       ============================================ */
-    
-    /* Menu Client Connecté */
+    /* User Menu */
     .user-menu {
       display: none;
       align-items: center;
@@ -470,7 +247,7 @@
     .user-avatar {
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: var(--brandia-gradient);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -508,37 +285,6 @@
     .btn-logout:hover {
       background: rgba(239, 68, 68, 0.1);
       border-color: var(--brandia-danger);
-    }
-
-    /* Menu Fournisseur Connecté */
-    .supplier-menu {
-      display: none;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .supplier-menu.active {
-      display: flex !important;
-    }
-
-    .btn-dashboard {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--brandia-success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-
-    .btn-dashboard:hover {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: var(--brandia-success);
     }
 
     /* Cart */
@@ -602,7 +348,7 @@
       }
     }
 
-    /* ========== HERO SECTION ========== */
+    /* Hero */
     .hero {
       padding: 4rem 0;
       position: relative;
@@ -616,8 +362,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+      background: bg-gradient-to-br from-pink-500 to-rose-500;
       pointer-events: none;
     }
 
@@ -735,7 +480,7 @@
       }
     }
 
-    /* ========== STATS SECTION ========== */
+    /* Stats */
     .stats {
       padding: 3rem 0;
       background: rgba(30, 41, 59, 0.5);
@@ -776,53 +521,7 @@
       font-size: 0.875rem;
     }
 
-    /* ========== SECTIONS COMMUNES ========== */
-    .section {
-      padding: 5rem 0;
-    }
-
-    .section-header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 2.5rem;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .section-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.875rem;
-      font-weight: 700;
-    }
-
-    @media (min-width: 640px) {
-      .section-title {
-        font-size: 2.25rem;
-      }
-    }
-
-    .section-subtitle {
-      color: var(--brandia-text-muted);
-      margin-top: 0.5rem;
-    }
-
-    .link-arrow {
-      color: var(--brandia-primary);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-    }
-
-    .link-arrow:hover {
-      gap: 0.75rem;
-    }
-
-    /* ========== CATEGORIES ========== */
+    /* Categories */
     .categories-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -838,12 +537,6 @@
     @media (min-width: 1024px) {
       .categories-grid {
         grid-template-columns: repeat(4, 1fr);
-      }
-    }
-
-    @media (min-width: 1280px) {
-      .categories-grid {
-        grid-template-columns: repeat(6, 1fr);
       }
     }
 
@@ -880,13 +573,6 @@
       transform: scale(1.1);
     }
 
-    .category-image::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, var(--brandia-card) 0%, transparent 60%);
-    }
-
     .category-icon {
       position: absolute;
       top: 0.75rem;
@@ -917,7 +603,7 @@
       overflow: hidden;
     }
 
-    /* ========== PRODUCTS GRID ========== */
+    /* Products */
     .products-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -1053,108 +739,7 @@
       transform: scale(1.05);
     }
 
-    /* ========== WHY BRANDIA ========== */
-    .why-section {
-      background: var(--brandia-gradient-subtle);
-      border-top: 1px solid var(--brandia-border);
-    }
-
-    .why-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 3rem;
-      align-items: center;
-    }
-
-    @media (min-width: 1024px) {
-      .why-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    .why-content h2 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-    }
-
-    .why-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .why-item {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .why-icon {
-      width: 56px;
-      height: 56px;
-      background: rgba(99, 102, 241, 0.1);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--brandia-primary);
-      font-size: 1.5rem;
-      flex-shrink: 0;
-    }
-
-    .why-text h3 {
-      color: var(--brandia-text);
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-
-    .why-text p {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      line-height: 1.6;
-    }
-
-    .why-image {
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-
-    .why-image img {
-      width: 100%;
-      height: 400px;
-      object-fit: cover;
-    }
-
-    @media (min-width: 1024px) {
-      .why-image img {
-        height: 100%;
-        min-height: 500px;
-      }
-    }
-
-    /* ========== LOADER ========== */
-    .loader {
-      display: flex;
-      justify-content: center;
-      padding: 3rem;
-    }
-
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 3px solid var(--brandia-border);
-      border-top-color: var(--brandia-primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* ========== FOOTER ========== */
+    /* Footer */
     .footer {
       background: var(--brandia-darker);
       border-top: 1px solid var(--brandia-border);
@@ -1301,7 +886,7 @@
       font-size: 1.5rem;
     }
 
-    /* ========== TOAST ========== */
+    /* Toast */
     .toast-container {
       position: fixed;
       bottom: 1.5rem;
@@ -1347,7 +932,7 @@
       border-left-color: var(--brandia-danger);
     }
 
-    /* ========== SKELETON LOADING ========== */
+    /* Skeleton */
     .skeleton {
       background: linear-gradient(90deg, var(--brandia-card) 25%, var(--brandia-card-hover) 50%, var(--brandia-card) 75%);
       background-size: 200% 100%;
@@ -1360,7 +945,7 @@
       100% { background-position: -200% 0; }
     }
 
-    /* ========== MOBILE MENU ========== */
+    /* Mobile Menu */
     .mobile-menu {
       position: fixed;
       top: 0;
@@ -1419,7 +1004,7 @@
       background: var(--brandia-card);
     }
 
-    /* ========== UTILITAIRES ========== */
+    /* Utilities */
     .hidden {
       display: none !important;
     }
@@ -1455,14 +1040,13 @@
 </head>
 <body>
 
-  <!-- ========== HEADER ========== -->
+  <!-- Header -->
   <header class="header">
     <div class="container">
       <div class="header-inner">
         <!-- Logo -->
         <a href="index.html" class="brandia-logo">
           <div class="brandia-icon-wrap">
-            <div class="brandia-pulse"></div>
             <div class="brandia-icon-bg">
               <svg class="brandia-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
@@ -1480,11 +1064,11 @@
           <a href="marques.html" class="nav-link">Marques</a>
           
           <div class="dropdown">
-            <div class="dropdown-trigger nav-link">
-              <span>Catégories</span>
+            <div class="dropdown-trigger nav-link" aria-expanded="false">
+              Catégories
               <i class="fas fa-chevron-down text-xs"></i>
             </div>
-            <div class="dropdown-menu" id="dropdown-categories">
+            <div class="dropdown-menu" id="dropdown-categories" aria-hidden="true">
               <!-- Injecté par JS -->
             </div>
           </div>
@@ -1493,10 +1077,7 @@
           <a href="#about" class="nav-link">À propos</a>
         </nav>
 
-        <!-- ============================================
-             BLOC 1: HEADER ACTIONS - HTML CORRIGÉ
-             Structure claire avec IDs pour JS
-             ============================================ -->
+        <!-- Header Actions -->
         <div class="header-actions">
           <select class="country-selector" id="countrySelector">
             <option value="">🌍 Chargement...</option>
@@ -1507,11 +1088,11 @@
             <option value="en">🇬🇧 EN</option>
           </select>
 
-          <!-- ÉTAT 1: Non connecté (affiché par défaut, caché si connecté) -->
+          <!-- Auth Buttons -->
           <div class="auth-buttons" id="auth-buttons">
             <a href="login.html" class="btn-login">Connexion</a>
             <div class="btn-register">
-              <span>Inscription</span>
+              Inscription
               <i class="fas fa-chevron-down text-xs"></i>
               <div class="register-dropdown">
                 <a href="register.html?type=client" class="register-option">
@@ -1537,7 +1118,7 @@
             </div>
           </div>
 
-          <!-- ÉTAT 2: Client connecté (caché par défaut) -->
+          <!-- User Menu -->
           <div class="user-menu" id="user-menu">
             <div class="user-avatar" id="user-avatar">C</div>
             <span class="user-name" id="user-name">Client</span>
@@ -1546,7 +1127,7 @@
             </button>
           </div>
 
-          <!-- ÉTAT 3: Fournisseur connecté (caché par défaut) -->
+          <!-- Supplier Menu -->
           <div class="supplier-menu" id="supplier-menu">
             <a href="supplier/dashboard.html" class="btn-dashboard">
               <i class="fas fa-chart-line"></i>
@@ -1559,7 +1140,7 @@
             </button>
           </div>
 
-          <!-- Panier (toujours visible) -->
+          <!-- Cart -->
           <a href="panier.html" class="cart-link">
             <i class="fas fa-shopping-bag text-xl"></i>
             <span class="cart-badge hidden" id="cart-count">0</span>
@@ -1601,7 +1182,7 @@
     </nav>
   </div>
 
-  <!-- ========== HERO SECTION ========== -->
+  <!-- Hero -->
   <section class="hero">
     <div class="container">
       <div class="hero-grid">
@@ -1629,7 +1210,7 @@
     </div>
   </section>
 
-  <!-- ========== STATS SECTION ========== -->
+  <!-- Stats -->
   <section class="stats">
     <div class="container">
       <div class="stats-grid">
@@ -1653,7 +1234,7 @@
     </div>
   </section>
 
-  <!-- ========== CATEGORIES SECTION ========== -->
+  <!-- Categories -->
   <section class="section">
     <div class="container">
       <div class="section-header">
@@ -1671,7 +1252,7 @@
     </div>
   </section>
 
-  <!-- ========== FEATURED PRODUCTS SECTION ========== -->
+  <!-- Featured Products -->
   <section class="section" style="background: var(--brandia-gradient-subtle);">
     <div class="container">
       <div class="section-header">
@@ -1694,7 +1275,7 @@
     </div>
   </section>
 
-  <!-- ========== WHY BRANDIA SECTION ========== -->
+  <!-- Why Brandia -->
   <section class="section why-section" id="about">
     <div class="container">
       <div class="why-grid">
@@ -1737,7 +1318,7 @@
     </div>
   </section>
 
-  <!-- ========== FOOTER ========== -->
+  <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <div class="footer-grid">
@@ -1819,571 +1400,12 @@
 
   <!-- Scripts -->
   <script src="assets/js/api.js"></script>
-  
-  <!-- ============================================
-       BLOC 3: JAVASCRIPT AUTHENTIFICATION - CORRIGÉ
-       Logique claire avec fonctions getAuthToken/getAuthUser
-       ============================================ -->
+  <script src="auth.js"></script>
+  <script src="cart.js"></script>
+  <script src="categories.js"></script>
   <script>
-    // ========== CONFIGURATION ==========
-    const CATEGORY_IMAGES = {
-      'cosmetiques-soins-peau': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&q=80',
-      'parfums-fragrances': 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&q=80',
-      'maquillage': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&h=400&fit=crop&q=80',
-      'soins-capillaires': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop&q=80',
-      'complements-bien-etre': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
-      'mode-accessoires': 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop&q=80',
-      'montres-bijoux': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
-      'sport-fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop&q=80',
-      'nutrition-sportive': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop&q=80',
-      'high-tech-mobile': 'https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&h=400&fit=crop&q=80',
-      'electronique-lifestyle': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
-      'maison-decoration': 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop&q=80'
-    };
-
-    const BRANDIA_CATEGORIES = [
-      { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', color: 'from-pink-500 to-rose-500' },
-      { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: 'from-purple-500 to-indigo-500' },
-      { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', color: 'from-red-500 to-pink-500' },
-      { slug: 'soins-capillaires', name: 'Soins cheveux', icon: 'fa-cut', color: 'from-amber-500 to-orange-500' },
-      { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', color: 'from-emerald-500 to-teal-500' },
-      { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', color: 'from-blue-500 to-cyan-500' },
-      { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', color: 'from-yellow-500 to-amber-500' },
-      { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', color: 'from-orange-500 to-red-500' },
-      { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', color: 'from-green-500 to-emerald-500' },
-      { slug: 'high-tech-mobile', name: 'High-Tech', icon: 'fa-mobile-alt', color: 'from-indigo-500 to-blue-500' },
-      { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', color: 'from-violet-500 to-purple-500' },
-      { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', color: 'from-orange-500 to-red-500' }
-    ];
-
-    // ========== UTILITAIRES AUTH UNIFIÉS ==========
-    
-    /**
-     * 🔥 Récupère le token depuis n'importe quelle source
-     * Priorité: BrandiaAPI > localStorage (token ou brandia_token)
-     */
-    function getAuthToken() {
-      // 1. Essayer BrandiaAPI d'abord
-      if (window.BrandiaAPI && BrandiaAPI.storage && BrandiaAPI.storage.getToken) {
-        const apiToken = BrandiaAPI.storage.getToken();
-        if (apiToken) return apiToken;
-      }
-      
-      // 2. Fallback sur localStorage avec les deux clés possibles
-      return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
-    }
-
-    /**
-     * 🔥 Récupère l'utilisateur depuis n'importe quelle source
-     * Priorité: BrandiaAPI > localStorage (user ou brandia_user)
-     */
-    function getAuthUser() {
-      // 1. Essayer BrandiaAPI d'abord
-      if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.getUser) {
-        const apiUser = BrandiaAPI.Auth.getUser();
-        if (apiUser) return apiUser;
-      }
-      
-      // 2. Fallback sur localStorage avec les deux clés possibles
-      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
-      if (userStr) {
-        try {
-          return JSON.parse(userStr);
-        } catch(e) {
-          console.error('[Auth] Erreur parsing user:', e);
-          return null;
-        }
-      }
-      return null;
-    }
-
-    /**
-     * 🔥 Vérifie si l'utilisateur est connecté
-     */
-    function isAuthenticated() {
-      return !!getAuthToken() && !!getAuthUser();
-    }
-
-    /**
-     * 🔥 Déconnexion unifiée
-     * Nettoie toutes les sources possibles
-     */
-    function logout() {
-      console.log('[Auth] Déconnexion...');
-      
-      // 1. Utiliser BrandiaAPI si disponible
-      if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.logout) {
-        BrandiaAPI.Auth.logout();
-        return;
-      }
-      
-      // 2. Fallback: nettoyer manuellement toutes les clés
-      localStorage.removeItem('token');
-      localStorage.removeItem('brandia_token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('brandia_user');
-      localStorage.removeItem('refreshToken');
-      
-      // 3. Redirection
-      window.location.href = 'index.html';
-    }
-
-    // ========== UTILITAIRES ==========
-    function formatPrice(price, currency = 'EUR') {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(price || 0);
-    }
-
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-        <span>${message}</span>
-      `;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-
-    function getFlagEmoji(countryCode) {
-      const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
-      return String.fromCodePoint(...codePoints);
-    }
-
-    // ========== MOBILE MENU ==========
-    function toggleMobileMenu() {
-      const menu = document.getElementById('mobile-menu');
-      menu.classList.toggle('open');
-      document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
-    }
-
-    // ========== AUTHENTIFICATION - INITIALISATION ==========
-    
-    /**
-     * 🔥 FONCTION CLÉ: Initialise l'affichage selon l'état de connexion
-     * Appelée au chargement de la page
-     */
-    function initAuth() {
-      console.log('[Auth] Initialisation...');
-      
-      const token = getAuthToken();
-      const user = getAuthUser();
-      const isLoggedIn = !!token && !!user;
-      
-      console.log('[Auth] Token présent:', !!token);
-      console.log('[Auth] User:', user);
-      console.log('[Auth] Connecté:', isLoggedIn);
-      
-      // Récupérer les éléments du DOM
-      const authButtons = document.getElementById('auth-buttons');
-      const userMenu = document.getElementById('user-menu');
-      const supplierMenu = document.getElementById('supplier-menu');
-      const mobileLoginLink = document.getElementById('mobile-login-link');
-      const mobileRegisterLink = document.getElementById('mobile-register-link');
-      
-      // Réinitialiser tous les états (tout cacher d'abord)
-      authButtons.style.display = 'none';
-      userMenu.style.display = 'none';
-      userMenu.classList.remove('active');
-      supplierMenu.style.display = 'none';
-      supplierMenu.classList.remove('active');
-      
-      if (isLoggedIn && user) {
-        // ========== UTILISATEUR CONNECTÉ ==========
-        console.log('[Auth] Role:', user.role);
-        
-        if (user.role === 'supplier') {
-          // 🔥 FOURNISSEUR: Afficher menu fournisseur
-          supplierMenu.style.display = 'flex';
-          supplierMenu.classList.add('active');
-          
-          // Mettre à jour les infos
-          const displayName = user.first_name || user.company_name || user.email || 'Fournisseur';
-          document.getElementById('supplier-name').textContent = displayName;
-          document.getElementById('supplier-avatar').textContent = displayName.charAt(0).toUpperCase();
-          
-          console.log('[Auth] Menu fournisseur affiché');
-          
-        } else {
-          // 🔥 CLIENT: Afficher menu client
-          userMenu.style.display = 'flex';
-          userMenu.classList.add('active');
-          
-          // Mettre à jour les infos
-          const displayName = user.first_name || user.email || 'Client';
-          document.getElementById('user-name').textContent = displayName;
-          document.getElementById('user-avatar').textContent = displayName.charAt(0).toUpperCase();
-          
-          console.log('[Auth] Menu client affiché');
-        }
-        
-        // Masquer les liens mobile connexion/inscription
-        if (mobileLoginLink) mobileLoginLink.style.display = 'none';
-        if (mobileRegisterLink) mobileRegisterLink.style.display = 'none';
-        
-      } else {
-        // ========== NON CONNECTÉ ==========
-        // Afficher les boutons connexion/inscription
-        authButtons.style.display = 'flex';
-        
-        // Afficher les liens mobile
-        if (mobileLoginLink) mobileLoginLink.style.display = 'block';
-        if (mobileRegisterLink) mobileRegisterLink.style.display = 'block';
-        
-        console.log('[Auth] Boutons connexion affichés');
-      }
-    }
-
-    // ========== COUNTRIES ==========
-    function initCountries() {
-      const selector = document.getElementById('countrySelector');
-      const countries = {
-        'AF': { name: 'Afghanistan', currency: 'AFN' },
-      'AL': { name: 'Albanie', currency: 'ALL' },
-      'DZ': { name: 'Algérie', currency: 'DZD' },
-      'AD': { name: 'Andorre', currency: 'EUR' },
-      'AO': { name: 'Angola', currency: 'AOA' },
-      'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
-      'AR': { name: 'Argentine', currency: 'ARS' },
-      'AM': { name: 'Arménie', currency: 'AMD' },
-      'AU': { name: 'Australie', currency: 'AUD' },
-      'AT': { name: 'Autriche', currency: 'EUR' },
-      'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
-      'BS': { name: 'Bahamas', currency: 'BSD' },
-      'BH': { name: 'Bahreïn', currency: 'BHD' },
-      'BD': { name: 'Bangladesh', currency: 'BDT' },
-      'BB': { name: 'Barbade', currency: 'BBD' },
-      'BY': { name: 'Biélorussie', currency: 'BYN' },
-      'BE': { name: 'Belgique', currency: 'EUR' },
-      'BZ': { name: 'Belize', currency: 'BZD' },
-      'BJ': { name: 'Bénin', currency: 'XOF' },
-      'BT': { name: 'Bhoutan', currency: 'BTN' },
-      'BO': { name: 'Bolivie', currency: 'BOB' },
-      'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
-      'BW': { name: 'Botswana', currency: 'BWP' },
-      'BR': { name: 'Brésil', currency: 'BRL' },
-      'BN': { name: 'Brunei', currency: 'BND' },
-      'BG': { name: 'Bulgarie', currency: 'BGN' },
-      'BF': { name: 'Burkina Faso', currency: 'XOF' },
-      'BI': { name: 'Burundi', currency: 'BIF' },
-      'CV': { name: 'Cap-Vert', currency: 'CVE' },
-      'KH': { name: 'Cambodge', currency: 'KHR' },
-      'CM': { name: 'Cameroun', currency: 'XAF' },
-      'CA': { name: 'Canada', currency: 'CAD' },
-      'CF': { name: 'Centrafrique', currency: 'XAF' },
-      'TD': { name: 'Tchad', currency: 'XAF' },
-      'CL': { name: 'Chili', currency: 'CLP' },
-      'CN': { name: 'Chine', currency: 'CNY' },
-      'CO': { name: 'Colombie', currency: 'COP' },
-      'KM': { name: 'Comores', currency: 'KMF' },
-      'CG': { name: 'Congo', currency: 'XAF' },
-      'CD': { name: 'Congo (RDC)', currency: 'CDF' },
-      'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
-      'HR': { name: 'Croatie', currency: 'EUR' },
-      'CU': { name: 'Cuba', currency: 'CUP' },
-      'CY': { name: 'Chypre', currency: 'EUR' },
-      'CZ': { name: 'République tchèque', currency: 'CZK' },
-      'DK': { name: 'Danemark', currency: 'DKK' },
-      'DJ': { name: 'Djibouti', currency: 'DJF' },
-      'DM': { name: 'Dominique', currency: 'XCD' },
-      'DO': { name: 'République dominicaine', currency: 'DOP' },
-      'EC': { name: 'Équateur', currency: 'USD' },
-      'EG': { name: 'Égypte', currency: 'EGP' },
-      'SV': { name: 'Salvador', currency: 'USD' },
-      'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
-      'ER': { name: 'Érythrée', currency: 'ERN' },
-      'EE': { name: 'Estonie', currency: 'EUR' },
-      'ET': { name: 'Éthiopie', currency: 'ETB' },
-      'FJ': { name: 'Fidji', currency: 'FJD' },
-      'FI': { name: 'Finlande', currency: 'EUR' },
-      'FR': { name: 'France', currency: 'EUR' },
-      'GA': { name: 'Gabon', currency: 'XAF' },
-      'GM': { name: 'Gambie', currency: 'GMD' },
-      'GE': { name: 'Géorgie', currency: 'GEL' },
-      'DE': { name: 'Allemagne', currency: 'EUR' },
-      'GH': { name: 'Ghana', currency: 'GHS' },
-      'GR': { name: 'Grèce', currency: 'EUR' },
-      'GD': { name: 'Grenade', currency: 'XCD' },
-      'GT': { name: 'Guatemala', currency: 'GTQ' },
-      'GN': { name: 'Guinée', currency: 'GNF' },
-      'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
-      'GY': { name: 'Guyana', currency: 'GYD' },
-      'HT': { name: 'Haïti', currency: 'HTG' },
-      'HN': { name: 'Honduras', currency: 'HNL' },
-      'HU': { name: 'Hongrie', currency: 'HUF' },
-      'IS': { name: 'Islande', currency: 'ISK' },
-      'IN': { name: 'Inde', currency: 'INR' },
-      'ID': { name: 'Indonésie', currency: 'IDR' },
-      'IR': { name: 'Iran', currency: 'IRR' },
-      'IQ': { name: 'Irak', currency: 'IQD' },
-      'IE': { name: 'Irlande', currency: 'EUR' },
-      'IL': { name: 'Israël', currency: 'ILS' },
-      'IT': { name: 'Italie', currency: 'EUR' },
-      'JM': { name: 'Jamaïque', currency: 'JMD' },
-      'JP': { name: 'Japon', currency: 'JPY' },
-      'JO': { name: 'Jordanie', currency: 'JOD' },
-      'KZ': { name: 'Kazakhstan', currency: 'KZT' },
-      'KE': { name: 'Kenya', currency: 'KES' },
-      'KI': { name: 'Kiribati', currency: 'AUD' },
-      'KP': { name: 'Corée du Nord', currency: 'KPW' },
-      'KR': { name: 'Corée du Sud', currency: 'KRW' },
-      'KW': { name: 'Koweït', currency: 'KWD' },
-      'KG': { name: 'Kirghizistan', currency: 'KGS' },
-      'LA': { name: 'Laos', currency: 'LAK' },
-      'LV': { name: 'Lettonie', currency: 'EUR' },
-      'LB': { name: 'Liban', currency: 'LBP' },
-      'LS': { name: 'Lesotho', currency: 'LSL' },
-      'LR': { name: 'Libéria', currency: 'LRD' },
-      'LY': { name: 'Libye', currency: 'LYD' },
-      'LI': { name: 'Liechtenstein', currency: 'CHF' },
-      'LT': { name: 'Lituanie', currency: 'EUR' },
-      'LU': { name: 'Luxembourg', currency: 'EUR' },
-      'MG': { name: 'Madagascar', currency: 'MGA' },
-      'MW': { name: 'Malawi', currency: 'MWK' },
-      'MY': { name: 'Malaisie', currency: 'MYR' },
-      'MV': { name: 'Maldives', currency: 'MVR' },
-      'ML': { name: 'Mali', currency: 'XOF' },
-      'MT': { name: 'Malte', currency: 'EUR' },
-      'MH': { name: 'Îles Marshall', currency: 'USD' },
-      'MR': { name: 'Mauritanie', currency: 'MRO' },
-      'MU': { name: 'Maurice', currency: 'MUR' },
-      'MX': { name: 'Mexique', currency: 'MXN' },
-      'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
-      'MD': { name: 'Moldavie', currency: 'MDL' },
-      'MC': { name: 'Monaco', currency: 'EUR' },
-      'MN': { name: 'Mongolie', currency: 'MNT' },
-      'ME': { name: 'Monténégro', currency: 'EUR' },
-      'MA': { name: 'Maroc', currency: 'MAD' },
-      'MZ': { name: 'Mozambique', currency: 'MZN' },
-      'MM': { name: 'Myanmar', currency: 'MMK' },
-      'NA': { name: 'Namibie', currency: 'NAD' },
-      'NR': { name: 'Nauru', currency: 'AUD' },
-      'NP': { name: 'Népal', currency: 'NPR' },
-      'NL': { name: 'Pays-Bas', currency: 'EUR' },
-      'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
-      'NI': { name: 'Nicaragua', currency: 'NIO' },
-      'NE': { name: 'Niger', currency: 'XOF' },
-      'NG': { name: 'Nigéria', currency: 'NGN' },
-      'NO': { name: 'Norvège', currency: 'NOK' },
-      'OM': { name: 'Oman', currency: 'OMR' },
-      'PK': { name: 'Pakistan', currency: 'PKR' },
-      'PW': { name: 'Palaos', currency: 'USD' },
-      'PA': { name: 'Panama', currency: 'PAB' },
-      'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
-      'PY': { name: 'Paraguay', currency: 'PYG' },
-      'PE': { name: 'Pérou', currency: 'PEN' },
-      'PH': { name: 'Philippines', currency: 'PHP' },
-      'PL': { name: 'Pologne', currency: 'PLN' },
-      'PT': { name: 'Portugal', currency: 'EUR' },
-      'QA': { name: 'Qatar', currency: 'QAR' },
-      'RO': { name: 'Roumanie', currency: 'RON' },
-      'RU': { name: 'Russie', currency: 'RUB' },
-      'RW': { name: 'Rwanda', currency: 'RWF' },
-      'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
-      'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
-      'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
-      'WS': { name: 'Samoa', currency: 'WST' },
-      'SM': { name: 'Saint-Marin', currency: 'EUR' },
-      'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
-      'SA': { name: 'Arabie saoudite', currency: 'SAR' },
-      'SN': { name: 'Sénégal', currency: 'XOF' },
-      'RS': { name: 'Serbie', currency: 'RSD' },
-      'SC': { name: 'Seychelles', currency: 'SCR' },
-      'SL': { name: 'Sierra Leone', currency: 'SLL' },
-      'SG': { name: 'Singapour', currency: 'SGD' },
-      'SK': { name: 'Slovaquie', currency: 'EUR' },
-      'SI': { name: 'Slovénie', currency: 'EUR' },
-      'SB': { name: 'Îles Salomon', currency: 'SBD' },
-      'SO': { name: 'Somalie', currency: 'SOS' },
-      'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
-      'ES': { name: 'Espagne', currency: 'EUR' },
-      'LK': { name: 'Sri Lanka', currency: 'LKR' },
-      'SD': { name: 'Soudan', currency: 'SDG' },
-      'SR': { name: 'Suriname', currency: 'SRD' },
-      'SE': { name: 'Suède', currency: 'SEK' },
-      'CH': { name: 'Suisse', currency: 'CHF' },
-      'SY': { name: 'Syrie', currency: 'SYP' },
-      'TW': { name: 'Taïwan', currency: 'TWD' },
-      'TJ': { name: 'Tadjikistan', currency: 'TJS' },
-      'TZ': { name: 'Tanzanie', currency: 'TZS' },
-      'TH': { name: 'Thaïlande', currency: 'THB' },
-      'TL': { name: 'Timor oriental', currency: 'USD' },
-      'TG': { name: 'Togo', currency: 'XOF' },
-      'TO': { name: 'Tonga', currency: 'TOP' },
-      'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
-      'TN': { name: 'Tunisie', currency: 'TND' },
-      'TR': { name: 'Turquie', currency: 'TRY' },
-      'TM': { name: 'Turkménistan', currency: 'TMT' },
-      'UG': { name: 'Ouganda', currency: 'UGX' },
-      'UA': { name: 'Ukraine', currency: 'UAH' },
-      'AE': { name: 'Émirats arabes unis', currency: 'AED' },
-      'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-      'US': { name: 'États-Unis', currency: 'USD' },
-      'UY': { name: 'Uruguay', currency: 'UYU' },
-      'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
-      'VU': { name: 'Vanuatu', currency: 'VUV' },
-      'VE': { name: 'Venezuela', currency: 'VES' },
-      'VN': { name: 'Viêt Nam', currency: 'VND' },
-      'YE': { name: 'Yémen', currency: 'YER' },
-      'ZM': { name: 'Zambie', currency: 'ZMW' },
-      'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
-      };
-
-      const saved = localStorage.getItem('country') || 'FR';
-      selector.innerHTML = Object.entries(countries)
-        .sort((a, b) => a[1].name.localeCompare(b[1].name))
-        .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
-        .join('');
-
-      selector.addEventListener('change', (e) => {
-        localStorage.setItem('country', e.target.value);
-        localStorage.setItem('currency', countries[e.target.value].currency);
-      });
-    }
-
-    // ========== CATEGORIES ==========
-    function loadCategories() {
-      const grid = document.getElementById('categories-grid');
-      const dropdown = document.getElementById('dropdown-categories');
-      
-      const html = BRANDIA_CATEGORIES.map((cat, i) => `
-        <a href="catalogue.html?category=${cat.slug}" class="category-card fade-in" style="animation-delay: ${i * 0.05}s">
-          <div class="category-image">
-            <img src="${CATEGORY_IMAGES[cat.slug]}" alt="${cat.name}" loading="lazy">
-            <div class="category-icon bg-gradient-to-br ${cat.color}">
-              <i class="fas ${cat.icon}"></i>
-            </div>
-          </div>
-          <div class="category-info">
-            <div class="category-name">${cat.name}</div>
-          </div>
-        </a>
-      `).join('');
-      
-      grid.innerHTML = html;
-      
-      if (dropdown) {
-        dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-          <a href="catalogue.html?category=${cat.slug}" class="dropdown-item">
-            <div class="dropdown-icon bg-gradient-to-br ${cat.color}">
-              <i class="fas ${cat.icon} text-white"></i>
-            </div>
-            <span>${cat.name}</span>
-          </a>
-        `).join('');
-      }
-    }
-
-    // ========== FEATURED PRODUCTS ==========
-    async function loadFeaturedProducts() {
-      const container = document.getElementById('featured-products-grid');
-      const loader = document.getElementById('featured-loader');
-      
-      try {
-        let response;
-        try {
-          response = await BrandiaAPI.Products.getFeaturedWithPromotions();
-        } catch (e) {
-          response = await BrandiaAPI.Products.getFeatured();
-        }
-        
-        if (!response.success || !response.data) throw new Error('Erreur API');
-        
-        const products = response.data.products || response.data;
-        
-        if (!products.length) {
-          container.innerHTML = '<p class="text-center text-slate-400 col-span-full">Aucun produit disponible</p>';
-          loader.style.display = 'none';
-          container.classList.remove('hidden');
-          return;
-        }
-
-        container.innerHTML = products.map(p => {
-          const hasPromo = p.has_promotion || p.final_price < p.price;
-          const finalPrice = parseFloat(p.final_price || p.price);
-          const originalPrice = hasPromo ? parseFloat(p.original_price || p.price) : null;
-          
-          return `
-            <div class="product-card">
-              <div class="product-image">
-                <a href="product.html?id=${p.id}">
-                  <img src="${p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'}" 
-                       alt="${p.name}" loading="lazy">
-                </a>
-                ${hasPromo ? `<span class="product-badge">-${Math.round((1 - finalPrice/originalPrice) * 100)}%</span>` : ''}
-              </div>
-              <div class="product-info">
-                <div class="product-category">${p.category_name || 'Catégorie'}</div>
-                <a href="product.html?id=${p.id}" class="product-name">${p.name}</a>
-                <div class="product-footer">
-                  <div class="product-price">
-                    <span class="price-current ${hasPromo ? 'promo' : ''}">${formatPrice(finalPrice)}</span>
-                    ${hasPromo ? `<span class="price-original">${formatPrice(originalPrice)}</span>` : ''}
-                  </div>
-                  <button class="btn-add-cart" onclick="addToCart(${p.id}, event)">
-                    <i class="fas fa-plus"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-        
-        loader.style.display = 'none';
-        container.classList.remove('hidden');
-        
-      } catch (error) {
-        console.error('Erreur chargement produits:', error);
-        loader.style.display = 'none';
-        container.innerHTML = `
-          <div class="col-span-full text-center py-12">
-            <p class="text-slate-400 mb-4">Erreur de chargement</p>
-            <button onclick="location.reload()" class="btn-primary">
-              <i class="fas fa-redo mr-2"></i>Réessayer
-            </button>
-          </div>
-        `;
-        container.classList.remove('hidden');
-      }
-    }
-
-    async function addToCart(productId, event) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      try {
-        const response = await BrandiaAPI.Products.getById(productId);
-        if (!response.success) throw new Error('Produit non trouvé');
-        
-        const p = response.data.product || response.data;
-        BrandiaAPI.Cart.add({
-          id: p.id,
-          name: p.name,
-          price: parseFloat(p.final_price || p.price),
-          main_image_url: p.main_image_url,
-          quantity: 1
-        });
-        
-        showToast('Produit ajouté au panier !', 'success');
-        updateCartBadge();
-      } catch (error) {
-        showToast('Erreur: ' + error.message, 'error');
-      }
-    }
-
-    function updateCartBadge() {
-      const count = BrandiaAPI.Cart.getCount();
-      const badge = document.getElementById('cart-count');
-      badge.textContent = count > 99 ? '99+' : count;
-      badge.classList.toggle('hidden', count === 0);
-    }
-
-    // ========== INIT ==========
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('[App] Page chargée, initialisation...');
-      
-      initAuth();        // 🔥 Initialiser l'auth en premier
+      initAuth();
       initCountries();
       loadCategories();
       loadFeaturedProducts();
