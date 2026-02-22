@@ -34,9 +34,15 @@ tailwind.config = {
           danger: '#ef4444',
         },
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      }
+      /* ========== BASE STYLES - FOND SOMBRE ========== */
+body { 
+  font-family: 'Inter', system-ui, sans-serif; 
+  background-color: var(--brandia-dark); 
+  color: var(--brandia-text); 
+  line-height: 1.6; 
+  overflow-x: hidden; 
+  min-width: 320px; 
+}
     }
   }
 }
@@ -59,6 +65,8 @@ tailwind.config = {
   --brandia-success: #10b981;
   --brandia-warning: #f59e0b;
   --brandia-danger: #ef4444;
+  --brandia-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  --brandia-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
 }
 /* ========== CONTAINER ========== */
 .container {
