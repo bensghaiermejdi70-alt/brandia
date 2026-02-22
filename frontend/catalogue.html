@@ -1,2368 +1,2012 @@
 <!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalogue - Brandia</title>
-  <meta name="description" content="Découvrez tous les produits des marques sur Brandia">
-  
-  <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-  
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brandia: {
-              primary: '#6366f1',
-              secondary: '#8b5cf6',
-              accent: '#ec4899',
-              dark: '#0f172a',
-              darker: '#020617',
-              card: '#1e293b',
-              border: '#334155',
-              text: '#f8fafc',
-              muted: '#94a3b8',
-              success: '#10b981',
-              warning: '#f59e0b',
-              danger: '#ef4444',
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catalogue - Brandia</title>
+<meta name="description" content="Découvrez tous les produits des marques sur Brandia">
+<!-- Favicon -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        brandia: {
+          primary: '#6366f1',
+          secondary: '#8b5cf6',
+          accent: '#ec4899',
+          dark: '#0f172a',
+          darker: '#020617',
+          card: '#1e293b',
+          border: '#334155',
+          text: '#f8fafc',
+          muted: '#94a3b8',
+          success: '#10b981',
+          warning: '#f59e0b',
+          danger: '#ef4444',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       }
     }
-  </script>
-  
-  <!-- Styles critiques inline pour éviter le FOUC -->
-  <style>
-    /* ========== VARIABLES & RESET ========== */
-    :root {
-      --brandia-primary: #6366f1;
-      --brandia-primary-hover: #4f46e5;
-      --brandia-secondary: #8b5cf6;
-      --brandia-accent: #ec4899;
-      --brandia-dark: #0f172a;
-      --brandia-darker: #020617;
-      --brandia-card: #1e293b;
-      --brandia-card-hover: #334155;
-      --brandia-border: #334155;
-      --brandia-text: #f8fafc;
-      --brandia-text-muted: #94a3b8;
-      --brandia-success: #10b981;
-      --brandia-warning: #f59e0b;
-      --brandia-danger: #ef4444;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background-color: var(--brandia-dark);
-      color: var(--brandia-text);
-      line-height: 1.6;
-      min-width: 320px;
-    }
-
-    /* ========== CONTAINER ========== */
-    .container {
-      width: 100%;
-      max-width: 1280px;
-      margin-left: auto;
-      margin-right: auto;
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-
-    @media (min-width: 640px) {
-      .container {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-      }
-    }
-
-    @media (min-width: 1024px) {
-      .container {
-        padding-left: 2rem;
-        padding-right: 2rem;
-      }
-    }
-
-    /* ========== HEADER ========== */
-    .header {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--brandia-border);
-    }
-
-    .header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 0;
-      gap: 1rem;
-    }
-
-    .brandia-logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      text-decoration: none;
-      flex-shrink: 0;
-    }
-
-    .brandia-icon-wrap {
-      position: relative;
-      width: 40px;
-      height: 40px;
-      flex-shrink: 0;
-    }
-
-    .brandia-pulse {
-      position: absolute;
-      inset: -4px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      opacity: 0.3;
-      filter: blur(8px);
-      animation: pulse-glow 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.1); opacity: 0.5; }
-    }
-
-    .brandia-icon-bg {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.5);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .brandia-text {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.5rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.02em;
-    }
-
-    /* Navigation */
-    .nav-desktop {
-      display: none;
-      align-items: center;
-      gap: 2rem;
-    }
-
-    @media (min-width: 1024px) {
-      .nav-desktop {
-        display: flex;
-      }
-    }
-
-    .nav-link {
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: all 0.2s;
-      position: relative;
-    }
-
-    .nav-link:hover {
-      color: var(--brandia-text);
-    }
-
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      transition: width 0.3s;
-    }
-
-    .nav-link:hover::after {
-      width: 100%;
-    }
-
-    /* Dropdown */
-    .dropdown {
-      position: relative;
-    }
-
-    .dropdown-trigger {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      padding: 0.5rem 0;
-    }
-
-    .dropdown-menu {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      left: 0;
-      width: 320px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 12px;
-      padding: 0.75rem;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px);
-      transition: all 0.2s;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      max-height: 60vh;
-      overflow-y: auto;
-      z-index: 100;
-    }
-
-    .dropdown:hover .dropdown-menu {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-
-    .dropdown-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.625rem;
-      border-radius: 8px;
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      transition: all 0.2s;
-    }
-
-    .dropdown-item:hover {
-      background: var(--brandia-card-hover);
-      color: var(--brandia-text);
-    }
-
-    .dropdown-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.875rem;
-      flex-shrink: 0;
-    }
-
-    /* Header Actions */
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .country-selector, .lang-switch {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.5rem 0.75rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .country-selector:hover, .lang-switch:hover {
-      border-color: var(--brandia-primary);
-    }
-
-    /* Auth Buttons */
-    .auth-buttons {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .btn-login {
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      transition: all 0.2s;
-    }
-
-    .btn-login:hover {
-      color: var(--brandia-text);
-      background: var(--brandia-card);
-    }
-
-    .btn-register {
-      background: var(--brandia-primary);
-      color: white;
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 600;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-      position: relative;
-    }
-
-    .btn-register:hover {
-      background: var(--brandia-primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
-    }
-
-    .register-dropdown {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      width: 240px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 12px;
-      padding: 0.5rem;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px);
-      transition: all 0.2s;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      z-index: 100;
-    }
-
-    .btn-register:hover .register-dropdown {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-
-    .register-option {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem;
-      border-radius: 8px;
-      color: var(--brandia-text);
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-
-    .register-option:hover {
-      background: var(--brandia-card-hover);
-    }
-
-    .register-option-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .register-option-icon.client {
-      background: rgba(99, 102, 241, 0.2);
-      color: var(--brandia-primary);
-    }
-
-    .register-option-icon.supplier {
-      background: rgba(16, 185, 129, 0.2);
-      color: var(--brandia-success);
-    }
-
-    /* User Menu */
-    .user-menu, .supplier-menu {
-      display: none;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .user-menu.active, .supplier-menu.active {
-      display: flex;
-    }
-
-    .btn-dashboard {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--brandia-success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-
-    .btn-dashboard:hover {
-      background: rgba(16, 185, 129, 0.2);
-    }
-
-    .user-name {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-    }
-
-    .btn-logout {
-      color: var(--brandia-danger);
-      background: none;
-      border: none;
-      font-size: 0.875rem;
-      cursor: pointer;
-      padding: 0.5rem;
-      transition: all 0.2s;
-    }
-
-    .btn-logout:hover {
-      color: #dc2626;
-    }
-
-    /* Cart */
-    .cart-link {
-      position: relative;
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      padding: 0.5rem;
-      transition: all 0.2s;
-    }
-
-    .cart-link:hover {
-      color: var(--brandia-text);
-    }
-
-    .cart-badge {
-      position: absolute;
-      top: -2px;
-      right: -2px;
-      width: 18px;
-      height: 18px;
-      background: var(--brandia-primary);
-      color: white;
-      border-radius: 50%;
-      font-size: 0.625rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .cart-badge.hidden {
-      display: none;
-    }
-
-    /* Mobile Toggle */
-    .mobile-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      color: var(--brandia-text);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .mobile-toggle:hover {
-      border-color: var(--brandia-primary);
-    }
-
-    @media (min-width: 1024px) {
-      .mobile-toggle {
-        display: none;
-      }
-    }
-
-    /* ========== BREADCRUMB ========== */
-    .breadcrumb-section {
-      border-bottom: 1px solid var(--brandia-border);
-      background: rgba(30, 41, 59, 0.5);
-      padding: 1rem 0;
-    }
-
-    .breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--brandia-text-muted);
-      margin-bottom: 0.5rem;
-    }
-
-    .breadcrumb a {
-      color: var(--brandia-text-muted);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .breadcrumb a:hover {
-      color: var(--brandia-text);
-    }
-
-    .breadcrumb-current {
-      color: var(--brandia-text);
-      font-weight: 500;
-    }
-
-    .results-count {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-    }
-
-    /* ========== MAIN LAYOUT ========== */
-    .main-layout {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-      padding: 1.5rem 0;
-    }
-
-    @media (min-width: 1024px) {
-      .main-layout {
-        flex-direction: row;
-      }
-    }
-
-    /* ========== SIDEBAR ========== */
-    .sidebar {
-      width: 100%;
-      flex-shrink: 0;
-    }
-
-    @media (min-width: 1024px) {
-      .sidebar {
-        width: 280px;
-        position: sticky;
-        top: 80px;
-        height: fit-content;
-      }
-    }
-
-    .filter-card {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .filter-title {
-      font-weight: 600;
-      color: var(--brandia-text);
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .filter-reset {
-      font-size: 0.75rem;
-      color: var(--brandia-primary);
-      cursor: pointer;
-      background: none;
-      border: none;
-    }
-
-    .filter-reset:hover {
-      color: var(--brandia-primary-hover);
-    }
-
-    /* Checkbox custom */
-    .checkbox-custom {
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      border: 2px solid var(--brandia-border);
-      border-radius: 4px;
-      background: var(--brandia-dark);
-      cursor: pointer;
-      position: relative;
-      flex-shrink: 0;
-    }
-
-    .checkbox-custom:checked {
-      background: var(--brandia-primary);
-      border-color: var(--brandia-primary);
-    }
-
-    .checkbox-custom:checked::after {
-      content: '✓';
-      position: absolute;
-      color: white;
-      font-size: 10px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .filter-option {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.5rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .filter-option:hover {
-      background: var(--brandia-card-hover);
-    }
-
-    .filter-option-text {
-      font-size: 0.875rem;
-      color: var(--brandia-text-muted);
-      transition: color 0.2s;
-    }
-
-    .filter-option:hover .filter-option-text {
-      color: var(--brandia-text);
-    }
-
-    .filter-option input:checked + .filter-option-text {
-      color: var(--brandia-text);
-      font-weight: 500;
-    }
-
-    /* Price inputs */
-    .price-inputs {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .price-input {
-      flex: 1;
-      background: var(--brandia-dark);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.5rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .price-input:focus {
-      border-color: var(--brandia-primary);
-    }
-
-    .btn-apply {
-      width: 100%;
-      background: var(--brandia-primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-apply:hover {
-      background: var(--brandia-primary-hover);
-    }
-
-    .btn-reset-all {
-      width: 100%;
-      background: transparent;
-      border: 1px solid var(--brandia-border);
-      color: var(--brandia-text-muted);
-      border-radius: 8px;
-      padding: 0.75rem;
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .btn-reset-all:hover {
-      background: var(--brandia-card-hover);
-      color: var(--brandia-text);
-    }
-
-    /* Categories list */
-    .categories-list {
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    /* ========== CONTENT AREA ========== */
-    .content-area {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .toolbar {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 12px;
-      padding: 1rem;
-    }
-
-    @media (min-width: 640px) {
-      .toolbar {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-    }
-
-    .search-box {
-      position: relative;
-      flex: 1;
-      max-width: 400px;
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--brandia-text-muted);
-    }
-
-    .search-input {
-      width: 100%;
-      background: var(--brandia-dark);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.625rem 1rem 0.625rem 2.5rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .search-input:focus {
-      border-color: var(--brandia-primary);
-    }
-
-    .sort-select {
-      background: var(--brandia-dark);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      padding: 0.625rem 1rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      outline: none;
-      cursor: pointer;
-      min-width: 180px;
-    }
-
-    .sort-select:focus {
-      border-color: var(--brandia-primary);
-    }
-
-    /* ========== PRODUCTS GRID ========== */
-    .products-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    @media (min-width: 640px) {
-      .products-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (min-width: 1024px) {
-      .products-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    @media (min-width: 1280px) {
-      .products-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
-
-    .product-card {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 16px;
-      overflow: hidden;
-      transition: all 0.3s;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .product-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--brandia-primary);
-      box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
-    }
-
-    .product-image {
-      position: relative;
-      aspect-ratio: 1;
-      overflow: hidden;
-      background: var(--brandia-dark);
-    }
-
-    .product-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s;
-    }
-
-    .product-card:hover .product-image img {
-      transform: scale(1.05);
-    }
-
-    .product-badge {
-      position: absolute;
-      top: 0.75rem;
-      left: 0.75rem;
-      background: var(--brandia-danger);
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.375rem 0.75rem;
-      border-radius: 20px;
-      z-index: 2;
-      animation: pulse-red 2s infinite;
-    }
-
-    @keyframes pulse-red {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-      50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-    }
-
-    .stock-badge {
-      position: absolute;
-      top: 0.75rem;
-      right: 0.75rem;
-      background: var(--brandia-warning);
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.375rem 0.75rem;
-      border-radius: 20px;
-      z-index: 2;
-    }
-
-    .product-info {
-      padding: 1.25rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .product-category {
-      color: var(--brandia-primary);
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.5rem;
-    }
-
-    .product-name {
-      color: var(--brandia-text);
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .product-name:hover {
-      color: var(--brandia-primary);
-    }
-
-    .product-brand {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .product-footer {
-      margin-top: auto;
-    }
-
-    .product-price {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .price-current {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-
-    .price-current.promo {
-      color: var(--brandia-success);
-    }
-
-    .price-original {
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-      text-decoration: line-through;
-    }
-
-    .savings-badge {
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--brandia-success);
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-    }
-
-    .promo-info {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      border-radius: 8px;
-      padding: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .promo-name {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.75rem;
-      color: var(--brandia-primary);
-      margin-bottom: 0.25rem;
-    }
-
-    .promo-date {
-      font-size: 0.75rem;
-      color: var(--brandia-warning);
-    }
-
-    .product-actions {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .btn-add-cart {
-      flex: 1;
-      background: var(--brandia-primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 0.625rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .btn-add-cart:hover {
-      background: var(--brandia-primary-hover);
-    }
-
-    .btn-view {
-      width: 40px;
-      background: var(--brandia-card-hover);
-      color: var(--brandia-text);
-      border: 1px solid var(--brandia-border);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-    }
-
-    .btn-view:hover {
-      background: var(--brandia-border);
-      color: var(--brandia-text);
-    }
-
-    /* ========== LOADER & EMPTY STATES ========== */
-    .loader {
-      display: flex;
-      justify-content: center;
-      padding: 3rem;
-    }
-
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 3px solid var(--brandia-border);
-      border-top-color: var(--brandia-primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-    }
-
-    .empty-state-icon {
-      font-size: 4rem;
-      color: var(--brandia-border);
-      margin-bottom: 1rem;
-    }
-
-    .empty-state h3 {
-      color: var(--brandia-text);
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .empty-state p {
-      color: var(--brandia-text-muted);
-      margin-bottom: 1.5rem;
-    }
-
-    .btn-primary {
-      background: var(--brandia-primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 0.75rem 1.5rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-primary:hover {
-      background: var(--brandia-primary-hover);
-    }
-
-    /* ========== FOOTER ========== */
-    .footer {
-      background: var(--brandia-darker);
-      border-top: 1px solid var(--brandia-border);
-      padding: 3rem 0 2rem;
-      margin-top: 3rem;
-    }
-
-    .footer-content {
-      text-align: center;
-      color: var(--brandia-text-muted);
-      font-size: 0.875rem;
-    }
-
-    /* ========== MOBILE MENU ========== */
-    .mobile-menu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--brandia-dark);
-      z-index: 100;
-      padding: 1.5rem;
-      transform: translateX(-100%);
-      transition: transform 0.3s;
-      overflow-y: auto;
-    }
-
-    .mobile-menu.open {
-      transform: translateX(0);
-    }
-
-    .mobile-menu-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-
-    .mobile-menu-close {
-      width: 40px;
-      height: 40px;
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-radius: 10px;
-      color: var(--brandia-text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    .mobile-nav {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .mobile-nav-link {
-      color: var(--brandia-text);
-      text-decoration: none;
-      font-size: 1.125rem;
-      font-weight: 500;
-      padding: 1rem;
-      border-radius: 12px;
-      transition: all 0.2s;
-    }
-
-    .mobile-nav-link:hover {
-      background: var(--brandia-card);
-    }
-
-    /* ========== TOAST ========== */
-    .toast-container {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .toast {
-      background: var(--brandia-card);
-      border: 1px solid var(--brandia-border);
-      border-left: 4px solid var(--brandia-primary);
-      border-radius: 12px;
-      padding: 1rem 1.5rem;
-      color: var(--brandia-text);
-      font-size: 0.875rem;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    .toast.success {
-      border-left-color: var(--brandia-success);
-    }
-
-    .toast.error {
-      border-left-color: var(--brandia-danger);
-    }
-
-    /* ========== SKELETON ========== */
-    .skeleton {
-      background: linear-gradient(90deg, var(--brandia-card) 25%, var(--brandia-card-hover) 50%, var(--brandia-card) 75%);
-      background-size: 200% 100%;
-      animation: skeleton 1.5s infinite;
-      border-radius: 8px;
-    }
-
-    @keyframes skeleton {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* ========== UTILITAIRES ========== */
-    .hidden {
-      display: none !important;
-    }
-
-    .fade-in {
-      animation: fadeIn 0.5s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--brandia-dark);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--brandia-border);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--brandia-card-hover);
-    }
-  </style>
+  }
+}
+</script>
+<!-- Styles critiques inline pour éviter le FOUC -->
+<style>
+/* ========== VARIABLES & RESET ========== */
+:root {
+  --brandia-primary: #6366f1;
+  --brandia-primary-hover: #4f46e5;
+  --brandia-secondary: #8b5cf6;
+  --brandia-accent: #ec4899;
+  --brandia-dark: #0f172a;
+  --brandia-darker: #020617;
+  --brandia-card: #1e293b;
+  --brandia-card-hover: #334155;
+  --brandia-border: #334155;
+  --brandia-text: #f8fafc;
+  --brandia-text-muted: #94a3b8;
+  --brandia-success: #10b981;
+  --brandia-warning: #f59e0b;
+  --brandia-danger: #ef4444;
+}
+/* ========== CONTAINER ========== */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+/* ========== HEADER ========== */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--brandia-border);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  gap: 1rem;
+}
+/* ========== NAVIGATION ========== */
+.nav-desktop {
+  display: none;
+  align-items: center;
+  gap: 2rem;
+}
+@media (min-width: 1024px) {
+  .nav-desktop {
+    display: flex;
+  }
+}
+.nav-link {
+  color: var(--brandia-text-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  position: relative;
+}
+.nav-link:hover {
+  color: var(--brandia-text);
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  transition: width 0.3s;
+}
+.nav-link:hover::after {
+  width: 100%;
+}
+/* ========== DROPDOWN ========== */
+.dropdown {
+  position: relative;
+}
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  width: 320px;
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  max-height: 60vh;
+  overflow-y: auto;
+  z-index: 100;
+}
+.dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem;
+  border-radius: 8px;
+  color: var(--brandia-text-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+.dropdown-item:hover {
+  background: var(--brandia-card-hover);
+  color: var(--brandia-text);
+}
+.dropdown-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+/* ========== HEADER ACTIONS ========== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.country-selector, .lang-switch {
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--brandia-text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.country-selector:hover, .lang-switch:hover {
+  border-color: var(--brandia-primary);
+}
+/* ========== AUTH BUTTONS ========== */
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-login {
+  color: var(--brandia-text-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.btn-login:hover {
+  color: var(--brandia-text);
+  background: var(--brandia-card);
+}
+.btn-register {
+  background: var(--brandia-primary);
+  color: white;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  position: relative;
+}
+.btn-register:hover {
+  background: var(--brandia-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+}
+.register-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 240px;
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 12px;
+  padding: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+.register-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  color: var(--brandia-text);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.register-option:hover {
+  background: var(--brandia-card-hover);
+}
+.register-option-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.register-option-icon.client {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--brandia-primary);
+}
+.register-option-icon.supplier {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--brandia-success);
+}
+/* ========== USER MENU ========== */
+.user-menu, .supplier-menu {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+.user-menu.active, .supplier-menu.active {
+  display: flex;
+}
+.btn-dashboard {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--brandia-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.btn-dashboard:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+.user-name {
+  color: var(--brandia-text-muted);
+  font-size: 0.875rem;
+}
+.btn-logout {
+  color: var(--brandia-danger);
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: all 0.2s;
+}
+.btn-logout:hover {
+  color: #dc2626;
+}
+/* ========== CART ========== */
+.cart-link {
+  position: relative;
+  color: var(--brandia-text-muted);
+  text-decoration: none;
+  padding: 0.5rem;
+  transition: all 0.2s;
+}
+.cart-link:hover {
+  color: var(--brandia-text);
+}
+.cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  background: var(--brandia-primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cart-badge.hidden {
+  display: none;
+}
+/* ========== MOBILE TOGGLE ========== */
+.mobile-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 8px;
+  color: var(--brandia-text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mobile-toggle:hover {
+  border-color: var(--brandia-primary);
+}
+@media (min-width: 1024px) {
+  .mobile-toggle {
+    display: none;
+  }
+}
+/* ========== BREADCRUMB ========== */
+.breadcrumb-section {
+  border-bottom: 1px solid var(--brandia-border);
+  background: rgba(30, 41, 59, 0.5);
+  padding: 1rem 0;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--brandia-text-muted);
+  margin-bottom: 0.5rem;
+}
+.breadcrumb a {
+  color: var(--brandia-text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.breadcrumb a:hover {
+  color: var(--brandia-text);
+}
+.breadcrumb-current {
+  color: var(--brandia-text);
+  font-weight: 500;
+}
+.results-count {
+  color: var(--brandia-text-muted);
+  font-size: 0.875rem;
+}
+/* ========== MAIN LAYOUT ========== */
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+}
+@media (min-width: 1024px) {
+  .main-layout {
+    flex-direction: row;
+  }
+}
+/* ========== SIDEBAR ========== */
+.sidebar {
+  width: 100%;
+  flex-shrink: 0;
+}
+@media (min-width: 1024px) {
+  .sidebar {
+    width: 280px;
+    position: sticky;
+    top: 80px;
+    height: fit-content;
+  }
+}
+.filter-card {
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.filter-title {
+  font-weight: 600;
+  color: var(--brandia-text);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.filter-reset {
+  font-size: 0.75rem;
+  color: var(--brandia-primary);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.filter-reset:hover {
+  color: var(--brandia-primary-hover);
+}
+/* ========== CHECKBOX CUSTOM ========== */
+.checkbox-custom {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--brandia-border);
+  border-radius: 4px;
+  background: var(--brandia-dark);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+.checkbox-custom:checked {
+  background: var(--brandia-primary);
+  border-color: var(--brandia-primary);
+}
+.checkbox-custom:checked::after {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 10px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+/* ========== FILTER OPTIONS ========== */
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-option:hover {
+  background: var(--brandia-card-hover);
+}
+.filter-option-text {
+  font-size: 0.875rem;
+  color: var(--brandia-text-muted);
+  transition: color 0.2s;
+}
+.filter-option:hover .filter-option-text {
+  color: var(--brandia-text);
+}
+.filter-option input:checked + .filter-option-text {
+  color: var(--brandia-text);
+  font-weight: 500;
+}
+/* ========== PRICE INPUTS ========== */
+.price-inputs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  max-width: 200px;
+}
+.price-input {
+  flex: 1;
+  background: var(--brandia-dark);
+  border: 1px solid var(--brandia-border);
+  border-radius: 8px;
+  padding: 0.3rem;
+  color: var(--brandia-text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.price-input:focus {
+  border-color: var(--brandia-primary);
+}
+/* ========== BUTTONS ========== */
+.btn-apply {
+  width: 100%;
+  background: var(--brandia-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-apply:hover {
+  background: var(--brandia-primary-hover);
+}
+.btn-reset-all {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--brandia-border);
+  color: var(--brandia-text-muted);
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-reset-all:hover {
+  background: var(--brandia-card-hover);
+  color: var(--brandia-text);
+}
+/* ========== CATEGORIES LIST ========== */
+.categories-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+/* ========== CONTENT AREA ========== */
+.content-area {
+  flex: 1;
+  min-width: 0;
+}
+/* ========== TOOLBAR ========== */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+.search-box {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--brandia-text-muted);
+}
+.search-input {
+  width: 100%;
+  background: var(--brandia-dark);
+  border: 1px solid var(--brandia-border);
+  border-radius: 8px;
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
+  color: var(--brandia-text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input:focus {
+  border-color: var(--brandia-primary);
+}
+.sort-select {
+  background: var(--brandia-dark);
+  border: 1px solid var(--brandia-border);
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  color: var(--brandia-text);
+  font-size: 0.875rem;
+  outline: none;
+  cursor: pointer;
+  min-width: 180px;
+}
+.sort-select:focus {
+  border-color: var(--brandia-primary);
+}
+/* ========== PRODUCTS GRID ========== */
+.products-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+@media (min-width: 640px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1280px) {
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.product-card {
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+.product-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--brandia-primary);
+  box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+}
+.product-image {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--brandia-dark);
+}
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+.product-card:hover .product-image img {
+  transform: scale(1.05);
+}
+.product-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: var(--brandia-danger);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  z-index: 2;
+  animation: pulse-red 2s infinite;
+}
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+.stock-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: var(--brandia-warning);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  z-index: 2;
+}
+.product-info {
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.product-category {
+  color: var(--brandia-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+.product-name {
+  color: var(--brandia-text);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.product-name:hover {
+  color: var(--brandia-primary);
+}
+.product-brand {
+  color: var(--brandia-text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+.product-footer {
+  margin-top: auto;
+}
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.price-current {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.price-current.promo {
+  color: var(--brandia-success);
+}
+.price-original {
+  color: var(--brandia-text-muted);
+  font-size: 0.875rem;
+  text-decoration: line-through;
+}
+.savings-badge {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--brandia-success);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+.promo-info {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.promo-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--brandia-primary);
+  margin-bottom: 0.25rem;
+}
+.promo-date {
+  font-size: 0.75rem;
+  color: var(--brandia-warning);
+}
+.product-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.btn-add-cart {
+  flex: 1;
+  background: var(--brandia-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-add-cart:hover {
+  background: var(--brandia-primary-hover);
+}
+.btn-view {
+  width: 40px;
+  background: var(--brandia-card-hover);
+  color: var(--brandia-text);
+  border: 1px solid var(--brandia-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-view:hover {
+  background: var(--brandia-border);
+  color: var(--brandia-text);
+}
+/* ========== LOADER & EMPTY STATES ========== */
+.loader {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--brandia-border);
+  border-top-color: var(--brandia-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+.empty-state-icon {
+  font-size: 4rem;
+  color: var(--brandia-border);
+  margin-bottom: 1rem;
+}
+.empty-state h3 {
+  color: var(--brandia-text);
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.empty-state p {
+  color: var(--brandia-text-muted);
+  margin-bottom: 1.5rem;
+}
+.btn-primary {
+  background: var(--brandia-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  background: var(--brandia-primary-hover);
+}
+/* ========== FOOTER ========== */
+.footer {
+  background: var(--brandia-darker);
+  border-top: 1px solid var(--brandia-border);
+  padding: 3rem 0 2rem;
+  margin-top: 3rem;
+}
+.footer-content {
+  text-align: center;
+  color: var(--brandia-text-muted);
+  font-size: 0.875rem;
+}
+/* ========== MOBILE MENU ========== */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--brandia-dark);
+  z-index: 100;
+  padding: 1.5rem;
+  transform: translateX(-100%);
+  transition: transform 0.3s;
+  overflow-y: auto;
+}
+.mobile-menu.open {
+  transform: translateX(0);
+}
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.mobile-menu-close {
+  width: 40px;
+  height: 40px;
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-radius: 10px;
+  color: var(--brandia-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.mobile-nav-link {
+  color: var(--brandia-text);
+  text-decoration: none;
+  font-size: 1.125rem;
+  font-weight: 500;
+  padding: 1rem;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+.mobile-nav-link:hover {
+  background: var(--brandia-card);
+}
+/* ========== TOAST ========== */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.toast {
+  background: var(--brandia-card);
+  border: 1px solid var(--brandia-border);
+  border-left: 4px solid var(--brandia-primary);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  color: var(--brandia-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.toast.success {
+  border-left-color: var(--brandia-success);
+}
+.toast.error {
+  border-left-color: var(--brandia-danger);
+}
+/* ========== SKELETON ========== */
+.skeleton {
+  background: linear-gradient(90deg, var(--brandia-card) 25%, var(--brandia-card-hover) 50%, var(--brandia-card) 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.5s infinite;
+  border-radius: 8px;
+}
+@keyframes skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+/* ========== UTILITAIRES ========== */
+.hidden {
+  display: none !important;
+}
+.fade-in {
+  animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--brandia-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--brandia-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brandia-card-hover);
+}
+</style>
 </head>
 <body>
-
-  <!-- ========== HEADER ========== -->
-  <header class="header">
-    <div class="container">
-      <div class="header-inner">
-        <!-- Logo -->
-        <a href="index.html" class="brandia-logo">
-          <div class="brandia-icon-wrap">
-            <div class="brandia-pulse"></div>
-            <div class="brandia-icon-bg">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: white;">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
-            </div>
+<!-- ========== HEADER ========== -->
+<header class="header">
+<div class="container">
+<div class="header-inner">
+<!-- Logo -->
+<a href="index.html" class="brandia-logo">
+<div class="brandia-icon-wrap">
+<div class="brandia-pulse"></div>
+<div class="brandia-icon-bg">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: white;">
+<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+<line x1="3" y1="6" x2="21" y2="6"></line>
+<path d="M16 10a4 4 0 0 1-8 0"></path>
+</svg>
+</div>
+</div>
+<span class="brandia-text">Brandia</span>
+</a>
+<!-- Navigation Desktop -->
+<nav class="nav-desktop">
+<a href="nouveautes.html" class="nav-link">Nouveautés</a>
+<a href="marques.html" class="nav-link">Marques</a>
+<div class="dropdown">
+<div class="dropdown-trigger nav-link">
+<span>Catégories</span>
+<i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+</div>
+<div class="dropdown-menu" id="dropdown-categories">
+<!-- Injecté par JS -->
+</div>
+</div>
+<a href="offres.html" class="nav-link">Offres</a>
+<a href="index.html#about" class="nav-link">À propos</a>
+</nav>
+<!-- Actions -->
+<div class="header-actions">
+<select class="country-selector" id="countrySelector">
+<option value="">🌍 Chargement...</option>
+</select>
+<select class="lang-switch" id="langSwitch">
+<option value="fr">🇫🇷 FR</option>
+<option value="en">🇬🇧 EN</option>
+</select>
+<!-- Non connecté -->
+<div class="auth-buttons" id="auth-buttons">
+<a href="login.html" class="btn-login">Connexion</a>
+<div class="btn-register" style="position: relative;">
+<span>Inscription</span>
+<i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+<div class="register-dropdown">
+<a href="register.html?type=client" class="register-option">
+<div class="register-option-icon client">
+<i class="fas fa-user"></i>
+</div>
+<div>
+<div style="font-weight: 600; color: var(--brandia-text);">Client</div>
+<div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Acheteur</div>
+</div>
+</a>
+<div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>
+<a href="register.html?type=supplier" class="register-option">
+<div class="register-option-icon supplier">
+<i class="fas fa-store"></i>
+</div>
+<div>
+<div style="font-weight: 600; color: var(--brandia-text);">Partenaire</div>
+<div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Vendeur / Marque</div>
+</div>
+</a>
+</div>
+</div>
+</div>
+<!-- Client connecté -->
+<div class="user-menu" id="user-menu">
+<span class="user-name" id="user-name"></span>
+<button class="btn-logout" onclick="logout()">
+<i class="fas fa-sign-out-alt"></i>
+</button>
+</div>
+<!-- Fournisseur connecté -->
+<div class="supplier-menu" id="supplier-menu">
+<a href="supplier/dashboard.html" class="btn-dashboard">
+<i class="fas fa-chart-line"></i>
+<span>Dashboard</span>
+</a>
+<span class="user-name" id="supplier-name"></span>
+<button class="btn-logout" onclick="logout()">
+<i class="fas fa-sign-out-alt"></i>
+</button>
+</div>
+<!-- Panier -->
+<a href="panier.html" class="cart-link">
+<i class="fas fa-shopping-bag" style="font-size: 1.25rem;"></i>
+<span class="cart-badge hidden" id="cart-count">0</span>
+</a>
+<!-- Mobile Toggle -->
+<button class="mobile-toggle" onclick="toggleMobileMenu()">
+<i class="fas fa-bars"></i>
+</button>
+</div>
+</div>
+</div>
+</header>
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobile-menu">
+<div class="mobile-menu-header">
+<div class="brandia-logo">
+<div class="brandia-icon-wrap">
+<div class="brandia-icon-bg">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: white;">
+<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+</svg>
+</div>
+</div>
+<span class="brandia-text">Brandia</span>
+</div>
+<button class="mobile-menu-close" onclick="toggleMobileMenu()">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<nav class="mobile-nav">
+<a href="index.html" class="mobile-nav-link">Accueil</a>
+<a href="nouveautes.html" class="mobile-nav-link">Nouveautés</a>
+<a href="marques.html" class="mobile-nav-link">Marques</a>
+<a href="catalogue.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Catalogue</a>
+<a href="categories.html" class="mobile-nav-link">Catégories</a>
+<a href="offres.html" class="mobile-nav-link">Offres</a>
+<a href="login.html" class="mobile-nav-link">Connexion</a>
+<a href="register.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Inscription</a>
+</nav>
+</div>
+<!-- ========== BREADCRUMB ========== -->
+<section class="breadcrumb-section">
+<div class="container">
+<div class="breadcrumb">
+<a href="index.html">Accueil</a>
+<i class="fas fa-chevron-right" style="font-size: 0.625rem;"></i>
+<span class="breadcrumb-current" id="page-title">Catalogue</span>
+</div>
+<p class="results-count" id="results-count">Chargement des produits...</p>
+</div>
+</section>
+<!-- ========== MAIN CONTENT ========== -->
+<div class="container">
+<div class="main-layout">
+<!-- Sidebar -->
+<aside class="sidebar">
+<!-- Filtre Promotions -->
+<div class="filter-card">
+<h3 class="filter-title">
+<span><i class="fas fa-fire" style="color: var(--brandia-danger); margin-right: 0.5rem;"></i>Promotions</span>
+</h3>
+<label class="filter-option">
+<input type="checkbox" id="promo-only" class="checkbox-custom" onchange="CatalogueApp.togglePromoOnly()">
+<span class="filter-option-text">Uniquement en promo</span>
+</label>
+</div>
+<!-- Filtre Prix -->
+<div class="filter-card">
+<h3 class="filter-title">
+<span>Prix</span>
+<button onclick="resetPrice()" class="filter-reset">Réinitialiser</button>
+</h3>
+<div class="price-inputs">
+<input type="number" id="price-min" placeholder="Min €" class="price-input">
+<input type="number" id="price-max" placeholder="Max €" class="price-input">
+</div>
+<button onclick="applyPrice()" class="btn-apply">Appliquer</button>
+</div>
+<!-- Filtre Catégories -->
+<div class="filter-card">
+<h3 class="filter-title">
+<span>Catégories</span>
+<span style="font-size: 0.75rem; color: var(--brandia-text-muted);" id="cat-count">21</span>
+</h3>
+<div class="categories-list" id="filter-categories">
+<!-- Injecté par JS -->
+</div>
+</div>
+<button onclick="resetAll()" class="btn-reset-all">
+<i class="fas fa-undo"></i> Réinitialiser filtres
+</button>
+</aside>
+<!-- Content Area -->
+<main class="content-area">
+<!-- Toolbar -->
+<div class="toolbar">
+<div class="search-box">
+<i class="fas fa-search search-icon"></i>
+<input type="text" id="search-input" placeholder="Rechercher un produit..." class="search-input">
+</div>
+<select id="sort-select" onchange="CatalogueApp.sortProducts()" class="sort-select">
+<option value="newest">Plus récents</option>
+<option value="price_asc">Prix croissant</option>
+<option value="price_desc">Prix décroissant</option>
+<option value="promo">Meilleures promos</option>
+</select>
+</div>
+<!-- Products Grid -->
+<div id="products-container" class="products-grid">
+<div class="loader">
+<div class="spinner"></div>
+</div>
+</div>
+<!-- Empty State -->
+<div id="empty-state" class="empty-state hidden">
+<i class="fas fa-search empty-state-icon"></i>
+<h3>Aucun produit trouvé</h3>
+<p>Essayez de modifier vos filtres ou votre recherche</p>
+<button onclick="resetAll()" class="btn-primary" style="margin-top: 1rem;">
+<i class="fas fa-redo mr-2"></i>Réessayer
+</button>
+</div>
+</main>
+</div>
+</div>
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+<div class="container">
+<div class="footer-content">
+© 2026 Brandia – Marketplace officielle des marques
+</div>
+</div>
+</footer>
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+<!-- Scripts -->
+<script src="assets/js/api.js"></script>
+<script>
+// ========== CONFIGURATION ==========
+const BRANDIA_CATEGORIES = [
+  { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
+  { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
+  { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'from-red-500 to-pink-600' },
+  { slug: 'soins-capillaires', name: 'Soins cheveux', icon: 'fa-cut', gradient: 'from-amber-500 to-orange-600' },
+  { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', gradient: 'from-emerald-500 to-teal-600' },
+  { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', gradient: 'from-blue-500 to-cyan-600' },
+  { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', gradient: 'from-yellow-500 to-amber-600' },
+  { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', gradient: 'from-orange-500 to-red-600' },
+  { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', gradient: 'from-green-500 to-emerald-600' },
+  { slug: 'high-tech-mobile', name: 'High-Tech', icon: 'fa-mobile-alt', gradient: 'from-indigo-500 to-blue-600' },
+  { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', gradient: 'from-violet-500 to-purple-600' },
+  { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', gradient: 'from-orange-500 to-red-500' },
+  { slug: 'parfumerie-interieur', name: 'Parfumerie intérieur', icon: 'fa-fire', gradient: 'from-rose-400 to-pink-500' },
+  { slug: 'produits-ecologiques', name: 'Produits écologiques', icon: 'fa-leaf', gradient: 'from-green-400 to-emerald-500' },
+  { slug: 'bebe-maternite', name: 'Bébé & maternité', icon: 'fa-baby', gradient: 'from-sky-400 to-blue-500' },
+  { slug: 'animaux-pets', name: 'Animaux', icon: 'fa-paw', gradient: 'from-amber-600 to-yellow-600' },
+  { slug: 'sante-hygiene', name: 'Santé & hygiène', icon: 'fa-heartbeat', gradient: 'from-red-400 to-rose-500' },
+  { slug: 'bagagerie-voyage', name: 'Bagagerie & voyage', icon: 'fa-suitcase', gradient: 'from-violet-500 to-purple-600' },
+  { slug: 'papeterie-lifestyle', name: 'Papeterie premium', icon: 'fa-pen-fancy', gradient: 'from-teal-400 to-cyan-500' },
+  { slug: 'artisanat-local', name: 'Artisanat local', icon: 'fa-hands', gradient: 'from-orange-400 to-amber-500' },
+  { slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle', gradient: 'from-cyan-500 to-blue-600' }
+];
+const COUNTRIES = {
+  'AF': { name: 'Afghanistan', currency: 'AFN' },
+  'AL': { name: 'Albanie', currency: 'ALL' },
+  'DZ': { name: 'Algérie', currency: 'DZD' },
+  'AD': { name: 'Andorre', currency: 'EUR' },
+  'AO': { name: 'Angola', currency: 'AOA' },
+  'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
+  'AR': { name: 'Argentine', currency: 'ARS' },
+  'AM': { name: 'Arménie', currency: 'AMD' },
+  'AU': { name: 'Australie', currency: 'AUD' },
+  'AT': { name: 'Autriche', currency: 'EUR' },
+  'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
+  'BS': { name: 'Bahamas', currency: 'BSD' },
+  'BH': { name: 'Bahreïn', currency: 'BHD' },
+  'BD': { name: 'Bangladesh', currency: 'BDT' },
+  'BB': { name: 'Barbade', currency: 'BBD' },
+  'BY': { name: 'Biélorussie', currency: 'BYN' },
+  'BE': { name: 'Belgique', currency: 'EUR' },
+  'BZ': { name: 'Belize', currency: 'BZD' },
+  'BJ': { name: 'Bénin', currency: 'XOF' },
+  'BT': { name: 'Bhoutan', currency: 'BTN' },
+  'BO': { name: 'Bolivie', currency: 'BOB' },
+  'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
+  'BW': { name: 'Botswana', currency: 'BWP' },
+  'BR': { name: 'Brésil', currency: 'BRL' },
+  'BN': { name: 'Brunei', currency: 'BND' },
+  'BG': { name: 'Bulgarie', currency: 'BGN' },
+  'BF': { name: 'Burkina Faso', currency: 'XOF' },
+  'BI': { name: 'Burundi', currency: 'BIF' },
+  'CV': { name: 'Cap-Vert', currency: 'CVE' },
+  'KH': { name: 'Cambodge', currency: 'KHR' },
+  'CM': { name: 'Cameroun', currency: 'XAF' },
+  'CA': { name: 'Canada', currency: 'CAD' },
+  'CF': { name: 'Centrafrique', currency: 'XAF' },
+  'TD': { name: 'Tchad', currency: 'XAF' },
+  'CL': { name: 'Chili', currency: 'CLP' },
+  'CN': { name: 'Chine', currency: 'CNY' },
+  'CO': { name: 'Colombie', currency: 'COP' },
+  'KM': { name: 'Comores', currency: 'KMF' },
+  'CG': { name: 'Congo', currency: 'XAF' },
+  'CD': { name: 'Congo (RDC)', currency: 'CDF' },
+  'CR': { name: 'Costa Rica', currency: 'CRC' },
+  'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+  'HR': { name: 'Croatie', currency: 'EUR' },
+  'CU': { name: 'Cuba', currency: 'CUP' },
+  'CY': { name: 'Chypre', currency: 'EUR' },
+  'CZ': { name: 'République tchèque', currency: 'CZK' },
+  'DK': { name: 'Danemark', currency: 'DKK' },
+  'DJ': { name: 'Djibouti', currency: 'DJF' },
+  'DM': { name: 'Dominique', currency: 'XCD' },
+  'DO': { name: 'République dominicaine', currency: 'DOP' },
+  'EC': { name: 'Équateur', currency: 'USD' },
+  'EG': { name: 'Égypte', currency: 'EGP' },
+  'SV': { name: 'Salvador', currency: 'USD' },
+  'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
+  'ER': { name: 'Érythrée', currency: 'ERN' },
+  'EE': { name: 'Estonie', currency: 'EUR' },
+  'ET': { name: 'Éthiopie', currency: 'ETB' },
+  'FJ': { name: 'Fidji', currency: 'FJD' },
+  'FI': { name: 'Finlande', currency: 'EUR' },
+  'FR': { name: 'France', currency: 'EUR' },
+  'GA': { name: 'Gabon', currency: 'XAF' },
+  'GM': { name: 'Gambie', currency: 'GMD' },
+  'GE': { name: 'Géorgie', currency: 'GEL' },
+  'DE': { name: 'Allemagne', currency: 'EUR' },
+  'GH': { name: 'Ghana', currency: 'GHS' },
+  'GR': { name: 'Grèce', currency: 'EUR' },
+  'GD': { name: 'Grenade', currency: 'XCD' },
+  'GT': { name: 'Guatemala', currency: 'GTQ' },
+  'GN': { name: 'Guinée', currency: 'GNF' },
+  'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
+  'GY': { name: 'Guyana', currency: 'GYD' },
+  'HT': { name: 'Haïti', currency: 'HTG' },
+  'HN': { name: 'Honduras', currency: 'HNL' },
+  'HU': { name: 'Hongrie', currency: 'HUF' },
+  'IS': { name: 'Islande', currency: 'ISK' },
+  'IN': { name: 'Inde', currency: 'INR' },
+  'ID': { name: 'Indonésie', currency: 'IDR' },
+  'IR': { name: 'Iran', currency: 'IRR' },
+  'IQ': { name: 'Irak', currency: 'IQD' },
+  'IE': { name: 'Irlande', currency: 'EUR' },
+  'IL': { name: 'Israël', currency: 'ILS' },
+  'IT': { name: 'Italie', currency: 'EUR' },
+  'JM': { name: 'Jamaïque', currency: 'JMD' },
+  'JP': { name: 'Japon', currency: 'JPY' },
+  'JO': { name: 'Jordanie', currency: 'JOD' },
+  'KZ': { name: 'Kazakhstan', currency: 'KZT' },
+  'KE': { name: 'Kenya', currency: 'KES' },
+  'KI': { name: 'Kiribati', currency: 'AUD' },
+  'KP': { name: 'Corée du Nord', currency: 'KPW' },
+  'KR': { name: 'Corée du Sud', currency: 'KRW' },
+  'KW': { name: 'Koweït', currency: 'KWD' },
+  'KG': { name: 'Kirghizistan', currency: 'KGS' },
+  'LA': { name: 'Laos', currency: 'LAK' },
+  'LV': { name: 'Lettonie', currency: 'EUR' },
+  'LB': { name: 'Liban', currency: 'LBP' },
+  'LS': { name: 'Lesotho', currency: 'LSL' },
+  'LR': { name: 'Libéria', currency: 'LRD' },
+  'LY': { name: 'Libye', currency: 'LYD' },
+  'LI': { name: 'Liechtenstein', currency: 'CHF' },
+  'LT': { name: 'Lituanie', currency: 'EUR' },
+  'LU': { name: 'Luxembourg', currency: 'EUR' },
+  'MG': { name: 'Madagascar', currency: 'MGA' },
+  'MW': { name: 'Malawi', currency: 'MWK' },
+  'MY': { name: 'Malaisie', currency: 'MYR' },
+  'MV': { name: 'Maldives', currency: 'MVR' },
+  'ML': { name: 'Mali', currency: 'XOF' },
+  'MT': { name: 'Malte', currency: 'EUR' },
+  'MH': { name: 'Îles Marshall', currency: 'USD' },
+  'MR': { name: 'Mauritanie', currency: 'MRO' },
+  'MU': { name: 'Maurice', currency: 'MUR' },
+  'MX': { name: 'Mexique', currency: 'MXN' },
+  'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
+  'MD': { name: 'Moldavie', currency: 'MDL' },
+  'MC': { name: 'Monaco', currency: 'EUR' },
+  'MN': { name: 'Mongolie', currency: 'MNT' },
+  'ME': { name: 'Monténégro', currency: 'EUR' },
+  'MA': { name: 'Maroc', currency: 'MAD' },
+  'MZ': { name: 'Mozambique', currency: 'MZN' },
+  'MM': { name: 'Myanmar', currency: 'MMK' },
+  'NA': { name: 'Namibie', currency: 'NAD' },
+  'NR': { name: 'Nauru', currency: 'AUD' },
+  'NP': { name: 'Népal', currency: 'NPR' },
+  'NL': { name: 'Pays-Bas', currency: 'EUR' },
+  'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
+  'NI': { name: 'Nicaragua', currency: 'NIO' },
+  'NE': { name: 'Niger', currency: 'XOF' },
+  'NG': { name: 'Nigéria', currency: 'NGN' },
+  'NO': { name: 'Norvège', currency: 'NOK' },
+  'OM': { name: 'Oman', currency: 'OMR' },
+  'PK': { name: 'Pakistan', currency: 'PKR' },
+  'PW': { name: 'Palaos', currency: 'USD' },
+  'PA': { name: 'Panama', currency: 'PAB' },
+  'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
+  'PY': { name: 'Paraguay', currency: 'PYG' },
+  'PE': { name: 'Pérou', currency: 'PEN' },
+  'PH': { name: 'Philippines', currency: 'PHP' },
+  'PL': { name: 'Pologne', currency: 'PLN' },
+  'PT': { name: 'Portugal', currency: 'EUR' },
+  'QA': { name: 'Qatar', currency: 'QAR' },
+  'RO': { name: 'Roumanie', currency: 'RON' },
+  'RU': { name: 'Russie', currency: 'RUB' },
+  'RW': { name: 'Rwanda', currency: 'RWF' },
+  'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
+  'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
+  'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
+  'WS': { name: 'Samoa', currency: 'WST' },
+  'SM': { name: 'Saint-Marin', currency: 'EUR' },
+  'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
+  'SA': { name: 'Arabie saoudite', currency: 'SAR' },
+  'SN': { name: 'Sénégal', currency: 'XOF' },
+  'RS': { name: 'Serbie', currency: 'RSD' },
+  'SC': { name: 'Seychelles', currency: 'SCR' },
+  'SL': { name: 'Sierra Leone', currency: 'SLL' },
+  'SG': { name: 'Singapour', currency: 'SGD' },
+  'SK': { name: 'Slovaquie', currency: 'EUR' },
+  'SI': { name: 'Slovénie', currency: 'EUR' },
+  'SB': { name: 'Îles Salomon', currency: 'SBD' },
+  'SO': { name: 'Somalie', currency: 'SOS' },
+  'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
+  'ES': { name: 'Espagne', currency: 'EUR' },
+  'LK': { name: 'Sri Lanka', currency: 'LKR' },
+  'SD': { name: 'Soudan', currency: 'SDG' },
+  'SR': { name: 'Suriname', currency: 'SRD' },
+  'SE': { name: 'Suède', currency: 'SEK' },
+  'CH': { name: 'Suisse', currency: 'CHF' },
+  'SY': { name: 'Syrie', currency: 'SYP' },
+  'TW': { name: 'Taïwan', currency: 'TWD' },
+  'TJ': { name: 'Tadjikistan', currency: 'TJS' },
+  'TZ': { name: 'Tanzanie', currency: 'TZS' },
+  'TH': { name: 'Thaïlande', currency: 'THB' },
+  'TL': { name: 'Timor oriental', currency: 'USD' },
+  'TG': { name: 'Togo', currency: 'XOF' },
+  'TO': { name: 'Tonga', currency: 'TOP' },
+  'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
+  'TN': { name: 'Tunisie', currency: 'TND' },
+  'TR': { name: 'Turquie', currency: 'TRY' },
+  'TM': { name: 'Turkménistan', currency: 'TMT' },
+  'UG': { name: 'Ouganda', currency: 'UGX' },
+  'UA': { name: 'Ukraine', currency: 'UAH' },
+  'AE': { name: 'Émirats arabes unis', currency: 'AED' },
+  'GB': { name: 'Royaume-Uni', currency: 'GBP' },
+  'US': { name: 'États-Unis', currency: 'USD' },
+  'UY': { name: 'Uruguay', currency: 'UYU' },
+  'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
+  'VU': { name: 'Vanuatu', currency: 'VUV' },
+  'VE': { name: 'Venezuela', currency: 'VES' },
+  'VN': { name: 'Viêt Nam', currency: 'VND' },
+  'YE': { name: 'Yémen', currency: 'YER' },
+  'ZM': { name: 'Zambie', currency: 'ZMW' },
+  'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
+};
+// ========== UTILITAIRES ==========
+function getFlagEmoji(countryCode) {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt());
+  return String.fromCodePoint(...codePoints);
+}
+function formatPrice(price, currency = 'EUR') {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(price || 0);
+}
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+    <span>${message}</span>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+// ========== MOBILE MENU ==========
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  menu.classList.toggle('open');
+  document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+}
+// ========== COUNTRIES ==========
+function initCountries() {
+  const selector = document.getElementById('countrySelector');
+  const saved = localStorage.getItem('country') || 'FR';
+  selector.innerHTML = Object.entries(COUNTRIES)
+    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
+    .join('');
+  selector.addEventListener('change', (e) => {
+    localStorage.setItem('country', e.target.value);
+    localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
+  });
+}
+// ========== CATALOGUE APP ==========
+window.CatalogueApp = {
+  state: {
+    allProducts: [],
+    filteredProducts: [],
+    filters: {
+      category: null,
+      search: '',
+      minPrice: null,
+      maxPrice: null,
+      promoOnly: false,
+    },
+    sortBy: 'newest',
+  },
+  init: async () => {
+    console.log('[CatalogueApp] Initialisation...');
+    initCountries();
+    initFilters();
+    initSearch();
+    initAuth();
+    await CatalogueApp.loadProducts();
+    updateCartBadge();
+  },
+  loadProducts: async () => {
+    const container = document.getElementById('products-container');
+    container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+    let category = CatalogueApp.state.filters.category;
+    if (!category || category === 'null' || category === 'undefined' || category === '') {
+      category = null;
+    }
+    try {
+      const params = {};
+      if (category) {
+        params.category = category;
+      }
+      params.limit = 100;
+      const response = await BrandiaAPI.Products.getAllWithPromotions(params);
+      if (response.success) {
+        const products = response.data?.products || (Array.isArray(response.data) ? response.data : []) || [];
+        CatalogueApp.state.allProducts = products;
+        CatalogueApp.applyFilters();
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('[CatalogueApp] Erreur:', error);
+      try {
+        const fallback = await BrandiaAPI.Products.getAll({ limit: 100 });
+        if (fallback.success) {
+          const products = fallback.data?.products || (Array.isArray(fallback.data) ? fallback.data : []) || [];
+          CatalogueApp.state.allProducts = products;
+          CatalogueApp.applyFilters();
+        }
+      } catch (fallbackError) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i>
+            <h3>Erreur de connexion</h3>
+            <p>Impossible de charger les produits</p>
+            <button onclick="CatalogueApp.loadProducts()" class="btn-primary" style="margin-top: 1rem;">
+              <i class="fas fa-redo mr-2"></i>Réessayer
+            </button>
           </div>
-          <span class="brandia-text">Brandia</span>
+        `;
+      }
+    }
+  },
+  applyFilters: () => {
+    let products = [...CatalogueApp.state.allProducts];
+    const f = CatalogueApp.state.filters;
+    if (f.search) {
+      const search = f.search.toLowerCase();
+      products = products.filter(p => p.name?.toLowerCase().includes(search) || p.description?.toLowerCase().includes(search) || p.supplier_company?.toLowerCase().includes(search));
+    }
+    if (f.minPrice) {
+      products = products.filter(p => parseFloat(p.final_price || p.price) >= f.minPrice);
+    }
+    if (f.maxPrice) {
+      products = products.filter(p => parseFloat(p.final_price || p.price) <= f.maxPrice);
+    }
+    if (f.promoOnly) {
+      products = products.filter(p => p.has_promotion === true);
+    }
+    products = CatalogueApp.sortProductsList(products);
+    CatalogueApp.state.filteredProducts = products;
+    CatalogueApp.renderProducts(products);
+  },
+  sortProductsList: (products) => {
+    const sort = CatalogueApp.state.sortBy;
+    return products.sort((a, b) => {
+      const priceA = parseFloat(a.final_price || a.price);
+      const priceB = parseFloat(b.final_price || b.price);
+      switch (sort) {
+        case 'price_asc': return priceA - priceB;
+        case 'price_desc': return priceB - priceA;
+        case 'promo': 
+          if (a.has_promotion && !b.has_promotion) return -1;
+          if (!a.has_promotion && b.has_promotion) return 1;
+          if (a.has_promotion && b.has_promotion) {
+            const savingsA = (a.base_price || a.price) - priceA;
+            const savingsB = (b.base_price || b.price) - priceB;
+            return savingsB - savingsA;
+          }
+          return 0;
+        case 'newest': default: return new Date(b.created_at) - new Date(a.created_at);
+      }
+    });
+  },
+  renderProducts: (products) => {
+    const container = document.getElementById('products-container');
+    const resultsCount = document.getElementById('results-count');
+    const emptyState = document.getElementById('empty-state');
+    const promoCount = products.filter(p => p.has_promotion).length;
+    resultsCount.textContent = `${products.length} produit(s) trouvé(s)${promoCount > 0 ? ` (${promoCount} en promo)` : ''}`;
+    if (products.length === 0) {
+      container.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    emptyState.classList.add('hidden');
+    container.innerHTML = products.map((p, index) => {
+      return CatalogueApp.renderProductCard(p, index);
+    }).join('');
+  },
+  renderProductCard: (p, index) => {
+    const hasPromo = p.has_promotion === true;
+    const finalPrice = parseFloat(p.final_price || p.price);
+    const basePrice = parseFloat(p.base_price || p.original_price || p.price);
+    let savingsAmount = 0;
+    let savingsPercent = 0;
+    if (hasPromo && basePrice > finalPrice) {
+      savingsAmount = basePrice - finalPrice;
+      savingsPercent = Math.round((savingsAmount / basePrice) * 100);
+    }
+    const promoBadge = hasPromo ? `
+      <div class="product-badge">
+        <i class="fas fa-fire" style="margin-right: 0.25rem;"></i>-${p.discount_display || savingsPercent + '%'}
+      </div>
+    ` : '';
+    const priceDisplay = hasPromo ? `
+      <div class="product-price">
+        <span class="price-current promo">${finalPrice.toFixed(2)} €</span>
+        <span class="price-original">${basePrice.toFixed(2)} €</span>
+        <span class="savings-badge">-${savingsAmount.toFixed(2)} €</span>
+      </div>
+    ` : `
+      <div class="product-price">
+        <span class="price-current">${finalPrice.toFixed(2)} €</span>
+      </div>
+    `;
+    const promoInfo = hasPromo ? `
+      <div class="promo-info">
+        <div class="promo-name">
+          <i class="fas fa-tag"></i>
+          <span>${p.promo_name || 'Promotion en cours'}</span>
+        </div>
+        ${p.promo_end_date ? `
+          <div class="promo-date">
+            <i class="fas fa-clock" style="margin-right: 0.25rem;"></i> Jusqu'au ${new Date(p.promo_end_date).toLocaleDateString('fr-FR')}
+          </div>
+        ` : ''}
+      </div>
+    ` : '';
+    const image = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
+    return `
+      <div class="product-card fade-in" style="animation-delay: ${index * 0.05}s">
+        <a href="product.html?id=${p.id}" class="product-image">
+          <img src="${image}" alt="${p.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80'">
+          ${promoBadge}
+          ${p.stock_quantity < 5 ? `<span class="stock-badge">Stock faible</span>` : ''}
         </a>
-
-        <!-- Navigation Desktop -->
-        <nav class="nav-desktop">
-          <a href="nouveautes.html" class="nav-link">Nouveautés</a>
-          <a href="marques.html" class="nav-link">Marques</a>
-          
-          <div class="dropdown">
-            <div class="dropdown-trigger nav-link">
-              <span>Catégories</span>
-              <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
-            </div>
-            <div class="dropdown-menu" id="dropdown-categories">
-              <!-- Injecté par JS -->
-            </div>
-          </div>
-          
-          <a href="offres.html" class="nav-link">Offres</a>
-          <a href="index.html#about" class="nav-link">À propos</a>
-        </nav>
-
-        <!-- Actions -->
-        <div class="header-actions">
-          <select class="country-selector" id="countrySelector">
-            <option value="">🌍 Chargement...</option>
-          </select>
-
-          <select class="lang-switch" id="langSwitch">
-            <option value="fr">🇫🇷 FR</option>
-            <option value="en">🇬🇧 EN</option>
-          </select>
-
-          <!-- Non connecté -->
-          <div class="auth-buttons" id="auth-buttons">
-            <a href="login.html" class="btn-login">Connexion</a>
-            <div class="btn-register" style="position: relative;">
-              <span>Inscription</span>
-              <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
-              <div class="register-dropdown">
-                <a href="register.html?type=client" class="register-option">
-                  <div class="register-option-icon client">
-                    <i class="fas fa-user"></i>
-                  </div>
-                  <div>
-                    <div style="font-weight: 600; color: var(--brandia-text);">Client</div>
-                    <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Acheteur</div>
-                  </div>
-                </a>
-                <div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>
-                <a href="register.html?type=supplier" class="register-option">
-                  <div class="register-option-icon supplier">
-                    <i class="fas fa-store"></i>
-                  </div>
-                  <div>
-                    <div style="font-weight: 600; color: var(--brandia-text);">Partenaire</div>
-                    <div style="font-size: 0.75rem; color: var(--brandia-text-muted);">Vendeur / Marque</div>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Client connecté -->
-          <div class="user-menu" id="user-menu">
-            <span class="user-name" id="user-name"></span>
-            <button class="btn-logout" onclick="logout()">
-              <i class="fas fa-sign-out-alt"></i>
+        <div class="product-info">
+          <div class="product-category">${p.category_name || 'Catégorie'}</div>
+          <a href="product.html?id=${p.id}" class="product-name">${p.name}</a>
+          <p class="product-brand">${p.supplier_company || p.supplier_name || 'Marque'}</p>
+          ${promoInfo}
+          ${priceDisplay}
+          <div class="product-actions" style="margin-top: 0.75rem;">
+            <button onclick="event.preventDefault(); CatalogueApp.addToCart(${p.id})" class="btn-add-cart">
+              <i class="fas fa-cart-plus"></i> Ajouter
             </button>
-          </div>
-
-          <!-- Fournisseur connecté -->
-          <div class="supplier-menu" id="supplier-menu">
-            <a href="supplier/dashboard.html" class="btn-dashboard">
-              <i class="fas fa-chart-line"></i>
-              <span>Dashboard</span>
+            <a href="product.html?id=${p.id}" class="btn-view">
+              <i class="fas fa-eye"></i>
             </a>
-            <span class="user-name" id="supplier-name"></span>
-            <button class="btn-logout" onclick="logout()">
-              <i class="fas fa-sign-out-alt"></i>
-            </button>
           </div>
-
-          <!-- Panier -->
-          <a href="panier.html" class="cart-link">
-            <i class="fas fa-shopping-bag" style="font-size: 1.25rem;"></i>
-            <span class="cart-badge hidden" id="cart-count">0</span>
-          </a>
-
-          <!-- Mobile Toggle -->
-          <button class="mobile-toggle" onclick="toggleMobileMenu()">
-            <i class="fas fa-bars"></i>
+        </div>
+      </div>
+    `;
+  },
+  addToCart: async (productId) => {
+    try {
+      const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
+      if (!response.success || !response.data.product) {
+        throw new Error('Produit non trouvé');
+      }
+      const product = response.data.product;
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        price: product.final_price || product.price,
+        original_price: product.base_price || product.price,
+        has_promotion: product.has_promotion,
+        promo_code: product.promo_code,
+        main_image_url: product.main_image_url,
+        quantity: 1,
+      };
+      if (window.BrandiaAPI && BrandiaAPI.Cart) {
+        BrandiaAPI.Cart.add(cartItem);
+      } else {
+        let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+        const existing = cart.find(x => x.id === product.id);
+        if (existing) {
+          existing.quantity++;
+        } else {
+          cart.push(cartItem);
+        }
+        localStorage.setItem('brandia_cart', JSON.stringify(cart));
+      }
+      showToast('Produit ajouté au panier !', 'success');
+      updateCartBadge();
+    } catch (error) {
+      console.error('[CatalogueApp] Erreur ajout panier:', error);
+      showToast('Erreur lors de l\'ajout', 'error');
+    }
+  },
+  togglePromoOnly: () => {
+    const checkbox = document.getElementById('promo-only');
+    const isChecked = checkbox.checked;
+    CatalogueApp.state.filters.promoOnly = isChecked;
+    if (isChecked) {
+      CatalogueApp.loadProductsWithPromoFilter();
+    } else {
+      CatalogueApp.loadProducts();
+    }
+  },
+  loadProductsWithPromoFilter: async () => {
+    const container = document.getElementById('products-container');
+    container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+    try {
+      const params = { promo_only: true, limit: 100 };
+      if (CatalogueApp.state.filters.category) {
+        params.category = CatalogueApp.state.filters.category;
+      }
+      const response = await BrandiaAPI.Products.getAllWithPromotions(params);
+      if (response.success) {
+        const products = response.data?.products || [];
+        CatalogueApp.state.allProducts = products;
+        let filtered = [...products];
+        if (CatalogueApp.state.filters.search) {
+          const search = CatalogueApp.state.filters.search.toLowerCase();
+          filtered = filtered.filter(p => p.name?.toLowerCase().includes(search) || p.description?.toLowerCase().includes(search));
+        }
+        if (CatalogueApp.state.filters.minPrice) {
+          filtered = filtered.filter(p => p.final_price >= CatalogueApp.state.filters.minPrice);
+        }
+        if (CatalogueApp.state.filters.maxPrice) {
+          filtered = filtered.filter(p => p.final_price <= CatalogueApp.state.filters.maxPrice);
+        }
+        filtered = CatalogueApp.sortProductsList(filtered);
+        CatalogueApp.renderProducts(filtered);
+        const resultsCount = document.getElementById('results-count');
+        const promoCount = filtered.filter(p => p.has_promotion).length;
+        resultsCount.textContent = `${filtered.length} produit(s) trouvé(s) dont ${promoCount} en promotion`;
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('[CatalogueApp] Erreur chargement promos:', error);
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i>
+          <h3>Erreur lors du chargement des promotions</h3>
+          <button onclick="CatalogueApp.togglePromoOnly()" class="btn-primary" style="margin-top: 1rem;">
+            Réessayer
           </button>
         </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- Mobile Menu -->
-  <div class="mobile-menu" id="mobile-menu">
-    <div class="mobile-menu-header">
-      <div class="brandia-logo">
-        <div class="brandia-icon-wrap">
-          <div class="brandia-icon-bg">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: white;">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-            </svg>
-          </div>
-        </div>
-        <span class="brandia-text">Brandia</span>
-      </div>
-      <button class="mobile-menu-close" onclick="toggleMobileMenu()">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <nav class="mobile-nav">
-      <a href="index.html" class="mobile-nav-link">Accueil</a>
-      <a href="nouveautes.html" class="mobile-nav-link">Nouveautés</a>
-      <a href="marques.html" class="mobile-nav-link">Marques</a>
-      <a href="catalogue.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Catalogue</a>
-      <a href="categories.html" class="mobile-nav-link">Catégories</a>
-      <a href="offres.html" class="mobile-nav-link">Offres</a>
-      <a href="login.html" class="mobile-nav-link">Connexion</a>
-      <a href="register.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Inscription</a>
-    </nav>
-  </div>
-
-  <!-- ========== BREADCRUMB ========== -->
-  <section class="breadcrumb-section">
-    <div class="container">
-      <div class="breadcrumb">
-        <a href="index.html">Accueil</a>
-        <i class="fas fa-chevron-right" style="font-size: 0.625rem;"></i>
-        <span class="breadcrumb-current" id="page-title">Catalogue</span>
-      </div>
-      <p class="results-count" id="results-count">Chargement des produits...</p>
-    </div>
-  </section>
-
-  <!-- ========== MAIN CONTENT ========== -->
-  <div class="container">
-    <div class="main-layout">
-      
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        
-        <!-- Filtre Promotions -->
-        <div class="filter-card">
-          <h3 class="filter-title">
-            <span><i class="fas fa-fire" style="color: var(--brandia-danger); margin-right: 0.5rem;"></i>Promotions</span>
-          </h3>
-          <label class="filter-option">
-            <input type="checkbox" id="promo-only" class="checkbox-custom" onchange="CatalogueApp.togglePromoOnly()">
-            <span class="filter-option-text">Uniquement en promo</span>
-          </label>
-        </div>
-
-        <!-- Filtre Prix -->
-        <div class="filter-card">
-          <h3 class="filter-title">
-            <span>Prix</span>
-            <button onclick="resetPrice()" class="filter-reset">Réinitialiser</button>
-          </h3>
-          <div class="price-inputs">
-            <input type="number" id="price-min" placeholder="Min €" class="price-input">
-            <input type="number" id="price-max" placeholder="Max €" class="price-input">
-          </div>
-          <button onclick="applyPrice()" class="btn-apply">Appliquer</button>
-        </div>
-
-        <!-- Filtre Catégories -->
-        <div class="filter-card">
-          <h3 class="filter-title">
-            <span>Catégories</span>
-            <span style="font-size: 0.75rem; color: var(--brandia-text-muted);" id="cat-count">21</span>
-          </h3>
-          <div class="categories-list" id="filter-categories">
-            <!-- Injecté par JS -->
-          </div>
-        </div>
-
-        <button onclick="resetAll()" class="btn-reset-all">
-          <i class="fas fa-undo"></i>
-          Réinitialiser filtres
-        </button>
-      </aside>
-
-      <!-- Content Area -->
-      <main class="content-area">
-        
-        <!-- Toolbar -->
-        <div class="toolbar">
-          <div class="search-box">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="search-input" placeholder="Rechercher un produit..." class="search-input">
-          </div>
-
-          <select id="sort-select" onchange="CatalogueApp.sortProducts()" class="sort-select">
-            <option value="newest">Plus récents</option>
-            <option value="price_asc">Prix croissant</option>
-            <option value="price_desc">Prix décroissant</option>
-            <option value="promo">Meilleures promos</option>
-          </select>
-        </div>
-
-        <!-- Products Grid -->
-        <div id="products-container" class="products-grid">
-          <div class="loader">
-            <div class="spinner"></div>
-          </div>
-        </div>
-
-        <!-- Empty State -->
-        <div id="empty-state" class="empty-state hidden">
-          <i class="fas fa-search empty-state-icon"></i>
-          <h3>Aucun produit trouvé</h3>
-          <p>Essayez de modifier vos filtres ou votre recherche</p>
-          <button onclick="resetAll()" class="btn-primary">Réinitialiser</button>
-        </div>
-      </main>
-    </div>
-  </div>
-
-  <!-- ========== FOOTER ========== -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        © 2026 Brandia – Marketplace officielle des marques
-      </div>
-    </div>
-  </footer>
-
-  <!-- Toast Container -->
-  <div class="toast-container" id="toast-container"></div>
-
-  <!-- Scripts -->
-  <script src="assets/js/api.js"></script>
-  
-  <script>
-    // ========== CONFIGURATION ==========
-    const BRANDIA_CATEGORIES = [
-      { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', gradient: 'from-pink-500 to-rose-600' },
-      { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', gradient: 'from-purple-500 to-indigo-600' },
-      { slug: 'maquillage', name: 'Maquillage', icon: 'fa-magic', gradient: 'from-red-500 to-pink-600' },
-      { slug: 'soins-capillaires', name: 'Soins cheveux', icon: 'fa-cut', gradient: 'from-amber-500 to-orange-600' },
-      { slug: 'complements-bien-etre', name: 'Bien-être', icon: 'fa-heart', gradient: 'from-emerald-500 to-teal-600' },
-      { slug: 'mode-accessoires', name: 'Mode', icon: 'fa-tshirt', gradient: 'from-blue-500 to-cyan-600' },
-      { slug: 'montres-bijoux', name: 'Bijoux', icon: 'fa-gem', gradient: 'from-yellow-500 to-amber-600' },
-      { slug: 'sport-fitness', name: 'Sport', icon: 'fa-dumbbell', gradient: 'from-orange-500 to-red-600' },
-      { slug: 'nutrition-sportive', name: 'Nutrition', icon: 'fa-apple-alt', gradient: 'from-green-500 to-emerald-600' },
-      { slug: 'high-tech-mobile', name: 'High-Tech', icon: 'fa-mobile-alt', gradient: 'from-indigo-500 to-blue-600' },
-      { slug: 'electronique-lifestyle', name: 'Électronique', icon: 'fa-headphones', gradient: 'from-violet-500 to-purple-600' },
-      { slug: 'maison-decoration', name: 'Maison', icon: 'fa-home', gradient: 'from-orange-500 to-red-500' },
-      { slug: 'parfumerie-interieur', name: 'Parfumerie intérieur', icon: 'fa-fire', gradient: 'from-rose-400 to-pink-500' },
-      { slug: 'produits-ecologiques', name: 'Produits écologiques', icon: 'fa-leaf', gradient: 'from-green-400 to-emerald-500' },
-      { slug: 'bebe-maternite', name: 'Bébé & maternité', icon: 'fa-baby', gradient: 'from-sky-400 to-blue-500' },
-      { slug: 'animaux-pets', name: 'Animaux', icon: 'fa-paw', gradient: 'from-amber-600 to-yellow-600' },
-      { slug: 'sante-hygiene', name: 'Santé & hygiène', icon: 'fa-heartbeat', gradient: 'from-red-400 to-rose-500' },
-      { slug: 'bagagerie-voyage', name: 'Bagagerie & voyage', icon: 'fa-suitcase', gradient: 'from-violet-500 to-purple-600' },
-      { slug: 'papeterie-lifestyle', name: 'Papeterie premium', icon: 'fa-pen-fancy', gradient: 'from-teal-400 to-cyan-500' },
-      { slug: 'artisanat-local', name: 'Artisanat local', icon: 'fa-hands', gradient: 'from-orange-400 to-amber-500' },
-      { slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle', gradient: 'from-cyan-500 to-blue-600' }
-    ];
-
-    const COUNTRIES = {
-      'AF': { name: 'Afghanistan', currency: 'AFN' },
-      'AL': { name: 'Albanie', currency: 'ALL' },
-      'DZ': { name: 'Algérie', currency: 'DZD' },
-      'AD': { name: 'Andorre', currency: 'EUR' },
-      'AO': { name: 'Angola', currency: 'AOA' },
-      'AG': { name: 'Antigua-et-Barbuda', currency: 'XCD' },
-      'AR': { name: 'Argentine', currency: 'ARS' },
-      'AM': { name: 'Arménie', currency: 'AMD' },
-      'AU': { name: 'Australie', currency: 'AUD' },
-      'AT': { name: 'Autriche', currency: 'EUR' },
-      'AZ': { name: 'Azerbaïdjan', currency: 'AZN' },
-      'BS': { name: 'Bahamas', currency: 'BSD' },
-      'BH': { name: 'Bahreïn', currency: 'BHD' },
-      'BD': { name: 'Bangladesh', currency: 'BDT' },
-      'BB': { name: 'Barbade', currency: 'BBD' },
-      'BY': { name: 'Biélorussie', currency: 'BYN' },
-      'BE': { name: 'Belgique', currency: 'EUR' },
-      'BZ': { name: 'Belize', currency: 'BZD' },
-      'BJ': { name: 'Bénin', currency: 'XOF' },
-      'BT': { name: 'Bhoutan', currency: 'BTN' },
-      'BO': { name: 'Bolivie', currency: 'BOB' },
-      'BA': { name: 'Bosnie-Herzégovine', currency: 'BAM' },
-      'BW': { name: 'Botswana', currency: 'BWP' },
-      'BR': { name: 'Brésil', currency: 'BRL' },
-      'BN': { name: 'Brunei', currency: 'BND' },
-      'BG': { name: 'Bulgarie', currency: 'BGN' },
-      'BF': { name: 'Burkina Faso', currency: 'XOF' },
-      'BI': { name: 'Burundi', currency: 'BIF' },
-      'CV': { name: 'Cap-Vert', currency: 'CVE' },
-      'KH': { name: 'Cambodge', currency: 'KHR' },
-      'CM': { name: 'Cameroun', currency: 'XAF' },
-      'CA': { name: 'Canada', currency: 'CAD' },
-      'CF': { name: 'Centrafrique', currency: 'XAF' },
-      'TD': { name: 'Tchad', currency: 'XAF' },
-      'CL': { name: 'Chili', currency: 'CLP' },
-      'CN': { name: 'Chine', currency: 'CNY' },
-      'CO': { name: 'Colombie', currency: 'COP' },
-      'KM': { name: 'Comores', currency: 'KMF' },
-      'CG': { name: 'Congo', currency: 'XAF' },
-      'CD': { name: 'Congo (RDC)', currency: 'CDF' },
-      'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
-      'HR': { name: 'Croatie', currency: 'EUR' },
-      'CU': { name: 'Cuba', currency: 'CUP' },
-      'CY': { name: 'Chypre', currency: 'EUR' },
-      'CZ': { name: 'République tchèque', currency: 'CZK' },
-      'DK': { name: 'Danemark', currency: 'DKK' },
-      'DJ': { name: 'Djibouti', currency: 'DJF' },
-      'DM': { name: 'Dominique', currency: 'XCD' },
-      'DO': { name: 'République dominicaine', currency: 'DOP' },
-      'EC': { name: 'Équateur', currency: 'USD' },
-      'EG': { name: 'Égypte', currency: 'EGP' },
-      'SV': { name: 'Salvador', currency: 'USD' },
-      'GQ': { name: 'Guinée équatoriale', currency: 'XAF' },
-      'ER': { name: 'Érythrée', currency: 'ERN' },
-      'EE': { name: 'Estonie', currency: 'EUR' },
-      'ET': { name: 'Éthiopie', currency: 'ETB' },
-      'FJ': { name: 'Fidji', currency: 'FJD' },
-      'FI': { name: 'Finlande', currency: 'EUR' },
-      'FR': { name: 'France', currency: 'EUR' },
-      'GA': { name: 'Gabon', currency: 'XAF' },
-      'GM': { name: 'Gambie', currency: 'GMD' },
-      'GE': { name: 'Géorgie', currency: 'GEL' },
-      'DE': { name: 'Allemagne', currency: 'EUR' },
-      'GH': { name: 'Ghana', currency: 'GHS' },
-      'GR': { name: 'Grèce', currency: 'EUR' },
-      'GD': { name: 'Grenade', currency: 'XCD' },
-      'GT': { name: 'Guatemala', currency: 'GTQ' },
-      'GN': { name: 'Guinée', currency: 'GNF' },
-      'GW': { name: 'Guinée-Bissau', currency: 'XOF' },
-      'GY': { name: 'Guyana', currency: 'GYD' },
-      'HT': { name: 'Haïti', currency: 'HTG' },
-      'HN': { name: 'Honduras', currency: 'HNL' },
-      'HU': { name: 'Hongrie', currency: 'HUF' },
-      'IS': { name: 'Islande', currency: 'ISK' },
-      'IN': { name: 'Inde', currency: 'INR' },
-      'ID': { name: 'Indonésie', currency: 'IDR' },
-      'IR': { name: 'Iran', currency: 'IRR' },
-      'IQ': { name: 'Irak', currency: 'IQD' },
-      'IE': { name: 'Irlande', currency: 'EUR' },
-      'IL': { name: 'Israël', currency: 'ILS' },
-      'IT': { name: 'Italie', currency: 'EUR' },
-      'JM': { name: 'Jamaïque', currency: 'JMD' },
-      'JP': { name: 'Japon', currency: 'JPY' },
-      'JO': { name: 'Jordanie', currency: 'JOD' },
-      'KZ': { name: 'Kazakhstan', currency: 'KZT' },
-      'KE': { name: 'Kenya', currency: 'KES' },
-      'KI': { name: 'Kiribati', currency: 'AUD' },
-      'KP': { name: 'Corée du Nord', currency: 'KPW' },
-      'KR': { name: 'Corée du Sud', currency: 'KRW' },
-      'KW': { name: 'Koweït', currency: 'KWD' },
-      'KG': { name: 'Kirghizistan', currency: 'KGS' },
-      'LA': { name: 'Laos', currency: 'LAK' },
-      'LV': { name: 'Lettonie', currency: 'EUR' },
-      'LB': { name: 'Liban', currency: 'LBP' },
-      'LS': { name: 'Lesotho', currency: 'LSL' },
-      'LR': { name: 'Libéria', currency: 'LRD' },
-      'LY': { name: 'Libye', currency: 'LYD' },
-      'LI': { name: 'Liechtenstein', currency: 'CHF' },
-      'LT': { name: 'Lituanie', currency: 'EUR' },
-      'LU': { name: 'Luxembourg', currency: 'EUR' },
-      'MG': { name: 'Madagascar', currency: 'MGA' },
-      'MW': { name: 'Malawi', currency: 'MWK' },
-      'MY': { name: 'Malaisie', currency: 'MYR' },
-      'MV': { name: 'Maldives', currency: 'MVR' },
-      'ML': { name: 'Mali', currency: 'XOF' },
-      'MT': { name: 'Malte', currency: 'EUR' },
-      'MH': { name: 'Îles Marshall', currency: 'USD' },
-      'MR': { name: 'Mauritanie', currency: 'MRO' },
-      'MU': { name: 'Maurice', currency: 'MUR' },
-      'MX': { name: 'Mexique', currency: 'MXN' },
-      'FM': { name: 'États fédérés de Micronésie', currency: 'USD' },
-      'MD': { name: 'Moldavie', currency: 'MDL' },
-      'MC': { name: 'Monaco', currency: 'EUR' },
-      'MN': { name: 'Mongolie', currency: 'MNT' },
-      'ME': { name: 'Monténégro', currency: 'EUR' },
-      'MA': { name: 'Maroc', currency: 'MAD' },
-      'MZ': { name: 'Mozambique', currency: 'MZN' },
-      'MM': { name: 'Myanmar', currency: 'MMK' },
-      'NA': { name: 'Namibie', currency: 'NAD' },
-      'NR': { name: 'Nauru', currency: 'AUD' },
-      'NP': { name: 'Népal', currency: 'NPR' },
-      'NL': { name: 'Pays-Bas', currency: 'EUR' },
-      'NZ': { name: 'Nouvelle-Zélande', currency: 'NZD' },
-      'NI': { name: 'Nicaragua', currency: 'NIO' },
-      'NE': { name: 'Niger', currency: 'XOF' },
-      'NG': { name: 'Nigéria', currency: 'NGN' },
-      'NO': { name: 'Norvège', currency: 'NOK' },
-      'OM': { name: 'Oman', currency: 'OMR' },
-      'PK': { name: 'Pakistan', currency: 'PKR' },
-      'PW': { name: 'Palaos', currency: 'USD' },
-      'PA': { name: 'Panama', currency: 'PAB' },
-      'PG': { name: 'Papouasie-Nouvelle-Guinée', currency: 'PGK' },
-      'PY': { name: 'Paraguay', currency: 'PYG' },
-      'PE': { name: 'Pérou', currency: 'PEN' },
-      'PH': { name: 'Philippines', currency: 'PHP' },
-      'PL': { name: 'Pologne', currency: 'PLN' },
-      'PT': { name: 'Portugal', currency: 'EUR' },
-      'QA': { name: 'Qatar', currency: 'QAR' },
-      'RO': { name: 'Roumanie', currency: 'RON' },
-      'RU': { name: 'Russie', currency: 'RUB' },
-      'RW': { name: 'Rwanda', currency: 'RWF' },
-      'KN': { name: 'Saint-Kitts-et-Nevis', currency: 'XCD' },
-      'LC': { name: 'Sainte-Lucie', currency: 'XCD' },
-      'VC': { name: 'Saint-Vincent-et-les-Grenadines', currency: 'XCD' },
-      'WS': { name: 'Samoa', currency: 'WST' },
-      'SM': { name: 'Saint-Marin', currency: 'EUR' },
-      'ST': { name: 'Sao Tomé-et-Principe', currency: 'STN' },
-      'SA': { name: 'Arabie saoudite', currency: 'SAR' },
-      'SN': { name: 'Sénégal', currency: 'XOF' },
-      'RS': { name: 'Serbie', currency: 'RSD' },
-      'SC': { name: 'Seychelles', currency: 'SCR' },
-      'SL': { name: 'Sierra Leone', currency: 'SLL' },
-      'SG': { name: 'Singapour', currency: 'SGD' },
-      'SK': { name: 'Slovaquie', currency: 'EUR' },
-      'SI': { name: 'Slovénie', currency: 'EUR' },
-      'SB': { name: 'Îles Salomon', currency: 'SBD' },
-      'SO': { name: 'Somalie', currency: 'SOS' },
-      'ZA': { name: 'Afrique du Sud', currency: 'ZAR' },
-      'ES': { name: 'Espagne', currency: 'EUR' },
-      'LK': { name: 'Sri Lanka', currency: 'LKR' },
-      'SD': { name: 'Soudan', currency: 'SDG' },
-      'SR': { name: 'Suriname', currency: 'SRD' },
-      'SE': { name: 'Suède', currency: 'SEK' },
-      'CH': { name: 'Suisse', currency: 'CHF' },
-      'SY': { name: 'Syrie', currency: 'SYP' },
-      'TW': { name: 'Taïwan', currency: 'TWD' },
-      'TJ': { name: 'Tadjikistan', currency: 'TJS' },
-      'TZ': { name: 'Tanzanie', currency: 'TZS' },
-      'TH': { name: 'Thaïlande', currency: 'THB' },
-      'TL': { name: 'Timor oriental', currency: 'USD' },
-      'TG': { name: 'Togo', currency: 'XOF' },
-      'TO': { name: 'Tonga', currency: 'TOP' },
-      'TT': { name: 'Trinité-et-Tobago', currency: 'TTD' },
-      'TN': { name: 'Tunisie', currency: 'TND' },
-      'TR': { name: 'Turquie', currency: 'TRY' },
-      'TM': { name: 'Turkménistan', currency: 'TMT' },
-      'UG': { name: 'Ouganda', currency: 'UGX' },
-      'UA': { name: 'Ukraine', currency: 'UAH' },
-      'AE': { name: 'Émirats arabes unis', currency: 'AED' },
-      'GB': { name: 'Royaume-Uni', currency: 'GBP' },
-      'US': { name: 'États-Unis', currency: 'USD' },
-      'UY': { name: 'Uruguay', currency: 'UYU' },
-      'UZ': { name: 'Ouzbékistan', currency: 'UZS' },
-      'VU': { name: 'Vanuatu', currency: 'VUV' },
-      'VE': { name: 'Venezuela', currency: 'VES' },
-      'VN': { name: 'Viêt Nam', currency: 'VND' },
-      'YE': { name: 'Yémen', currency: 'YER' },
-      'ZM': { name: 'Zambie', currency: 'ZMW' },
-      'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
-    };
-
-    // ========== UTILITAIRES ==========
-    function getFlagEmoji(countryCode) {
-      const codePoints = countryCode
-        .toUpperCase()
-        .split('')
-        .map(char => 127397 + char.charCodeAt());
-      return String.fromCodePoint(...codePoints);
-    }
-
-    function formatPrice(price, currency = 'EUR') {
-      return new Intl.NumberFormat('fr-FR', { 
-        style: 'currency', 
-        currency 
-      }).format(price || 0);
-    }
-
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-        <span>${message}</span>
       `;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
     }
-
-    // ========== MOBILE MENU ==========
-    function toggleMobileMenu() {
-      const menu = document.getElementById('mobile-menu');
-      menu.classList.toggle('open');
-      document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+  },
+  sortProducts: () => {
+    const select = document.getElementById('sort-select');
+    CatalogueApp.state.sortBy = select.value;
+    CatalogueApp.applyFilters();
+  }
+};
+// ========== FONCTIONS UTILITAIRES ==========
+function initFilters() {
+  const urlParams = new URLSearchParams(window.location.search);
+  let rawCategory = urlParams.get('category');
+  if (!rawCategory || rawCategory === 'null' || rawCategory === 'undefined' || rawCategory === 'all' || rawCategory === '') {
+    rawCategory = null;
+  }
+  CatalogueApp.state.filters.category = rawCategory;
+  const container = document.getElementById('filter-categories');
+  if (container) {
+    container.innerHTML = BRANDIA_CATEGORIES.map(cat => {
+      const isSelected = rawCategory === cat.slug;
+      return `
+        <label class="filter-option ${isSelected ? 'bg-neutral-700/30' : ''}">
+          <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom category-radio" ${isSelected ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
+          <span class="filter-option-text">${cat.name}</span>
+        </label>
+      `;
+    }).join('');
+    const allSelected = rawCategory === null;
+    const allOption = `
+      <label class="filter-option ${allSelected ? 'bg-neutral-700/30' : ''}">
+        <input type="radio" name="category" value="" class="checkbox-custom category-radio" ${allSelected ? 'checked' : ''} onchange="updateCategory(null)">
+        <span class="filter-option-text" style="font-weight: 500;">Toutes les catégories</span>
+      </label>
+      <div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>
+    `;
+    container.innerHTML = allOption + container.innerHTML;
+  }
+  const dropdown = document.getElementById('dropdown-categories');
+  if (dropdown) {
+    dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
+      <a href="catalogue.html?category=${encodeURIComponent(cat.slug)}" class="dropdown-item">
+        <div class="dropdown-icon bg-gradient-to-br ${cat.gradient}">
+          <i class="fas ${cat.icon}" style="color: white;"></i>
+        </div>
+        <span>${cat.name}</span>
+      </a>
+    `).join('');
+  }
+  updatePageTitle();
+}
+function updateCategory(slug) {
+  let cleanSlug = slug;
+  if (!slug || slug === 'null' || slug === 'undefined' || slug === 'all' || slug === '') {
+    cleanSlug = null;
+  }
+  CatalogueApp.state.filters.category = cleanSlug;
+  document.querySelectorAll('input[name="category"]').forEach(radio => {
+    const label = radio.closest('label');
+    if (!label) return;
+    if (cleanSlug === null) {
+      radio.checked = false;
+      label.classList.remove('bg-neutral-700/30');
+    } else {
+      const isMatch = radio.value === cleanSlug;
+      radio.checked = isMatch;
+      label.classList.toggle('bg-neutral-700/30', isMatch);
     }
-
-    // ========== COUNTRIES ==========
-    function initCountries() {
-      const selector = document.getElementById('countrySelector');
-      const saved = localStorage.getItem('country') || 'FR';
-      
-      selector.innerHTML = Object.entries(COUNTRIES)
-        .sort((a, b) => a[1].name.localeCompare(b[1].name))
-        .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
-        .join('');
-
-      selector.addEventListener('change', (e) => {
-        localStorage.setItem('country', e.target.value);
-        localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
-      });
+  });
+  CatalogueApp.loadProducts();
+  if (cleanSlug) {
+    window.history.replaceState({}, '', `?category=${encodeURIComponent(cleanSlug)}`);
+    document.title = `${BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug)?.name || 'Catalogue'} - Brandia`;
+  } else {
+    window.history.replaceState({}, '', window.location.pathname);
+    document.title = 'Catalogue - Brandia';
+  }
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle) {
+    if (cleanSlug) {
+      const cat = BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug);
+      pageTitle.textContent = cat?.name || 'Catalogue';
+    } else {
+      pageTitle.textContent = 'Catalogue';
     }
-
-    // ========== CATALOGUE APP ==========
-    window.CatalogueApp = {
-      state: {
-        allProducts: [],
-        filteredProducts: [],
-        filters: {
-          category: null,
-          search: '',
-          minPrice: null,
-          maxPrice: null,
-          promoOnly: false
-        },
-        sortBy: 'newest'
-      },
-
-      init: async () => {
-        console.log('[CatalogueApp] Initialisation...');
-        initCountries();
-        initFilters();
-        initSearch();
-        initAuth();
-        await CatalogueApp.loadProducts();
-        updateCartBadge();
-      },
-
-      loadProducts: async () => {
-        const container = document.getElementById('products-container');
-        container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
-
-        let category = CatalogueApp.state.filters.category;
-        
-        if (!category || category === 'null' || category === 'undefined' || category === '') {
-          category = null;
-        }
-
-        try {
-          const params = {};
-          if (category) {
-            params.category = category;
-          }
-          params.limit = 100;
-
-          const response = await BrandiaAPI.Products.getAllWithPromotions(params);
-
-          if (response.success) {
-            const products = response.data?.products || 
-                            (Array.isArray(response.data) ? response.data : []) ||
-                            [];
-            
-            CatalogueApp.state.allProducts = products;
-            CatalogueApp.applyFilters();
-          } else {
-            throw new Error(response.message);
-          }
-
-        } catch (error) {
-          console.error('[CatalogueApp] Erreur:', error);
-          try {
-            const fallback = await BrandiaAPI.Products.getAll({ limit: 100 });
-            if (fallback.success) {
-              const products = fallback.data?.products || 
-                              (Array.isArray(fallback.data) ? fallback.data : []) ||
-                              [];
-              CatalogueApp.state.allProducts = products;
-              CatalogueApp.applyFilters();
-            }
-          } catch (fallbackError) {
-            container.innerHTML = `
-              <div class="empty-state">
-                <i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i>
-                <h3>Erreur de connexion</h3>
-                <p>Impossible de charger les produits</p>
-                <button onclick="CatalogueApp.loadProducts()" class="btn-primary" style="margin-top: 1rem;">
-                  <i class="fas fa-redo mr-2"></i>Réessayer
-                </button>
-              </div>
-            `;
-          }
-        }
-      },
-
-      applyFilters: () => {
-        let products = [...CatalogueApp.state.allProducts];
-        const f = CatalogueApp.state.filters;
-
-        if (f.search) {
-          const search = f.search.toLowerCase();
-          products = products.filter(p => 
-            p.name?.toLowerCase().includes(search) ||
-            p.description?.toLowerCase().includes(search) ||
-            p.supplier_company?.toLowerCase().includes(search)
-          );
-        }
-
-        if (f.minPrice) {
-          products = products.filter(p => parseFloat(p.final_price || p.price) >= f.minPrice);
-        }
-        if (f.maxPrice) {
-          products = products.filter(p => parseFloat(p.final_price || p.price) <= f.maxPrice);
-        }
-
-        if (f.promoOnly) {
-          products = products.filter(p => p.has_promotion === true);
-        }
-
-        products = CatalogueApp.sortProductsList(products);
-
-        CatalogueApp.state.filteredProducts = products;
-        CatalogueApp.renderProducts(products);
-      },
-
-      sortProductsList: (products) => {
-        const sort = CatalogueApp.state.sortBy;
-        
-        return products.sort((a, b) => {
-          const priceA = parseFloat(a.final_price || a.price);
-          const priceB = parseFloat(b.final_price || b.price);
-          
-          switch(sort) {
-            case 'price_asc':
-              return priceA - priceB;
-            case 'price_desc':
-              return priceB - priceA;
-            case 'promo':
-              if (a.has_promotion && !b.has_promotion) return -1;
-              if (!a.has_promotion && b.has_promotion) return 1;
-              if (a.has_promotion && b.has_promotion) {
-                const savingsA = (a.base_price || a.price) - priceA;
-                const savingsB = (b.base_price || b.price) - priceB;
-                return savingsB - savingsA;
-              }
-              return 0;
-            case 'newest':
-            default:
-              return new Date(b.created_at) - new Date(a.created_at);
-          }
-        });
-      },
-
-      renderProducts: (products) => {
-        const container = document.getElementById('products-container');
-        const resultsCount = document.getElementById('results-count');
-        const emptyState = document.getElementById('empty-state');
-
-        const promoCount = products.filter(p => p.has_promotion).length;
-        resultsCount.textContent = `${products.length} produit(s) trouvé(s)${promoCount > 0 ? ` (${promoCount} en promo)` : ''}`;
-
-        if (products.length === 0) {
-          container.innerHTML = '';
-          emptyState.classList.remove('hidden');
-          return;
-        }
-
-        emptyState.classList.add('hidden');
-
-        container.innerHTML = products.map((p, index) => {
-          return CatalogueApp.renderProductCard(p, index);
-        }).join('');
-      },
-
-      renderProductCard: (p, index) => {
-        const hasPromo = p.has_promotion === true;
-        const finalPrice = parseFloat(p.final_price || p.price);
-        const basePrice = parseFloat(p.base_price || p.original_price || p.price);
-        
-        let savingsAmount = 0;
-        let savingsPercent = 0;
-        
-        if (hasPromo && basePrice > finalPrice) {
-          savingsAmount = basePrice - finalPrice;
-          savingsPercent = Math.round((savingsAmount / basePrice) * 100);
-        }
-
-        const promoBadge = hasPromo ? `
-          <div class="product-badge">
-            <i class="fas fa-fire" style="margin-right: 0.25rem;"></i>-${p.discount_display || savingsPercent + '%'}
-          </div>
-        ` : '';
-
-        const priceDisplay = hasPromo ? `
-          <div class="product-price">
-            <span class="price-current promo">${finalPrice.toFixed(2)} €</span>
-            <span class="price-original">${basePrice.toFixed(2)} €</span>
-            <span class="savings-badge">-${savingsAmount.toFixed(2)} €</span>
-          </div>
-        ` : `
-          <div class="product-price">
-            <span class="price-current">${finalPrice.toFixed(2)} €</span>
-          </div>
-        `;
-
-        const promoInfo = hasPromo ? `
-          <div class="promo-info">
-            <div class="promo-name">
-              <i class="fas fa-tag"></i>
-              <span>${p.promo_name || 'Promotion en cours'}</span>
-            </div>
-            ${p.promo_end_date ? `
-              <div class="promo-date">
-                <i class="fas fa-clock" style="margin-right: 0.25rem;"></i>
-                Jusqu'au ${new Date(p.promo_end_date).toLocaleDateString('fr-FR')}
-              </div>
-            ` : ''}
-          </div>
-        ` : '';
-
-        const image = p.main_image_url || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
-
-        return `
-          <div class="product-card fade-in" style="animation-delay: ${index * 0.05}s">
-            <a href="product.html?id=${p.id}" class="product-image">
-              <img src="${image}" alt="${p.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80'">
-              ${promoBadge}
-              ${p.stock_quantity < 5 ? `<span class="stock-badge">Stock faible</span>` : ''}
-            </a>
-            <div class="product-info">
-              <div class="product-category">${p.category_name || 'Catégorie'}</div>
-              <a href="product.html?id=${p.id}" class="product-name">${p.name}</a>
-              <p class="product-brand">${p.supplier_company || p.supplier_name || 'Marque'}</p>
-              
-              ${promoInfo}
-              ${priceDisplay}
-              
-              <div class="product-actions" style="margin-top: 0.75rem;">
-                <button onclick="event.preventDefault(); CatalogueApp.addToCart(${p.id})" class="btn-add-cart">
-                  <i class="fas fa-cart-plus"></i>
-                  Ajouter
-                </button>
-                <a href="product.html?id=${p.id}" class="btn-view">
-                  <i class="fas fa-eye"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        `;
-      },
-
-      addToCart: async (productId) => {
-        try {
-          const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
-          
-          if (!response.success || !response.data.product) {
-            throw new Error('Produit non trouvé');
-          }
-
-          const product = response.data.product;
-          
-          const cartItem = {
-            id: product.id,
-            name: product.name,
-            price: product.final_price || product.price,
-            original_price: product.base_price || product.price,
-            has_promotion: product.has_promotion,
-            promo_code: product.promo_code,
-            main_image_url: product.main_image_url,
-            quantity: 1
-          };
-
-          if (window.BrandiaAPI && BrandiaAPI.Cart) {
-            BrandiaAPI.Cart.add(cartItem);
-          } else {
-            let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-            const existing = cart.find(x => x.id === product.id);
-            if (existing) {
-              existing.quantity++;
-            } else {
-              cart.push(cartItem);
-            }
-            localStorage.setItem('brandia_cart', JSON.stringify(cart));
-          }
-
-          showToast('Produit ajouté au panier !', 'success');
-          updateCartBadge();
-
-        } catch (error) {
-          console.error('[CatalogueApp] Erreur ajout panier:', error);
-          showToast('Erreur lors de l\'ajout', 'error');
-        }
-      },
-
-      togglePromoOnly: () => {
-        const checkbox = document.getElementById('promo-only');
-        const isChecked = checkbox.checked;
-        
-        CatalogueApp.state.filters.promoOnly = isChecked;
-        
-        if (isChecked) {
-          CatalogueApp.loadProductsWithPromoFilter();
-        } else {
-          CatalogueApp.loadProducts();
-        }
-      },
-
-      loadProductsWithPromoFilter: async () => {
-        const container = document.getElementById('products-container');
-        container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
-
-        try {
-          const params = {
-            promo_only: true,
-            limit: 100
-          };
-
-          if (CatalogueApp.state.filters.category) {
-            params.category = CatalogueApp.state.filters.category;
-          }
-
-          const response = await BrandiaAPI.Products.getAllWithPromotions(params);
-
-          if (response.success) {
-            const products = response.data?.products || [];
-            
-            CatalogueApp.state.allProducts = products;
-            
-            let filtered = [...products];
-            
-            if (CatalogueApp.state.filters.search) {
-              const search = CatalogueApp.state.filters.search.toLowerCase();
-              filtered = filtered.filter(p => 
-                p.name?.toLowerCase().includes(search) ||
-                p.description?.toLowerCase().includes(search)
-              );
-            }
-            
-            if (CatalogueApp.state.filters.minPrice) {
-              filtered = filtered.filter(p => p.final_price >= CatalogueApp.state.filters.minPrice);
-            }
-            if (CatalogueApp.state.filters.maxPrice) {
-              filtered = filtered.filter(p => p.final_price <= CatalogueApp.state.filters.maxPrice);
-            }
-            
-            filtered = CatalogueApp.sortProductsList(filtered);
-            
-            CatalogueApp.renderProducts(filtered);
-            
-            const resultsCount = document.getElementById('results-count');
-            const promoCount = filtered.filter(p => p.has_promotion).length;
-            resultsCount.textContent = `${filtered.length} produit(s) trouvé(s) dont ${promoCount} en promotion`;
-          } else {
-            throw new Error(response.message);
-          }
-
-        } catch (error) {
-          console.error('[CatalogueApp] Erreur chargement promos:', error);
-          container.innerHTML = `
-            <div class="empty-state">
-              <i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i>
-              <h3>Erreur lors du chargement des promotions</h3>
-              <button onclick="CatalogueApp.togglePromoOnly()" class="btn-primary" style="margin-top: 1rem;">
-                Réessayer
-              </button>
-            </div>
-          `;
-        }
-      },
-
-      sortProducts: () => {
-        const select = document.getElementById('sort-select');
-        CatalogueApp.state.sortBy = select.value;
-        CatalogueApp.applyFilters();
-      }
-    };
-
-    // ========== FONCTIONS UTILITAIRES ==========
-    function initFilters() {
-      const urlParams = new URLSearchParams(window.location.search);
-      let rawCategory = urlParams.get('category');
-      
-      if (!rawCategory || rawCategory === 'null' || rawCategory === 'undefined' || rawCategory === 'all' || rawCategory === '') {
-        rawCategory = null;
-      }
-      
-      CatalogueApp.state.filters.category = rawCategory;
-      
-      const container = document.getElementById('filter-categories');
-      if (container) {
-        container.innerHTML = BRANDIA_CATEGORIES.map(cat => {
-          const isSelected = rawCategory === cat.slug;
-          return `
-            <label class="filter-option ${isSelected ? 'bg-neutral-700/30' : ''}">
-              <input type="radio" name="category" value="${cat.slug}" class="checkbox-custom category-radio" ${isSelected ? 'checked' : ''} onchange="updateCategory('${cat.slug}')">
-              <span class="filter-option-text">${cat.name}</span>
-            </label>
-          `;
-        }).join('');
-        
-        const allSelected = rawCategory === null;
-        const allOption = `
-          <label class="filter-option ${allSelected ? 'bg-neutral-700/30' : ''}">
-            <input type="radio" name="category" value="" class="checkbox-custom category-radio" ${allSelected ? 'checked' : ''} onchange="updateCategory(null)">
-            <span class="filter-option-text" style="font-weight: 500;">Toutes les catégories</span>
-          </label>
-          <div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>
-        `;
-        container.innerHTML = allOption + container.innerHTML;
-      }
-
-      const dropdown = document.getElementById('dropdown-categories');
-      if (dropdown) {
-        dropdown.innerHTML = BRANDIA_CATEGORIES.map(cat => `
-          <a href="catalogue.html?category=${encodeURIComponent(cat.slug)}" class="dropdown-item">
-            <div class="dropdown-icon bg-gradient-to-br ${cat.gradient}">
-              <i class="fas ${cat.icon}" style="color: white;"></i>
-            </div>
-            <span>${cat.name}</span>
-          </a>
-        `).join('');
-      }
-      
-      updatePageTitle();
+  }
+}
+function updatePageTitle() {
+  const pageTitle = document.getElementById('page-title');
+  const catCount = document.getElementById('cat-count');
+  if (CatalogueApp.state.filters.category) {
+    const category = BRANDIA_CATEGORIES.find(c => c.slug === CatalogueApp.state.filters.category);
+    if (category) {
+      pageTitle.textContent = category.name;
+      document.title = `${category.name} - Brandia`;
     }
-
-    function updateCategory(slug) {
-      let cleanSlug = slug;
-      if (!slug || slug === 'null' || slug === 'undefined' || slug === 'all' || slug === '') {
-        cleanSlug = null;
-      }
-      
-      CatalogueApp.state.filters.category = cleanSlug;
-      
-      document.querySelectorAll('input[name="category"]').forEach(radio => {
-        const label = radio.closest('label');
-        if (!label) return;
-        
-        if (cleanSlug === null) {
-          radio.checked = false;
-          label.classList.remove('bg-neutral-700/30');
-        } else {
-          const isMatch = radio.value === cleanSlug;
-          radio.checked = isMatch;
-          label.classList.toggle('bg-neutral-700/30', isMatch);
-        }
-      });
-      
-      CatalogueApp.loadProducts();
-      
-      if (cleanSlug) {
-        window.history.replaceState({}, '', `?category=${encodeURIComponent(cleanSlug)}`);
-        document.title = `${BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug)?.name || 'Catalogue'} - Brandia`;
-      } else {
-        window.history.replaceState({}, '', window.location.pathname);
-        document.title = 'Catalogue - Brandia';
-      }
-      
-      const pageTitle = document.getElementById('page-title');
-      if (pageTitle) {
-        if (cleanSlug) {
-          const cat = BRANDIA_CATEGORIES.find(c => c.slug === cleanSlug);
-          pageTitle.textContent = cat?.name || 'Catalogue';
-        } else {
-          pageTitle.textContent = 'Catalogue';
-        }
-      }
-    }
-
-    function updatePageTitle() {
-      const pageTitle = document.getElementById('page-title');
-      const catCount = document.getElementById('cat-count');
-      
-      if (CatalogueApp.state.filters.category) {
-        const category = BRANDIA_CATEGORIES.find(c => c.slug === CatalogueApp.state.filters.category);
-        if (category) {
-          pageTitle.textContent = category.name;
-          document.title = `${category.name} - Brandia`;
-        }
-      } else {
-        pageTitle.textContent = 'Catalogue';
-        document.title = 'Catalogue - Brandia';
-      }
-      
-      if (catCount) catCount.textContent = BRANDIA_CATEGORIES.length;
-    }
-
-    function initSearch() {
-      const searchInput = document.getElementById('search-input');
-      let timeout;
-      
-      const handleSearch = (e) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          CatalogueApp.state.filters.search = e.target.value;
-          CatalogueApp.applyFilters();
-        }, 400);
-      };
-      
-      if (searchInput) searchInput.addEventListener('input', handleSearch);
-    }
-
-    function initAuth() {
-      if (typeof BrandiaAPI === 'undefined') return;
-      const user = BrandiaAPI.Auth.getUser();
-      const authButtons = document.getElementById('auth-buttons');
-      const userMenu = document.getElementById('user-menu');
-      const supplierMenu = document.getElementById('supplier-menu');
-      
-      if (user && user.email) {
-        authButtons?.classList.add('hidden');
-        
-        if (user.role === 'supplier') {
-          supplierMenu?.classList.add('active');
-          const supplierName = document.getElementById('supplier-name');
-          if (supplierName) supplierName.textContent = user.first_name || user.email;
-        } else {
-          userMenu?.classList.add('active');
-          const userName = document.getElementById('user-name');
-          if (userName) userName.textContent = user.first_name || user.email;
-        }
-      }
-    }
-
-    function logout() {
-      if (window.BrandiaAPI && BrandiaAPI.Auth) {
-        BrandiaAPI.Auth.logout();
-      } else {
-        localStorage.removeItem('brandia_token');
-        localStorage.removeItem('brandia_user');
-        window.location.reload();
-      }
-    }
-
-    function applyPrice() {
-      CatalogueApp.state.filters.minPrice = parseFloat(document.getElementById('price-min').value) || null;
-      CatalogueApp.state.filters.maxPrice = parseFloat(document.getElementById('price-max').value) || null;
+  } else {
+    pageTitle.textContent = 'Catalogue';
+    document.title = 'Catalogue - Brandia';
+  }
+  if (catCount) catCount.textContent = BRANDIA_CATEGORIES.length;
+}
+function initSearch() {
+  const searchInput = document.getElementById('search-input');
+  let timeout;
+  const handleSearch = (e) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      CatalogueApp.state.filters.search = e.target.value;
       CatalogueApp.applyFilters();
+    }, 400);
+  };
+  if (searchInput) searchInput.addEventListener('input', handleSearch);
+}
+function initAuth() {
+  if (typeof BrandiaAPI === 'undefined') return;
+  const user = BrandiaAPI.Auth.getUser();
+  const authButtons = document.getElementById('auth-buttons');
+  const userMenu = document.getElementById('user-menu');
+  const supplierMenu = document.getElementById('supplier-menu');
+  if (user && user.email) {
+    authButtons?.classList.add('hidden');
+    if (user.role === 'supplier') {
+      supplierMenu?.classList.add('active');
+      const supplierName = document.getElementById('supplier-name');
+      if (supplierName) supplierName.textContent = user.first_name || user.email;
+    } else {
+      userMenu?.classList.add('active');
+      const userName = document.getElementById('user-name');
+      if (userName) userName.textContent = user.first_name || user.email;
     }
-
-    function resetPrice() {
-      document.getElementById('price-min').value = '';
-      document.getElementById('price-max').value = '';
-      CatalogueApp.state.filters.minPrice = null;
-      CatalogueApp.state.filters.maxPrice = null;
-      CatalogueApp.applyFilters();
+  }
+}
+function logout() {
+  if (window.BrandiaAPI && BrandiaAPI.Auth) {
+    BrandiaAPI.Auth.logout();
+  } else {
+    localStorage.removeItem('brandia_token');
+    localStorage.removeItem('brandia_user');
+    window.location.reload();
+  }
+}
+function applyPrice() {
+  CatalogueApp.state.filters.minPrice = parseFloat(document.getElementById('price-min').value) || null;
+  CatalogueApp.state.filters.maxPrice = parseFloat(document.getElementById('price-max').value) || null;
+  CatalogueApp.applyFilters();
+}
+function resetPrice() {
+  document.getElementById('price-min').value = '';
+  document.getElementById('price-max').value = '';
+  CatalogueApp.state.filters.minPrice = null;
+  CatalogueApp.state.filters.maxPrice = null;
+  CatalogueApp.applyFilters();
+}
+function resetAll() {
+  CatalogueApp.state.filters = {
+    category: null,
+    search: '',
+    minPrice: null,
+    maxPrice: null,
+    promoOnly: false,
+  };
+  CatalogueApp.state.sortBy = 'newest';
+  document.getElementById('search-input').value = '';
+  document.getElementById('promo-only').checked = false;
+  document.getElementById('sort-select').value = 'newest';
+  document.querySelectorAll('input[name="category"]').forEach(radio => {
+    radio.checked = false;
+    radio.closest('label')?.classList.remove('bg-neutral-700/30');
+  });
+  window.history.replaceState({}, '', window.location.pathname);
+  updatePageTitle();
+  CatalogueApp.loadProducts();
+}
+function updateCartBadge() {
+  try {
+    const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const badge = document.getElementById('cart-count');
+    if (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('hidden', count === 0);
     }
-
-    function resetAll() {
-      CatalogueApp.state.filters = {
-        category: null,
-        search: '',
-        minPrice: null,
-        maxPrice: null,
-        promoOnly: false
-      };
-      CatalogueApp.state.sortBy = 'newest';
-      
-      document.getElementById('search-input').value = '';
-      document.getElementById('promo-only').checked = false;
-      document.getElementById('sort-select').value = 'newest';
-      
-      document.querySelectorAll('input[name="category"]').forEach(radio => {
-        radio.checked = false;
-        radio.closest('label')?.classList.remove('bg-neutral-700/30');
-      });
-      
-      window.history.replaceState({}, '', window.location.pathname);
-      
-      updatePageTitle();
-      CatalogueApp.loadProducts();
-    }
-
-    function updateCartBadge() {
-      try {
-        const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-        const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        const badge = document.getElementById('cart-count');
-        if (badge) {
-          badge.textContent = count;
-          badge.classList.toggle('hidden', count === 0);
-        }
-      } catch (e) {
-        console.error('Erreur badge:', e);
-      }
-    }
-
-    // Initialisation
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('[Catalogue] Initialisation avec promotions');
-      CatalogueApp.init();
-    });
-  </script>
-
+  } catch (e) {
+    console.error('Erreur badge:', e);
+  }
+}
+// Initialisation
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[Catalogue] Initialisation avec promotions');
+  CatalogueApp.init();
+});
+</script>
 </body>
 </html>
