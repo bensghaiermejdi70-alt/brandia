@@ -343,6 +343,31 @@
       cursor: pointer;
     }
 
+    /* Dashboard Button (visible only for suppliers) */
+    .dashboard-btn {
+      display: none;
+      background: var(--brandia-gradient);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .dashboard-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px -4px rgba(99, 102, 241, 0.4);
+    }
+
+    .dashboard-btn.visible {
+      display: flex;
+    }
+
     /* Cart */
     .cart-link {
       position: relative;
@@ -374,6 +399,73 @@
 
     .cart-badge.hidden {
       display: none;
+    }
+
+    /* User Menu */
+    .user-menu {
+      position: relative;
+    }
+
+    .user-menu-trigger {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--brandia-text);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .user-menu-trigger:hover {
+      border-color: var(--brandia-primary);
+    }
+
+    .user-menu-dropdown {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      width: 200px;
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 12px;
+      padding: 0.5rem;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .user-menu:hover .user-menu-dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .user-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem;
+      border-radius: 8px;
+      color: var(--brandia-text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .user-menu-item:hover {
+      background: var(--brandia-card-hover);
+      color: var(--brandia-text);
     }
 
     /* Mobile Menu Toggle */
@@ -855,6 +947,35 @@
       font-size: 0.75rem;
     }
 
+    /* Supplier Warning */
+    .supplier-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .supplier-warning.visible {
+      display: block;
+    }
+
+    .supplier-warning-title {
+      color: var(--brandia-warning);
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .supplier-warning-text {
+      color: var(--brandia-text-muted);
+      font-size: 0.75rem;
+    }
+
     /* ========== LOADER ========== */
     .loader {
       display: flex;
@@ -1224,6 +1345,31 @@
             <option value="en">🇬🇧 EN</option>
           </select>
 
+          <!-- Dashboard Button (visible only for suppliers) -->
+          <a href="supplier/dashboard.html" class="dashboard-btn" id="dashboard-btn">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+          </a>
+
+          <!-- User Menu (visible when logged in) -->
+          <div class="user-menu hidden" id="user-menu">
+            <div class="user-menu-trigger">
+              <i class="fas fa-user-circle"></i>
+              <span id="user-name">Utilisateur</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </div>
+            <div class="user-menu-dropdown">
+              <a href="mes-commandes.html" class="user-menu-item">
+                <i class="fas fa-shopping-bag"></i>
+                Mes commandes
+              </a>
+              <button onclick="logout()" class="user-menu-item" style="color: var(--brandia-danger);">
+                <i class="fas fa-sign-out-alt"></i>
+                Déconnexion
+              </button>
+            </div>
+          </div>
+
           <!-- Panier -->
           <a href="panier.html" class="cart-link">
             <i class="fas fa-shopping-bag text-xl"></i>
@@ -1261,8 +1407,14 @@
       <a href="marques.html" class="mobile-nav-link">Marques</a>
       <a href="categories.html" class="mobile-nav-link">Catégories</a>
       <a href="offres.html" class="mobile-nav-link">Offres</a>
-      <a href="login.html" class="mobile-nav-link">Connexion</a>
-      <a href="register.html" class="mobile-nav-link" style="color: var(--brandia-primary);">Inscription</a>
+      <a href="login.html" class="mobile-nav-link" id="mobile-login-link">Connexion</a>
+      <a href="register.html" class="mobile-nav-link" style="color: var(--brandia-primary);" id="mobile-register-link">Inscription</a>
+      <a href="supplier/dashboard.html" class="mobile-nav-link hidden" id="mobile-dashboard-link" style="color: var(--brandia-primary);">
+        <i class="fas fa-chart-line"></i> Dashboard Fournisseur
+      </a>
+      <button onclick="logout()" class="mobile-nav-link hidden" id="mobile-logout-link" style="color: var(--brandia-danger); text-align: left;">
+        <i class="fas fa-sign-out-alt"></i> Déconnexion
+      </button>
     </nav>
   </div>
 
@@ -1296,6 +1448,17 @@
         <div class="summary-card">
           <h2 class="summary-title">Récapitulatif</h2>
           
+          <!-- Supplier Warning -->
+          <div class="supplier-warning" id="supplier-warning">
+            <div class="supplier-warning-title">
+              <i class="fas fa-exclamation-triangle"></i>
+              Compte fournisseur détecté
+            </div>
+            <div class="supplier-warning-text">
+              Les comptes fournisseurs ne peuvent pas passer de commandes. Veuillez utiliser un compte client.
+            </div>
+          </div>
+
           <!-- Code promo -->
           <div class="promo-section">
             <div class="promo-input-group">
@@ -1404,7 +1567,7 @@
       </div>
 
       <div class="footer-bottom">
-        <p class="footer-copyright">© 2026 Brandia – Marketplace officielle des marques</p>
+        <p class="footer-footer-copyright">© 2026 Brandia – Marketplace officielle des marques</p>
         <div class="footer-payments">
           <i class="fab fa-cc-visa payment-icon"></i>
           <i class="fab fa-cc-mastercard payment-icon"></i>
@@ -1470,6 +1633,119 @@
     // PANIER STATE
     // ==========================================
     let cart = { items: [], discount: null };
+    let currentUser = null;
+    let isSupplier = false;
+
+    // ==========================================
+    // AUTHENTIFICATION & HEADER
+    // ==========================================
+    
+    function checkAuth() {
+      // Utiliser BrandiaAPI si disponible, sinon fallback localStorage
+      if (window.BrandiaAPI && BrandiaAPI.Auth) {
+        currentUser = BrandiaAPI.Auth.getUser();
+        const token = BrandiaAPI.Auth.isLoggedIn();
+        if (!token) {
+          currentUser = null;
+          isSupplier = false;
+          return false;
+        }
+        isSupplier = BrandiaAPI.Auth.isSupplier();
+      } else {
+        // Fallback direct localStorage
+        const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+        if (!token) {
+          currentUser = null;
+          isSupplier = false;
+          return false;
+        }
+        
+        const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+        if (userStr) {
+          try {
+            currentUser = JSON.parse(userStr);
+            isSupplier = currentUser && currentUser.role === 'supplier';
+          } catch(e) {
+            currentUser = null;
+            isSupplier = false;
+          }
+        }
+      }
+      
+      return !!currentUser;
+    }
+
+    function updateHeader() {
+      const isLoggedIn = checkAuth();
+      
+      // Dashboard button (only for suppliers)
+      const dashboardBtn = document.getElementById('dashboard-btn');
+      if (dashboardBtn) {
+        if (isSupplier) {
+          dashboardBtn.classList.add('visible');
+        } else {
+          dashboardBtn.classList.remove('visible');
+        }
+      }
+      
+      // User menu
+      const userMenu = document.getElementById('user-menu');
+      const userName = document.getElementById('user-name');
+      
+      if (isLoggedIn && userMenu) {
+        userMenu.classList.remove('hidden');
+        if (userName && currentUser) {
+          userName.textContent = currentUser.name || currentUser.email || 'Utilisateur';
+        }
+      } else if (userMenu) {
+        userMenu.classList.add('hidden');
+      }
+      
+      // Mobile menu links
+      const mobileLogin = document.getElementById('mobile-login-link');
+      const mobileRegister = document.getElementById('mobile-register-link');
+      const mobileDashboard = document.getElementById('mobile-dashboard-link');
+      const mobileLogout = document.getElementById('mobile-logout-link');
+      
+      if (isLoggedIn) {
+        if (mobileLogin) mobileLogin.classList.add('hidden');
+        if (mobileRegister) mobileRegister.classList.add('hidden');
+        if (mobileLogout) mobileLogout.classList.remove('hidden');
+        if (mobileDashboard && isSupplier) mobileDashboard.classList.remove('hidden');
+      } else {
+        if (mobileLogin) mobileLogin.classList.remove('hidden');
+        if (mobileRegister) mobileRegister.classList.remove('hidden');
+        if (mobileLogout) mobileLogout.classList.add('hidden');
+        if (mobileDashboard) mobileDashboard.classList.add('hidden');
+      }
+      
+      // Supplier warning in cart
+      const supplierWarning = document.getElementById('supplier-warning');
+      const checkoutBtn = document.getElementById('btn-checkout');
+      
+      if (isSupplier) {
+        if (supplierWarning) supplierWarning.classList.add('visible');
+        if (checkoutBtn) {
+          checkoutBtn.disabled = true;
+          checkoutBtn.innerHTML = '<span>Compte fournisseur - Commande impossible</span><i class="fas fa-lock"></i>';
+        }
+      } else {
+        if (supplierWarning) supplierWarning.classList.remove('visible');
+        // Le bouton sera activé par renderCart si le panier n'est pas vide
+      }
+    }
+
+    function logout() {
+      if (window.BrandiaAPI && BrandiaAPI.Auth) {
+        BrandiaAPI.Auth.logout();
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('brandia_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('brandia_user');
+        window.location.href = 'index.html';
+      }
+    }
 
     // ==========================================
     // UTILITAIRES
@@ -1561,7 +1837,7 @@
       'CG': { name: 'Congo', currency: 'XAF' },
       'CD': { name: 'Congo (RDC)', currency: 'CDF' },
       'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+      'CI': { name: 'Côte d\'Ivoire', currency: 'XOF' },
       'HR': { name: 'Croatie', currency: 'EUR' },
       'CU': { name: 'Cuba', currency: 'CUP' },
       'CY': { name: 'Chypre', currency: 'EUR' },
@@ -1787,14 +2063,18 @@
       if (cart.items.length === 0) {
         container.classList.add('hidden');
         emptyState?.classList.remove('hidden');
-        if (checkoutBtn) checkoutBtn.disabled = true;
+        if (checkoutBtn && !isSupplier) checkoutBtn.disabled = true;
         updateCartBadge();
         return;
       }
       
       container.classList.remove('hidden');
       emptyState?.classList.add('hidden');
-      if (checkoutBtn) checkoutBtn.disabled = false;
+      
+      // Activer le bouton seulement si pas fournisseur
+      if (checkoutBtn && !isSupplier) {
+        checkoutBtn.disabled = false;
+      }
       
       container.innerHTML = cart.items.map((item, index) => {
         const imageUrl = getProductImage(item);
@@ -1985,8 +2265,14 @@
         return;
       }
       
-      const token = localStorage.getItem('token');
-      if (!token) {
+      // Vérifier si fournisseur
+      if (isSupplier) {
+        showToast('Les comptes fournisseurs ne peuvent pas passer de commandes', 'error');
+        return;
+      }
+      
+      const isLoggedIn = checkAuth();
+      if (!isLoggedIn) {
         showToast('Connectez-vous pour continuer', 'info');
         setTimeout(() => window.location.href = 'login.html?redirect=checkout', 1500);
         return;
@@ -2010,6 +2296,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       initCountries();
       loadCategories();
+      updateHeader(); // Mettre à jour le header avec l'état de connexion
       loadCart();
       
       document.getElementById('promo-code')?.addEventListener('keypress', (e) => {
@@ -2023,6 +2310,7 @@
     window.proceedToCheckout = proceedToCheckout;
     window.applyPromo = applyPromo;
     window.toggleMobileMenu = toggleMobileMenu;
+    window.logout = logout;
   </script>
 
 </body>
