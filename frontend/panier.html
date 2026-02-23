@@ -1641,34 +1641,50 @@
     // ==========================================
     
     function checkAuth() {
-      // Utiliser BrandiaAPI si disponible, sinon fallback localStorage
-      if (window.BrandiaAPI && BrandiaAPI.Auth) {
-        currentUser = BrandiaAPI.Auth.getUser();
-        const token = BrandiaAPI.Auth.isLoggedIn();
-        if (!token) {
-          currentUser = null;
-          isSupplier = false;
-          return false;
-        }
-        isSupplier = BrandiaAPI.Auth.isSupplier();
-      } else {
-        // Fallback direct localStorage
-        const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
-        if (!token) {
-          currentUser = null;
-          isSupplier = false;
-          return false;
-        }
-        
-        const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
-        if (userStr) {
-          try {
-            currentUser = JSON.parse(userStr);
-            isSupplier = currentUser && currentUser.role === 'supplier';
-          } catch(e) {
-            currentUser = null;
-            isSupplier = false;
-          }
+  console.log('[Panier] Vérification authentification...');
+  
+  // Méthode 1: Via BrandiaAPI
+  if (window.BrandiaAPI && BrandiaAPI.Auth) {
+    console.log('[Panier] BrandiaAPI trouvé');
+    const isLoggedIn = BrandiaAPI.Auth.isLoggedIn();
+    currentUser = BrandiaAPI.Auth.getUser();
+    
+    if (isLoggedIn && currentUser) {
+      console.log('[Panier] Connecté via BrandiaAPI:', currentUser.email);
+      isSupplier = BrandiaAPI.Auth.isSupplier();
+      return true;
+    }
+  }
+  
+  // Méthode 2: Fallback direct localStorage
+  const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+  console.log('[Panier] Token trouvé:', token ? 'Oui' : 'Non');
+  
+  if (!token) {
+    currentUser = null;
+    isSupplier = false;
+    return false;
+  }
+  
+  const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+  console.log('[Panier] User data trouvée:', userStr ? 'Oui' : 'Non');
+  
+  if (userStr) {
+    try {
+      currentUser = JSON.parse(userStr);
+      isSupplier = currentUser && currentUser.role === 'supplier';
+      console.log('[Panier] Connecté via localStorage:', currentUser.email, '| Role:', currentUser.role);
+      return true;
+    } catch(e) {
+      console.error('[Panier] Erreur parsing user:', e);
+      currentUser = null;
+      isSupplier = false;
+      return false;
+    }
+  }
+  
+  return false;
+}
         }
       }
       
@@ -2259,36 +2275,45 @@
       }
     }
 
-    function proceedToCheckout() {
-      if (cart.items.length === 0) {
-        showToast('Panier vide', 'error');
-        return;
-      }
-      
-      // Vérifier si fournisseur
-      if (isSupplier) {
-        showToast('Les comptes fournisseurs ne peuvent pas passer de commandes', 'error');
-        return;
-      }
-      
-      const isLoggedIn = checkAuth();
-      if (!isLoggedIn) {
-        showToast('Connectez-vous pour continuer', 'info');
-        setTimeout(() => window.location.href = 'login.html?redirect=checkout', 1500);
-        return;
-      }
-      
-      localStorage.setItem('brandia_checkout_cart', JSON.stringify({
-        items: cart.items,
-        discount: cart.discount,
-        totals: {
-          subtotal: parseFloat(document.getElementById('subtotal')?.textContent || 0),
-          total: parseFloat(document.getElementById('total')?.textContent || 0)
-        }
-      }));
-      
-      window.location.href = 'checkout.html';
+   function proceedToCheckout() {
+  console.log('[Panier] Tentative checkout...');
+  
+  if (cart.items.length === 0) {
+    showToast('Panier vide', 'error');
+    return;
+  }
+  
+  // Vérifier si fournisseur
+  if (isSupplier) {
+    showToast('Les comptes fournisseurs ne peuvent pas passer de commandes', 'error');
+    return;
+  }
+  
+  // Vérification explicite du token
+  const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+  const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+  
+  console.log('[Panier] Token présent:', !!token);
+  console.log('[Panier] User présent:', !!userStr);
+  
+  if (!token || !userStr) {
+    showToast('Connectez-vous pour continuer', 'info');
+    setTimeout(() => window.location.href = 'login.html?redirect=checkout', 1500);
+    return;
+  }
+  
+  // Sauvegarder les données de checkout
+  localStorage.setItem('brandia_checkout_cart', JSON.stringify({
+    items: cart.items,
+    discount: cart.discount,
+    totals: {
+      subtotal: parseFloat(document.getElementById('subtotal')?.textContent || 0),
+      total: parseFloat(document.getElementById('total')?.textContent || 0)
     }
+  }));
+  
+  window.location.href = 'checkout.html';
+}
 
     // ==========================================
     // INIT

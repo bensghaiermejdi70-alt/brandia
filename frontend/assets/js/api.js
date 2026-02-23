@@ -18,8 +18,8 @@
 
   // 🔥 CORRECTION: Suppression de l'espace dans l'URL
   const API_BASE = isLocal 
-    ? 'http://localhost:4000' 
-    : 'https://brandia-1.onrender.com';
+  ? 'http://localhost:4000' 
+  : 'https://brandia-1.onrender.com';
 
   const API_BASE_URL = `${API_BASE}/api`;
   const REQUEST_TIMEOUT = 15000;
@@ -232,48 +232,72 @@
     }
   }
 
-  // ============================================
-  // AUTH API
-  // ============================================
+ // ============================================
+// AUTH API
+// ============================================
   
-  const AuthAPI = {
-    login: async (email, password) => {
-      try {
-        const data = await apiFetch('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ email, password })
-        });
+const AuthAPI = {
+  login: async (email, password) => {
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+      
+      if (data.success && data.data) {
+        const token = data.data.accessToken || data.data.token;
+        const user = data.data.user || data.data;
         
-        if (data.success && data.data) {
-          const token = data.data.accessToken || data.data.token;
-          const user = data.data.user || data.data;
-          
-          storage.setToken(token);
-          if (data.data.refreshToken) {
-            localStorage.setItem('refreshToken', data.data.refreshToken);
-          }
-          storage.setUser(user);
+        storage.setToken(token);
+        if (data.data.refreshToken) {
+          localStorage.setItem('refreshToken', data.data.refreshToken);
         }
-        return data;
-      } catch (error) {
-        return { success: false, message: error.message };
+        storage.setUser(user);
       }
-    },
-
-    logout: () => {
-      apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
-      storage.clear();
-      window.location.href = 'index.html';
-    },
-
-    isLoggedIn: () => !!storage.getToken(),
-    getUser: () => storage.getUser(),
-    getRole: () => storage.getUser()?.role || null,
-    isSupplier: () => {
-      const user = storage.getUser();
-      return user && user.role === 'supplier';
+      return data;
+    } catch (error) {
+      return { success: false, message: error.message };
     }
-  };
+  },
+
+  // 🔥 AJOUTER CETTE FONCTION REGISTER MANQUANTE
+  register: async (userData) => {
+    try {
+      const data = await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      });
+      
+      if (data.success && data.data) {
+        const token = data.data.accessToken || data.data.token;
+        const user = data.data.user || data.data;
+        
+        storage.setToken(token);
+        if (data.data.refreshToken) {
+          localStorage.setItem('refreshToken', data.data.refreshToken);
+        }
+        storage.setUser(user);
+      }
+      return data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  logout: () => {
+    apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
+    storage.clear();
+    window.location.href = 'index.html';
+  },
+
+  isLoggedIn: () => !!storage.getToken(),
+  getUser: () => storage.getUser(),
+  getRole: () => storage.getUser()?.role || null,
+  isSupplier: () => {
+    const user = storage.getUser();
+    return user && user.role === 'supplier';
+  }
+};
 
   // ============================================
   // PRODUCTS API
