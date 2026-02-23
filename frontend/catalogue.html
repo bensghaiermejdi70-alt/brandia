@@ -1652,7 +1652,7 @@ const COUNTRIES = {
   'CG': { name: 'Congo', currency: 'XAF' },
   'CD': { name: 'Congo (RDC)', currency: 'CDF' },
   'CR': { name: 'Costa Rica', currency: 'CRC' },
-  'CI': { name: "Côte d'Ivoire", currency: 'XOF' },
+  'CI': { name: 'Cote d'Ivoire', currency: 'XOF' },
   'HR': { name: 'Croatie', currency: 'EUR' },
   'CU': { name: 'Cuba', currency: 'CUP' },
   'CY': { name: 'Chypre', currency: 'EUR' },
@@ -2092,8 +2092,8 @@ window.CatalogueApp = {
         </div>
         ${p.promo_end_date ? `
           <div class="promo-date">
-            <i class="fas fa-clock" style="margin-right: 0.25rem;"></i> Jusqu'au ${new Date(p.promo_end_date).toLocaleDateString('fr-FR')}
-          </div>
+  <i class="fas fa-clock" style="margin-right: 0.25rem;"></i> Jusqu\\'au ${new Date(p.promo_end_date).toLocaleDateString('fr-FR')}
+</div>
         ` : ''}
       </div>
     ` : '';
@@ -2156,7 +2156,7 @@ window.CatalogueApp = {
       updateCartBadge();
     } catch (error) {
       console.error('[CatalogueApp] Erreur ajout panier:', error);
-      showToast('Erreur lors de l\\'ajout', 'error');
+     showToast("Erreur lors de l'ajout", 'error');
     }
   },
   togglePromoOnly: () => {
