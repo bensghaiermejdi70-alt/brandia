@@ -1448,6 +1448,11 @@
         <div class="summary-card">
           <h2 class="summary-title">Récapitulatif</h2>
           
+          <!-- Debug Button (temporaire) -->
+          <button onclick="debugAuth()" style="background: #334155; border: 1px solid #475569; color: #94a3b8; padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; margin-bottom: 1rem; width: 100%; cursor: pointer;">
+            🔍 Debug Auth (cliquez pour voir l'état)
+          </button>
+
           <!-- Supplier Warning -->
           <div class="supplier-warning" id="supplier-warning">
             <div class="supplier-warning-title">
@@ -1567,7 +1572,7 @@
       </div>
 
       <div class="footer-bottom">
-        <p class="footer-footer-copyright">© 2026 Brandia – Marketplace officielle des marques</p>
+        <p class="footer-copyright">© 2026 Brandia – Marketplace officielle des marques</p>
         <div class="footer-payments">
           <i class="fab fa-cc-visa payment-icon"></i>
           <i class="fab fa-cc-mastercard payment-icon"></i>
@@ -1640,55 +1645,74 @@
     // AUTHENTIFICATION & HEADER
     // ==========================================
     
+    function debugAuth() {
+      const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+      const brandiaLoaded = !!window.BrandiaAPI;
+      
+      let user = null;
+      try {
+        user = userStr ? JSON.parse(userStr) : null;
+      } catch(e) {}
+      
+      alert(`État de connexion:
+      
+BrandiaAPI chargé: ${brandiaLoaded ? 'Oui' : 'Non'}
+Token présent: ${token ? 'Oui (longueur: ' + token.length + ')' : 'Non'}
+User présent: ${user ? 'Oui' : 'Non'}
+
+${user ? `Email: ${user.email || 'N/A'}
+Role: ${user.role || 'N/A'}
+Nom: ${user.name || 'N/A'}` : 'Aucun utilisateur connecté'}
+
+LocalStorage keys:
+${Object.keys(localStorage).join(', ')}`);
+    }
+
     function checkAuth() {
-  console.log('[Panier] Vérification authentification...');
-  
-  // Méthode 1: Via BrandiaAPI
-  if (window.BrandiaAPI && BrandiaAPI.Auth) {
-    console.log('[Panier] BrandiaAPI trouvé');
-    const isLoggedIn = BrandiaAPI.Auth.isLoggedIn();
-    currentUser = BrandiaAPI.Auth.getUser();
-    
-    if (isLoggedIn && currentUser) {
-      console.log('[Panier] Connecté via BrandiaAPI:', currentUser.email);
-      isSupplier = BrandiaAPI.Auth.isSupplier();
-      return true;
-    }
-  }
-  
-  // Méthode 2: Fallback direct localStorage
-  const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
-  console.log('[Panier] Token trouvé:', token ? 'Oui' : 'Non');
-  
-  if (!token) {
-    currentUser = null;
-    isSupplier = false;
-    return false;
-  }
-  
-  const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
-  console.log('[Panier] User data trouvée:', userStr ? 'Oui' : 'Non');
-  
-  if (userStr) {
-    try {
-      currentUser = JSON.parse(userStr);
-      isSupplier = currentUser && currentUser.role === 'supplier';
-      console.log('[Panier] Connecté via localStorage:', currentUser.email, '| Role:', currentUser.role);
-      return true;
-    } catch(e) {
-      console.error('[Panier] Erreur parsing user:', e);
-      currentUser = null;
-      isSupplier = false;
-      return false;
-    }
-  }
-  
-  return false;
-}
+      console.log('[Panier] Vérification authentification...');
+      
+      // Méthode 1: Via BrandiaAPI
+      if (window.BrandiaAPI && BrandiaAPI.Auth) {
+        console.log('[Panier] BrandiaAPI trouvé');
+        const isLoggedIn = BrandiaAPI.Auth.isLoggedIn();
+        currentUser = BrandiaAPI.Auth.getUser();
+        
+        if (isLoggedIn && currentUser) {
+          console.log('[Panier] Connecté via BrandiaAPI:', currentUser.email);
+          isSupplier = BrandiaAPI.Auth.isSupplier();
+          return true;
         }
       }
       
-      return !!currentUser;
+      // Méthode 2: Fallback direct localStorage
+      const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+      console.log('[Panier] Token trouvé:', token ? 'Oui' : 'Non');
+      
+      if (!token) {
+        currentUser = null;
+        isSupplier = false;
+        return false;
+      }
+      
+      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+      console.log('[Panier] User data trouvée:', userStr ? 'Oui' : 'Non');
+      
+      if (userStr) {
+        try {
+          currentUser = JSON.parse(userStr);
+          isSupplier = currentUser && currentUser.role === 'supplier';
+          console.log('[Panier] Connecté via localStorage:', currentUser.email, '| Role:', currentUser.role);
+          return true;
+        } catch(e) {
+          console.error('[Panier] Erreur parsing user:', e);
+          currentUser = null;
+          isSupplier = false;
+          return false;
+        }
+      }
+      
+      return false;
     }
 
     function updateHeader() {
@@ -1812,7 +1836,7 @@
     function initCountries() {
       const selector = document.getElementById('countrySelector');
       const countries = {
-         'AF': { name: 'Afghanistan', currency: 'AFN' },
+        'AF': { name: 'Afghanistan', currency: 'AFN' },
       'AL': { name: 'Albanie', currency: 'ALL' },
       'DZ': { name: 'Algérie', currency: 'DZD' },
       'AD': { name: 'Andorre', currency: 'EUR' },
@@ -1853,7 +1877,7 @@
       'CG': { name: 'Congo', currency: 'XAF' },
       'CD': { name: 'Congo (RDC)', currency: 'CDF' },
       'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d\'Ivoire', currency: 'XOF' },
+      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
       'HR': { name: 'Croatie', currency: 'EUR' },
       'CU': { name: 'Cuba', currency: 'CUP' },
       'CY': { name: 'Chypre', currency: 'EUR' },
@@ -2231,9 +2255,6 @@
       
       try {
         // Simulation API - remplacer par vrai appel API si disponible
-        // const response = await BrandiaAPI.Promotions.validate(code);
-        
-        // Simulation pour démo
         const validCodes = {
           'BRANDIA10': { type: 'percentage', value: 10, name: 'Remise 10%' },
           'WELCOME20': { type: 'percentage', value: 20, name: 'Bienvenue 20%' },
@@ -2275,45 +2296,45 @@
       }
     }
 
-   function proceedToCheckout() {
-  console.log('[Panier] Tentative checkout...');
-  
-  if (cart.items.length === 0) {
-    showToast('Panier vide', 'error');
-    return;
-  }
-  
-  // Vérifier si fournisseur
-  if (isSupplier) {
-    showToast('Les comptes fournisseurs ne peuvent pas passer de commandes', 'error');
-    return;
-  }
-  
-  // Vérification explicite du token
-  const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
-  const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
-  
-  console.log('[Panier] Token présent:', !!token);
-  console.log('[Panier] User présent:', !!userStr);
-  
-  if (!token || !userStr) {
-    showToast('Connectez-vous pour continuer', 'info');
-    setTimeout(() => window.location.href = 'login.html?redirect=checkout', 1500);
-    return;
-  }
-  
-  // Sauvegarder les données de checkout
-  localStorage.setItem('brandia_checkout_cart', JSON.stringify({
-    items: cart.items,
-    discount: cart.discount,
-    totals: {
-      subtotal: parseFloat(document.getElementById('subtotal')?.textContent || 0),
-      total: parseFloat(document.getElementById('total')?.textContent || 0)
+    function proceedToCheckout() {
+      console.log('[Panier] Tentative checkout...');
+      
+      if (cart.items.length === 0) {
+        showToast('Panier vide', 'error');
+        return;
+      }
+      
+      // Vérifier si fournisseur
+      if (isSupplier) {
+        showToast('Les comptes fournisseurs ne peuvent pas passer de commandes', 'error');
+        return;
+      }
+      
+      // Vérification explicite du token
+      const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+      
+      console.log('[Panier] Token présent:', !!token);
+      console.log('[Panier] User présent:', !!userStr);
+      
+      if (!token || !userStr) {
+        showToast('Connectez-vous pour continuer', 'info');
+        setTimeout(() => window.location.href = 'login.html?redirect=checkout', 1500);
+        return;
+      }
+      
+      // Sauvegarder les données de checkout
+      localStorage.setItem('brandia_checkout_cart', JSON.stringify({
+        items: cart.items,
+        discount: cart.discount,
+        totals: {
+          subtotal: parseFloat(document.getElementById('subtotal')?.textContent || 0),
+          total: parseFloat(document.getElementById('total')?.textContent || 0)
+        }
+      }));
+      
+      window.location.href = 'checkout.html';
     }
-  }));
-  
-  window.location.href = 'checkout.html';
-}
 
     // ==========================================
     // INIT
@@ -2336,6 +2357,7 @@
     window.applyPromo = applyPromo;
     window.toggleMobileMenu = toggleMobileMenu;
     window.logout = logout;
+    window.debugAuth = debugAuth;
   </script>
 
 </body>
