@@ -1035,15 +1035,37 @@
         });
 
         function checkAuth() {
-            // Simuler vérification auth (remplacer par votre logique)
-            const isLoggedIn = localStorage.getItem('currentUser') !== null;
-            if (!isLoggedIn) {
+            // CORRECTION: Utiliser les mêmes clés que api.js
+            const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+            const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+            
+            console.log('[Checkout] Token:', token ? 'Présent' : 'Absent');
+            console.log('[Checkout] User:', userStr ? 'Présent' : 'Absent');
+            
+            if (!token || !userStr) {
+                console.warn('[Checkout] Utilisateur non connecté');
                 document.getElementById('auth-warning').classList.remove('hidden');
                 document.querySelectorAll('.checkout-card').forEach(card => {
                     card.style.opacity = '0.5';
                     card.style.pointerEvents = 'none';
                 });
+                return false;
             }
+            
+            // Pré-remplir le formulaire avec les infos user
+            try {
+                const user = JSON.parse(userStr);
+                console.log('[Checkout] User data:', user);
+                
+                if (user.email) document.getElementById('email').value = user.email;
+                if (user.first_name) document.getElementById('first-name').value = user.first_name;
+                if (user.last_name) document.getElementById('last-name').value = user.last_name;
+                if (user.phone) document.getElementById('phone').value = user.phone;
+            } catch(e) {
+                console.warn('[Checkout] Erreur parsing user:', e);
+            }
+            
+            return true;
         }
 
         function loadCart() {
@@ -1111,7 +1133,7 @@
                         theme: 'night',
                         variables: {
                             colorPrimary: '#6366f1',
-                            colorBackground: 'transparent',
+                            colorBackground: '#0f172a',  // CORRECTION: Couleur valide au lieu de 'transparent'
                             colorText: '#f8fafc',
                             colorDanger: '#ef4444',
                             borderRadius: '8px'
