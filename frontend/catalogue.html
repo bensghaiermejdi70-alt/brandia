@@ -1833,15 +1833,32 @@ function toggleMobileMenu() {
 // ========== COUNTRIES ==========
 function initCountries() {
   const selector = document.getElementById('countrySelector');
-  const saved = localStorage.getItem('country') || 'FR';
-  selector.innerHTML = Object.entries(COUNTRIES)
-    .sort((a, b) => a[1].name.localeCompare(b[1].name))
-    .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
-    .join('');
-  selector.addEventListener('change', (e) => {
-    localStorage.setItem('country', e.target.value);
-    localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
-  });
+  if (!selector) return;
+  try {
+    const saved = localStorage.getItem('country') || 'TN';
+    const entries = Object.entries(COUNTRIES).sort((a, b) => a[1].name.localeCompare(b[1].name, 'fr'));
+    if (entries.length === 0) {
+      selector.innerHTML = '<option value="TN">🇹🇳 Tunisie</option>';
+      return;
+    }
+    selector.innerHTML = entries
+      .map(([code, c]) => `<option value="${code}" ${code === saved ? 'selected' : ''}>${getFlagEmoji(code)} ${c.name}</option>`)
+      .join('');
+    // Set initial currency
+    if (COUNTRIES[saved]) {
+      localStorage.setItem('currency', COUNTRIES[saved].currency);
+    }
+    selector.addEventListener('change', (e) => {
+      const code = e.target.value;
+      localStorage.setItem('country', code);
+      if (COUNTRIES[code]) {
+        localStorage.setItem('currency', COUNTRIES[code].currency);
+      }
+    });
+  } catch (err) {
+    console.error('[Countries] Erreur:', err);
+    selector.innerHTML = '<option value="TN">🇹🇳 Tunisie</option>';
+  }
 }
 // ========== AUTHENTIFICATION - UTILITAIRES UNIFIÉS ==========
 function getAuthToken() {
@@ -1950,12 +1967,14 @@ window.CatalogueApp = {
   },
   init: async () => {
     console.log('[CatalogueApp] Initialisation...');
+    // Initialiser pays/filtres/auth en premier (synchrone)
     initCountries();
     initFilters();
     initSearch();
     initAuth();
-    await CatalogueApp.loadProducts();
     updateCartBadge();
+    // Charger les produits (asynchrone)
+    await CatalogueApp.loadProducts();
   },
   loadProducts: async () => {
     const container = document.getElementById('products-container');
@@ -1964,40 +1983,58 @@ window.CatalogueApp = {
     if (!category || category === 'null' || category === 'undefined' || category === '') {
       category = null;
     }
+    // Vérification que BrandiaAPI est disponible
+    if (!window.BrandiaAPI || !BrandiaAPI.Products) {
+      console.warn('[CatalogueApp] BrandiaAPI non disponible - vérifiez assets/js/api.js');
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-plug empty-state-icon" style="color: var(--brandia-warning);"></i>
+          <h3>API non disponible</h3>
+          <p>Le fichier <code>assets/js/api.js</code> n'est pas chargé.<br>Vérifiez que le serveur est démarré et que le fichier existe.</p>
+          <button onclick="location.reload()" class="btn-primary" style="margin-top: 1rem;">
+            <i class="fas fa-redo"></i> Réessayer
+          </button>
+        </div>
+      `;
+      document.getElementById('results-count').textContent = 'API non disponible';
+      return;
+    }
     try {
       const params = {};
-      if (category) {
-        params.category = category;
-      }
+      if (category) params.category = category;
       params.limit = 100;
       const response = await BrandiaAPI.Products.getAllWithPromotions(params);
-      if (response.success) {
+      if (response && response.success) {
         const products = response.data?.products || (Array.isArray(response.data) ? response.data : []) || [];
         CatalogueApp.state.allProducts = products;
         CatalogueApp.applyFilters();
       } else {
-        throw new Error(response.message);
+        throw new Error((response && response.message) || 'Réponse invalide');
       }
     } catch (error) {
-      console.error('[CatalogueApp] Erreur:', error);
+      console.error('[CatalogueApp] Erreur getAllWithPromotions:', error);
       try {
         const fallback = await BrandiaAPI.Products.getAll({ limit: 100 });
-        if (fallback.success) {
+        if (fallback && fallback.success) {
           const products = fallback.data?.products || (Array.isArray(fallback.data) ? fallback.data : []) || [];
           CatalogueApp.state.allProducts = products;
           CatalogueApp.applyFilters();
+        } else {
+          throw new Error('Fallback échoué');
         }
       } catch (fallbackError) {
+        console.error('[CatalogueApp] Fallback échoué:', fallbackError);
         container.innerHTML = `
           <div class="empty-state">
             <i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i>
             <h3>Erreur de connexion</h3>
-            <p>Impossible de charger les produits</p>
+            <p>Impossible de charger les produits. Vérifiez votre connexion et que le serveur backend est actif.</p>
             <button onclick="CatalogueApp.loadProducts()" class="btn-primary" style="margin-top: 1rem;">
-              <i class="fas fa-redo mr-2"></i>Réessayer
+              <i class="fas fa-redo"></i> Réessayer
             </button>
           </div>
         `;
+        document.getElementById('results-count').textContent = 'Erreur de chargement';
       }
     }
   },
@@ -2092,7 +2129,7 @@ window.CatalogueApp = {
         </div>
         ${p.promo_end_date ? `
           <div class="promo-date">
-  <i class="fas fa-clock" style="margin-right: 0.25rem;"></i> Jusqu\\'au ${new Date(p.promo_end_date).toLocaleDateString('fr-FR')}
+  <i class="fas fa-clock" style="margin-right: 0.25rem;"></i> Jusqu'au ${new Date(p.promo_end_date).toLocaleDateString('fr-FR')}
 </div>
         ` : ''}
       </div>
@@ -2124,6 +2161,10 @@ window.CatalogueApp = {
     `;
   },
   addToCart: async (productId) => {
+    if (!window.BrandiaAPI || !BrandiaAPI.Products) {
+      showToast("API non disponible", 'error');
+      return;
+    }
     try {
       const response = await BrandiaAPI.Products.getByIdWithPromotion(productId);
       if (!response.success || !response.data.product) {
@@ -2172,6 +2213,10 @@ window.CatalogueApp = {
   loadProductsWithPromoFilter: async () => {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+    if (!window.BrandiaAPI || !BrandiaAPI.Products) {
+      container.innerHTML = '<div class="empty-state"><i class="fas fa-plug empty-state-icon"></i><h3>API non disponible</h3></div>';
+      return;
+    }
     try {
       const params = { promo_only: true, limit: 100 };
       if (CatalogueApp.state.filters.category) {
