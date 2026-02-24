@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.7 CORRIGÉ
-// Fix: Description field + Ad trigger + Upload
+// SUPPLIER CAMPAIGNS MODULE - v5.6 CORRIGÉ
+// Upload Cloudinary fonctionnel + Corrections CTA, Save, Description
 // ============================================
 
 window.SupplierCampaigns = {
@@ -21,7 +21,7 @@ window.SupplierCampaigns = {
   // ==========================================
   
   init: async function() {
-    console.log('[Campaigns] Initializing v5.7...');
+    console.log('[Campaigns] Initializing v5.6...');
     await this.loadProducts();
     await this.loadCampaigns();
     this.initChart();
@@ -197,7 +197,7 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // MODAL & FORMULAIRE - CORRIGÉ v5.7
+  // MODAL & FORMULAIRE - CORRIGÉ
   // ==========================================
   
   openModal: async function(campaignId = null) {
@@ -213,7 +213,7 @@ window.SupplierCampaigns = {
       return;
     }
     
-    // S'assurer que les produits sont chargés
+    // 🔥 S'assurer que les produits sont chargés
     if (!this.state.products || this.state.products.length === 0) {
       console.log('[Campaigns] Products not loaded, loading now...');
       await this.loadProducts();
@@ -262,10 +262,8 @@ window.SupplierCampaigns = {
       }
     }
     
-    // 🔥 CORRECTION CRITIQUE : Attacher les écouteurs pour la preview en temps réel
-    // ET s'assurer que le champ description est éditable
+    // 🔥 AJOUT: Écouteurs pour la preview en temps réel
     this.attachPreviewListeners();
-    this.fixDescriptionField();
     
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -273,73 +271,27 @@ window.SupplierCampaigns = {
     this.updatePreview();
   },
 
-  // 🔥 NOUVELLE MÉTHODE : Fixer le champ description
-  fixDescriptionField: function() {
-    const descField = document.getElementById('campaign-description');
-    if (descField) {
-      // S'assurer que le champ n'est pas disabled/readonly
-      descField.removeAttribute('disabled');
-      descField.removeAttribute('readonly');
-      
-      // Forcer le focus pour tester
-      console.log('[Campaigns] Description field fixed:', {
-        id: descField.id,
-        name: descField.name,
-        disabled: descField.disabled,
-        readOnly: descField.readOnly
-      });
-    } else {
-      console.error('[Campaigns] Description field #campaign-description not found!');
-      // Fallback : chercher par name
-      const fallback = document.querySelector('textarea[name="description"]');
-      if (fallback) {
-        console.log('[Campaigns] Found description by name:', fallback);
-        fallback.id = 'campaign-description';
-        fallback.removeAttribute('disabled');
-        fallback.removeAttribute('readonly');
-      }
-    }
-  },
-
-  // 🔥 NOUVELLE MÉTHODE : Attacher les écouteurs d'événements
+  // 🔥 NOUVELLE MÉTHODE: Attacher les écouteurs d'événements
   attachPreviewListeners: function() {
-    const fields = [
-      { name: 'name', id: null },
-      { name: 'headline', id: null },
-      { name: 'description', id: 'campaign-description' }, // 🔥 Spécifier l'ID
-      { name: 'cta_text', id: null }
-    ];
+    const fields = ['name', 'headline', 'description', 'cta_text'];
     
-    fields.forEach(field => {
-      // Chercher par ID d'abord, puis par name
-      const element = field.id ? document.getElementById(field.id) : this.getFormField(field.name);
-      
-      if (element) {
-        console.log(`[Campaigns] Attaching listener to ${field.name || field.id}`);
-        
-        // Retirer l'ancien écouteur pour éviter les doublons
-        element.removeEventListener('input', this.previewHandler);
-        element.removeEventListener('keyup', this.previewHandler);
-        element.removeEventListener('change', this.previewHandler);
-        
-        // Ajouter les nouveaux écouteurs
-        element.addEventListener('input', () => this.updatePreview());
-        element.addEventListener('keyup', () => this.updatePreview());
-        element.addEventListener('change', () => this.updatePreview());
-      } else {
-        console.warn(`[Campaigns] Field not found:`, field);
+    fields.forEach(fieldName => {
+      const field = this.getFormField(fieldName);
+      if (field) {
+        // Retirer l'ancien écouteur s'il existe (pour éviter les doublons)
+        field.removeEventListener('input', this.previewHandler);
+        // Ajouter le nouvel écouteur
+        field.addEventListener('input', () => this.updatePreview());
       }
     });
   },
 
-  // Handler pour la preview
+  // 🔥 NOUVELLE MÉTHODE: Handler pour la preview (référence pour removeEventListener)
   previewHandler: function() {
-    if (window.SupplierCampaigns) {
-      window.SupplierCampaigns.updatePreview();
-    }
+    window.SupplierCampaigns.updatePreview();
   },
 
-  // 🔥 CORRECTION : getFormField avec fallback par ID
+  // 🔥 CORRECTION: getFormField cherche UNIQUEMENT dans le modal campagne
   getFormField: function(fieldName) {
     const modal = document.getElementById('campaign-modal');
     if (!modal) {
@@ -347,28 +299,10 @@ window.SupplierCampaigns = {
       return null;
     }
     
-    // Chercher par name d'abord
-    let field = modal.querySelector(`[name="${fieldName}"]`);
-    
-    // Fallback par ID pour certains champs
-    if (!field) {
-      const idMap = {
-        'description': 'campaign-description',
-        'start_date': null,
-        'end_date': null
-      };
-      
-      if (idMap[fieldName]) {
-        field = document.getElementById(idMap[fieldName]);
-      }
-    }
-    
+    const field = modal.querySelector(`[name="${fieldName}"]`);
     if (!field) {
       console.warn(`[Campaigns] Field "${fieldName}" not found in campaign modal`);
-    } else {
-      console.log(`[Campaigns] Found field "${fieldName}":`, field.tagName);
     }
-    
     return field;
   },
 
@@ -394,29 +328,11 @@ window.SupplierCampaigns = {
   },
 
   fillFormForEdit: function(campaign) {
-    // Utiliser les IDs spécifiques pour certains champs
-    const fieldMappings = {
-      'name': null,
-      'headline': null,
-      'description': 'campaign-description',
-      'cta_text': null,
-      'start_date': null,
-      'end_date': null
-    };
-    
-    for (const [field, id] of Object.entries(fieldMappings)) {
-      let input;
-      if (id) {
-        input = document.getElementById(id);
-      } else {
-        input = this.getFormField(field);
-      }
-      
-      if (input && campaign[field]) {
-        input.value = campaign[field];
-        console.log(`[Campaigns] Filled ${field} = ${campaign[field].substring(0, 50)}...`);
-      }
-    }
+    const fields = ['name', 'headline', 'description', 'cta_text', 'start_date', 'end_date'];
+    fields.forEach(field => {
+      const input = this.getFormField(field);
+      if (input && campaign[field]) input.value = campaign[field];
+    });
     
     // CTA Link
     if (campaign.cta_link) {
@@ -620,13 +536,13 @@ window.SupplierCampaigns = {
   
   uploadMediaToCloudinary: async function() {
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
-        if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
-            return {
-                url: this.state.uploadedMedia.existingUrl,
-                type: this.state.uploadedMedia.existingType
-            };
-        }
-        return null;
+      if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
+        return {
+          url: this.state.uploadedMedia.existingUrl,
+          type: this.state.uploadedMedia.existingType
+        };
+      }
+      return null;
     }
 
     const file = this.state.uploadedMedia.file;
@@ -638,30 +554,47 @@ window.SupplierCampaigns = {
     formData.append('media', file);
 
     try {
-        this.showLoading(true);
-        
-        // 🔥 UTILISER UploadAPI au lieu de fetch manuel
-        const result = type === 'video' 
-            ? await BrandiaAPI.Upload.uploadVideo(formData)
-            : await BrandiaAPI.Upload.uploadImage(formData);
-        
-        console.log('[Campaigns Upload] Success:', result);
+      this.showLoading(true);
+      
+      const endpoint = type === 'video' ? '/supplier/upload-video' : '/supplier/upload-image';
+      const fullUrl = BrandiaAPI.config.apiURL + endpoint;
+      
+      console.log('[Campaigns Upload] URL:', fullUrl);
 
-        if (result.success) {
-            const mediaUrl = result.data?.url || result.data?.secure_url;
-            if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
-            
-            return { url: mediaUrl, type: type };
-        } else {
-            throw new Error(result.message || 'Erreur upload');
-        }
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: formData
+      });
+
+      console.log('[Campaigns Upload] Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Campaigns Upload] Server error:', errorText);
+        throw new Error('Erreur serveur ' + response.status + ': ' + errorText);
+      }
+
+      const result = await response.json();
+      console.log('[Campaigns Upload] Success:', result);
+
+      if (result.success) {
+        const mediaUrl = result.data?.url || result.data?.secure_url;
+        if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
+        
+        return { url: mediaUrl, type: type };
+      } else {
+        throw new Error(result.message || 'Erreur upload');
+      }
     } catch (error) {
-        console.error('[Campaigns Upload] Error:', error);
-        throw error;
+      console.error('[Campaigns Upload] Error:', error);
+      throw error;
     } finally {
-        this.showLoading(false);
+      this.showLoading(false);
     }
-},
+  },
 
   showLoading: function(show) {
     if (window.showLoading) {
@@ -764,20 +697,12 @@ window.SupplierCampaigns = {
     console.log('[Campaigns] CTA type changed to:', type);
   },
 
-  // 🔥 CORRECTION : updatePreview avec protection et meilleure gestion description
+  // 🔥 CORRECTION: updatePreview avec protection try-catch
   updatePreview: function() {
     try {
-      const nameField = this.getFormField('name');
-      const headlineField = this.getFormField('headline');
-      const descField = document.getElementById('campaign-description') || this.getFormField('description');
-      const ctaField = this.getFormField('cta_text');
-      
-      const name = nameField?.value || '';
-      const headline = headlineField?.value || 'Votre titre';
-      const description = descField?.value || 'Description de votre offre...';
-      const ctaText = ctaField?.value || "Voir l'offre";
-      
-      console.log('[Campaigns] Preview update:', { name, headline: headline.substring(0, 30), description: description.substring(0, 30) });
+      const headline = this.getFormField('headline')?.value || 'Votre titre';
+      const description = this.getFormField('description')?.value || 'Description de votre offre...';
+      const ctaText = this.getFormField('cta_text')?.value || "Voir l'offre";
       
       const headlineEl = document.getElementById('ad-preview-headline');
       const descEl = document.getElementById('ad-preview-desc');
@@ -800,62 +725,55 @@ window.SupplierCampaigns = {
       }
     } catch (error) {
       console.error('[Campaigns] updatePreview error:', error);
+      // Ne pas bloquer la saisie
     }
   },
 
   // ==========================================
-  // SAUVEGARDE CAMPAGNE - v5.7 CORRIGÉ
+  // SAUVEGARDE CAMPAGNE - v5.6 CORRIGÉ
   // ==========================================
   
   save: async function() {
     console.log('[Campaigns] ========== SAVE STARTED ==========');
     
     try {
-      // 🔥 CORRECTION : Récupérer les champs avec fallback ID pour description
+      // 🔥 CORRECTION: Utiliser getFormField pour chercher UNIQUEMENT dans le modal
       const nameField = this.getFormField('name');
       const headlineField = this.getFormField('headline');
-      const descField = document.getElementById('campaign-description') || this.getFormField('description');
       const startDateField = this.getFormField('start_date');
       const endDateField = this.getFormField('end_date');
-      const ctaTextField = this.getFormField('cta_text');
       
-      console.log('[Campaigns] Fields found:', {
+      console.log('[Campaigns] Fields found via getFormField:', {
         name: !!nameField,
         headline: !!headlineField,
-        description: !!descField,
         startDate: !!startDateField,
         endDate: !!endDateField
       });
-
+      
       const name = nameField?.value?.trim();
       const headline = headlineField?.value?.trim();
-      const description = descField?.value?.trim() || ''; // 🔥 Description optionnelle mais fonctionnelle
       const startDate = startDateField?.value;
       const endDate = endDateField?.value;
-      const ctaText = ctaTextField?.value?.trim() || "Voir l'offre";
-
-      console.log('[Campaigns] Values:', { 
-        name, 
-        headline, 
-        description: description.substring(0, 50) + '...',
-        startDate, 
-        endDate 
-      });
+      
+      console.log('[Campaigns] Final values:', { name, headline, startDate, endDate });
 
       // Validation
       if (!name) {
+        console.error('[Campaigns] Validation failed: name empty');
         this.showToast('Le nom de la campagne est requis', 'error');
         nameField?.focus();
         return false;
       }
       
       if (!headline) {
+        console.error('[Campaigns] Validation failed: headline empty');
         this.showToast('Le titre principal est requis', 'error');
         headlineField?.focus();
         return false;
       }
       
       if (!startDate || !endDate) {
+        console.error('[Campaigns] Validation failed: dates empty');
         this.showToast('Les dates de début et fin sont requises', 'error');
         return false;
       }
@@ -869,6 +787,8 @@ window.SupplierCampaigns = {
       const ctaTypeSelect = document.getElementById('cta-link-type');
       const ctaType = ctaTypeSelect?.value || 'product';
       
+      console.log('[Campaigns] CTA type:', ctaType);
+      
       let ctaLink = '';
       let ctaSourceElement = null;
 
@@ -878,6 +798,7 @@ window.SupplierCampaigns = {
       } else {
         ctaSourceElement = document.getElementById('cta-product-select');
         ctaLink = ctaSourceElement?.value;
+        console.log('[Campaigns] Product select value:', ctaLink);
       }
 
       if (!ctaLink) {
@@ -889,11 +810,17 @@ window.SupplierCampaigns = {
       // Produits ciblés
       const targetProducts = [];
       const checkboxes = document.querySelectorAll('input[name^="target_product_"]:checked');
+      console.log('[Campaigns] Target checkboxes found:', checkboxes.length);
+      
       checkboxes.forEach(cb => {
         const productId = parseInt(cb.value);
-        if (!isNaN(productId)) targetProducts.push(productId);
+        if (!isNaN(productId)) {
+          targetProducts.push(productId);
+        }
       });
       
+      console.log('[Campaigns] Target products:', targetProducts);
+
       if (targetProducts.length === 0) {
         this.showToast('Sélectionnez au moins un produit cible', 'error');
         return false;
@@ -904,6 +831,7 @@ window.SupplierCampaigns = {
       let mediaType = this.state.currentMediaType;
 
       if (this.state.uploadedMedia?.isNew) {
+        console.log('[Campaigns] Uploading new media...');
         try {
           this.showLoading(true);
           const uploadResult = await this.uploadMediaToCloudinary();
@@ -932,8 +860,8 @@ window.SupplierCampaigns = {
         media_url: mediaUrl,
         media_type: mediaType,
         headline: headline,
-        description: description, // 🔥 Maintenant fonctionnel
-        cta_text: ctaText,
+        description: this.getFormField('description')?.value?.trim() || '',
+        cta_text: this.getFormField('cta_text')?.value?.trim() || "Voir l'offre",
         cta_link: ctaLink,
         target_products: targetProducts,
         start_date: startDate,
@@ -947,13 +875,17 @@ window.SupplierCampaigns = {
       
       let response;
       if (this.state.editingCampaignId) {
+        console.log('[Campaigns] Updating campaign:', this.state.editingCampaignId);
         response = await BrandiaAPI.Supplier.updateCampaign(this.state.editingCampaignId, campaignData);
       } else {
+        console.log('[Campaigns] Creating new campaign');
         response = await BrandiaAPI.Supplier.createCampaign(campaignData);
       }
       
       this.showLoading(false);
       
+      console.log('[Campaigns] Response:', response);
+
       if (response.success) {
         this.showToast(this.state.editingCampaignId ? 'Campagne mise à jour' : 'Campagne créée avec succès !', 'success');
         this.closeModal();
@@ -988,6 +920,7 @@ window.SupplierCampaigns = {
         throw new Error(response.message);
       }
     } catch (error) {
+      console.error('[Campaigns] Toggle status error:', error);
       this.showToast('Erreur: ' + error.message, 'error');
     }
   },
@@ -1005,6 +938,7 @@ window.SupplierCampaigns = {
         throw new Error(response.message);
       }
     } catch (error) {
+      console.error('[Campaigns] Delete error:', error);
       this.showToast('Erreur: ' + error.message, 'error');
     }
   },
@@ -1044,10 +978,19 @@ window.SupplierCampaigns = {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: true } },
+        plugins: {
+          legend: { display: true }
+        },
         scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#94a3b8' } },
-          x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+            ticks: { color: '#94a3b8' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94a3b8' }
+          }
         }
       }
     });
@@ -1106,11 +1049,21 @@ window.SupplierCampaigns = {
 // ==========================================
 
 window.openCampaignModal = function() {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.openModal();
+  console.log('[Global] openCampaignModal called');
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.openModal();
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
+  }
 };
 
 window.saveCampaign = function() {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.save();
+  console.log('[Global] saveCampaign called');
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.save();
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
+  }
 };
 
 window.closeModal = function(modalId) {
@@ -1126,29 +1079,46 @@ window.closeModal = function(modalId) {
 };
 
 window.toggleCampaignStatus = function(id, status) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleStatus(id, status);
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.toggleStatus(id, status);
+  }
 };
 
 window.deleteCampaign = function(id) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.deleteCampaign(id);
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.deleteCampaign(id);
+  }
 };
 
 window.editCampaign = function(id) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.editCampaign(id);
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.editCampaign(id);
+  }
 };
 
 window.handleCampaignMedia = function(e) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.handleMediaSelect(e);
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.handleMediaSelect(e);
+  }
 };
 
 window.updateAdPreview = function() {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview();
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.updatePreview();
+  }
 };
 
 window.toggleMediaType = function(type) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleMediaType(type);
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.toggleMediaType(type);
+  }
 };
 
 window.handleCtaType = function(type) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.handleCtaType(type);
+  console.log('[Global] handleCtaType called with:', type);
+  if (window.SupplierCampaigns) {
+    window.SupplierCampaigns.handleCtaType(type);
+  } else {
+    console.error('[Global] SupplierCampaigns not found');
+  }
 };
