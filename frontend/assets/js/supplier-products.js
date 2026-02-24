@@ -1,7 +1,6 @@
-
 // ============================================
-// SUPPLIER PRODUCTS MODULE - v4.0 PRODUCTION READY
-// Corrections: CSV robuste avec PapaParse, Upload fiable, Transactions
+// SUPPLIER PRODUCTS MODULE - v4.1 PRODUCTION READY
+// Corrections: Syntaxe JavaScript, CSV robuste avec PapaParse, Upload fiable
 // ============================================
 
 window.SupplierProducts = {
@@ -49,7 +48,7 @@ window.SupplierProducts = {
   // INITIALISATION
   // ==========================================
   init: async function() {
-    console.log('[Products] Initialisation v4.0...');
+    console.log('[Products] Initialisation v4.1...');
     this.loadCategories();
     await this.loadProducts();
     this.setupEventListeners();
@@ -92,7 +91,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // CHARGEMENT DES DONNÉES - CORRIGÉ v4.0
+  // CHARGEMENT DES DONNÉES - CORRIGÉ v4.1
   // ==========================================
   loadProducts: async function() {
     try {
@@ -103,7 +102,7 @@ window.SupplierProducts = {
       console.log('[Products] Réponse API:', response);
 
       if (response.success) {
-        // 🔥 CORRECTION CRITIQUE : Gérer tous les formats de réponse possibles
+        // CORRECTION CRITIQUE : Gérer tous les formats de réponse possibles
         let productsArray = [];
         
         if (response.data && Array.isArray(response.data)) {
@@ -117,7 +116,7 @@ window.SupplierProducts = {
           }
         }
         
-        // 🔥 NOUVEAU : Enrichir avec les promotions actives
+        // Enrichir avec les promotions actives
         this.state.products = await this.enrichWithPromotions(productsArray);
         console.log('[Products] Chargés:', this.state.products.length, 'produits');
         
@@ -136,7 +135,7 @@ window.SupplierProducts = {
     }
   },
 
-  // 🔥 NOUVEAU : Enrichir les produits avec leurs promotions
+  // Enrichir les produits avec leurs promotions
   enrichWithPromotions: async function(products) {
     if (!products || products.length === 0) return products;
     
@@ -206,7 +205,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // RENDU DES PRODUITS - CORRIGÉ v4.0
+  // RENDU DES PRODUITS - CORRIGÉ v4.1
   // ==========================================
   renderProducts: function() {
     const container = document.getElementById('products-grid');
@@ -291,7 +290,7 @@ window.SupplierProducts = {
     const stockClass = stock === 0 ? 'text-red-400 bg-red-900/20' : stock < 5 ? 'text-amber-400 bg-amber-900/20' : 'text-emerald-400 bg-emerald-900/20';
     const stockIcon = stock === 0 ? 'fa-times-circle' : stock < 5 ? 'fa-exclamation-circle' : 'fa-check-circle';
     
-    // 🔥 NOUVEAU : Affichage du prix avec promotion
+    // Affichage du prix avec promotion
     const hasPromo = p.has_promotion && p.final_price < p.original_price;
     const priceDisplay = hasPromo ? 
       `<span class="text-lg font-bold text-emerald-400">${p.final_price.toFixed(2)} €</span>
@@ -463,7 +462,7 @@ window.SupplierProducts = {
   },
 
   deleteProduct: async function(productId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?\\nCette action est irréversible.')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?\nCette action est irréversible.')) return;
 
     try {
       this.showLoading(true);
@@ -512,7 +511,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // MODAL (CREATE / EDIT) - CORRIGÉ v4.0
+  // MODAL (CREATE / EDIT) - CORRIGÉ v4.1
   // ==========================================
   openModal: function(productId = null) {
     this.state.editingId = productId;
@@ -599,7 +598,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // SAUVEGARDE PRODUIT - CORRIGÉE v4.0
+  // SAUVEGARDE PRODUIT - CORRIGÉE v4.1
   // ==========================================
   save: async function() {
     console.log('[Products] ========== SAUVEGARDE DÉMARRÉE ==========');
@@ -708,7 +707,7 @@ window.SupplierProducts = {
   },
 
   handleSaveError: function(error) {
-    let message = 'Erreur lors de l\\'enregistrement';
+    let message = 'Erreur lors de l\'enregistrement';
     
     if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
       if (error.message.includes('sku')) {
@@ -755,7 +754,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // UPLOAD IMAGE - CORRIGÉ v4.0
+  // UPLOAD IMAGE - CORRIGÉ v4.1
   // ==========================================
   handleImageSelect: async function(event) {
     const file = event.target.files[0];
@@ -781,7 +780,7 @@ window.SupplierProducts = {
 
       console.log('[Products Upload] Envoi vers:', BrandiaAPI.config.apiURL + '/supplier/upload-image');
       
-      // 🔥 CORRECTION: Utiliser fetch directement avec retry
+      // Utiliser fetch directement avec retry
       const result = await this.uploadWithRetry(formData);
 
       if (result.success) {
@@ -816,7 +815,7 @@ window.SupplierProducts = {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     
     if (file.size > maxSize) {
-      return { valid: false, message: 'L\\'image ne doit pas dépasser 5MB' };
+      return { valid: false, message: 'L\'image ne doit pas dépasser 5MB' };
     }
     
     if (!allowedTypes.includes(file.type)) {
@@ -925,7 +924,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // IMPORT CSV - CORRIGÉ v4.0 AVEC PAPAPARSE
+  // IMPORT CSV - CORRIGÉ v4.1 AVEC PAPAPARSE
   // ==========================================
   importProducts: function() {
     // Vérifier si PapaParse est chargé
@@ -958,7 +957,7 @@ window.SupplierProducts = {
       this.showLoading(true);
       this.showToast('Analyse du fichier CSV...', 'info');
 
-      // 🔥 NOUVEAU: Utiliser PapaParse pour un parsing robuste
+      // Utiliser PapaParse pour un parsing robuste
       const parseResult = await this.parseCSVWithPapa(file);
       
       if (parseResult.errors.length > 0 && parseResult.data.length === 0) {
@@ -1001,7 +1000,7 @@ window.SupplierProducts = {
         skipEmptyLines: true,
         transformHeader: (header) => {
           // Normaliser les noms de colonnes
-          return header.toLowerCase().trim().replace(/\\s+/g, '_');
+          return header.toLowerCase().trim().replace(/\s+/g, '_');
         },
         transform: (value, field) => {
           // Nettoyer les valeurs
@@ -1214,4 +1213,4 @@ window.duplicateProduct = (id) => window.SupplierProducts.duplicateProduct(id);
 window.removeUploadedImage = () => window.SupplierProducts.removeUploadedImage();
 window.closeProductModal = () => window.SupplierProducts.closeProductModal();
 
-console.log('[SupplierProducts] Module v4.0 PRODUCTION READY chargé');
+console.log('[SupplierProducts] Module v4.1 PRODUCTION READY chargé');

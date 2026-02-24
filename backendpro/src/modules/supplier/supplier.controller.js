@@ -1,5 +1,6 @@
 // ============================================
-// SUPPLIER CONTROLLER - v5.3 CORRIGÉ ET COMPLET
+// SUPPLIER CONTROLLER - v5.4 CORRIGÉ ET COMPLET
+// Corrections: Upload Cloudinary, Gestion des erreurs, Transactions
 // ============================================
 
 const db = require("../../config/db");
@@ -62,7 +63,41 @@ try {
     // Fallback : multer avec stockage local
     try {
         multer = require('multer');
-        const upload = multer({ dest: 'uploads/' });
+        const path = require('path');
+        const fs = require('fs');
+        
+        // Créer le dossier uploads s'il n'existe pas
+        const uploadDir = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        const storage = multer.diskStorage({
+            destination: (req, file, cb) => {
+                cb(null, uploadDir);
+            },
+            filename: (req, file, cb) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+            }
+        });
+        
+        const upload = multer({ 
+            storage: storage,
+            limits: { fileSize: 5 * 1024 * 1024 },
+            fileFilter: (req, file, cb) => {
+                const allowedTypes = /jpeg|jpg|png|gif|webp/;
+                const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+                const mimetype = allowedTypes.test(file.mimetype);
+                
+                if (mimetype && extname) {
+                    return cb(null, true);
+                } else {
+                    cb(new Error('Images uniquement (jpeg, jpg, png, gif, webp)'));
+                }
+            }
+        });
+        
         uploadImageMiddleware = upload.single('media');
         uploadVideoMiddleware = upload.single('media');
         console.log('[Supplier Controller] ✅ Using local storage');
@@ -293,13 +328,26 @@ class SupplierController {
                 return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
             }
             
+            // Déterminer l'URL selon le type de stockage
+            let fileUrl;
+            if (req.file.path) {
+                // Cloudinary
+                fileUrl = req.file.path;
+            } else if (req.file.filename) {
+                // Stockage local
+                fileUrl = `/uploads/${req.file.filename}`;
+            } else {
+                throw new Error('Format de fichier non reconnu');
+            }
+            
             const result = {
                 success: true,
                 data: {
-                    url: req.file.path || `/uploads/${req.file.filename}`,
-                    public_id: req.file.filename,
+                    url: fileUrl,
+                    public_id: req.file.filename || req.file.public_id,
                     format: req.file.format || req.file.mimetype,
-                    size: req.file.size
+                    size: req.file.size,
+                    originalname: req.file.originalname
                 }
             };
             
@@ -317,13 +365,23 @@ class SupplierController {
                 return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
             }
             
+            let fileUrl;
+            if (req.file.path) {
+                fileUrl = req.file.path;
+            } else if (req.file.filename) {
+                fileUrl = `/uploads/${req.file.filename}`;
+            } else {
+                throw new Error('Format de fichier non reconnu');
+            }
+            
             const result = {
                 success: true,
                 data: {
-                    url: req.file.path || `/uploads/${req.file.filename}`,
-                    public_id: req.file.filename,
+                    url: fileUrl,
+                    public_id: req.file.filename || req.file.public_id,
                     format: req.file.format || req.file.mimetype,
-                    size: req.file.size
+                    size: req.file.size,
+                    originalname: req.file.originalname
                 }
             };
             
@@ -353,7 +411,7 @@ class SupplierController {
             const supplierId = supplierResult.rows[0].id;
 
             const result = await db.query(`
-                SELECT id, name, price, stock_quantity, main_image_url, is_active, category_id, slug, description
+                SELECT id, name, price, stock_quantity, main_image_url, is_active, category_id, slug, description, sku, compare_price
                 FROM products 
                 WHERE supplier_id = $1 
                 ORDER BY created_at DESC
@@ -384,16 +442,24 @@ class SupplierController {
             }
             
             const supplierId = supplierResult.rows[0].id;
-            const { name, price, stock_quantity, description, category_id, main_image_url } = req.body;
+            const { name, price, stock_quantity, description, category_id, main_image_url, sku, compare_price } = req.body;
+
+            // Validation des champs obligatoires
+            if (!name || !price) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Le nom et le prix sont obligatoires' 
+                });
+            }
 
             const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
             const timestamp = Date.now();
             const slug = `${baseSlug}-${timestamp}`;
 
             const result = await db.query(
-                `INSERT INTO products (supplier_id, name, price, stock_quantity, description, category_id, main_image_url, is_active, slug, created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, NOW(), NOW()) RETURNING *`,
-                [supplierId, name, price, stock_quantity, description, category_id, main_image_url, slug]
+                `INSERT INTO products (supplier_id, name, price, stock_quantity, description, category_id, main_image_url, is_active, slug, sku, compare_price, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $10, NOW(), NOW()) RETURNING *`,
+                [supplierId, name, price, stock_quantity || 0, description, category_id, main_image_url, slug, sku, compare_price]
             );
 
             res.json({ success: true, data: result.rows[0] });
@@ -426,7 +492,9 @@ class SupplierController {
                 description: req.body.description,
                 category_id: req.body.category_id,
                 is_active: req.body.is_active,
-                main_image_url: req.body.main_image_url
+                main_image_url: req.body.main_image_url,
+                sku: req.body.sku,
+                compare_price: req.body.compare_price
             };
 
             const updates = {};
