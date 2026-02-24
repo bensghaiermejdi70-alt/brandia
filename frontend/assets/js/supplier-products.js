@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER PRODUCTS MODULE - v4.1 PRODUCTION READY
-// Corrections: Syntaxe JavaScript, CSV robuste avec PapaParse, Upload fiable
+// SUPPLIER PRODUCTS MODULE - v4.2 PRODUCTION READY
+// Corrections: Placeholder SVG inline, CSV robuste, Upload fiable
 // ============================================
 
 window.SupplierProducts = {
@@ -19,6 +19,9 @@ window.SupplierProducts = {
     uploadedImage: null,
     importResults: { success: [], errors: [] }
   },
+
+  // Placeholder SVG encodé en base64 pour éviter les 404
+  PLACEHOLDER_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzE1MTkzMiIvPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE1MCwgMTUwKSI+CiAgICA8cGF0aCBkPSJNNTAgMzBjMC0xMS4wNDYgOC45NTQtMjAgMjAtMjBzMjAgOC45NTQgMjAgMjB2MjBINTBWMzB6IiBmaWxsPSIjMzczMCIvPgogICAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iMjAiIGZpbGw9IiM2MzY2ZjEiIG9wYWNpdHk9IjAuMiIvPgogICAgPHBhdGggZD0iTTIwIDgwYzAtMTEuMDQ2IDguOTU0LTIwIDIwLTIwaDYwYzExLjA0NiAwIDIwIDguOTU0IDIwIDIwdjIwSDIwVjgwem0yMC0yMGg2MHYyMEg0MFY2MHoiIGZpbGw9IiM0NzUwNWIiLz4KICA8L2c+CiAgPHRleHQgeD0iNTAlIiB5PSI3NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNiOCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UGFzIGQnaW1hZ2U8L3RleHQ+Cjwvc3ZnPg==',
 
   BRANDIA_CATEGORIES: [
     { id: 1, slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins de la peau', icon: 'fa-spa' },
@@ -48,7 +51,7 @@ window.SupplierProducts = {
   // INITIALISATION
   // ==========================================
   init: async function() {
-    console.log('[Products] Initialisation v4.1...');
+    console.log('[Products] Initialisation v4.2...');
     this.loadCategories();
     await this.loadProducts();
     this.setupEventListeners();
@@ -56,7 +59,6 @@ window.SupplierProducts = {
   },
 
   setupPapaParse: function() {
-    // Vérifier si PapaParse est disponible, sinon charger dynamiquement
     if (typeof Papa === 'undefined') {
       console.log('[Products] Chargement de PapaParse...');
       const script = document.createElement('script');
@@ -91,7 +93,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // CHARGEMENT DES DONNÉES - CORRIGÉ v4.1
+  // CHARGEMENT DES DONNÉES
   // ==========================================
   loadProducts: async function() {
     try {
@@ -102,7 +104,6 @@ window.SupplierProducts = {
       console.log('[Products] Réponse API:', response);
 
       if (response.success) {
-        // CORRECTION CRITIQUE : Gérer tous les formats de réponse possibles
         let productsArray = [];
         
         if (response.data && Array.isArray(response.data)) {
@@ -116,7 +117,6 @@ window.SupplierProducts = {
           }
         }
         
-        // Enrichir avec les promotions actives
         this.state.products = await this.enrichWithPromotions(productsArray);
         console.log('[Products] Chargés:', this.state.products.length, 'produits');
         
@@ -135,12 +135,10 @@ window.SupplierProducts = {
     }
   },
 
-  // Enrichir les produits avec leurs promotions
   enrichWithPromotions: async function(products) {
     if (!products || products.length === 0) return products;
     
     try {
-      // Récupérer toutes les promotions actives en une seule requête
       const promoResponse = await BrandiaAPI.Supplier.getPromotions();
       if (!promoResponse.success || !promoResponse.data) return products;
       
@@ -205,7 +203,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // RENDU DES PRODUITS - CORRIGÉ v4.1
+  // RENDU DES PRODUITS
   // ==========================================
   renderProducts: function() {
     const container = document.getElementById('products-grid');
@@ -290,7 +288,6 @@ window.SupplierProducts = {
     const stockClass = stock === 0 ? 'text-red-400 bg-red-900/20' : stock < 5 ? 'text-amber-400 bg-amber-900/20' : 'text-emerald-400 bg-emerald-900/20';
     const stockIcon = stock === 0 ? 'fa-times-circle' : stock < 5 ? 'fa-exclamation-circle' : 'fa-check-circle';
     
-    // Affichage du prix avec promotion
     const hasPromo = p.has_promotion && p.final_price < p.original_price;
     const priceDisplay = hasPromo ? 
       `<span class="text-lg font-bold text-emerald-400">${p.final_price.toFixed(2)} €</span>
@@ -298,13 +295,16 @@ window.SupplierProducts = {
        <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">-${Math.round((1 - p.final_price/p.original_price) * 100)}%</span>` :
       `<span class="text-xl font-bold text-white">${parseFloat(p.price || 0).toFixed(2)} €</span>`;
 
+    // Utilisation du placeholder inline au lieu du fichier externe
+    const imageUrl = p.main_image_url || this.PLACEHOLDER_IMAGE;
+
     return `
       <div class="card rounded-xl overflow-hidden group hover:border-indigo-500/50 transition-all duration-300 bg-slate-800/50 border border-slate-700">
         <div class="relative aspect-square bg-slate-800 overflow-hidden">
-          <img src="${p.main_image_url || '/assets/images/placeholder-product.png'}" 
+          <img src="${imageUrl}" 
                alt="${p.name || 'Produit'}" 
                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-               onerror="this.src='/assets/images/placeholder-product.png'"
+               onerror="this.src='${this.PLACEHOLDER_IMAGE}'"
                loading="lazy">
           
           ${hasPromo ? '<div class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">PROMO</div>' : ''}
@@ -497,7 +497,6 @@ window.SupplierProducts = {
     const activeProducts = this.state.products.filter(p => p.is_active !== false).length;
     const lowStock = this.state.products.filter(p => (p.stock_quantity || 0) < 5).length;
     
-    // Mettre à jour les statistiques dans le dashboard si les éléments existent
     const statsElements = {
       'stat-total-products': totalProducts,
       'stat-active-products': activeProducts,
@@ -511,7 +510,7 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // MODAL (CREATE / EDIT) - CORRIGÉ v4.1
+  // MODAL (CREATE / EDIT)
   // ==========================================
   openModal: function(productId = null) {
     this.state.editingId = productId;
@@ -531,7 +530,6 @@ window.SupplierProducts = {
 
       if (title) title.textContent = 'Modifier le produit';
       
-      // Remplir tous les champs
       const fields = {
         'product-name': product.name,
         'product-description': product.description || '',
@@ -556,7 +554,6 @@ window.SupplierProducts = {
       const form = document.getElementById('product-form');
       if (form) form.reset();
       
-      // Valeurs par défaut
       const defaults = {
         'product-stock': 10,
         'product-price': ''
@@ -591,14 +588,14 @@ window.SupplierProducts = {
     if (preview && container) {
       preview.src = url;
       preview.onerror = () => {
-        preview.src = '/assets/images/placeholder-product.png';
+        preview.src = this.PLACEHOLDER_IMAGE;
       };
       container.classList.remove('hidden');
     }
   },
 
   // ==========================================
-  // SAUVEGARDE PRODUIT - CORRIGÉE v4.1
+  // SAUVEGARDE PRODUIT
   // ==========================================
   save: async function() {
     console.log('[Products] ========== SAUVEGARDE DÉMARRÉE ==========');
@@ -668,7 +665,6 @@ window.SupplierProducts = {
       sku: document.getElementById('product-sku')?.value?.trim() || null
     };
 
-    // Validation
     if (!fields.name || fields.name.length < 2) {
       this.showToast('Le nom doit contenir au moins 2 caractères', 'error');
       document.getElementById('product-name')?.focus();
@@ -693,7 +689,6 @@ window.SupplierProducts = {
       return null;
     }
 
-    // Gestion de l'image
     if (this.state.uploadedImage?.url) {
       fields.main_image_url = this.state.uploadedImage.url;
     } else if (this.state.editingId) {
@@ -754,13 +749,12 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // UPLOAD IMAGE - CORRIGÉ v4.1
+  // UPLOAD IMAGE
   // ==========================================
   handleImageSelect: async function(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validation
     const validation = this.validateImageFile(file);
     if (!validation.valid) {
       this.showToast(validation.message, 'error');
@@ -771,7 +765,6 @@ window.SupplierProducts = {
     try {
       this.showLoading(true);
       
-      // Compression côté client avant upload
       const compressedFile = await this.compressImage(file);
       console.log('[Products Upload] Original:', file.size, 'Compressed:', compressedFile.size);
       
@@ -780,7 +773,6 @@ window.SupplierProducts = {
 
       console.log('[Products Upload] Envoi vers:', BrandiaAPI.config.apiURL + '/supplier/upload-image');
       
-      // Utiliser fetch directement avec retry
       const result = await this.uploadWithRetry(formData);
 
       if (result.success) {
@@ -811,7 +803,7 @@ window.SupplierProducts = {
   },
 
   validateImageFile: function(file) {
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     
     if (file.size > maxSize) {
@@ -827,7 +819,6 @@ window.SupplierProducts = {
 
   compressImage: function(file) {
     return new Promise((resolve) => {
-      // Si l'image est déjà petite, pas de compression
       if (file.size < 500 * 1024) {
         resolve(file);
         return;
@@ -896,7 +887,7 @@ window.SupplierProducts = {
         console.warn(`[Upload] Tentative ${attempt}/${maxRetries} échouée:`, error.message);
         
         if (attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 1000 * attempt)); // Backoff exponentiel
+          await new Promise(r => setTimeout(r, 1000 * attempt));
         }
       }
     }
@@ -924,10 +915,9 @@ window.SupplierProducts = {
   },
 
   // ==========================================
-  // IMPORT CSV - CORRIGÉ v4.1 AVEC PAPAPARSE
+  // IMPORT CSV
   // ==========================================
   importProducts: function() {
-    // Vérifier si PapaParse est chargé
     if (typeof Papa === 'undefined') {
       this.showToast('Chargement du parser CSV...', 'info');
       setTimeout(() => this.importProducts(), 1000);
@@ -957,7 +947,6 @@ window.SupplierProducts = {
       this.showLoading(true);
       this.showToast('Analyse du fichier CSV...', 'info');
 
-      // Utiliser PapaParse pour un parsing robuste
       const parseResult = await this.parseCSVWithPapa(file);
       
       if (parseResult.errors.length > 0 && parseResult.data.length === 0) {
@@ -970,15 +959,12 @@ window.SupplierProducts = {
         throw new Error('Aucun produit valide trouvé dans le CSV');
       }
 
-      // Validation des données
       const validatedProducts = this.validateCSVProducts(products);
       
       this.showToast(`${validatedProducts.length} produits à importer...`, 'info');
 
-      // Import avec batch processing
       await this.batchImportProducts(validatedProducts);
 
-      // Rapport final
       this.showImportReport();
 
     } catch (error) {
@@ -995,15 +981,13 @@ window.SupplierProducts = {
     return new Promise((resolve) => {
       Papa.parse(file, {
         header: true,
-        delimiter: '', // Auto-detect
+        delimiter: '',
         encoding: 'UTF-8',
         skipEmptyLines: true,
         transformHeader: (header) => {
-          // Normaliser les noms de colonnes
           return header.toLowerCase().trim().replace(/\s+/g, '_');
         },
         transform: (value, field) => {
-          // Nettoyer les valeurs
           return value.trim().replace(/^["']|["']$/g, '');
         },
         complete: (results) => {
@@ -1029,7 +1013,7 @@ window.SupplierProducts = {
     };
 
     return data.map((row, index) => {
-      const product = { source_line: index + 2 }; // +2 pour header et 0-index
+      const product = { source_line: index + 2 };
 
       Object.entries(fieldMappings).forEach(([standardField, possibleNames]) => {
         const foundKey = Object.keys(row).find(key => 
@@ -1081,13 +1065,12 @@ window.SupplierProducts = {
   },
 
   batchImportProducts: async function(products) {
-    const batchSize = 5; // Traiter par lots de 5 pour ne pas surcharger
+    const batchSize = 5;
     const total = products.length;
     
     for (let i = 0; i < total; i += batchSize) {
       const batch = products.slice(i, i + batchSize);
       
-      // Traiter le batch en parallèle avec Promise.allSettled
       const results = await Promise.allSettled(
         batch.map(product => BrandiaAPI.Supplier.createProduct(product))
       );
@@ -1106,11 +1089,9 @@ window.SupplierProducts = {
         }
       });
       
-      // Mettre à jour la progression
       const progress = Math.round(((i + batch.length) / total) * 100);
       this.showToast(`Import: ${progress}%`, 'info');
       
-      // Petit délai entre les batches
       if (i + batchSize < total) {
         await new Promise(r => setTimeout(r, 500));
       }
@@ -1213,4 +1194,4 @@ window.duplicateProduct = (id) => window.SupplierProducts.duplicateProduct(id);
 window.removeUploadedImage = () => window.SupplierProducts.removeUploadedImage();
 window.closeProductModal = () => window.SupplierProducts.closeProductModal();
 
-console.log('[SupplierProducts] Module v4.1 PRODUCTION READY chargé');
+console.log('[SupplierProducts] Module v4.2 PRODUCTION READY chargé');
