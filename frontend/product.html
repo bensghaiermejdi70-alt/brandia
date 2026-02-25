@@ -910,6 +910,30 @@
             transition: width 1s linear;
         }
 
+        /* Image Placeholder Styles */
+        .image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--dark), var(--darker));
+            color: var(--gray);
+            gap: 1rem;
+        }
+
+        .image-placeholder i {
+            font-size: 3rem;
+            opacity: 0.5;
+        }
+
+        .image-placeholder span {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .products-grid {
@@ -1061,9 +1085,13 @@
         <section class="product-section" id="product-section">
             <!-- Product Gallery -->
             <div class="product-gallery">
-                <div class="main-image">
+                <div class="main-image" id="main-image-container">
                     <span class="image-badge" id="discount-badge" style="display: none;">-0%</span>
-                    <img src="" alt="Produit" id="mainImage">
+                    <img src="" alt="Produit" id="mainImage" style="display: none;">
+                    <div class="image-placeholder" id="main-placeholder">
+                        <i class="fas fa-image"></i>
+                        <span>Chargement...</span>
+                    </div>
                 </div>
                 <div class="thumbnail-list" id="thumbnail-list">
                     <!-- Thumbnails injectés dynamiquement -->
@@ -1245,6 +1273,62 @@
         const API_URL = 'https://brandia-1.onrender.com/api';
         
         // ============================================
+        // UTILITAIRES IMAGES ROBUSTES
+        // ============================================
+        
+        // Fallback d'images fiables (plusieurs options)
+        const FALLBACK_IMAGES = [
+            'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWUyOTNiIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==',
+            'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMGYxNzJhIi8+PHN2ZyB4PSI1MCUiIHk9IjUwJSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiM2NDc0OGIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yNCwgLTI0KSI+PHBhdGggZD0iTTIxIDE5VjVjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2MTRjMCAxLjEuOSAyIDIgMmgxNGMxLjEgMCAyLS45IDItMnpNOC41IDEzLjVsMi41IDMuMDFMMTQuNSAxMmw0LjUgNmg1bC02LTgtNC41IDZ6Ii8+PC9zdmc+PC9zdmc+'
+        ];
+        
+        function getFallbackImage(width = 800, height = 800, text = 'No Image') {
+            // Créer un SVG data URI robuste
+            const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#0f172a"/>
+                <rect x="20%" y="40%" width="60%" height="20%" rx="8" fill="#1e293b"/>
+                <text x="50%" y="50%" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#64748b" text-anchor="middle" dy=".3em">${text}</text>
+                <path d="M50 35 L65 50 L55 50 L55 65 L45 65 L45 50 L35 50 Z" fill="#6366f1" opacity="0.5" transform="translate(0, -10)"/>
+            </svg>`;
+            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+        }
+        
+        function validateImageUrl(url) {
+            if (!url || url === 'null' || url === 'undefined' || url.trim() === '') {
+                return null;
+            }
+            // Vérifier si c'est une URL valide
+            try {
+                new URL(url);
+                return url;
+            } catch {
+                // Si ce n'est pas une URL absolue, vérifier si c'est un chemin relatif
+                if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
+                    return url;
+                }
+                return null;
+            }
+        }
+        
+        function createImageWithFallback(src, alt = '', width = 800, height = 800) {
+            const validSrc = validateImageUrl(src);
+            const fallback = getFallbackImage(width, height, alt || 'Image non disponible');
+            return validSrc || fallback;
+        }
+        
+        function handleImageError(img, width = 800, height = 800) {
+            img.onerror = function() {
+                console.warn('Image failed to load:', img.src);
+                img.src = getFallbackImage(width, height, img.alt || 'Image');
+                img.onerror = null; // Éviter la boucle infinie
+            };
+            // Vérifier si l'image est déjà en cache et en erreur
+            if (img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0)) {
+                img.src = getFallbackImage(width, height, img.alt || 'Image');
+            }
+        }
+
+        // ============================================
         // ÉTAT GLOBAL
         // ============================================
         let currentProduct = null;
@@ -1285,34 +1369,60 @@
         // ============================================
         async function loadProductData() {
             try {
+                console.log('Loading product:', currentProductId);
                 const response = await fetch(`${API_URL}/products/${currentProductId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('Product data:', data);
                 
                 if (!data.success || !data.data) {
-                    throw new Error('Produit non trouvé');
+                    throw new Error('Produit non trouvé dans la réponse');
                 }
                 
                 currentProduct = data.data;
+                console.log('Current product:', currentProduct);
+                console.log('Image URL:', currentProduct.main_image_url);
+                
                 renderProduct(currentProduct);
                 loadRelatedProducts(currentProduct.category_id);
                 
             } catch (error) {
                 console.error('Erreur chargement produit:', error);
-                showError('Impossible de charger le produit');
+                showError('Impossible de charger le produit: ' + error.message);
             }
         }
 
         function renderProduct(product) {
-            // Images
+            // Images avec gestion robuste
             const mainImage = document.getElementById('mainImage');
-            mainImage.src = product.main_image_url || 'https://via.placeholder.com/800x800?text=No+Image';
-            mainImage.alt = product.name;
+            const mainPlaceholder = document.getElementById('main-placeholder');
             
-            // Thumbnails (simulés avec la même image pour l'instant)
+            const imageUrl = createImageWithFallback(
+                product.main_image_url, 
+                product.name, 
+                800, 
+                800
+            );
+            
+            mainImage.src = imageUrl;
+            mainImage.alt = product.name;
+            mainImage.style.display = 'block';
+            mainPlaceholder.style.display = 'none';
+            
+            // Gestion d'erreur pour l'image principale
+            handleImageError(mainImage, 800, 800);
+            
+            // Thumbnails (simulés avec la même image pour l'instant, mais avec fallback)
             const thumbnailList = document.getElementById('thumbnail-list');
+            const thumbUrl = createImageWithFallback(product.main_image_url, product.name, 200, 200);
+            
             thumbnailList.innerHTML = `
-                <div class="thumbnail active" onclick="changeImage(this, '${product.main_image_url}')">
-                    <img src="${product.main_image_url || 'https://via.placeholder.com/200'}" alt="Vue 1">
+                <div class="thumbnail active" onclick="changeImage(this, '${imageUrl}')">
+                    <img src="${thumbUrl}" alt="Vue 1" onerror="this.src='${getFallbackImage(200, 200, 'Thumb')}'">
                 </div>
             `;
             
@@ -1340,7 +1450,7 @@
             document.getElementById('product-title').textContent = product.name;
             document.getElementById('product-name-breadcrumb').textContent = product.name;
             document.getElementById('category-name').textContent = product.category_slug || 'Catégorie';
-            document.getElementById('current-price').textContent = `${parseFloat(product.price).toFixed(2)}€`;
+            document.getElementById('current-price').textContent = `${parseFloat(product.price || 0).toFixed(2)}€`;
             document.getElementById('product-description').textContent = product.description || 'Aucune description disponible';
             document.getElementById('tab-description').textContent = product.description || 'Aucune description disponible';
             
@@ -1362,8 +1472,10 @@
             
             // Stock status
             const stockStatus = document.getElementById('stock-status');
-            if (product.stock_quantity > 0) {
-                stockStatus.textContent = `${product.stock_quantity} en stock`;
+            const stockQuantity = parseInt(product.stock_quantity) || 0;
+            
+            if (stockQuantity > 0) {
+                stockStatus.textContent = `${stockQuantity} en stock`;
                 stockStatus.parentElement.querySelector('i').className = 'fas fa-check-circle';
                 stockStatus.parentElement.querySelector('i').style.color = 'var(--success)';
             } else {
@@ -1459,11 +1571,14 @@
                 const hasDiscount = product.compare_price && product.compare_price > product.price;
                 const discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
                 
+                // Utiliser le système de fallback pour les images des produits similaires
+                const productImage = createImageWithFallback(product.main_image_url, product.name, 400, 400);
+                
                 html += `
                     <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                         <div class="product-image">
                             ${hasDiscount ? `<span class="product-badge">-${discount}%</span>` : ''}
-                            <img src="${product.main_image_url || 'https://via.placeholder.com/400'}" alt="${product.name}">
+                            <img src="${productImage}" alt="${product.name}" onerror="this.src='${getFallbackImage(400, 400, product.name)}'">
                             <div class="product-actions-card">
                                 <button class="action-btn" onclick="event.stopPropagation(); toggleFavoriteItem(${product.id})">
                                     <i class="${favorites.includes(product.id) ? 'fas' : 'far'} fa-heart"></i>
@@ -1480,7 +1595,7 @@
                             <div class="product-category-card">${product.category_slug || 'Produit'}</div>
                             <h3 class="product-name">${product.name}</h3>
                             <div class="product-price-card">
-                                <span class="price-current">${parseFloat(product.price).toFixed(2)}€</span>
+                                <span class="price-current">${parseFloat(product.price || 0).toFixed(2)}€</span>
                                 ${hasDiscount ? `<span class="price-old">${parseFloat(product.compare_price).toFixed(2)}€</span>` : ''}
                             </div>
                         </div>
@@ -1496,7 +1611,10 @@
         // ============================================
         function changeImage(thumbnail, src) {
             if (!src) return;
-            document.getElementById('mainImage').src = src;
+            const mainImage = document.getElementById('mainImage');
+            mainImage.src = src;
+            // Réappliquer la gestion d'erreur
+            handleImageError(mainImage, 800, 800);
             document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
             thumbnail.classList.add('active');
         }
@@ -1761,9 +1879,15 @@
                     `;
                     
                     const isVideo = this.campaign.media_type === 'video';
+                    
+                    // Utiliser le fallback pour les images de campagne aussi
+                    const mediaUrl = isVideo 
+                        ? this.campaign.media_url 
+                        : createImageWithFallback(this.campaign.media_url, 'Campaign', 600, 400);
+                    
                     const mediaHtml = isVideo 
-                        ? `<video src="${this.campaign.media_url}" style="width: 100%; height: 100%; object-fit: cover;" muted autoplay loop></video>`
-                        : `<img src="${this.campaign.media_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                        ? `<video src="${mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" muted autoplay loop></video>`
+                        : `<img src="${mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='${getFallbackImage(600, 400, 'Ad')}'">`;
                     
                     overlay.innerHTML = `
                         <div style="
@@ -1937,7 +2061,7 @@
                 },
                 
                 closeAd: function() {
-                    const overlay = document.getElementById('brandia-ad-overlay');
+                    const overlay = document.getElementBy                    const overlay = document.getElementById('brandia-ad-overlay');
                     if (overlay) {
                         overlay.style.animation = 'ad-fade-out 0.3s ease-in';
                         setTimeout(() => {
@@ -1978,6 +2102,33 @@
             // Exposer globalement pour debug
             window.BrandiaAdSystem = AdSystem;
         }
+
+        // ============================================
+        // DEBUG & DIAGNOSTICS
+        // ============================================
+        
+        // Fonction pour tester le chargement d'images
+        function testImageLoading() {
+            console.log('=== IMAGE DEBUG INFO ===');
+            console.log('Current Product:', currentProduct);
+            console.log('Main Image URL:', currentProduct?.main_image_url);
+            console.log('Image Element:', document.getElementById('mainImage'));
+            console.log('Image Natural Size:', document.getElementById('mainImage')?.naturalWidth, 'x', document.getElementById('mainImage')?.naturalHeight);
+            console.log('========================');
+        }
+
+        // Exposer pour debug dans console
+        window.debugProduct = {
+            getProduct: () => currentProduct,
+            getCart: () => cart,
+            getFavorites: () => favorites,
+            testImages: testImageLoading,
+            reload: loadProductData
+        };
+
+        // Log initial pour vérifier que le script charge bien
+        console.log('Product.html loaded successfully');
+        console.log('API_URL:', API_URL);
     </script>
 </body>
 </html>
