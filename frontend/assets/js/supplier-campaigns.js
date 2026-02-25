@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.7 CORRIGÉ
-// Fix: Description field + Ad trigger + Upload
+// SUPPLIER CAMPAIGNS MODULE - v5.8 CORRIGÉ
+// Fix: updated_at SQL + Product targeting + Description field
 // ============================================
 
 window.SupplierCampaigns = {
@@ -21,7 +21,7 @@ window.SupplierCampaigns = {
   // ==========================================
   
   init: async function() {
-    console.log('[Campaigns] Initializing v5.7...');
+    console.log('[Campaigns] Initializing v5.8...');
     await this.loadProducts();
     await this.loadCampaigns();
     this.initChart();
@@ -197,7 +197,7 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // MODAL & FORMULAIRE - CORRIGÉ v5.7
+  // MODAL & FORMULAIRE - CORRIGÉ v5.8
   // ==========================================
   
   openModal: async function(campaignId = null) {
@@ -262,10 +262,8 @@ window.SupplierCampaigns = {
       }
     }
     
-    // 🔥 CORRECTION CRITIQUE : Attacher les écouteurs pour la preview en temps réel
-    // ET s'assurer que le champ description est éditable
+    // Attacher les écouteurs pour la preview en temps réel
     this.attachPreviewListeners();
-    this.fixDescriptionField();
     
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -273,61 +271,30 @@ window.SupplierCampaigns = {
     this.updatePreview();
   },
 
-  // 🔥 NOUVELLE MÉTHODE : Fixer le champ description
-  fixDescriptionField: function() {
-    const descField = document.getElementById('campaign-description');
-    if (descField) {
-      // S'assurer que le champ n'est pas disabled/readonly
-      descField.removeAttribute('disabled');
-      descField.removeAttribute('readonly');
-      
-      // Forcer le focus pour tester
-      console.log('[Campaigns] Description field fixed:', {
-        id: descField.id,
-        name: descField.name,
-        disabled: descField.disabled,
-        readOnly: descField.readOnly
-      });
-    } else {
-      console.error('[Campaigns] Description field #campaign-description not found!');
-      // Fallback : chercher par name
-      const fallback = document.querySelector('textarea[name="description"]');
-      if (fallback) {
-        console.log('[Campaigns] Found description by name:', fallback);
-        fallback.id = 'campaign-description';
-        fallback.removeAttribute('disabled');
-        fallback.removeAttribute('readonly');
-      }
-    }
-  },
-
-  // 🔥 NOUVELLE MÉTHODE : Attacher les écouteurs d'événements
+  // Attacher les écouteurs d'événements
   attachPreviewListeners: function() {
     const fields = [
-      { name: 'name', id: null },
-      { name: 'headline', id: null },
-      { name: 'description', id: 'campaign-description' }, // 🔥 Spécifier l'ID
-      { name: 'cta_text', id: null }
+      { name: 'name' },
+      { name: 'headline' },
+      { name: 'description' }, // Sera trouvé par name
+      { name: 'cta_text' }
     ];
     
     fields.forEach(field => {
-      // Chercher par ID d'abord, puis par name
-      const element = field.id ? document.getElementById(field.id) : this.getFormField(field.name);
+      const element = this.getFormField(field.name);
       
       if (element) {
-        console.log(`[Campaigns] Attaching listener to ${field.name || field.id}`);
+        console.log(`[Campaigns] Attaching listener to ${field.name}`);
         
         // Retirer l'ancien écouteur pour éviter les doublons
         element.removeEventListener('input', this.previewHandler);
         element.removeEventListener('keyup', this.previewHandler);
-        element.removeEventListener('change', this.previewHandler);
         
         // Ajouter les nouveaux écouteurs
         element.addEventListener('input', () => this.updatePreview());
         element.addEventListener('keyup', () => this.updatePreview());
-        element.addEventListener('change', () => this.updatePreview());
       } else {
-        console.warn(`[Campaigns] Field not found:`, field);
+        console.warn(`[Campaigns] Field not found:`, field.name);
       }
     });
   },
@@ -339,37 +306,27 @@ window.SupplierCampaigns = {
     }
   },
 
-  // 🔥 CORRECTION : getFormField avec fallback par ID
+  // 🔥 CORRECTION : getFormField simplifié et robuste
   getFormField: function(fieldName) {
+    // Chercher d'abord dans le modal par name
     const modal = document.getElementById('campaign-modal');
-    if (!modal) {
-      console.error('[Campaigns] Modal not found for getFormField');
-      return null;
+    if (modal) {
+      const byName = modal.querySelector(`[name="${fieldName}"]`);
+      if (byName) return byName;
     }
     
-    // Chercher par name d'abord
-    let field = modal.querySelector(`[name="${fieldName}"]`);
+    // Fallback: chercher globalement par name
+    const global = document.querySelector(`[name="${fieldName}"]`);
+    if (global) return global;
     
-    // Fallback par ID pour certains champs
-    if (!field) {
-      const idMap = {
-        'description': 'campaign-description',
-        'start_date': null,
-        'end_date': null
-      };
-      
-      if (idMap[fieldName]) {
-        field = document.getElementById(idMap[fieldName]);
-      }
+    // Fallback: chercher par ID spécifique pour description
+    if (fieldName === 'description') {
+      const byId = document.getElementById('campaign-description');
+      if (byId) return byId;
     }
     
-    if (!field) {
-      console.warn(`[Campaigns] Field "${fieldName}" not found in campaign modal`);
-    } else {
-      console.log(`[Campaigns] Found field "${fieldName}":`, field.tagName);
-    }
-    
-    return field;
+    console.warn(`[Campaigns] Field "${fieldName}" not found`);
+    return null;
   },
 
   resetUploadUI: function() {
@@ -394,30 +351,25 @@ window.SupplierCampaigns = {
   },
 
   fillFormForEdit: function(campaign) {
-    // Utiliser les IDs spécifiques pour certains champs
-    const fieldMappings = {
-      'name': null,
-      'headline': null,
-      'description': 'campaign-description',
-      'cta_text': null,
-      'start_date': null,
-      'end_date': null
-    };
+    // Utiliser getFormField pour tous les champs
+    const nameField = this.getFormField('name');
+    const headlineField = this.getFormField('headline');
+    const descField = this.getFormField('description');
+    const ctaTextField = this.getFormField('cta_text');
+    const startDateField = this.getFormField('start_date');
+    const endDateField = this.getFormField('end_date');
     
-    for (const [field, id] of Object.entries(fieldMappings)) {
-      let input;
-      if (id) {
-        input = document.getElementById(id);
-      } else {
-        input = this.getFormField(field);
-      }
-      
-      if (input && campaign[field]) {
-        input.value = campaign[field];
-        console.log(`[Campaigns] Filled ${field} = ${campaign[field].substring(0, 50)}...`);
-      }
+    if (nameField && campaign.name) nameField.value = campaign.name;
+    if (headlineField && campaign.headline) headlineField.value = campaign.headline;
+    if (descField && campaign.description) descField.value = campaign.description;
+    if (ctaTextField && campaign.cta_text) ctaTextField.value = campaign.cta_text;
+    if (startDateField && campaign.start_date) {
+      startDateField.value = campaign.start_date.split('T')[0];
     }
-    
+    if (endDateField && campaign.end_date) {
+      endDateField.value = campaign.end_date.split('T')[0];
+    }
+
     // CTA Link
     if (campaign.cta_link) {
       const ctaTypeSelect = document.getElementById('cta-link-type');
@@ -640,7 +592,6 @@ window.SupplierCampaigns = {
     try {
         this.showLoading(true);
         
-        // 🔥 UTILISER UploadAPI au lieu de fetch manuel
         const result = type === 'video' 
             ? await BrandiaAPI.Upload.uploadVideo(formData)
             : await BrandiaAPI.Upload.uploadImage(formData);
@@ -661,7 +612,7 @@ window.SupplierCampaigns = {
     } finally {
         this.showLoading(false);
     }
-},
+  },
 
   showLoading: function(show) {
     if (window.showLoading) {
@@ -764,12 +715,12 @@ window.SupplierCampaigns = {
     console.log('[Campaigns] CTA type changed to:', type);
   },
 
-  // 🔥 CORRECTION : updatePreview avec protection et meilleure gestion description
+  // updatePreview avec protection
   updatePreview: function() {
     try {
       const nameField = this.getFormField('name');
       const headlineField = this.getFormField('headline');
-      const descField = document.getElementById('campaign-description') || this.getFormField('description');
+      const descField = this.getFormField('description');
       const ctaField = this.getFormField('cta_text');
       
       const name = nameField?.value || '';
@@ -777,7 +728,11 @@ window.SupplierCampaigns = {
       const description = descField?.value || 'Description de votre offre...';
       const ctaText = ctaField?.value || "Voir l'offre";
       
-      console.log('[Campaigns] Preview update:', { name, headline: headline.substring(0, 30), description: description.substring(0, 30) });
+      console.log('[Campaigns] Preview update:', { 
+        name, 
+        headline: headline.substring(0, 30), 
+        description: description.substring(0, 30) 
+      });
       
       const headlineEl = document.getElementById('ad-preview-headline');
       const descEl = document.getElementById('ad-preview-desc');
@@ -804,17 +759,17 @@ window.SupplierCampaigns = {
   },
 
   // ==========================================
-  // SAUVEGARDE CAMPAGNE - v5.7 CORRIGÉ
+  // SAUVEGARDE CAMPAGNE - v5.8 CORRIGÉ
   // ==========================================
   
   save: async function() {
     console.log('[Campaigns] ========== SAVE STARTED ==========');
     
     try {
-      // 🔥 CORRECTION : Récupérer les champs avec fallback ID pour description
+      // Récupérer les champs avec getFormField robuste
       const nameField = this.getFormField('name');
       const headlineField = this.getFormField('headline');
-      const descField = document.getElementById('campaign-description') || this.getFormField('description');
+      const descField = this.getFormField('description');
       const startDateField = this.getFormField('start_date');
       const endDateField = this.getFormField('end_date');
       const ctaTextField = this.getFormField('cta_text');
@@ -829,7 +784,7 @@ window.SupplierCampaigns = {
 
       const name = nameField?.value?.trim();
       const headline = headlineField?.value?.trim();
-      const description = descField?.value?.trim() || ''; // 🔥 Description optionnelle mais fonctionnelle
+      const description = descField?.value?.trim() || ''; // Description optionnelle mais fonctionnelle
       const startDate = startDateField?.value;
       const endDate = endDateField?.value;
       const ctaText = ctaTextField?.value?.trim() || "Voir l'offre";
@@ -932,7 +887,7 @@ window.SupplierCampaigns = {
         media_url: mediaUrl,
         media_type: mediaType,
         headline: headline,
-        description: description, // 🔥 Maintenant fonctionnel
+        description: description,
         cta_text: ctaText,
         cta_link: ctaLink,
         target_products: targetProducts,

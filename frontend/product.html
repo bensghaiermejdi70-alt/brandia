@@ -883,6 +883,33 @@
             text-decoration: line-through;
         }
 
+        /* BRANDIA AD SYSTEM STYLES */
+        @keyframes ad-fade-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes ad-fade-out {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.95); }
+        }
+
+        .ad-animate-fade-in {
+            animation: ad-fade-in 0.3s ease-out;
+        }
+
+        .ad-animate-fade-out {
+            animation: ad-fade-out 0.3s ease-in;
+        }
+
+        #brandia-ad-overlay {
+            animation: ad-fade-in 0.3s ease-out;
+        }
+
+        .ad-progress-bar {
+            transition: width 1s linear;
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .products-grid {
@@ -1010,7 +1037,7 @@
                 <a href="products.html">Produits</a>
                 <a href="categories.html">Catégories</a>
                 <a href="deals.html">Offres</a>
-                <a href="supplier-dashboard.html" class="btn-dashboard" id="dashboardBtn" style="display: none;">
+                <a href="supplier/dashboard.html" class="btn-dashboard" id="dashboardBtn" style="display: none;">
                     <i class="fas fa-chart-line"></i> Dashboard
                 </a>
             </nav>
@@ -1020,63 +1047,51 @@
     <!-- Main Content -->
     <main class="main-container">
         <!-- Breadcrumb -->
-        <div class="breadcrumb">
+        <div class="breadcrumb" id="breadcrumb">
             <a href="index.html">Accueil</a>
             <i class="fas fa-chevron-right"></i>
             <a href="categories.html">Catégories</a>
             <i class="fas fa-chevron-right"></i>
-            <a href="#">Électronique</a>
+            <span id="category-name">Chargement...</span>
             <i class="fas fa-chevron-right"></i>
-            <span>Casque Sans Fil Premium</span>
+            <span id="product-name-breadcrumb">Produit</span>
         </div>
 
         <!-- Product Section -->
-        <section class="product-section">
+        <section class="product-section" id="product-section">
             <!-- Product Gallery -->
             <div class="product-gallery">
                 <div class="main-image">
-                    <span class="image-badge">-30%</span>
-                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop" alt="Casque Premium" id="mainImage">
+                    <span class="image-badge" id="discount-badge" style="display: none;">-0%</span>
+                    <img src="" alt="Produit" id="mainImage">
                 </div>
-                <div class="thumbnail-list">
-                    <div class="thumbnail active" onclick="changeImage(this, 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop')">
-                        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop" alt="Vue 1">
-                    </div>
-                    <div class="thumbnail" onclick="changeImage(this, 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800&h=800&fit=crop')">
-                        <img src="https://images.unsplash.com/photo-1484704849700-f032a568e944?w=200&h=200&fit=crop" alt="Vue 2">
-                    </div>
-                    <div class="thumbnail" onclick="changeImage(this, 'https://images.unsplash.com/photo-1524678606372-fa87b88052c7?w=800&h=800&fit=crop')">
-                        <img src="https://images.unsplash.com/photo-1524678606372-fa87b88052c7?w=200&h=200&fit=crop" alt="Vue 3">
-                    </div>
-                    <div class="thumbnail" onclick="changeImage(this, 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800&h=800&fit=crop')">
-                        <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=200&h=200&fit=crop" alt="Vue 4">
-                    </div>
+                <div class="thumbnail-list" id="thumbnail-list">
+                    <!-- Thumbnails injectés dynamiquement -->
                 </div>
             </div>
 
             <!-- Product Info -->
             <div class="product-info">
                 <div class="product-header">
-                    <span class="product-category">Audio Premium</span>
-                    <h1 class="product-title">Casque Sans Fil Premium X-200</h1>
+                    <span class="product-category" id="product-category">Catégorie</span>
+                    <h1 class="product-title" id="product-title">Chargement...</h1>
                     <div class="product-rating">
-                        <span class="stars">
+                        <span class="stars" id="product-stars">
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
-                            <i class="fas fa-star-half-alt"></i>
+                            <i class="fas fa-star"></i>
                         </span>
-                        <span class="rating-text">4.8 (2,847 avis)</span>
+                        <span class="rating-text" id="rating-text">0 avis</span>
                     </div>
                     <div class="product-price">
-                        <span class="current-price">199€</span>
-                        <span class="original-price">299€</span>
-                        <span class="discount-badge">-30%</span>
+                        <span class="current-price" id="current-price">0€</span>
+                        <span class="original-price" id="original-price" style="display: none;">0€</span>
+                        <span class="discount-badge" id="discount-percent" style="display: none;">-0%</span>
                     </div>
-                    <p class="product-description">
-                        Casque sans fil haute fidélité avec réduction de bruit active, autonomie de 40 heures et son immersif 3D. 
-                        Conçu pour les audiophiles exigeants qui ne veulent compromettre ni sur le style ni sur la qualité sonore.
+                    <p class="product-description" id="product-description">
+                        Chargement de la description...
                     </p>
                 </div>
 
@@ -1098,24 +1113,8 @@
                     </div>
                 </div>
 
-                <div class="variants-section">
-                    <div class="variant-group">
-                        <span class="variant-label">Couleur</span>
-                        <div class="color-options">
-                            <button class="color-btn active" style="background: #1a1a1a;" title="Noir" onclick="selectColor(this)"></button>
-                            <button class="color-btn" style="background: #e8e8e8;" title="Blanc" onclick="selectColor(this)"></button>
-                            <button class="color-btn" style="background: #6366f1;" title="Bleu" onclick="selectColor(this)"></button>
-                            <button class="color-btn" style="background: #ec4899;" title="Rose" onclick="selectColor(this)"></button>
-                        </div>
-                    </div>
-                    <div class="variant-group">
-                        <span class="variant-label">Mémoire</span>
-                        <div class="variant-options">
-                            <button class="variant-btn active">64GB</button>
-                            <button class="variant-btn">128GB</button>
-                            <button class="variant-btn">256GB</button>
-                        </div>
-                    </div>
+                <div class="variants-section" id="variants-section" style="display: none;">
+                    <!-- Variants injectés dynamiquement si disponibles -->
                 </div>
 
                 <div class="product-actions">
@@ -1128,12 +1127,12 @@
                         </div>
                     </div>
                     <div class="action-buttons">
-                        <button class="btn-primary" onclick="addToCart()">
+                        <button class="btn-primary" onclick="addToCart()" id="add-to-cart-btn">
                             <i class="fas fa-shopping-cart"></i>
                             Ajouter au panier
                         </button>
-                        <button class="btn-secondary">
-                            <i class="far fa-heart"></i>
+                        <button class="btn-secondary" onclick="toggleFavorite()">
+                            <i class="far fa-heart" id="favorite-icon"></i>
                             Favoris
                         </button>
                     </div>
@@ -1142,7 +1141,7 @@
                 <div class="trust-badges">
                     <div class="trust-item">
                         <i class="fas fa-check-circle"></i>
-                        <span>Stock disponible</span>
+                        <span id="stock-status">Stock disponible</span>
                     </div>
                     <div class="trust-item">
                         <i class="fas fa-lock"></i>
@@ -1161,60 +1160,30 @@
             <div class="tabs-header">
                 <button class="tab-btn active" onclick="switchTab('description')">Description</button>
                 <button class="tab-btn" onclick="switchTab('specs')">Spécifications</button>
-                <button class="tab-btn" onclick="switchTab('reviews')">Avis (2,847)</button>
+                <button class="tab-btn" onclick="switchTab('reviews')">Avis</button>
                 <button class="tab-btn" onclick="switchTab('shipping')">Livraison</button>
             </div>
 
             <div id="description" class="tab-content active">
                 <h3 style="margin-bottom: 1rem; color: var(--light);">Description du produit</h3>
-                <p style="color: var(--gray); line-height: 1.8; margin-bottom: 1.5rem;">
-                    Le Casque Sans Fil Premium X-200 représente l'excellence en matière d'audio portable. 
-                    Doté de la dernière technologie de réduction de bruit active, il vous permet de vous 
-                    immerger totalement dans votre musique, où que vous soyez.
+                <p style="color: var(--gray); line-height: 1.8; margin-bottom: 1.5rem;" id="tab-description">
+                    Chargement...
                 </p>
-                <ul style="color: var(--gray); line-height: 2; margin-left: 1.5rem;">
-                    <li>Réduction de bruit active adaptive avec 3 modes</li>
-                    <li>Autonomie exceptionnelle de 40 heures</li>
-                    <li>Charge rapide : 5 min = 3 heures d'écoute</li>
-                    <li>Audio haute résolution certifié</li>
-                    <li>Connectivité multipoint Bluetooth 5.3</li>
-                    <li>Application dédiée avec égaliseur personnalisable</li>
-                </ul>
             </div>
 
             <div id="specs" class="tab-content">
-                <div class="specs-grid">
+                <div class="specs-grid" id="specs-grid">
                     <div class="spec-item">
-                        <span class="spec-label">Type</span>
-                        <span class="spec-value">Circum-aural</span>
+                        <span class="spec-label">Référence</span>
+                        <span class="spec-value" id="spec-sku">-</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Connectivité</span>
-                        <span class="spec-value">Bluetooth 5.3, NFC</span>
+                        <span class="spec-label">Catégorie</span>
+                        <span class="spec-value" id="spec-category">-</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Autonomie</span>
-                        <span class="spec-value">40 heures (ANC on)</span>
-                    </div>
-                    <div class="spec-item">
-                        <span class="spec-label">Poids</span>
-                        <span class="spec-value">250g</span>
-                    </div>
-                    <div class="spec-item">
-                        <span class="spec-label">Fréquence</span>
-                        <span class="spec-value">4Hz - 40kHz</span>
-                    </div>
-                    <div class="spec-item">
-                        <span class="spec-label">Impedance</span>
-                        <span class="spec-value">32 Ohms</span>
-                    </div>
-                    <div class="spec-item">
-                        <span class="spec-label">Codecs</span>
-                        <span class="spec-value">LDAC, aptX HD, AAC</span>
-                    </div>
-                    <div class="spec-item">
-                        <span class="spec-label">Garantie</span>
-                        <span class="spec-value">2 ans</span>
+                        <span class="spec-label">Disponibilité</span>
+                        <span class="spec-value" id="spec-stock">-</span>
                     </div>
                 </div>
             </div>
@@ -1222,52 +1191,18 @@
             <div id="reviews" class="tab-content">
                 <div class="reviews-summary">
                     <div class="rating-big">
-                        <div class="rating-number">4.8</div>
-                        <div class="rating-stars">
+                        <div class="rating-number" id="rating-number">0.0</div>
+                        <div class="rating-stars" id="rating-stars-big">
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
-                            <i class="fas fa-star-half-alt"></i>
+                            <i class="fas fa-star"></i>
                         </div>
-                        <div class="rating-count">2,847 avis vérifiés</div>
+                        <div class="rating-count" id="rating-count">0 avis</div>
                     </div>
-                    <div class="rating-bars">
-                        <div class="rating-bar">
-                            <span class="bar-label">5 étoiles</span>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width: 85%;"></div>
-                            </div>
-                            <span class="bar-value">85%</span>
-                        </div>
-                        <div class="rating-bar">
-                            <span class="bar-label">4 étoiles</span>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width: 10%;"></div>
-                            </div>
-                            <span class="bar-value">10%</span>
-                        </div>
-                        <div class="rating-bar">
-                            <span class="bar-label">3 étoiles</span>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width: 3%;"></div>
-                            </div>
-                            <span class="bar-value">3%</span>
-                        </div>
-                        <div class="rating-bar">
-                            <span class="bar-label">2 étoiles</span>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width: 1%;"></div>
-                            </div>
-                            <span class="bar-value">1%</span>
-                        </div>
-                        <div class="rating-bar">
-                            <span class="bar-label">1 étoile</span>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width: 1%;"></div>
-                            </div>
-                            <span class="bar-value">1%</span>
-                        </div>
+                    <div class="rating-bars" id="rating-bars">
+                        <!-- Bars injectées dynamiquement -->
                     </div>
                 </div>
             </div>
@@ -1295,128 +1230,277 @@
         <section class="related-section">
             <div class="section-header">
                 <h2 class="section-title">Produits similaires</h2>
-                <a href="products.html" class="view-all">Voir tout <i class="fas fa-arrow-right"></i></a>
+                <a href="catalogue.html" class="view-all">Voir tout <i class="fas fa-arrow-right"></i></a>
             </div>
-            <div class="products-grid">
-                <div class="product-card">
-                    <div class="product-image">
-                        <span class="product-badge">-20%</span>
-                        <img src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&h=400&fit=crop" alt="Produit 1">
-                        <div class="product-actions-card">
-                            <button class="action-btn"><i class="far fa-heart"></i></button>
-                            <button class="action-btn"><i class="fas fa-eye"></i></button>
-                            <button class="action-btn"><i class="fas fa-shopping-cart"></i></button>
-                        </div>
-                    </div>
-                    <div class="product-info-card">
-                        <div class="product-category-card">Audio</div>
-                        <h3 class="product-name">Écouteurs Pro Wireless</h3>
-                        <div class="product-price-card">
-                            <span class="price-current">149€</span>
-                            <span class="price-old">189€</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-image">
-                        <span class="product-badge">Nouveau</span>
-                        <img src="https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop" alt="Produit 2">
-                        <div class="product-actions-card">
-                            <button class="action-btn"><i class="far fa-heart"></i></button>
-                            <button class="action-btn"><i class="fas fa-eye"></i></button>
-                            <button class="action-btn"><i class="fas fa-shopping-cart"></i></button>
-                        </div>
-                    </div>
-                    <div class="product-info-card">
-                        <div class="product-category-card">Audio</div>
-                        <h3 class="product-name">Enceinte Portable 360°</h3>
-                        <div class="product-price-card">
-                            <span class="price-current">79€</span>
-                            <span class="price-old">99€</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-image">
-                        <span class="product-badge">-15%</span>
-                        <img src="https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop" alt="Produit 3">
-                        <div class="product-actions-card">
-                            <button class="action-btn"><i class="far fa-heart"></i></button>
-                            <button class="action-btn"><i class="fas fa-eye"></i></button>
-                            <button class="action-btn"><i class="fas fa-shopping-cart"></i></button>
-                        </div>
-                    </div>
-                    <div class="product-info-card">
-                        <div class="product-category-card">Audio</div>
-                        <h3 class="product-name">Casque Gaming RGB</h3>
-                        <div class="product-price-card">
-                            <span class="price-current">129€</span>
-                            <span class="price-old">149€</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-image">
-                        <img src="https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?w=400&h=400&fit=crop" alt="Produit 4">
-                        <div class="product-actions-card">
-                            <button class="action-btn"><i class="far fa-heart"></i></button>
-                            <button class="action-btn"><i class="fas fa-eye"></i></button>
-                            <button class="action-btn"><i class="fas fa-shopping-cart"></i></button>
-                        </div>
-                    </div>
-                    <div class="product-info-card">
-                        <div class="product-category-card">Accessoires</div>
-                        <h3 class="product-name">Support Casque Premium</h3>
-                        <div class="product-price-card">
-                            <span class="price-current">39€</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="products-grid" id="related-products">
+                <!-- Produits similaires injectés dynamiquement -->
             </div>
         </section>
     </main>
 
     <script>
-        // Loader
-        window.addEventListener('load', () => {
+        // ============================================
+        // CONFIGURATION API
+        // ============================================
+        const API_URL = 'https://brandia-1.onrender.com/api';
+        
+        // ============================================
+        // ÉTAT GLOBAL
+        // ============================================
+        let currentProduct = null;
+        let currentProductId = null;
+        let cart = JSON.parse(localStorage.getItem('brandia_cart')) || [];
+        let favorites = JSON.parse(localStorage.getItem('brandia_favorites')) || [];
+
+        // ============================================
+        // INITIALISATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Récupérer l'ID du produit depuis l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            currentProductId = urlParams.get('id');
+            
+            if (!currentProductId) {
+                showError('Produit non trouvé');
+                return;
+            }
+
+            // Charger les données
+            await loadProductData();
+            
+            // Cacher le loader
             setTimeout(() => {
                 document.getElementById('loader').classList.add('hidden');
             }, 500);
+
+            // Vérifier si utilisateur est fournisseur
+            checkUserRole();
+            
+            // Initialiser le système de publicité
+            initAdSystem();
         });
 
-        // Check if user is supplier and show dashboard button
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const dashboardBtn = document.getElementById('dashboardBtn');
-        
-        if (currentUser && currentUser.role === 'supplier') {
-            dashboardBtn.style.display = 'flex';
+        // ============================================
+        // CHARGEMENT PRODUIT
+        // ============================================
+        async function loadProductData() {
+            try {
+                const response = await fetch(`${API_URL}/products/${currentProductId}`);
+                const data = await response.json();
+                
+                if (!data.success || !data.data) {
+                    throw new Error('Produit non trouvé');
+                }
+                
+                currentProduct = data.data;
+                renderProduct(currentProduct);
+                loadRelatedProducts(currentProduct.category_id);
+                
+            } catch (error) {
+                console.error('Erreur chargement produit:', error);
+                showError('Impossible de charger le produit');
+            }
         }
 
-        // Change main image
+        function renderProduct(product) {
+            // Images
+            const mainImage = document.getElementById('mainImage');
+            mainImage.src = product.main_image_url || 'https://via.placeholder.com/800x800?text=No+Image';
+            mainImage.alt = product.name;
+            
+            // Thumbnails (simulés avec la même image pour l'instant)
+            const thumbnailList = document.getElementById('thumbnail-list');
+            thumbnailList.innerHTML = `
+                <div class="thumbnail active" onclick="changeImage(this, '${product.main_image_url}')">
+                    <img src="${product.main_image_url || 'https://via.placeholder.com/200'}" alt="Vue 1">
+                </div>
+            `;
+            
+            // Badge réduction
+            const discountBadge = document.getElementById('discount-badge');
+            const originalPrice = document.getElementById('original-price');
+            const discountPercent = document.getElementById('discount-percent');
+            
+            if (product.compare_price && product.compare_price > product.price) {
+                const discount = Math.round(((product.compare_price - product.price) / product.compare_price) * 100);
+                discountBadge.textContent = `-${discount}%`;
+                discountBadge.style.display = 'block';
+                originalPrice.textContent = `${parseFloat(product.compare_price).toFixed(2)}€`;
+                originalPrice.style.display = 'inline';
+                discountPercent.textContent = `-${discount}%`;
+                discountPercent.style.display = 'inline';
+            } else {
+                discountBadge.style.display = 'none';
+                originalPrice.style.display = 'none';
+                discountPercent.style.display = 'none';
+            }
+            
+            // Informations produit
+            document.getElementById('product-category').textContent = product.category_slug || 'Produit';
+            document.getElementById('product-title').textContent = product.name;
+            document.getElementById('product-name-breadcrumb').textContent = product.name;
+            document.getElementById('category-name').textContent = product.category_slug || 'Catégorie';
+            document.getElementById('current-price').textContent = `${parseFloat(product.price).toFixed(2)}€`;
+            document.getElementById('product-description').textContent = product.description || 'Aucune description disponible';
+            document.getElementById('tab-description').textContent = product.description || 'Aucune description disponible';
+            
+            // Rating
+            const rating = parseFloat(product.rating) || 0;
+            const reviewsCount = product.reviews_count || 0;
+            renderStars(rating);
+            document.getElementById('rating-text').textContent = `${reviewsCount} avis`;
+            
+            // Rating détaillé dans l'onglet avis
+            document.getElementById('rating-number').textContent = rating.toFixed(1);
+            document.getElementById('rating-count').textContent = `${reviewsCount} avis vérifiés`;
+            renderRatingBars(rating, reviewsCount);
+            
+            // Spécifications
+            document.getElementById('spec-sku').textContent = product.sku || `PRD-${product.id}`;
+            document.getElementById('spec-category').textContent = product.category_slug || '-';
+            document.getElementById('spec-stock').textContent = product.stock_quantity > 0 ? 'En stock' : 'Rupture de stock';
+            
+            // Stock status
+            const stockStatus = document.getElementById('stock-status');
+            if (product.stock_quantity > 0) {
+                stockStatus.textContent = `${product.stock_quantity} en stock`;
+                stockStatus.parentElement.querySelector('i').className = 'fas fa-check-circle';
+                stockStatus.parentElement.querySelector('i').style.color = 'var(--success)';
+            } else {
+                stockStatus.textContent = 'Rupture de stock';
+                stockStatus.parentElement.querySelector('i').className = 'fas fa-times-circle';
+                stockStatus.parentElement.querySelector('i').style.color = '#ef4444';
+                document.getElementById('add-to-cart-btn').disabled = true;
+                document.getElementById('add-to-cart-btn').style.opacity = '0.5';
+                document.getElementById('add-to-cart-btn').textContent = 'Indisponible';
+            }
+            
+            // Favoris
+            updateFavoriteIcon();
+        }
+
+        function renderStars(rating) {
+            const starsContainer = document.getElementById('product-stars');
+            let html = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= Math.floor(rating)) {
+                    html += '<i class="fas fa-star"></i>';
+                } else if (i === Math.ceil(rating) && !Number.isInteger(rating)) {
+                    html += '<i class="fas fa-star-half-alt"></i>';
+                } else {
+                    html += '<i class="far fa-star"></i>';
+                }
+            }
+            starsContainer.innerHTML = html;
+            
+            // Big stars
+            const bigStars = document.getElementById('rating-stars-big');
+            bigStars.innerHTML = html;
+        }
+
+        function renderRatingBars(rating, count) {
+            const container = document.getElementById('rating-bars');
+            // Distribution simulée basée sur la note moyenne
+            const distribution = calculateDistribution(rating);
+            
+            let html = '';
+            for (let i = 5; i >= 1; i--) {
+                const percentage = distribution[i-1];
+                html += `
+                    <div class="rating-bar">
+                        <span class="bar-label">${i} étoiles</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: ${percentage}%;"></div>
+                        </div>
+                        <span class="bar-value">${Math.round(percentage)}%</span>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function calculateDistribution(average) {
+            // Simulation basée sur la note moyenne
+            if (average >= 4.5) return [85, 10, 3, 1, 1];
+            if (average >= 4.0) return [60, 25, 10, 3, 2];
+            if (average >= 3.5) return [40, 30, 20, 7, 3];
+            if (average >= 3.0) return [25, 25, 30, 15, 5];
+            return [10, 15, 25, 30, 20];
+        }
+
+        // ============================================
+        // PRODUITS SIMILAIRES
+        // ============================================
+        async function loadRelatedProducts(categoryId) {
+            try {
+                const response = await fetch(`${API_URL}/products?category=${categoryId}&limit=4`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const products = Array.isArray(data.data) ? data.data : (data.data.products || []);
+                    const filtered = products.filter(p => p.id != currentProductId).slice(0, 4);
+                    renderRelatedProducts(filtered);
+                }
+            } catch (error) {
+                console.error('Erreur produits similaires:', error);
+            }
+        }
+
+        function renderRelatedProducts(products) {
+            const container = document.getElementById('related-products');
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p style="color: var(--gray); text-align: center;">Aucun produit similaire</p>';
+                return;
+            }
+            
+            let html = '';
+            products.forEach(product => {
+                const hasDiscount = product.compare_price && product.compare_price > product.price;
+                const discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
+                
+                html += `
+                    <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
+                        <div class="product-image">
+                            ${hasDiscount ? `<span class="product-badge">-${discount}%</span>` : ''}
+                            <img src="${product.main_image_url || 'https://via.placeholder.com/400'}" alt="${product.name}">
+                            <div class="product-actions-card">
+                                <button class="action-btn" onclick="event.stopPropagation(); toggleFavoriteItem(${product.id})">
+                                    <i class="${favorites.includes(product.id) ? 'fas' : 'far'} fa-heart"></i>
+                                </button>
+                                <button class="action-btn" onclick="event.stopPropagation(); quickView(${product.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn" onclick="event.stopPropagation(); addToCartItem(${product.id})">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="product-info-card">
+                            <div class="product-category-card">${product.category_slug || 'Produit'}</div>
+                            <h3 class="product-name">${product.name}</h3>
+                            <div class="product-price-card">
+                                <span class="price-current">${parseFloat(product.price).toFixed(2)}€</span>
+                                ${hasDiscount ? `<span class="price-old">${parseFloat(product.compare_price).toFixed(2)}€</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // ============================================
+        // INTERACTIONS UTILISATEUR
+        // ============================================
         function changeImage(thumbnail, src) {
+            if (!src) return;
             document.getElementById('mainImage').src = src;
             document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
             thumbnail.classList.add('active');
         }
 
-        // Select color
-        function selectColor(btn) {
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-
-        // Variant buttons
-        document.querySelectorAll('.variant-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                this.parentElement.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-
-        // Quantity update
         function updateQty(change) {
             const input = document.getElementById('qtyInput');
             let value = parseInt(input.value) + change;
@@ -1425,9 +1509,28 @@
             }
         }
 
-        // Add to cart
         function addToCart() {
-            const btn = document.querySelector('.btn-primary');
+            if (!currentProduct) return;
+            
+            const qty = parseInt(document.getElementById('qtyInput').value);
+            const existingItem = cart.find(item => item.id === currentProduct.id);
+            
+            if (existingItem) {
+                existingItem.quantity += qty;
+            } else {
+                cart.push({
+                    id: currentProduct.id,
+                    name: currentProduct.name,
+                    price: currentProduct.price,
+                    image: currentProduct.main_image_url,
+                    quantity: qty
+                });
+            }
+            
+            localStorage.setItem('brandia_cart', JSON.stringify(cart));
+            
+            // Feedback visuel
+            const btn = document.getElementById('add-to-cart-btn');
             const originalContent = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
             btn.style.background = 'linear-gradient(135deg, var(--success), #059669)';
@@ -1436,17 +1539,130 @@
                 btn.innerHTML = originalContent;
                 btn.style.background = '';
             }, 2000);
+            
+            // Mettre à jour le compteur panier si présent
+            updateCartCount();
         }
 
-        // Tab switching
+        function addToCartItem(productId) {
+            // Pour les produits similaires
+            fetch(`${API_URL}/products/${productId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const product = data.data;
+                        const existingItem = cart.find(item => item.id === product.id);
+                        if (existingItem) {
+                            existingItem.quantity += 1;
+                        } else {
+                            cart.push({
+                                id: product.id,
+                                name: product.name,
+                                price: product.price,
+                                image: product.main_image_url,
+                                quantity: 1
+                            });
+                        }
+                        localStorage.setItem('brandia_cart', JSON.stringify(cart));
+                        updateCartCount();
+                        showToast('Produit ajouté au panier');
+                    }
+                });
+        }
+
+        function toggleFavorite() {
+            if (!currentProduct) return;
+            
+            const index = favorites.indexOf(currentProduct.id);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(currentProduct.id);
+            }
+            
+            localStorage.setItem('brandia_favorites', JSON.stringify(favorites));
+            updateFavoriteIcon();
+        }
+
+        function toggleFavoriteItem(productId) {
+            const index = favorites.indexOf(productId);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(productId);
+            }
+            localStorage.setItem('brandia_favorites', JSON.stringify(favorites));
+            loadRelatedProducts(currentProduct.category_id); // Refresh pour mettre à jour l'icône
+        }
+
+        function updateFavoriteIcon() {
+            if (!currentProduct) return;
+            const icon = document.getElementById('favorite-icon');
+            const isFavorite = favorites.includes(currentProduct.id);
+            icon.className = isFavorite ? 'fas fa-heart' : 'far fa-heart';
+            icon.style.color = isFavorite ? 'var(--secondary)' : '';
+        }
+
+        function quickView(productId) {
+            window.location.href = `product.html?id=${productId}`;
+        }
+
         function switchTab(tabName) {
-            // Update buttons
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
-            // Update content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
+        }
+
+        function updateCartCount() {
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            // Mettre à jour l'icône panier dans le header si présente
+            const cartBadge = document.querySelector('.cart-badge');
+            if (cartBadge) cartBadge.textContent = count;
+        }
+
+        function checkUserRole() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const dashboardBtn = document.getElementById('dashboardBtn');
+            
+            if (currentUser && currentUser.role === 'supplier') {
+                dashboardBtn.style.display = 'flex';
+            }
+        }
+
+        function showError(message) {
+            document.querySelector('.main-container').innerHTML = `
+                <div style="text-align: center; padding: 4rem 2rem;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                    <h2 style="color: var(--light); margin-bottom: 1rem;">${message}</h2>
+                    <a href="index.html" style="color: var(--primary); text-decoration: none;">Retour à l'accueil</a>
+                </div>
+            `;
+            document.getElementById('loader').classList.add('hidden');
+        }
+
+        function showToast(message) {
+            // Créer un toast simple
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                background: var(--success);
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
 
         // Header scroll effect
@@ -1458,6 +1674,310 @@
                 header.style.background = 'rgba(15, 23, 42, 0.8)';
             }
         });
+
+        // ============================================
+        // BRANDIA AD SYSTEM - v2.0
+        // Système de publicité contextuelle
+        // ============================================
+        function initAdSystem() {
+            const AdSystem = {
+                campaign: null,
+                supplierId: null,
+                productId: currentProductId,
+                shownThisSession: false,
+                
+                init: async function() {
+                    if (!this.productId) {
+                        console.log('[AdSystem] No product ID found');
+                        return;
+                    }
+                    
+                    console.log('[AdSystem] Initializing for product:', this.productId);
+                    await this.loadCampaign();
+                },
+                
+                loadCampaign: async function() {
+                    try {
+                        // Vérifier si déjà montré cette session
+                        const sessionKey = `ad_shown_${this.productId}`;
+                        if (sessionStorage.getItem(sessionKey)) {
+                            console.log('[AdSystem] Already shown this session');
+                            return;
+                        }
+                        
+                        // Attendre que le produit soit chargé pour avoir le supplier_id
+                        if (!currentProduct || !currentProduct.supplier_id) {
+                            setTimeout(() => this.loadCampaign(), 500);
+                            return;
+                        }
+                        
+                        this.supplierId = currentProduct.supplier_id;
+                        
+                        const url = `${API_URL}/public/campaigns?supplier=${this.supplierId}&product=${this.productId}`;
+                        console.log('[AdSystem] Fetching:', url);
+                        
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        
+                        if (data.success && data.data) {
+                            this.campaign = data.data;
+                            console.log('[AdSystem] Campaign found:', this.campaign.name);
+                            
+                            // Vérifier si ce produit est dans les cibles
+                            const targetProducts = this.campaign.target_products || [];
+                            const isTargeted = targetProducts.includes(parseInt(this.productId)) || 
+                                             targetProducts.length === 0; // Si pas de cible spécifique, tous les produits du supplier sont ciblés
+                            
+                            if (isTargeted) {
+                                this.showAd();
+                            } else {
+                                console.log('[AdSystem] Product not in campaign targets');
+                            }
+                        } else {
+                            console.log('[AdSystem] No active campaign for this product');
+                        }
+                        
+                    } catch (error) {
+                        console.error('[AdSystem] Error:', error);
+                    }
+                },
+                
+                showAd: function() {
+                    if (this.shownThisSession) return;
+                    
+                    // Créer l'overlay
+                    const overlay = document.createElement('div');
+                    overlay.id = 'brandia-ad-overlay';
+                    overlay.style.cssText = `
+                        position: fixed;
+                        inset: 0;
+                        z-index: 9999;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: rgba(0, 0, 0, 0.85);
+                        backdrop-filter: blur(8px);
+                        animation: ad-fade-in 0.3s ease-out;
+                    `;
+                    
+                    const isVideo = this.campaign.media_type === 'video';
+                    const mediaHtml = isVideo 
+                        ? `<video src="${this.campaign.media_url}" style="width: 100%; height: 100%; object-fit: cover;" muted autoplay loop></video>`
+                        : `<img src="${this.campaign.media_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    
+                    overlay.innerHTML = `
+                        <div style="
+                            position: relative;
+                            width: 90%;
+                            max-width: 600px;
+                            background: #0f172a;
+                            border-radius: 20px;
+                            overflow: hidden;
+                            border: 1px solid rgba(255,255,255,0.1);
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                        ">
+                            <!-- Header -->
+                            <div style="
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                                padding: 1rem 1.5rem;
+                                border-bottom: 1px solid rgba(255,255,255,0.1);
+                                background: rgba(255,255,255,0.02);
+                            ">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-ad" style="color: #6366f1; font-size: 0.9rem;"></i>
+                                    <span style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        Contenu proposé par ${currentProduct.supplier_name || 'la marque'}
+                                    </span>
+                                </div>
+                                <button id="ad-close-btn" style="
+                                    width: 32px;
+                                    height: 32px;
+                                    border: none;
+                                    background: rgba(255,255,255,0.1);
+                                    color: white;
+                                    border-radius: 50%;
+                                    cursor: pointer;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    transition: all 0.2s;
+                                " onmouseover="this.style.background='rgba(239,68,68,0.8)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Media -->
+                            <div style="position: relative; aspect-ratio: 16/9; background: #000;">
+                                ${mediaHtml}
+                                ${isVideo ? `
+                                    <div style="
+                                        position: absolute;
+                                        bottom: 1rem;
+                                        left: 1rem;
+                                        right: 1rem;
+                                    ">
+                                        <div style="
+                                            height: 4px;
+                                            background: rgba(255,255,255,0.2);
+                                            border-radius: 2px;
+                                            overflow: hidden;
+                                        ">
+                                            <div id="ad-progress" style="
+                                                height: 100%;
+                                                background: linear-gradient(90deg, #ec4899, #8b5cf6);
+                                                width: 100%;
+                                                transition: width 1s linear;
+                                            "></div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Content -->
+                            <div style="padding: 1.5rem;">
+                                <h3 style="
+                                    font-size: 1.5rem;
+                                    font-weight: 700;
+                                    color: white;
+                                    margin-bottom: 0.5rem;
+                                    line-height: 1.3;
+                                ">${this.campaign.headline}</h3>
+                                <p style="
+                                    color: #94a3b8;
+                                    margin-bottom: 1.5rem;
+                                    line-height: 1.6;
+                                ">${this.campaign.description || ''}</p>
+                                <a href="${this.campaign.cta_link || '#'}" 
+                                   id="ad-cta-btn"
+                                   style="
+                                    display: inline-flex;
+                                    align-items: center;
+                                    gap: 0.5rem;
+                                    padding: 0.875rem 1.5rem;
+                                    background: linear-gradient(135deg, #ec4899, #8b5cf6);
+                                    color: white;
+                                    text-decoration: none;
+                                    border-radius: 12px;
+                                    font-weight: 600;
+                                    transition: all 0.3s;
+                                    box-shadow: 0 10px 30px -10px rgba(236, 72, 153, 0.4);
+                                " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    ${this.campaign.cta_text || "Voir l'offre"}
+                                    <i class="fas fa-arrow-right" style="font-size: 0.9rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(overlay);
+                    document.body.style.overflow = 'hidden';
+                    
+                    // Track view
+                    this.trackView();
+                    
+                    // Marquer comme montré
+                    const sessionKey = `ad_shown_${this.productId}`;
+                    sessionStorage.setItem(sessionKey, 'true');
+                    this.shownThisSession = true;
+                    
+                    // Auto-close après 15s pour vidéos
+                    let autoCloseTimer;
+                    let progressInterval;
+                    
+                    if (isVideo) {
+                        const progressBar = document.getElementById('ad-progress');
+                        let progress = 100;
+                        const duration = 15; // secondes
+                        const step = 100 / duration;
+                        
+                        progressInterval = setInterval(() => {
+                            progress -= step;
+                            if (progressBar) progressBar.style.width = progress + '%';
+                            if (progress <= 0) {
+                                clearInterval(progressInterval);
+                                this.closeAd();
+                            }
+                        }, 1000);
+                        
+                        autoCloseTimer = setTimeout(() => this.closeAd(), duration * 1000);
+                    }
+                    
+                    // Event listeners
+                    document.getElementById('ad-close-btn').addEventListener('click', () => {
+                        clearTimeout(autoCloseTimer);
+                        clearInterval(progressInterval);
+                        this.closeAd();
+                    });
+                    
+                    document.getElementById('ad-cta-btn').addEventListener('click', () => {
+                        this.trackClick();
+                    });
+                    
+                    // Fermer en cliquant sur le backdrop
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            clearTimeout(autoCloseTimer);
+                            clearInterval(progressInterval);
+                            this.closeAd();
+                        }
+                    });
+                    
+                    // Escape key
+                    const escapeHandler = (e) => {
+                        if (e.key === 'Escape') {
+                            clearTimeout(autoCloseTimer);
+                            clearInterval(progressInterval);
+                            this.closeAd();
+                            document.removeEventListener('keydown', escapeHandler);
+                        }
+                    };
+                    document.addEventListener('keydown', escapeHandler);
+                },
+                
+                closeAd: function() {
+                    const overlay = document.getElementById('brandia-ad-overlay');
+                    if (overlay) {
+                        overlay.style.animation = 'ad-fade-out 0.3s ease-in';
+                        setTimeout(() => {
+                            overlay.remove();
+                            document.body.style.overflow = '';
+                        }, 300);
+                    }
+                },
+                
+                trackView: async function() {
+                    try {
+                        await fetch(`${API_URL}/public/campaigns/view`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ campaign_id: this.campaign.id })
+                        });
+                    } catch (e) {
+                        console.error('[AdSystem] Track view error:', e);
+                    }
+                },
+                
+                trackClick: async function() {
+                    try {
+                        await fetch(`${API_URL}/public/campaigns/click`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ campaign_id: this.campaign.id })
+                        });
+                    } catch (e) {
+                        console.error('[AdSystem] Track click error:', e);
+                    }
+                }
+            };
+            
+            // Démarrer
+            AdSystem.init();
+            
+            // Exposer globalement pour debug
+            window.BrandiaAdSystem = AdSystem;
+        }
     </script>
 </body>
 </html>
