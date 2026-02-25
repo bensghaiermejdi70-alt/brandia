@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Produit - Brandia</title>
+<meta name="description" content="Découvrez ce produit sur Brandia">
 
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -63,6 +64,7 @@ font-family: 'Inter', system-ui, sans-serif;
 background-color: var(--brandia-darker);
 color: var(--brandia-text);
 line-height: 1.6;
+overflow-x: hidden;
 }
 
 .container {
@@ -121,12 +123,30 @@ background-clip: text;
 -webkit-text-fill-color: transparent;
 }
 
+/* Breadcrumb */
+.breadcrumb {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+padding: 1.5rem 0;
+color: var(--brandia-text-muted);
+font-size: 0.875rem;
+}
+
+.breadcrumb a {
+color: var(--brandia-text-muted);
+text-decoration: none;
+transition: color 0.2s;
+}
+
+.breadcrumb a:hover { color: var(--brandia-text); }
+
 /* Product Section */
 .product-section {
 display: grid;
 grid-template-columns: 1fr;
 gap: 3rem;
-padding: 3rem 0;
+padding: 2rem 0;
 }
 
 @media (min-width: 1024px) {
@@ -160,6 +180,32 @@ height: 100%;
 object-fit: cover;
 }
 
+.thumbnail-list {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 1rem;
+}
+
+.thumbnail {
+aspect-ratio: 1;
+background: var(--brandia-card);
+border: 2px solid var(--brandia-border);
+border-radius: 12px;
+overflow: hidden;
+cursor: pointer;
+transition: all 0.3s;
+}
+
+.thumbnail:hover, .thumbnail.active {
+border-color: var(--brandia-primary);
+}
+
+.thumbnail img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
 /* Product Info */
 .product-info {
 display: flex;
@@ -183,14 +229,19 @@ font-weight: 800;
 line-height: 1.2;
 }
 
+@media (min-width: 768px) {
+.product-title { font-size: 2.5rem; }
+}
+
 .product-price {
 display: flex;
 align-items: baseline;
 gap: 1rem;
+flex-wrap: wrap;
 }
 
 .current-price {
-font-size: 2.5rem;
+font-size: 2rem;
 font-weight: 800;
 background: var(--brandia-gradient);
 -webkit-background-clip: text;
@@ -198,8 +249,12 @@ background-clip: text;
 -webkit-text-fill-color: transparent;
 }
 
+@media (min-width: 768px) {
+.current-price { font-size: 2.5rem; }
+}
+
 .original-price {
-font-size: 1.5rem;
+font-size: 1.25rem;
 color: var(--brandia-text-muted);
 text-decoration: line-through;
 }
@@ -210,6 +265,7 @@ color: white;
 padding: 0.3rem 0.8rem;
 border-radius: 50px;
 font-weight: 700;
+font-size: 0.875rem;
 }
 
 .product-description {
@@ -217,7 +273,97 @@ color: var(--brandia-text-muted);
 line-height: 1.8;
 }
 
-/* Buttons */
+/* Product Meta */
+.product-meta {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 1rem;
+padding: 1.5rem;
+background: var(--brandia-card);
+border: 1px solid var(--brandia-border);
+border-radius: 16px;
+}
+
+.meta-item {
+text-align: center;
+}
+
+.meta-item i {
+font-size: 1.5rem;
+color: var(--brandia-primary);
+margin-bottom: 0.5rem;
+}
+
+.meta-label {
+display: block;
+font-size: 0.85rem;
+color: var(--brandia-text-muted);
+margin-bottom: 0.3rem;
+}
+
+.meta-value {
+font-weight: 700;
+color: var(--brandia-text);
+}
+
+/* Quantity & Actions */
+.product-actions {
+display: flex;
+flex-direction: column;
+gap: 1.5rem;
+padding-top: 1.5rem;
+border-top: 1px solid var(--brandia-border);
+}
+
+.quantity-selector {
+display: flex;
+align-items: center;
+gap: 1rem;
+}
+
+.quantity-label {
+font-weight: 600;
+}
+
+.quantity-control {
+display: flex;
+align-items: center;
+background: var(--brandia-card);
+border: 1px solid var(--brandia-border);
+border-radius: 12px;
+overflow: hidden;
+}
+
+.qty-btn {
+width: 45px;
+height: 45px;
+background: transparent;
+border: none;
+color: var(--brandia-text);
+cursor: pointer;
+transition: all 0.3s;
+font-size: 1.2rem;
+}
+
+.qty-btn:hover { background: var(--brandia-primary); }
+
+.qty-input {
+width: 60px;
+height: 45px;
+background: transparent;
+border: none;
+color: var(--brandia-text);
+text-align: center;
+font-weight: 700;
+font-size: 1.1rem;
+}
+
+.action-buttons {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 1rem;
+}
+
 .btn-primary {
 background: var(--brandia-gradient);
 color: white;
@@ -235,8 +381,207 @@ gap: 0.5rem;
 }
 
 .btn-primary:hover {
-transform: translateY(-2px);
-box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+transform: translateY(-3px);
+box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:disabled {
+opacity: 0.5;
+cursor: not-allowed;
+transform: none;
+}
+
+.btn-secondary {
+background: var(--brandia-card);
+color: var(--brandia-text);
+padding: 1rem 2rem;
+border: 2px solid var(--brandia-border);
+border-radius: 12px;
+font-weight: 700;
+font-size: 1.1rem;
+cursor: pointer;
+transition: all 0.3s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+border-color: var(--brandia-secondary);
+color: var(--brandia-secondary);
+}
+
+/* Trust Badges */
+.trust-badges {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 1rem;
+padding: 1.5rem;
+background: var(--brandia-card);
+border-radius: 16px;
+border: 1px solid var(--brandia-border);
+}
+
+.trust-item {
+display: flex;
+align-items: center;
+gap: 0.8rem;
+font-size: 0.875rem;
+color: var(--brandia-text-muted);
+}
+
+.trust-item i {
+color: var(--brandia-success);
+font-size: 1.2rem;
+}
+
+/* Tabs */
+.tabs-section { margin-top: 4rem; }
+
+.tabs-header {
+display: flex;
+gap: 2rem;
+border-bottom: 1px solid var(--brandia-border);
+margin-bottom: 2rem;
+overflow-x: auto;
+}
+
+.tab-btn {
+padding: 1rem 0;
+background: transparent;
+border: none;
+color: var(--brandia-text-muted);
+font-weight: 600;
+cursor: pointer;
+position: relative;
+transition: all 0.3s;
+white-space: nowrap;
+}
+
+.tab-btn.active { color: var(--brandia-primary); }
+
+.tab-btn::after {
+content: '';
+position: absolute;
+bottom: -1px;
+left: 0;
+width: 0;
+height: 3px;
+background: var(--brandia-gradient);
+transition: width 0.3s;
+}
+
+.tab-btn.active::after { width: 100%; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Specs Grid */
+.specs-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+.specs-grid { grid-template-columns: 1fr; }
+}
+
+.spec-item {
+display: flex;
+justify-content: space-between;
+padding: 1rem;
+background: var(--brandia-card);
+border-radius: 12px;
+border: 1px solid var(--brandia-border);
+}
+
+.spec-label { color: var(--brandia-text-muted); }
+.spec-value { font-weight: 600; }
+
+/* Related Products */
+.related-section { margin-top: 6rem; }
+
+.section-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 2rem;
+flex-wrap: wrap;
+gap: 1rem;
+}
+
+.section-title { font-size: 1.5rem; font-weight: 800; }
+
+.view-all {
+color: var(--brandia-primary);
+text-decoration: none;
+font-weight: 600;
+display: flex;
+align-items: center;
+gap: 0.5rem;
+}
+
+.view-all:hover { color: var(--brandia-secondary); }
+
+.products-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 2rem;
+}
+
+@media (min-width: 768px) {
+.products-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.product-card {
+background: var(--brandia-card);
+border: 1px solid var(--brandia-border);
+border-radius: 20px;
+overflow: hidden;
+transition: all 0.4s;
+cursor: pointer;
+}
+
+.product-card:hover {
+transform: translateY(-10px);
+border-color: var(--brandia-primary);
+}
+
+.product-image-card {
+position: relative;
+aspect-ratio: 1;
+overflow: hidden;
+}
+
+.product-image-card img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+transition: transform 0.5s;
+}
+
+.product-card:hover .product-image-card img { transform: scale(1.1); }
+
+.product-info-card { padding: 1.5rem; }
+
+.product-name-card {
+font-size: 1rem;
+font-weight: 700;
+margin-bottom: 0.5rem;
+}
+
+.product-price-card {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+}
+
+.price-current-card {
+font-size: 1.25rem;
+font-weight: 800;
+color: var(--brandia-primary);
 }
 
 /* Loader */
@@ -256,9 +601,7 @@ border-radius: 50%;
 animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Error State */
 .error-state {
@@ -280,15 +623,12 @@ display: flex;
 flex-direction: column;
 align-items: center;
 justify-content: center;
-background: linear-gradient(135deg, var(--brandia-card) 0%, var(--brandia-darker) 100%);
+background: linear-gradient(135deg, var(--brandia-card), var(--brandia-darker));
 color: var(--brandia-text-muted);
 gap: 1rem;
 }
 
-.image-placeholder i {
-font-size: 4rem;
-opacity: 0.5;
-}
+.image-placeholder i { font-size: 3rem; opacity: 0.5; }
 
 /* Toast */
 .toast {
@@ -310,6 +650,69 @@ z-index: 1000;
 @keyframes slideIn {
 from { transform: translateX(100%); opacity: 0; }
 to { transform: translateX(0); opacity: 1; }
+}
+
+/* Video Ad Overlay */
+.video-ad-overlay {
+position: fixed;
+inset: 0;
+background: rgba(0, 0, 0, 0.9);
+z-index: 9999;
+display: none;
+align-items: center;
+justify-content: center;
+}
+
+.video-ad-overlay.active { display: flex; }
+
+.video-ad-container {
+position: relative;
+width: 90%;
+max-width: 800px;
+background: var(--brandia-card);
+border-radius: 20px;
+overflow: hidden;
+}
+
+.video-ad-close {
+position: absolute;
+top: 1rem;
+right: 1rem;
+background: rgba(0, 0, 0, 0.7);
+color: white;
+border: none;
+width: 40px;
+height: 40px;
+border-radius: 50%;
+cursor: pointer;
+z-index: 10;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.video-ad-content {
+position: relative;
+}
+
+.video-ad-info {
+padding: 1.5rem;
+}
+
+.video-ad-progress {
+position: absolute;
+bottom: 0;
+left: 0;
+right: 0;
+height: 4px;
+background: rgba(255, 255, 255, 0.3);
+}
+
+.video-ad-progress-bar {
+height: 100%;
+background: var(--brandia-primary);
+width: 0%;
+transition: width 0.1s linear;
 }
 </style>
 </head>
@@ -338,12 +741,94 @@ to { transform: translateX(0); opacity: 1; }
 
 <!-- Main Content -->
 <main class="container">
-<div id="product-container">
-<div class="loader">
+<!-- Breadcrumb -->
+<nav class="breadcrumb" id="breadcrumb">
+<a href="index.html">Accueil</a>
+<i class="fas fa-chevron-right text-xs"></i>
+<a href="catalogue.html">Catalogue</a>
+<i class="fas fa-chevron-right text-xs"></i>
+<span id="breadcrumb-category">Chargement...</span>
+<i class="fas fa-chevron-right text-xs"></i>
+<span id="breadcrumb-product">Produit</span>
+</nav>
+
+<!-- Product Section -->
+<section class="product-section" id="product-section">
+<div class="loader" id="product-loader">
 <div class="spinner"></div>
 </div>
+</section>
+
+<!-- Tabs Section -->
+<section class="tabs-section" id="tabs-section" style="display: none;">
+<div class="tabs-header">
+<button class="tab-btn active" onclick="switchTab('description')">Description</button>
+<button class="tab-btn" onclick="switchTab('specs')">Spécifications</button>
+<button class="tab-btn" onclick="switchTab('reviews')">Avis</button>
+<button class="tab-btn" onclick="switchTab('shipping')">Livraison</button>
 </div>
+
+<div id="description" class="tab-content active">
+<h3 style="margin-bottom: 1rem;">Description du produit</h3>
+<p id="tab-description" style="color: var(--brandia-text-muted); line-height: 1.8;"></p>
+</div>
+
+<div id="specs" class="tab-content">
+<div class="specs-grid" id="specs-grid"></div>
+</div>
+
+<div id="reviews" class="tab-content">
+<div style="text-align: center; padding: 2rem;">
+<i class="fas fa-star" style="font-size: 3rem; color: var(--brandia-primary); margin-bottom: 1rem;"></i>
+<p style="color: var(--brandia-text-muted);">Avis clients en cours de chargement</p>
+</div>
+</div>
+
+<div id="shipping" class="tab-content">
+<div class="specs-grid">
+<div class="spec-item">
+<span class="spec-label">Standard</span>
+<span class="spec-value">3-5 jours (Gratuit)</span>
+</div>
+<div class="spec-item">
+<span class="spec-label">Express</span>
+<span class="spec-value">1-2 jours (9.99€)</span>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Related Products -->
+<section class="related-section" id="related-section" style="display: none;">
+<div class="section-header">
+<h2 class="section-title">Produits similaires</h2>
+<a href="catalogue.html" class="view-all">Voir tout <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="products-grid" id="related-products"></div>
+</section>
 </main>
+
+<!-- Video Ad Overlay -->
+<div class="video-ad-overlay" id="video-ad-overlay">
+<div class="video-ad-container">
+<button class="video-ad-close" onclick="VideoAd.close()">
+<i class="fas fa-times"></i>
+</button>
+<div class="video-ad-content">
+<video id="video-ad-player" class="w-full" muted playsinline></video>
+<div class="video-ad-progress">
+<div class="video-ad-progress-bar" id="video-ad-progress"></div>
+</div>
+</div>
+<div class="video-ad-info">
+<h4 id="video-ad-brand" style="font-weight: 700; margin-bottom: 0.5rem;"></h4>
+<p id="video-ad-headline" style="color: var(--brandia-text-muted); font-size: 0.875rem;"></p>
+</div>
+</div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
 
 <script>
 // ============================================
@@ -357,25 +842,56 @@ const DEFAULT_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ
 // ============================================
 let currentProduct = null;
 let currentProductId = null;
+let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
+
+// ============================================
+// UTILITAIRES IMAGES
+// ============================================
+function getFallbackImage(width = 800, height = 800, text = 'Image') {
+const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+<rect width="100%" height="100%" fill="#1e293b"/>
+<text x="50%" y="50%" font-family="system-ui" font-size="20" fill="#64748b" text-anchor="middle" dy=".3em">${text}</text>
+</svg>`;
+return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+}
+
+function getProductImageUrl(product) {
+if (!product) return DEFAULT_IMAGE;
+const fields = ['main_image_url', 'image_url', 'image', 'img_url', 'photo_url'];
+for (let field of fields) {
+if (product[field] && typeof product[field] === 'string' && product[field].trim() !== '') {
+if (!product[field].startsWith('http') && !product[field].startsWith('data:')) {
+return API_URL.replace('/api', '') + product[field];
+}
+return product[field];
+}
+}
+return DEFAULT_IMAGE;
+}
+
+function handleImageError(img) {
+img.src = DEFAULT_IMAGE;
+img.onerror = null;
+}
 
 // ============================================
 // INITIALISATION
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
 console.log('[Product] Initialisation...');
 
 // Récupérer l'ID depuis l'URL
 const urlParams = new URLSearchParams(window.location.search);
 currentProductId = urlParams.get('id');
 
-console.log('[Product] ID du produit:', currentProductId);
+console.log('[Product] ID:', currentProductId);
 
 if (!currentProductId) {
-showError('Produit non trouvé - ID manquant dans l\'URL');
+showError('Produit non trouvé - ID manquant');
 return;
 }
 
-// Charger les données
+// Charger le produit
 loadProductData();
 });
 
@@ -383,33 +899,42 @@ loadProductData();
 // CHARGEMENT PRODUIT
 // ============================================
 async function loadProductData() {
-const container = document.getElementById('product-container');
+const section = document.getElementById('product-section');
 
 try {
 console.log('[Product] Chargement depuis:', `${API_URL}/products/${currentProductId}`);
 
 const response = await fetch(`${API_URL}/products/${currentProductId}`);
-console.log('[Product] Statut HTTP:', response.status);
+console.log('[Product] Statut:', response.status);
 
 if (!response.ok) {
-throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+throw new Error(`HTTP ${response.status}`);
 }
 
 const data = await response.json();
-console.log('[Product] Données reçues:', data);
+console.log('[Product] Données:', data);
 
 if (!data.success || !data.data) {
-throw new Error('Produit non trouvé dans la réponse API');
+throw new Error('Produit non trouvé');
 }
 
 currentProduct = data.data.product || data.data;
-console.log('[Product] Produit chargé:', currentProduct);
+console.log('[Product] Produit chargé:', currentProduct.name);
 
+// Afficher le produit
 renderProduct(currentProduct);
+
+// Charger produits similaires
+if (currentProduct.category_id) {
+loadRelatedProducts(currentProduct.category_id);
+}
+
+// Vérifier publicité vidéo
+checkVideoAd(currentProduct);
 
 } catch (error) {
 console.error('[Product] Erreur:', error);
-showError(`Impossible de charger le produit: ${error.message}`);
+showError('Impossible de charger le produit: ' + error.message);
 }
 }
 
@@ -417,25 +942,40 @@ showError(`Impossible de charger le produit: ${error.message}`);
 // RENDU PRODUIT
 // ============================================
 function renderProduct(product) {
-const container = document.getElementById('product-container');
+const section = document.getElementById('product-section');
+const loader = document.getElementById('product-loader');
+const tabsSection = document.getElementById('tabs-section');
+const relatedSection = document.getElementById('related-section');
 
-// Gestion image
+// Masquer loader
+loader.style.display = 'none';
+
+// Afficher sections
+tabsSection.style.display = 'block';
+relatedSection.style.display = 'block';
+
+// Image
 const imageUrl = getProductImageUrl(product);
-const hasDiscount = product.compare_price && product.compare_price > product.price;
+const hasDiscount = product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price);
 const discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
 
-container.innerHTML = `
-<div class="product-section">
+// HTML complet
+section.innerHTML = `
 <div class="product-gallery">
 <div class="main-image">
 <img src="${imageUrl}" alt="${product.name}" onerror="handleImageError(this)">
+</div>
+<div class="thumbnail-list">
+<div class="thumbnail active" onclick="changeImage(this, '${imageUrl}')">
+<img src="${imageUrl}" alt="Vue 1" onerror="handleImageError(this)">
+</div>
 </div>
 </div>
 
 <div class="product-info">
 <div>
 <span class="product-category">${product.category_name || product.category_slug || 'Catégorie'}</span>
-<h1 class="product-title" style="margin-top: 1rem;">${product.name || 'Produit sans nom'}</h1>
+<h1 class="product-title">${product.name || 'Produit sans nom'}</h1>
 </div>
 
 <div class="product-price">
@@ -451,62 +991,227 @@ ${hasDiscount ? `
 <p>${product.description || 'Aucune description disponible'}</p>
 </div>
 
-<div style="background: var(--brandia-card); border: 1px solid var(--brandia-border); border-radius: 16px; padding: 1.5rem;">
-<h3 style="color: var(--brandia-text); margin-bottom: 1rem;">Informations</h3>
-<div style="display: grid; gap: 1rem;">
-<div style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--brandia-darker); border-radius: 8px;">
-<span style="color: var(--brandia-text-muted);">Référence</span>
-<span style="font-weight: 600;">${product.sku || 'N/A'}</span>
+<div class="product-meta">
+<div class="meta-item">
+<i class="fas fa-truck"></i>
+<span class="meta-label">Livraison</span>
+<span class="meta-value">Gratuite</span>
 </div>
-<div style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--brandia-darker); border-radius: 8px;">
-<span style="color: var(--brandia-text-muted);">Stock</span>
-<span style="font-weight: 600; color: ${product.stock_quantity > 0 ? 'var(--brandia-success)' : 'var(--brandia-danger)'};">
-${product.stock_quantity > 0 ? `${product.stock_quantity} disponibles` : 'Rupture de stock'}
-</span>
+<div class="meta-item">
+<i class="fas fa-shield-alt"></i>
+<span class="meta-label">Garantie</span>
+<span class="meta-value">2 ans</span>
 </div>
+<div class="meta-item">
+<i class="fas fa-undo"></i>
+<span class="meta-label">Retour</span>
+<span class="meta-value">30 jours</span>
 </div>
 </div>
 
-<button class="btn-primary" onclick="addToCart()" ${product.stock_quantity <= 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+<div class="product-actions">
+<div class="quantity-selector">
+<span class="quantity-label">Quantité:</span>
+<div class="quantity-control">
+<button class="qty-btn" onclick="updateQty(-1)">-</button>
+<input type="number" class="qty-input" value="1" min="1" max="10" id="qtyInput">
+<button class="qty-btn" onclick="updateQty(1)">+</button>
+</div>
+</div>
+
+<div class="action-buttons">
+<button class="btn-primary" onclick="addToCart()" ${product.stock_quantity <= 0 ? 'disabled' : ''}>
 <i class="fas fa-shopping-cart"></i>
 ${product.stock_quantity > 0 ? 'Ajouter au panier' : 'Indisponible'}
 </button>
+<button class="btn-secondary" onclick="toggleFavorite()">
+<i class="far fa-heart" id="favorite-icon"></i>
+Favoris
+</button>
+</div>
+</div>
+
+<div class="trust-badges">
+<div class="trust-item">
+<i class="fas fa-check-circle"></i>
+<span>${product.stock_quantity > 0 ? product.stock_quantity + ' en stock' : 'Rupture'}</span>
+</div>
+<div class="trust-item">
+<i class="fas fa-lock"></i>
+<span>Paiement sécurisé</span>
+</div>
+<div class="trust-item">
+<i class="fas fa-award"></i>
+<span>Produit authentique</span>
+</div>
 </div>
 </div>
 `;
+
+// Mettre à jour breadcrumb
+document.getElementById('breadcrumb-category').textContent = product.category_name || product.category_slug || 'Catégorie';
+document.getElementById('breadcrumb-product').textContent = product.name || 'Produit';
+
+// Mettre à jour onglets
+document.getElementById('tab-description').textContent = product.description || 'Aucune description';
+
+// Spécifications
+const specsGrid = document.getElementById('specs-grid');
+specsGrid.innerHTML = `
+<div class="spec-item">
+<span class="spec-label">Référence</span>
+<span class="spec-value">${product.sku || 'PRD-' + product.id}</span>
+</div>
+<div class="spec-item">
+<span class="spec-label">Catégorie</span>
+<span class="spec-value">${product.category_name || product.category_slug || '-'}</span>
+</div>
+<div class="spec-item">
+<span class="spec-label">Disponibilité</span>
+<span class="spec-value" style="color: ${product.stock_quantity > 0 ? 'var(--brandia-success)' : 'var(--brandia-danger)'}">
+${product.stock_quantity > 0 ? 'En stock' : 'Rupture'}
+</span>
+</div>
+`;
+
+// Titre page
+document.title = (product.name || 'Produit') + ' - Brandia';
 }
 
-function getProductImageUrl(product) {
-if (!product) return DEFAULT_IMAGE;
+// ============================================
+// PRODUITS SIMILAIRES
+// ============================================
+async function loadRelatedProducts(categoryId) {
+if (!categoryId) return;
 
-const fields = ['main_image_url', 'image_url', 'image', 'img_url', 'photo_url'];
+try {
+const response = await fetch(`${API_URL}/products?category=${categoryId}&limit=4`);
+const data = await response.json();
 
-for (let field of fields) {
-if (product[field] && typeof product[field] === 'string' && product[field].trim() !== '') {
-if (!product[field].startsWith('http') && !product[field].startsWith('data:')) {
-return API_URL.replace('/api', '') + product[field];
+if (data.success && data.data) {
+const products = (Array.isArray(data.data) ? data.data : (data.data.products || []))
+.filter(p => p.id != currentProductId)
+.slice(0, 4);
+
+renderRelatedProducts(products);
 }
-return product[field];
+} catch (error) {
+console.error('[Product] Erreur produits similaires:', error);
 }
 }
 
-return DEFAULT_IMAGE;
+function renderRelatedProducts(products) {
+const container = document.getElementById('related-products');
+
+if (products.length === 0) {
+container.innerHTML = '<p style="color: var(--brandia-text-muted); text-align: center; grid-column: 1/-1;">Aucun produit similaire</p>';
+return;
 }
 
-function handleImageError(img) {
-console.warn('[Product] Image non chargée:', img.src);
-img.src = DEFAULT_IMAGE;
-img.onerror = null;
+container.innerHTML = products.map(p => {
+const hasDiscount = p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price);
+const discount = hasDiscount ? Math.round(((p.compare_price - p.price) / p.compare_price) * 100) : 0;
+const imageUrl = getProductImageUrl(p);
+
+return `
+<div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
+<div class="product-image-card">
+${hasDiscount ? `<span style="position: absolute; top: 0.75rem; left: 0.75rem; background: var(--brandia-danger); color: white; padding: 0.25rem 0.5rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">-${discount}%</span>` : ''}
+<img src="${imageUrl}" alt="${p.name}" onerror="handleImageError(this)">
+</div>
+<div class="product-info-card">
+<div class="product-name-card">${p.name}</div>
+<div class="product-price-card">
+<span class="price-current-card">${parseFloat(p.price).toFixed(2)} €</span>
+${hasDiscount ? `<span style="color: var(--brandia-text-muted); text-decoration: line-through; font-size: 0.875rem;">${parseFloat(p.compare_price).toFixed(2)} €</span>` : ''}
+</div>
+</div>
+</div>
+`;
+}).join('');
+}
+
+// ============================================
+// INTERACTIONS
+// ============================================
+function changeImage(thumbnail, src) {
+document.getElementById('mainImage').src = src;
+document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+thumbnail.classList.add('active');
+}
+
+function updateQty(change) {
+const input = document.getElementById('qtyInput');
+const value = parseInt(input.value) + change;
+if (value >= 1 && value <= 10) input.value = value;
+}
+
+function addToCart() {
+if (!currentProduct) return;
+
+const qty = parseInt(document.getElementById('qtyInput').value);
+const existing = cart.find(item => item.id === currentProduct.id);
+
+if (existing) {
+existing.quantity += qty;
+} else {
+cart.push({
+id: currentProduct.id,
+name: currentProduct.name,
+price: parseFloat(currentProduct.price),
+main_image_url: getProductImageUrl(currentProduct),
+quantity: qty
+});
+}
+
+localStorage.setItem('brandia_cart', JSON.stringify(cart));
+
+// Feedback
+const btn = document.getElementById('add-to-cart-btn');
+const original = btn.innerHTML;
+btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
+btn.style.background = 'linear-gradient(135deg, var(--brandia-success), #059669)';
+setTimeout(() => {
+btn.innerHTML = original;
+btn.style.background = '';
+}, 2000);
+
+showToast('Produit ajouté au panier !');
+}
+
+function toggleFavorite() {
+let favorites = JSON.parse(localStorage.getItem('brandia_favorites') || '[]');
+const index = favorites.indexOf(currentProduct.id);
+
+if (index > -1) {
+favorites.splice(index, 1);
+showToast('Retiré des favoris');
+} else {
+favorites.push(currentProduct.id);
+showToast('Ajouté aux favoris');
+}
+
+localStorage.setItem('brandia_favorites', JSON.stringify(favorites));
+
+const icon = document.getElementById('favorite-icon');
+icon.className = index > -1 ? 'far fa-heart' : 'fas fa-heart';
+icon.style.color = index > -1 ? '' : 'var(--brandia-secondary)';
+}
+
+function switchTab(tabName) {
+document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+event.target.classList.add('active');
+document.getElementById(tabName).classList.add('active');
 }
 
 function showError(message) {
-const container = document.getElementById('product-container');
-container.innerHTML = `
+document.querySelector('.container').innerHTML = `
 <div class="error-state">
 <i class="fas fa-exclamation-circle"></i>
-<h2 style="margin-bottom: 1rem; color: var(--brandia-text);">Erreur</h2>
-<p style="color: var(--brandia-text-muted); margin-bottom: 2rem;">${message}</p>
-<a href="catalogue.html" style="color: var(--brandia-primary); text-decoration: none; font-weight: 600;">
+<h2 style="margin-bottom: 1rem;">${message}</h2>
+<a href="catalogue.html" style="color: var(--brandia-primary); text-decoration: none;">
 <i class="fas fa-arrow-left" style="margin-right: 0.5rem;"></i>Retour au catalogue
 </a>
 </div>
@@ -521,30 +1226,110 @@ document.body.appendChild(toast);
 setTimeout(() => toast.remove(), 3000);
 }
 
-function addToCart() {
-if (!currentProduct) return;
+// ============================================
+// VIDEO AD SYSTEM (15s, 1x/session, skippable)
+// ============================================
+const VideoAd = {
+SESSION_KEY: 'brandia_video_ad_seen',
 
-const cartItem = {
-id: currentProduct.id,
-name: currentProduct.name,
-price: parseFloat(currentProduct.price),
-main_image_url: getProductImageUrl(currentProduct),
-quantity: 1
+canShow: function() {
+return !sessionStorage.getItem(VideoAd.SESSION_KEY);
+},
+
+markAsSeen: function() {
+sessionStorage.setItem(VideoAd.SESSION_KEY, 'true');
+},
+
+check: async function(product) {
+if (!VideoAd.canShow()) return;
+
+try {
+const supplierId = product.supplier_id;
+if (!supplierId) return;
+
+const response = await fetch(`${API_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${product.id}`);
+const data = await response.json();
+
+if (data.success && data.data) {
+VideoAd.show(data.data);
+}
+} catch (error) {
+console.error('[VideoAd] Erreur:', error);
+}
+},
+
+show: function(campaign) {
+const overlay = document.getElementById('video-ad-overlay');
+const player = document.getElementById('video-ad-player');
+const progress = document.getElementById('video-ad-progress');
+const brand = document.getElementById('video-ad-brand');
+const headline = document.getElementById('video-ad-headline');
+
+if (!overlay || !player) return;
+
+// Charger vidéo
+player.src = campaign.media_url;
+brand.textContent = campaign.headline || 'Offre spéciale';
+headline.textContent = campaign.description || 'Découvrez nos produits';
+
+// Afficher
+overlay.classList.add('active');
+VideoAd.markAsSeen();
+
+// Lancer
+player.play().catch(e => console.log('Autoplay bloqué:', e));
+
+// Progress bar
+let duration = 15;
+let elapsed = 0;
+const interval = setInterval(() => {
+elapsed++;
+const percent = (elapsed / duration) * 100;
+progress.style.width = percent + '%';
+
+if (elapsed >= duration) {
+clearInterval(interval);
+VideoAd.close();
+}
+}, 1000);
+
+// Track view
+fetch(`${API_URL}/supplier/public/campaigns/view`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ campaign_id: campaign.id })
+}).catch(e => {});
+},
+
+close: function() {
+const overlay = document.getElementById('video-ad-overlay');
+const player = document.getElementById('video-ad-player');
+
+if (overlay) overlay.classList.remove('active');
+if (player) {
+player.pause();
+player.src = '';
+}
+}
 };
 
-let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-const existing = cart.find(item => item.id === cartItem.id);
+function checkVideoAd(product) {
+VideoAd.check(product);
+}
 
-if (existing) {
-existing.quantity++;
+// ============================================
+// HEADER SCROLL EFFECT
+// ============================================
+window.addEventListener('scroll', function() {
+const header = document.querySelector('.header');
+if (window.scrollY > 50) {
+header.style.background = 'rgba(15, 23, 42, 0.98)';
 } else {
-cart.push(cartItem);
+header.style.background = 'rgba(15, 23, 42, 0.95)';
 }
+});
 
-localStorage.setItem('brandia_cart', JSON.stringify(cart));
-showToast('Produit ajouté au panier !');
-}
+console.log('[Product] Script chargé');
 </script>
-
 </body>
 </html>
