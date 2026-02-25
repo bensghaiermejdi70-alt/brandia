@@ -44,7 +44,7 @@ tailwind.config = {
   --brandia-secondary: #8b5cf6;
   --brandia-accent: #ec4899;
   --brandia-dark: #0f172a;
-  --brandia-darker: '#020617';
+  --brandia-darker: #020617;
   --brandia-card: #1e293b;
   --brandia-card-hover: #334155;
   --brandia-border: #334155;
@@ -770,6 +770,7 @@ body {
   transition: all 0.3s; 
   display: flex; 
   flex-direction: column; 
+  cursor: pointer;
 }
 .product-card:hover { 
   transform: translateY(-4px); 
@@ -1541,11 +1542,17 @@ body {
 <div class="toast-container" id="toast-container"></div>
 <script src="assets/js/api.js"></script>
 <script>
+// ============================================
+// CONFIGURATION ET DONNÉES
+// ============================================
+
 // Image par défaut si aucune image n'est disponible
-const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&q=80';
+const DEFAULT_PRODUCT_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWUyOTNiIi8+PHN2ZyB4PSI1MCUiIHk9IjUwJSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiM2NDc0OGIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yNCwgLTI0KSI+PHBhdGggZD0iTTIxIDE5VjVjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2MTRjMCAxLjEuOSAyIDIgMmgxNGMxLjEgMCAyLS45IDItMnpNOC41IDEzLjVsMi41IDMuMDFMMTQuNSAxMmw0LjUgNmg1bC02LTgtNC41IDZ6Ii8+PC9zdmc+PC9zdmc+';
 
 // Fonction utilitaire pour obtenir l'URL d'image sécurisée
 function getProductImageUrl(product) {
+    if (!product) return DEFAULT_PRODUCT_IMAGE;
+    
     // Vérifier toutes les possibilités de nommage d'image
     const possibleFields = [
         'main_image_url',
@@ -1568,6 +1575,7 @@ function getProductImageUrl(product) {
     return DEFAULT_PRODUCT_IMAGE;
 }
 
+// Catégories Brandia
 const BRANDIA_CATEGORIES = [
   { slug: 'cosmetiques-soins-peau', name: 'Cosmétiques & soins', icon: 'fa-spa', color: 'from-pink-500 to-rose-600' },
   { slug: 'parfums-fragrances', name: 'Parfums', icon: 'fa-spray-can', color: 'from-purple-500 to-indigo-600' },
@@ -1591,6 +1599,8 @@ const BRANDIA_CATEGORIES = [
   { slug: 'artisanat-local', name: 'Artisanat local', icon: 'fa-hands', color: 'from-orange-400 to-amber-500' },
   { slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle', color: 'from-cyan-500 to-blue-600' }
 ];
+
+// Pays et devises
 const COUNTRIES = {
   'AF': { name: 'Afghanistan', currency: 'AFN' },
   'AL': { name: 'Albanie', currency: 'ALL' },
@@ -1633,7 +1643,7 @@ const COUNTRIES = {
   'CG': { name: 'Congo', currency: 'XAF' },
   'CD': { name: 'Congo (RDC)', currency: 'CDF' },
   'CR': { name: 'Costa Rica', currency: 'CRC' },
-  'CI': { name: "Côte d'Ivoire", currency: 'XOF' },
+  'CI': { name: 'Côte d'Ivoire', currency: 'XOF' },
   'HR': { name: 'Croatie', currency: 'EUR' },
   'CU': { name: 'Cuba', currency: 'CUP' },
   'CY': { name: 'Chypre', currency: 'EUR' },
@@ -1783,6 +1793,11 @@ const COUNTRIES = {
   'ZM': { name: 'Zambie', currency: 'ZMW' },
   'ZW': { name: 'Zimbabwe', currency: 'ZWL' }
 };
+
+// ============================================
+// FONCTIONS UTILITAIRES
+// ============================================
+
 function getFlagEmoji(countryCode) {
   const codePoints = countryCode
     .toUpperCase()
@@ -1790,9 +1805,11 @@ function getFlagEmoji(countryCode) {
     .map(char => 127397 + char.charCodeAt());
   return String.fromCodePoint(...codePoints);
 }
+
 function formatPrice(price, currency) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency || 'EUR' }).format(price || 0);
 }
+
 function showToast(message, type) {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -1801,11 +1818,13 @@ function showToast(message, type) {
   container.appendChild(toast);
   setTimeout(function() { toast.remove(); }, 3000);
 }
+
 function toggleMobileMenu() {
   const menu = document.getElementById('mobile-menu');
   menu.classList.toggle('open');
   document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
 }
+
 function initCountries() {
   const selector = document.getElementById('countrySelector');
   const saved = localStorage.getItem('country') || 'FR';
@@ -1822,6 +1841,7 @@ function initCountries() {
     localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
   });
 }
+
 function getAuthToken() {
   if (window.BrandiaAPI && BrandiaAPI.storage && BrandiaAPI.storage.getToken) {
     const apiToken = BrandiaAPI.storage.getToken();
@@ -1829,6 +1849,7 @@ function getAuthToken() {
   }
   return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
 }
+
 function getAuthUser() {
   if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.getUser) {
     const apiUser = BrandiaAPI.Auth.getUser();
@@ -1845,9 +1866,11 @@ function getAuthUser() {
   }
   return null;
 }
+
 function isAuthenticated() {
   return !!getAuthToken() && !!getAuthUser();
 }
+
 function logout() {
   console.log('[Auth] Déconnexion...');
   if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.logout) {
@@ -1861,6 +1884,7 @@ function logout() {
   localStorage.removeItem('refreshToken');
   window.location.href = 'index.html';
 }
+
 function initAuth() {
   console.log('[Auth] Initialisation...');
   const token = getAuthToken();
@@ -1911,6 +1935,10 @@ function initAuth() {
     if (mobileRegisterLink) mobileRegisterLink.style.display = 'block';
   }
 }
+// ============================================
+// APPLICATION CATALOGUE
+// ============================================
+
 window.CatalogueApp = {
   state: {
     allProducts: [],
@@ -1924,37 +1952,50 @@ window.CatalogueApp = {
     },
     sortBy: 'newest',
   },
+  
   init: function() {
     console.log('[CatalogueApp] Initialisation...');
     initCountries();
     initFilters();
     initSearch();
     initAuth();
-    CatalogueApp.loadProducts();
+    this.loadProducts();
     updateCartBadge();
   },
+
   loadProducts: function() {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
-    let category = CatalogueApp.state.filters.category;
+    
+    let category = this.state.filters.category;
     if (!category || category === 'null' || category === 'undefined' || category === '') {
       category = null;
     }
+    
     const params = {};
     if (category) {
       params.category = category;
     }
     params.limit = 100;
+    
+    // Vérifier si BrandiaAPI est disponible
+    if (!window.BrandiaAPI || !BrandiaAPI.Products) {
+      console.error('[CatalogueApp] API non disponible');
+      container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur de chargement</h3><p>L\'API n\'est pas disponible. Vérifiez que api.js est chargé.</p></div>';
+      return;
+    }
+    
     BrandiaAPI.Products.getAllWithPromotions(params).then(function(response) {
       if (response.success) {
         const products = response.data && response.data.products ? response.data.products : (Array.isArray(response.data) ? response.data : []);
         CatalogueApp.state.allProducts = products;
         CatalogueApp.applyFilters();
       } else {
-        throw new Error(response.message);
+        throw new Error(response.message || 'Erreur de chargement');
       }
     }).catch(function(error) {
       console.error('[CatalogueApp] Erreur:', error);
+      // Fallback sans promotions
       BrandiaAPI.Products.getAll({ limit: 100 }).then(function(fallback) {
         if (fallback.success) {
           const products = fallback.data && fallback.data.products ? fallback.data.products : (Array.isArray(fallback.data) ? fallback.data : []);
@@ -1966,9 +2007,11 @@ window.CatalogueApp = {
       });
     });
   },
+
   applyFilters: function() {
-    let products = CatalogueApp.state.allProducts.slice();
-    const f = CatalogueApp.state.filters;
+    let products = this.state.allProducts.slice();
+    const f = this.state.filters;
+    
     if (f.search) {
       const search = f.search.toLowerCase();
       products = products.filter(function(p) {
@@ -1977,27 +2020,32 @@ window.CatalogueApp = {
                (p.supplier_company && p.supplier_company.toLowerCase().includes(search));
       });
     }
+    
     if (f.minPrice) {
       products = products.filter(function(p) {
         return parseFloat(p.final_price || p.price) >= f.minPrice;
       });
     }
+    
     if (f.maxPrice) {
       products = products.filter(function(p) {
         return parseFloat(p.final_price || p.price) <= f.maxPrice;
       });
     }
+    
     if (f.promoOnly) {
       products = products.filter(function(p) {
         return p.has_promotion === true;
       });
     }
-    products = CatalogueApp.sortProductsList(products);
-    CatalogueApp.state.filteredProducts = products;
-    CatalogueApp.renderProducts(products);
+    
+    products = this.sortProductsList(products);
+    this.state.filteredProducts = products;
+    this.renderProducts(products);
   },
+
   sortProductsList: function(products) {
-    const sort = CatalogueApp.state.sortBy;
+    const sort = this.state.sortBy;
     return products.sort(function(a, b) {
       const priceA = parseFloat(a.final_price || a.price);
       const priceB = parseFloat(b.final_price || b.price);
@@ -2017,36 +2065,44 @@ window.CatalogueApp = {
       }
     });
   },
+
   renderProducts: function(products) {
     const container = document.getElementById('products-container');
     const resultsCount = document.getElementById('results-count');
     const emptyState = document.getElementById('empty-state');
     const promoCount = products.filter(function(p) { return p.has_promotion; }).length;
+    
     resultsCount.textContent = products.length + ' produit(s) trouvé(s)' + (promoCount > 0 ? ' (' + promoCount + ' en promo)' : '');
+    
     if (products.length === 0) {
       container.innerHTML = '';
       emptyState.classList.remove('hidden');
       return;
     }
+    
     emptyState.classList.add('hidden');
     container.innerHTML = products.map(function(p, index) {
       return CatalogueApp.renderProductCard(p, index);
     }).join('');
   },
+
   renderProductCard: function(p, index) {
     const hasPromo = p.has_promotion === true;
     const finalPrice = parseFloat(p.final_price || p.price);
     const basePrice = parseFloat(p.base_price || p.original_price || p.price);
     let savingsAmount = 0;
     let savingsPercent = 0;
+    
     if (hasPromo && basePrice > finalPrice) {
       savingsAmount = basePrice - finalPrice;
       savingsPercent = Math.round((savingsAmount / basePrice) * 100);
     }
+    
     const promoBadge = hasPromo ? '<div class="product-badge"><i class="fas fa-fire" style="margin-right: 0.25rem;"></i>-' + (p.discount_display || savingsPercent + '%') + '</div>' : '';
     const priceDisplay = hasPromo ? 
       '<div class="product-price"><span class="price-current promo">' + finalPrice.toFixed(2) + ' €</span><span class="price-original">' + basePrice.toFixed(2) + ' €</span><span class="savings-badge">-' + savingsAmount.toFixed(2) + ' €</span></div>' : 
       '<div class="product-price"><span class="price-current">' + finalPrice.toFixed(2) + ' €</span></div>';
+    
     let promoInfo = '';
     if (hasPromo) {
       promoInfo = '<div class="promo-info"><div class="promo-name"><i class="fas fa-tag"></i><span>' + (p.promo_name || 'Promotion en cours') + '</span></div>';
@@ -2060,26 +2116,36 @@ window.CatalogueApp = {
     const imageUrl = getProductImageUrl(p);
     const stockBadge = p.stock_quantity < 5 ? '<span class="stock-badge">Stock faible</span>' : '';
     
-    return '<div class="product-card fade-in" style="animation-delay: ' + (index * 0.05) + 's">' +
-      '<a href="product.html?id=' + p.id + '" class="product-image">' +
-        '<img src="' + imageUrl + '" alt="' + (p.name || 'Produit') + '" loading="lazy" onerror="this.onerror=null; this.src=\'' + DEFAULT_PRODUCT_IMAGE + '\'; this.parentElement.innerHTML=\'<div class=\\\'img-placeholder\\\'><i class=\\\'fas fa-image\\\'></i></div>\';">' +
+    // LIEN CORRIGÉ : Utilisation de onclick pour naviguer vers product.html
+    return '<div class="product-card fade-in" style="animation-delay: ' + (index * 0.05) + 's" onclick="window.location.href=\'product.html?id=' + p.id + '\'">' +
+      '<div class="product-image">' +
+        '<img src="' + imageUrl + '" alt="' + (p.name || 'Produit') + '" loading="lazy" onerror="this.onerror=null; this.src=\'' + DEFAULT_PRODUCT_IMAGE + '\';">' +
         promoBadge + 
         stockBadge + 
-      '</a>' +
+      '</div>' +
       '<div class="product-info">' +
         '<div class="product-category">' + (p.category_name || 'Catégorie') + '</div>' +
-        '<a href="product.html?id=' + p.id + '" class="product-name">' + (p.name || 'Produit sans nom') + '</a>' +
+        '<div class="product-name">' + (p.name || 'Produit sans nom') + '</div>' +
         '<p class="product-brand">' + (p.supplier_company || p.supplier_name || 'Marque') + '</p>' +
         promoInfo + 
         priceDisplay + 
-        '<div class="product-actions">' +
-          '<button onclick="event.preventDefault(); CatalogueApp.addToCart(' + p.id + ')" class="btn-add-cart"><i class="fas fa-cart-plus"></i> Ajouter</button>' +
-          '<a href="product.html?id=' + p.id + '" class="btn-view"><i class="fas fa-eye"></i></a>' +
+        '<div class="product-actions" onclick="event.stopPropagation()">' +
+          '<button onclick="CatalogueApp.addToCart(' + p.id + ')" class="btn-add-cart"><i class="fas fa-cart-plus"></i> Ajouter</button>' +
+          '<button onclick="window.location.href=\'product.html?id=' + p.id + '\'" class="btn-view"><i class="fas fa-eye"></i></button>' +
         '</div>' +
       '</div>' +
     '</div>';
   },
+
   addToCart: function(productId) {
+    // Empêcher la propagation pour ne pas déclencher le clic sur la carte
+    event.stopPropagation();
+    
+    if (!window.BrandiaAPI || !BrandiaAPI.Products) {
+      showToast('Erreur: API non disponible', 'error');
+      return;
+    }
+    
     BrandiaAPI.Products.getByIdWithPromotion(productId).then(function(response) {
       if (!response.success || !response.data.product) {
         throw new Error('Produit non trouvé');
@@ -2095,6 +2161,7 @@ window.CatalogueApp = {
         main_image_url: getProductImageUrl(product),
         quantity: 1,
       };
+      
       if (window.BrandiaAPI && BrandiaAPI.Cart) {
         BrandiaAPI.Cart.add(cartItem);
       } else {
@@ -2107,6 +2174,7 @@ window.CatalogueApp = {
         }
         localStorage.setItem('brandia_cart', JSON.stringify(cart));
       }
+      
       showToast('Produit ajouté au panier !', 'success');
       updateCartBadge();
     }).catch(function(error) {
@@ -2114,23 +2182,26 @@ window.CatalogueApp = {
       showToast('Erreur lors de l\'ajout', 'error');
     });
   },
+
   togglePromoOnly: function() {
     const checkbox = document.getElementById('promo-only');
     const isChecked = checkbox.checked;
-    CatalogueApp.state.filters.promoOnly = isChecked;
+    this.state.filters.promoOnly = isChecked;
     if (isChecked) {
-      CatalogueApp.loadProductsWithPromoFilter();
+      this.loadProductsWithPromoFilter();
     } else {
-      CatalogueApp.loadProducts();
+      this.loadProducts();
     }
   },
+
   loadProductsWithPromoFilter: function() {
     const container = document.getElementById('products-container');
     container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
     const params = { promo_only: true, limit: 100 };
-    if (CatalogueApp.state.filters.category) {
-      params.category = CatalogueApp.state.filters.category;
+    if (this.state.filters.category) {
+      params.category = this.state.filters.category;
     }
+    
     BrandiaAPI.Products.getAllWithPromotions(params).then(function(response) {
       if (response.success) {
         const products = response.data && response.data.products ? response.data.products : [];
@@ -2166,12 +2237,18 @@ window.CatalogueApp = {
       container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur lors du chargement des promotions</h3><button onclick="CatalogueApp.togglePromoOnly()" class="btn-primary" style="margin-top: 1rem;">Réessayer</button></div>';
     });
   },
+
   sortProducts: function() {
     const select = document.getElementById('sort-select');
-    CatalogueApp.state.sortBy = select.value;
-    CatalogueApp.applyFilters();
+    this.state.sortBy = select.value;
+    this.applyFilters();
   }
 };
+
+// ============================================
+// FONCTIONS DE FILTRAGE
+// ============================================
+
 function initFilters() {
   const urlParams = new URLSearchParams(window.location.search);
   let rawCategory = urlParams.get('category');
@@ -2179,6 +2256,7 @@ function initFilters() {
     rawCategory = null;
   }
   CatalogueApp.state.filters.category = rawCategory;
+  
   const container = document.getElementById('filter-categories');
   if (container) {
     let html = '';
@@ -2191,6 +2269,7 @@ function initFilters() {
     const allOption = '<label class="filter-option ' + (allSelected ? 'bg-neutral-700/30' : '') + '"><input type="radio" name="category" value="" class="checkbox-custom category-radio"' + (allSelected ? ' checked' : '') + ' onchange="updateCategory(null)"><span class="filter-option-text" style="font-weight: 500;">Toutes les catégories</span></label><div style="border-top: 1px solid var(--brandia-border); margin: 0.5rem 0;"></div>';
     container.innerHTML = allOption + html;
   }
+  
   const dropdown = document.getElementById('dropdown-categories');
   if (dropdown) {
     let html = '';
@@ -2200,8 +2279,10 @@ function initFilters() {
     }
     dropdown.innerHTML = html;
   }
+  
   updatePageTitle();
 }
+
 function updateCategory(slug) {
   let cleanSlug = slug;
   if (!slug || slug === 'null' || slug === 'undefined' || slug === 'all' || slug === '') {
@@ -2245,6 +2326,7 @@ function updateCategory(slug) {
     }
   }
 }
+
 function updatePageTitle() {
   const pageTitle = document.getElementById('page-title');
   const catCount = document.getElementById('cat-count');
@@ -2260,6 +2342,7 @@ function updatePageTitle() {
   }
   if (catCount) catCount.textContent = BRANDIA_CATEGORIES.length;
 }
+
 function initSearch() {
   const searchInput = document.getElementById('search-input');
   let timeout;
@@ -2272,11 +2355,13 @@ function initSearch() {
   };
   if (searchInput) searchInput.addEventListener('input', handleSearch);
 }
+
 function applyPrice() {
   CatalogueApp.state.filters.minPrice = parseFloat(document.getElementById('price-min').value) || null;
   CatalogueApp.state.filters.maxPrice = parseFloat(document.getElementById('price-max').value) || null;
   CatalogueApp.applyFilters();
 }
+
 function resetPrice() {
   document.getElementById('price-min').value = '';
   document.getElementById('price-max').value = '';
@@ -2284,6 +2369,7 @@ function resetPrice() {
   CatalogueApp.state.filters.maxPrice = null;
   CatalogueApp.applyFilters();
 }
+
 function resetAll() {
   CatalogueApp.state.filters = {
     category: null,
@@ -2306,6 +2392,7 @@ function resetAll() {
   updatePageTitle();
   CatalogueApp.loadProducts();
 }
+
 function updateCartBadge() {
   try {
     let count = 0;
@@ -2324,6 +2411,11 @@ function updateCartBadge() {
     console.error('Erreur badge:', e);
   }
 }
+
+// ============================================
+// INITIALISATION
+// ============================================
+
 document.addEventListener('DOMContentLoaded', function() {
   console.log('[Catalogue] Initialisation avec promotions');
   CatalogueApp.init();
