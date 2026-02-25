@@ -369,80 +369,6 @@
             color: var(--light);
         }
 
-        /* Variants */
-        .variants-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .variant-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-        }
-
-        .variant-label {
-            font-weight: 600;
-            color: var(--light);
-        }
-
-        .variant-options {
-            display: flex;
-            gap: 0.8rem;
-            flex-wrap: wrap;
-        }
-
-        .variant-btn {
-            padding: 0.8rem 1.5rem;
-            background: var(--glass);
-            border: 2px solid var(--glass-border);
-            border-radius: 12px;
-            color: var(--light);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .variant-btn:hover, .variant-btn.active {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.2);
-            color: var(--primary);
-        }
-
-        .color-options {
-            display: flex;
-            gap: 0.8rem;
-        }
-
-        .color-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .color-btn:hover, .color-btn.active {
-            border-color: var(--light);
-            transform: scale(1.1);
-        }
-
-        .color-btn.active::after {
-            content: '\f00c';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 0.9rem;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-
         /* Quantity and Actions */
         .product-actions {
             display: flex;
@@ -771,6 +697,7 @@
             overflow: hidden;
             transition: all 0.4s ease;
             position: relative;
+            cursor: pointer;
         }
 
         .product-card:hover {
@@ -881,33 +808,6 @@
             font-size: 1rem;
             color: var(--gray);
             text-decoration: line-through;
-        }
-
-        /* BRANDIA AD SYSTEM STYLES */
-        @keyframes ad-fade-in {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes ad-fade-out {
-            from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(0.95); }
-        }
-
-        .ad-animate-fade-in {
-            animation: ad-fade-in 0.3s ease-out;
-        }
-
-        .ad-animate-fade-out {
-            animation: ad-fade-out 0.3s ease-in;
-        }
-
-        #brandia-ad-overlay {
-            animation: ad-fade-in 0.3s ease-out;
-        }
-
-        .ad-progress-bar {
-            transition: width 1s linear;
         }
 
         /* Image Placeholder Styles */
@@ -1041,6 +941,28 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .error-state i {
+            font-size: 4rem;
+            color: #ef4444;
+            margin-bottom: 1rem;
+        }
+
+        .error-state h2 {
+            color: var(--light);
+            margin-bottom: 1rem;
+        }
+
+        .error-state a {
+            color: var(--primary);
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -1074,7 +996,7 @@
         <div class="breadcrumb" id="breadcrumb">
             <a href="index.html">Accueil</a>
             <i class="fas fa-chevron-right"></i>
-            <a href="categories.html">Catégories</a>
+            <a href="catalogue.html">Catalogue</a>
             <i class="fas fa-chevron-right"></i>
             <span id="category-name">Chargement...</span>
             <i class="fas fa-chevron-right"></i>
@@ -1139,10 +1061,6 @@
                         <span class="meta-label">Retour</span>
                         <span class="meta-value">30 jours</span>
                     </div>
-                </div>
-
-                <div class="variants-section" id="variants-section" style="display: none;">
-                    <!-- Variants injectés dynamiquement si disponibles -->
                 </div>
 
                 <div class="product-actions">
@@ -1276,20 +1194,19 @@
         // UTILITAIRES IMAGES ROBUSTES
         // ============================================
         
-        // Fallback d'images fiables (plusieurs options)
-        const FALLBACK_IMAGES = [
-            'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWUyOTNiIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==',
-            'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMGYxNzJhIi8+PHN2ZyB4PSI1MCUiIHk9IjUwJSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiM2NDc0OGIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yNCwgLTI0KSI+PHBhdGggZD0iTTIxIDE5VjVjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2MTRjMCAxLjEuOSAyIDIgMmgxNGMxLjEgMCAyLS45IDItMnpNOC41IDEzLjVsMi41IDMuMDFMMTQuNSAxMmw0LjUgNmg1bC02LTgtNC41IDZ6Ii8+PC9zdmc+PC9zdmc+'
-        ];
-        
-        function getFallbackImage(width = 800, height = 800, text = 'No Image') {
+        // Fallback d'images fiables (SVG data URI)
+        function getFallbackImage(width, height, text) {
+            width = width || 800;
+            height = height || 800;
+            text = text || 'No Image';
+            
             // Créer un SVG data URI robuste
-            const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-                <rect width="100%" height="100%" fill="#0f172a"/>
-                <rect x="20%" y="40%" width="60%" height="20%" rx="8" fill="#1e293b"/>
-                <text x="50%" y="50%" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#64748b" text-anchor="middle" dy=".3em">${text}</text>
-                <path d="M50 35 L65 50 L55 50 L55 65 L45 65 L45 50 L35 50 Z" fill="#6366f1" opacity="0.5" transform="translate(0, -10)"/>
-            </svg>`;
+            const svg = '<svg width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg">' +
+                '<rect width="100%" height="100%" fill="#0f172a"/>' +
+                '<rect x="20%" y="40%" width="60%" height="20%" rx="8" fill="#1e293b"/>' +
+                '<text x="50%" y="50%" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#64748b" text-anchor="middle" dy=".3em">' + text + '</text>' +
+                '<path d="M50 35 L65 50 L55 50 L55 65 L45 65 L45 50 L35 50 Z" fill="#6366f1" opacity="0.5" transform="translate(0, -10)"/>' +
+            '</svg>';
             return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
         }
         
@@ -1301,7 +1218,7 @@
             try {
                 new URL(url);
                 return url;
-            } catch {
+            } catch (e) {
                 // Si ce n'est pas une URL absolue, vérifier si c'est un chemin relatif
                 if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
                     return url;
@@ -1310,13 +1227,20 @@
             }
         }
         
-        function createImageWithFallback(src, alt = '', width = 800, height = 800) {
-            const validSrc = validateImageUrl(src);
-            const fallback = getFallbackImage(width, height, alt || 'Image non disponible');
+        function createImageWithFallback(src, alt, width, height) {
+            alt = alt || '';
+            width = width || 800;
+            height = height || 800;
+            
+            var validSrc = validateImageUrl(src);
+            var fallback = getFallbackImage(width, height, alt || 'Image non disponible');
             return validSrc || fallback;
         }
         
-        function handleImageError(img, width = 800, height = 800) {
+        function handleImageError(img, width, height) {
+            width = width || 800;
+            height = height || 800;
+            
             img.onerror = function() {
                 console.warn('Image failed to load:', img.src);
                 img.src = getFallbackImage(width, height, img.alt || 'Image');
@@ -1331,82 +1255,95 @@
         // ============================================
         // ÉTAT GLOBAL
         // ============================================
-        let currentProduct = null;
-        let currentProductId = null;
-        let cart = JSON.parse(localStorage.getItem('brandia_cart')) || [];
-        let favorites = JSON.parse(localStorage.getItem('brandia_favorites')) || [];
+        var currentProduct = null;
+        var currentProductId = null;
+        var cart = JSON.parse(localStorage.getItem('brandia_cart')) || [];
+        var favorites = JSON.parse(localStorage.getItem('brandia_favorites')) || [];
 
         // ============================================
         // INITIALISATION
         // ============================================
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Product] Initialisation...');
+            
             // Récupérer l'ID du produit depuis l'URL
-            const urlParams = new URLSearchParams(window.location.search);
+            var urlParams = new URLSearchParams(window.location.search);
             currentProductId = urlParams.get('id');
             
+            console.log('[Product] ID du produit:', currentProductId);
+            
             if (!currentProductId) {
-                showError('Produit non trouvé');
+                showError('Produit non trouvé - ID manquant dans l\'URL');
                 return;
             }
 
             // Charger les données
-            await loadProductData();
+            loadProductData();
             
-            // Cacher le loader
-            setTimeout(() => {
-                document.getElementById('loader').classList.add('hidden');
-            }, 500);
-
             // Vérifier si utilisateur est fournisseur
             checkUserRole();
-            
-            // Initialiser le système de publicité
-            initAdSystem();
         });
 
         // ============================================
         // CHARGEMENT PRODUIT
         // ============================================
-        async function loadProductData() {
-            try {
-                console.log('Loading product:', currentProductId);
-                const response = await fetch(`${API_URL}/products/${currentProductId}`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('Product data:', data);
-                
-                if (!data.success || !data.data) {
-                    throw new Error('Produit non trouvé dans la réponse');
-                }
-                
-                currentProduct = data.data;
-                console.log('Current product:', currentProduct);
-                console.log('Image URL:', currentProduct.main_image_url);
-                
-                renderProduct(currentProduct);
-                loadRelatedProducts(currentProduct.category_id);
-                
-            } catch (error) {
-                console.error('Erreur chargement produit:', error);
-                showError('Impossible de charger le produit: ' + error.message);
-            }
+        function loadProductData() {
+            console.log('[Product] Chargement du produit:', currentProductId);
+            
+            var container = document.getElementById('products-container');
+            
+            // Utiliser fetch API directement si BrandiaAPI n'est pas disponible
+            var apiUrl = API_URL + '/products/' + currentProductId;
+            console.log('[Product] URL API:', apiUrl);
+            
+            fetch(apiUrl)
+                .then(function(response) {
+                    console.log('[Product] Réponse HTTP:', response.status);
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('[Product] Données reçues:', data);
+                    
+                    if (!data.success || !data.data) {
+                        throw new Error('Produit non trouvé dans la réponse API');
+                    }
+                    
+                    currentProduct = data.data;
+                    console.log('[Product] Produit chargé:', currentProduct);
+                    console.log('[Product] Image URL:', currentProduct.main_image_url);
+                    
+                    renderProduct(currentProduct);
+                    loadRelatedProducts(currentProduct.category_id);
+                    
+                    // Cacher le loader
+                    setTimeout(function() {
+                        document.getElementById('loader').classList.add('hidden');
+                    }, 500);
+                })
+                .catch(function(error) {
+                    console.error('[Product] Erreur chargement:', error);
+                    showError('Impossible de charger le produit: ' + error.message);
+                });
         }
 
         function renderProduct(product) {
-            // Images avec gestion robuste
-            const mainImage = document.getElementById('mainImage');
-            const mainPlaceholder = document.getElementById('main-placeholder');
+            console.log('[Product] Rendu du produit:', product.name);
             
-            const imageUrl = createImageWithFallback(
+            // Images avec gestion robuste
+            var mainImage = document.getElementById('mainImage');
+            var mainPlaceholder = document.getElementById('main-placeholder');
+            
+            var imageUrl = createImageWithFallback(
                 product.main_image_url, 
                 product.name, 
                 800, 
                 800
             );
+            
+            console.log('[Product] Image URL finale:', imageUrl);
             
             mainImage.src = imageUrl;
             mainImage.alt = product.name;
@@ -1416,28 +1353,26 @@
             // Gestion d'erreur pour l'image principale
             handleImageError(mainImage, 800, 800);
             
-            // Thumbnails (simulés avec la même image pour l'instant, mais avec fallback)
-            const thumbnailList = document.getElementById('thumbnail-list');
-            const thumbUrl = createImageWithFallback(product.main_image_url, product.name, 200, 200);
+            // Thumbnails
+            var thumbnailList = document.getElementById('thumbnail-list');
+            var thumbUrl = createImageWithFallback(product.main_image_url, product.name, 200, 200);
             
-            thumbnailList.innerHTML = `
-                <div class="thumbnail active" onclick="changeImage(this, '${imageUrl}')">
-                    <img src="${thumbUrl}" alt="Vue 1" onerror="this.src='${getFallbackImage(200, 200, 'Thumb')}'">
-                </div>
-            `;
+            thumbnailList.innerHTML = '<div class="thumbnail active" onclick="changeImage(this, \'' + imageUrl + '\')">' +
+                '<img src="' + thumbUrl + '" alt="Vue 1" onerror="this.src=\'' + getFallbackImage(200, 200, 'Thumb') + '\'">' +
+            '</div>';
             
             // Badge réduction
-            const discountBadge = document.getElementById('discount-badge');
-            const originalPrice = document.getElementById('original-price');
-            const discountPercent = document.getElementById('discount-percent');
+            var discountBadge = document.getElementById('discount-badge');
+            var originalPrice = document.getElementById('original-price');
+            var discountPercent = document.getElementById('discount-percent');
             
             if (product.compare_price && product.compare_price > product.price) {
-                const discount = Math.round(((product.compare_price - product.price) / product.compare_price) * 100);
-                discountBadge.textContent = `-${discount}%`;
+                var discount = Math.round(((product.compare_price - product.price) / product.compare_price) * 100);
+                discountBadge.textContent = '-' + discount + '%';
                 discountBadge.style.display = 'block';
-                originalPrice.textContent = `${parseFloat(product.compare_price).toFixed(2)}€`;
+                originalPrice.textContent = parseFloat(product.compare_price).toFixed(2) + '€';
                 originalPrice.style.display = 'inline';
-                discountPercent.textContent = `-${discount}%`;
+                discountPercent.textContent = '-' + discount + '%';
                 discountPercent.style.display = 'inline';
             } else {
                 discountBadge.style.display = 'none';
@@ -1446,36 +1381,36 @@
             }
             
             // Informations produit
-            document.getElementById('product-category').textContent = product.category_slug || 'Produit';
-            document.getElementById('product-title').textContent = product.name;
-            document.getElementById('product-name-breadcrumb').textContent = product.name;
-            document.getElementById('category-name').textContent = product.category_slug || 'Catégorie';
-            document.getElementById('current-price').textContent = `${parseFloat(product.price || 0).toFixed(2)}€`;
+            document.getElementById('product-category').textContent = product.category_slug || product.category_name || 'Produit';
+            document.getElementById('product-title').textContent = product.name || 'Produit sans nom';
+            document.getElementById('product-name-breadcrumb').textContent = product.name || 'Produit';
+            document.getElementById('category-name').textContent = product.category_slug || product.category_name || 'Catégorie';
+            document.getElementById('current-price').textContent = parseFloat(product.price || 0).toFixed(2) + '€';
             document.getElementById('product-description').textContent = product.description || 'Aucune description disponible';
             document.getElementById('tab-description').textContent = product.description || 'Aucune description disponible';
             
             // Rating
-            const rating = parseFloat(product.rating) || 0;
-            const reviewsCount = product.reviews_count || 0;
+            var rating = parseFloat(product.rating) || 0;
+            var reviewsCount = product.reviews_count || 0;
             renderStars(rating);
-            document.getElementById('rating-text').textContent = `${reviewsCount} avis`;
+            document.getElementById('rating-text').textContent = reviewsCount + ' avis';
             
             // Rating détaillé dans l'onglet avis
             document.getElementById('rating-number').textContent = rating.toFixed(1);
-            document.getElementById('rating-count').textContent = `${reviewsCount} avis vérifiés`;
+            document.getElementById('rating-count').textContent = reviewsCount + ' avis vérifiés';
             renderRatingBars(rating, reviewsCount);
             
             // Spécifications
-            document.getElementById('spec-sku').textContent = product.sku || `PRD-${product.id}`;
-            document.getElementById('spec-category').textContent = product.category_slug || '-';
+            document.getElementById('spec-sku').textContent = product.sku || 'PRD-' + product.id;
+            document.getElementById('spec-category').textContent = product.category_slug || product.category_name || '-';
             document.getElementById('spec-stock').textContent = product.stock_quantity > 0 ? 'En stock' : 'Rupture de stock';
             
             // Stock status
-            const stockStatus = document.getElementById('stock-status');
-            const stockQuantity = parseInt(product.stock_quantity) || 0;
+            var stockStatus = document.getElementById('stock-status');
+            var stockQuantity = parseInt(product.stock_quantity) || 0;
             
             if (stockQuantity > 0) {
-                stockStatus.textContent = `${stockQuantity} en stock`;
+                stockStatus.textContent = stockQuantity + ' en stock';
                 stockStatus.parentElement.querySelector('i').className = 'fas fa-check-circle';
                 stockStatus.parentElement.querySelector('i').style.color = 'var(--success)';
             } else {
@@ -1484,7 +1419,7 @@
                 stockStatus.parentElement.querySelector('i').style.color = '#ef4444';
                 document.getElementById('add-to-cart-btn').disabled = true;
                 document.getElementById('add-to-cart-btn').style.opacity = '0.5';
-                document.getElementById('add-to-cart-btn').textContent = 'Indisponible';
+                document.getElementById('add-to-cart-btn').innerHTML = '<i class="fas fa-times"></i> Indisponible';
             }
             
             // Favoris
@@ -1492,9 +1427,9 @@
         }
 
         function renderStars(rating) {
-            const starsContainer = document.getElementById('product-stars');
-            let html = '';
-            for (let i = 1; i <= 5; i++) {
+            var starsContainer = document.getElementById('product-stars');
+            var html = '';
+            for (var i = 1; i <= 5; i++) {
                 if (i <= Math.floor(rating)) {
                     html += '<i class="fas fa-star"></i>';
                 } else if (i === Math.ceil(rating) && !Number.isInteger(rating)) {
@@ -1506,33 +1441,29 @@
             starsContainer.innerHTML = html;
             
             // Big stars
-            const bigStars = document.getElementById('rating-stars-big');
+            var bigStars = document.getElementById('rating-stars-big');
             bigStars.innerHTML = html;
         }
 
         function renderRatingBars(rating, count) {
-            const container = document.getElementById('rating-bars');
-            // Distribution simulée basée sur la note moyenne
-            const distribution = calculateDistribution(rating);
+            var container = document.getElementById('rating-bars');
+            var distribution = calculateDistribution(rating);
             
-            let html = '';
-            for (let i = 5; i >= 1; i--) {
-                const percentage = distribution[i-1];
-                html += `
-                    <div class="rating-bar">
-                        <span class="bar-label">${i} étoiles</span>
-                        <div class="bar-track">
-                            <div class="bar-fill" style="width: ${percentage}%;"></div>
-                        </div>
-                        <span class="bar-value">${Math.round(percentage)}%</span>
-                    </div>
-                `;
+            var html = '';
+            for (var i = 5; i >= 1; i--) {
+                var percentage = distribution[i-1];
+                html += '<div class="rating-bar">' +
+                    '<span class="bar-label">' + i + ' étoiles</span>' +
+                    '<div class="bar-track">' +
+                        '<div class="bar-fill" style="width: ' + percentage + '%;"></div>' +
+                    '</div>' +
+                    '<span class="bar-value">' + Math.round(percentage) + '%</span>' +
+                '</div>';
             }
             container.innerHTML = html;
         }
 
         function calculateDistribution(average) {
-            // Simulation basée sur la note moyenne
             if (average >= 4.5) return [85, 10, 3, 1, 1];
             if (average >= 4.0) return [60, 25, 10, 3, 2];
             if (average >= 3.5) return [40, 30, 20, 7, 3];
@@ -1543,95 +1474,105 @@
         // ============================================
         // PRODUITS SIMILAIRES
         // ============================================
-        async function loadRelatedProducts(categoryId) {
-            try {
-                const response = await fetch(`${API_URL}/products?category=${categoryId}&limit=4`);
-                const data = await response.json();
-                
-                if (data.success && data.data) {
-                    const products = Array.isArray(data.data) ? data.data : (data.data.products || []);
-                    const filtered = products.filter(p => p.id != currentProductId).slice(0, 4);
-                    renderRelatedProducts(filtered);
-                }
-            } catch (error) {
-                console.error('Erreur produits similaires:', error);
-            }
+        function loadRelatedProducts(categoryId) {
+            if (!categoryId) return;
+            
+            var apiUrl = API_URL + '/products?category=' + categoryId + '&limit=4';
+            
+            fetch(apiUrl)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success && data.data) {
+                        var products = Array.isArray(data.data) ? data.data : (data.data.products || []);
+                        var filtered = products.filter(function(p) { return p.id != currentProductId; }).slice(0, 4);
+                        renderRelatedProducts(filtered);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('[Product] Erreur produits similaires:', error);
+                });
         }
 
         function renderRelatedProducts(products) {
-            const container = document.getElementById('related-products');
+            var container = document.getElementById('related-products');
             
             if (products.length === 0) {
                 container.innerHTML = '<p style="color: var(--gray); text-align: center;">Aucun produit similaire</p>';
                 return;
             }
             
-            let html = '';
-            products.forEach(product => {
-                const hasDiscount = product.compare_price && product.compare_price > product.price;
-                const discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
+            var html = '';
+            for (var i = 0; i < products.length; i++) {
+                var product = products[i];
+                var hasDiscount = product.compare_price && product.compare_price > product.price;
+                var discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
                 
-                // Utiliser le système de fallback pour les images des produits similaires
-                const productImage = createImageWithFallback(product.main_image_url, product.name, 400, 400);
+                var productImage = createImageWithFallback(product.main_image_url, product.name, 400, 400);
                 
-                html += `
-                    <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
-                        <div class="product-image">
-                            ${hasDiscount ? `<span class="product-badge">-${discount}%</span>` : ''}
-                            <img src="${productImage}" alt="${product.name}" onerror="this.src='${getFallbackImage(400, 400, product.name)}'">
-                            <div class="product-actions-card">
-                                <button class="action-btn" onclick="event.stopPropagation(); toggleFavoriteItem(${product.id})">
-                                    <i class="${favorites.includes(product.id) ? 'fas' : 'far'} fa-heart"></i>
-                                </button>
-                                <button class="action-btn" onclick="event.stopPropagation(); quickView(${product.id})">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="action-btn" onclick="event.stopPropagation(); addToCartItem(${product.id})">
-                                    <i class="fas fa-shopping-cart"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="product-info-card">
-                            <div class="product-category-card">${product.category_slug || 'Produit'}</div>
-                            <h3 class="product-name">${product.name}</h3>
-                            <div class="product-price-card">
-                                <span class="price-current">${parseFloat(product.price || 0).toFixed(2)}€</span>
-                                ${hasDiscount ? `<span class="price-old">${parseFloat(product.compare_price).toFixed(2)}€</span>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+                html += '<div class="product-card" onclick="window.location.href=\'product.html?id=' + product.id + '\'">' +
+                    '<div class="product-image">' +
+                        (hasDiscount ? '<span class="product-badge">-' + discount + '%</span>' : '') +
+                        '<img src="' + productImage + '" alt="' + product.name + '" onerror="this.src=\'' + getFallbackImage(400, 400, product.name) + '\'">' +
+                        '<div class="product-actions-card">' +
+                            '<button class="action-btn" onclick="event.stopPropagation(); toggleFavoriteItem(' + product.id + ')">' +
+                                '<i class="' + (favorites.includes(product.id) ? 'fas' : 'far') + ' fa-heart"></i>' +
+                            '</button>' +
+                            '<button class="action-btn" onclick="event.stopPropagation(); window.location.href=\'product.html?id=' + product.id + '\'">' +
+                                '<i class="fas fa-eye"></i>' +
+                            '</button>' +
+                            '<button class="action-btn" onclick="event.stopPropagation(); addToCartItem(' + product.id + ')">' +
+                                '<i class="fas fa-shopping-cart"></i>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="product-info-card">' +
+                        '<div class="product-category-card">' + (product.category_slug || 'Produit') + '</div>' +
+                        '<h3 class="product-name">' + product.name + '</h3>' +
+                        '<div class="product-price-card">' +
+                            '<span class="price-current">' + parseFloat(product.price || 0).toFixed(2) + '€</span>' +
+                            (hasDiscount ? '<span class="price-old">' + parseFloat(product.compare_price).toFixed(2) + '€</span>' : '') +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }
             
             container.innerHTML = html;
         }
-
         // ============================================
         // INTERACTIONS UTILISATEUR
         // ============================================
         function changeImage(thumbnail, src) {
             if (!src) return;
-            const mainImage = document.getElementById('mainImage');
+            var mainImage = document.getElementById('mainImage');
             mainImage.src = src;
-            // Réappliquer la gestion d'erreur
             handleImageError(mainImage, 800, 800);
-            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            
+            var thumbnails = document.querySelectorAll('.thumbnail');
+            for (var i = 0; i < thumbnails.length; i++) {
+                thumbnails[i].classList.remove('active');
+            }
             thumbnail.classList.add('active');
         }
 
         function updateQty(change) {
-            const input = document.getElementById('qtyInput');
-            let value = parseInt(input.value) + change;
+            var input = document.getElementById('qtyInput');
+            var value = parseInt(input.value) + change;
             if (value >= 1 && value <= 10) {
                 input.value = value;
             }
         }
 
         function addToCart() {
-            if (!currentProduct) return;
+            if (!currentProduct) {
+                console.error('[Product] Pas de produit chargé');
+                return;
+            }
             
-            const qty = parseInt(document.getElementById('qtyInput').value);
-            const existingItem = cart.find(item => item.id === currentProduct.id);
+            var qty = parseInt(document.getElementById('qtyInput').value);
+            var existingItem = cart.find(function(item) { return item.id === currentProduct.id; });
             
             if (existingItem) {
                 existingItem.quantity += qty;
@@ -1648,28 +1589,27 @@
             localStorage.setItem('brandia_cart', JSON.stringify(cart));
             
             // Feedback visuel
-            const btn = document.getElementById('add-to-cart-btn');
-            const originalContent = btn.innerHTML;
+            var btn = document.getElementById('add-to-cart-btn');
+            var originalContent = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
             btn.style.background = 'linear-gradient(135deg, var(--success), #059669)';
             
-            setTimeout(() => {
+            setTimeout(function() {
                 btn.innerHTML = originalContent;
                 btn.style.background = '';
             }, 2000);
             
-            // Mettre à jour le compteur panier si présent
             updateCartCount();
         }
 
         function addToCartItem(productId) {
             // Pour les produits similaires
-            fetch(`${API_URL}/products/${productId}`)
-                .then(r => r.json())
-                .then(data => {
+            fetch(API_URL + '/products/' + productId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
                     if (data.success) {
-                        const product = data.data;
-                        const existingItem = cart.find(item => item.id === product.id);
+                        var product = data.data;
+                        var existingItem = cart.find(function(item) { return item.id === product.id; });
                         if (existingItem) {
                             existingItem.quantity += 1;
                         } else {
@@ -1685,13 +1625,16 @@
                         updateCartCount();
                         showToast('Produit ajouté au panier');
                     }
+                })
+                .catch(function(error) {
+                    console.error('[Product] Erreur ajout panier:', error);
                 });
         }
 
         function toggleFavorite() {
             if (!currentProduct) return;
             
-            const index = favorites.indexOf(currentProduct.id);
+            var index = favorites.indexOf(currentProduct.id);
             if (index > -1) {
                 favorites.splice(index, 1);
             } else {
@@ -1703,89 +1646,85 @@
         }
 
         function toggleFavoriteItem(productId) {
-            const index = favorites.indexOf(productId);
+            var index = favorites.indexOf(productId);
             if (index > -1) {
                 favorites.splice(index, 1);
             } else {
                 favorites.push(productId);
             }
             localStorage.setItem('brandia_favorites', JSON.stringify(favorites));
-            loadRelatedProducts(currentProduct.category_id); // Refresh pour mettre à jour l'icône
+            loadRelatedProducts(currentProduct.category_id);
         }
 
         function updateFavoriteIcon() {
             if (!currentProduct) return;
-            const icon = document.getElementById('favorite-icon');
-            const isFavorite = favorites.includes(currentProduct.id);
+            var icon = document.getElementById('favorite-icon');
+            var isFavorite = favorites.includes(currentProduct.id);
             icon.className = isFavorite ? 'fas fa-heart' : 'far fa-heart';
             icon.style.color = isFavorite ? 'var(--secondary)' : '';
         }
 
-        function quickView(productId) {
-            window.location.href = `product.html?id=${productId}`;
-        }
-
         function switchTab(tabName) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            var buttons = document.querySelectorAll('.tab-btn');
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove('active');
+            }
             event.target.classList.add('active');
             
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            var contents = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].classList.remove('active');
+            }
             document.getElementById(tabName).classList.add('active');
         }
 
         function updateCartCount() {
-            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-            // Mettre à jour l'icône panier dans le header si présente
-            const cartBadge = document.querySelector('.cart-badge');
+            var count = cart.reduce(function(sum, item) { return sum + item.quantity; }, 0);
+            var cartBadge = document.querySelector('.cart-badge');
             if (cartBadge) cartBadge.textContent = count;
         }
 
         function checkUserRole() {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            const dashboardBtn = document.getElementById('dashboardBtn');
+            var currentUser = null;
+            try {
+                var userStr = localStorage.getItem('currentUser') || localStorage.getItem('user') || localStorage.getItem('brandia_user');
+                if (userStr) {
+                    currentUser = JSON.parse(userStr);
+                }
+            } catch (e) {
+                console.error('[Product] Erreur parsing user:', e);
+            }
             
+            var dashboardBtn = document.getElementById('dashboardBtn');
             if (currentUser && currentUser.role === 'supplier') {
                 dashboardBtn.style.display = 'flex';
             }
         }
 
         function showError(message) {
-            document.querySelector('.main-container').innerHTML = `
-                <div style="text-align: center; padding: 4rem 2rem;">
-                    <i class="fas fa-exclamation-circle" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;"></i>
-                    <h2 style="color: var(--light); margin-bottom: 1rem;">${message}</h2>
-                    <a href="index.html" style="color: var(--primary); text-decoration: none;">Retour à l'accueil</a>
-                </div>
-            `;
+            document.querySelector('.main-container').innerHTML = 
+                '<div class="error-state">' +
+                    '<i class="fas fa-exclamation-circle"></i>' +
+                    '<h2>' + message + '</h2>' +
+                    '<a href="index.html">Retour à l\'accueil</a>' +
+                '</div>';
             document.getElementById('loader').classList.add('hidden');
         }
 
         function showToast(message) {
-            // Créer un toast simple
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 2rem;
-                right: 2rem;
-                background: var(--success);
-                color: white;
-                padding: 1rem 2rem;
-                border-radius: 12px;
-                font-weight: 600;
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
-            `;
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position: fixed; bottom: 2rem; right: 2rem; background: var(--success); color: white; padding: 1rem 2rem; border-radius: 12px; font-weight: 600; z-index: 10000; animation: fadeIn 0.3s ease;';
             toast.textContent = message;
             document.body.appendChild(toast);
             
-            setTimeout(() => {
+            setTimeout(function() {
                 toast.remove();
             }, 3000);
         }
 
         // Header scroll effect
-        window.addEventListener('scroll', () => {
-            const header = document.querySelector('.header');
+        window.addEventListener('scroll', function() {
+            var header = document.querySelector('.header');
             if (window.scrollY > 50) {
                 header.style.background = 'rgba(15, 23, 42, 0.95)';
             } else {
@@ -1793,342 +1732,9 @@
             }
         });
 
-        // ============================================
-        // BRANDIA AD SYSTEM - v2.0
-        // Système de publicité contextuelle
-        // ============================================
-        function initAdSystem() {
-            const AdSystem = {
-                campaign: null,
-                supplierId: null,
-                productId: currentProductId,
-                shownThisSession: false,
-                
-                init: async function() {
-                    if (!this.productId) {
-                        console.log('[AdSystem] No product ID found');
-                        return;
-                    }
-                    
-                    console.log('[AdSystem] Initializing for product:', this.productId);
-                    await this.loadCampaign();
-                },
-                
-                loadCampaign: async function() {
-                    try {
-                        // Vérifier si déjà montré cette session
-                        const sessionKey = `ad_shown_${this.productId}`;
-                        if (sessionStorage.getItem(sessionKey)) {
-                            console.log('[AdSystem] Already shown this session');
-                            return;
-                        }
-                        
-                        // Attendre que le produit soit chargé pour avoir le supplier_id
-                        if (!currentProduct || !currentProduct.supplier_id) {
-                            setTimeout(() => this.loadCampaign(), 500);
-                            return;
-                        }
-                        
-                        this.supplierId = currentProduct.supplier_id;
-                        
-                        const url = `${API_URL}/public/campaigns?supplier=${this.supplierId}&product=${this.productId}`;
-                        console.log('[AdSystem] Fetching:', url);
-                        
-                        const response = await fetch(url);
-                        const data = await response.json();
-                        
-                        if (data.success && data.data) {
-                            this.campaign = data.data;
-                            console.log('[AdSystem] Campaign found:', this.campaign.name);
-                            
-                            // Vérifier si ce produit est dans les cibles
-                            const targetProducts = this.campaign.target_products || [];
-                            const isTargeted = targetProducts.includes(parseInt(this.productId)) || 
-                                             targetProducts.length === 0; // Si pas de cible spécifique, tous les produits du supplier sont ciblés
-                            
-                            if (isTargeted) {
-                                this.showAd();
-                            } else {
-                                console.log('[AdSystem] Product not in campaign targets');
-                            }
-                        } else {
-                            console.log('[AdSystem] No active campaign for this product');
-                        }
-                        
-                    } catch (error) {
-                        console.error('[AdSystem] Error:', error);
-                    }
-                },
-                
-                showAd: function() {
-                    if (this.shownThisSession) return;
-                    
-                    // Créer l'overlay
-                    const overlay = document.createElement('div');
-                    overlay.id = 'brandia-ad-overlay';
-                    overlay.style.cssText = `
-                        position: fixed;
-                        inset: 0;
-                        z-index: 9999;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        background: rgba(0, 0, 0, 0.85);
-                        backdrop-filter: blur(8px);
-                        animation: ad-fade-in 0.3s ease-out;
-                    `;
-                    
-                    const isVideo = this.campaign.media_type === 'video';
-                    
-                    // Utiliser le fallback pour les images de campagne aussi
-                    const mediaUrl = isVideo 
-                        ? this.campaign.media_url 
-                        : createImageWithFallback(this.campaign.media_url, 'Campaign', 600, 400);
-                    
-                    const mediaHtml = isVideo 
-                        ? `<video src="${mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" muted autoplay loop></video>`
-                        : `<img src="${mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='${getFallbackImage(600, 400, 'Ad')}'">`;
-                    
-                    overlay.innerHTML = `
-                        <div style="
-                            position: relative;
-                            width: 90%;
-                            max-width: 600px;
-                            background: #0f172a;
-                            border-radius: 20px;
-                            overflow: hidden;
-                            border: 1px solid rgba(255,255,255,0.1);
-                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-                        ">
-                            <!-- Header -->
-                            <div style="
-                                display: flex;
-                                align-items: center;
-                                justify-content: space-between;
-                                padding: 1rem 1.5rem;
-                                border-bottom: 1px solid rgba(255,255,255,0.1);
-                                background: rgba(255,255,255,0.02);
-                            ">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <i class="fas fa-ad" style="color: #6366f1; font-size: 0.9rem;"></i>
-                                    <span style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        Contenu proposé par ${currentProduct.supplier_name || 'la marque'}
-                                    </span>
-                                </div>
-                                <button id="ad-close-btn" style="
-                                    width: 32px;
-                                    height: 32px;
-                                    border: none;
-                                    background: rgba(255,255,255,0.1);
-                                    color: white;
-                                    border-radius: 50%;
-                                    cursor: pointer;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    transition: all 0.2s;
-                                " onmouseover="this.style.background='rgba(239,68,68,0.8)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Media -->
-                            <div style="position: relative; aspect-ratio: 16/9; background: #000;">
-                                ${mediaHtml}
-                                ${isVideo ? `
-                                    <div style="
-                                        position: absolute;
-                                        bottom: 1rem;
-                                        left: 1rem;
-                                        right: 1rem;
-                                    ">
-                                        <div style="
-                                            height: 4px;
-                                            background: rgba(255,255,255,0.2);
-                                            border-radius: 2px;
-                                            overflow: hidden;
-                                        ">
-                                            <div id="ad-progress" style="
-                                                height: 100%;
-                                                background: linear-gradient(90deg, #ec4899, #8b5cf6);
-                                                width: 100%;
-                                                transition: width 1s linear;
-                                            "></div>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                            </div>
-                            
-                            <!-- Content -->
-                            <div style="padding: 1.5rem;">
-                                <h3 style="
-                                    font-size: 1.5rem;
-                                    font-weight: 700;
-                                    color: white;
-                                    margin-bottom: 0.5rem;
-                                    line-height: 1.3;
-                                ">${this.campaign.headline}</h3>
-                                <p style="
-                                    color: #94a3b8;
-                                    margin-bottom: 1.5rem;
-                                    line-height: 1.6;
-                                ">${this.campaign.description || ''}</p>
-                                <a href="${this.campaign.cta_link || '#'}" 
-                                   id="ad-cta-btn"
-                                   style="
-                                    display: inline-flex;
-                                    align-items: center;
-                                    gap: 0.5rem;
-                                    padding: 0.875rem 1.5rem;
-                                    background: linear-gradient(135deg, #ec4899, #8b5cf6);
-                                    color: white;
-                                    text-decoration: none;
-                                    border-radius: 12px;
-                                    font-weight: 600;
-                                    transition: all 0.3s;
-                                    box-shadow: 0 10px 30px -10px rgba(236, 72, 153, 0.4);
-                                " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                    ${this.campaign.cta_text || "Voir l'offre"}
-                                    <i class="fas fa-arrow-right" style="font-size: 0.9rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(overlay);
-                    document.body.style.overflow = 'hidden';
-                    
-                    // Track view
-                    this.trackView();
-                    
-                    // Marquer comme montré
-                    const sessionKey = `ad_shown_${this.productId}`;
-                    sessionStorage.setItem(sessionKey, 'true');
-                    this.shownThisSession = true;
-                    
-                    // Auto-close après 15s pour vidéos
-                    let autoCloseTimer;
-                    let progressInterval;
-                    
-                    if (isVideo) {
-                        const progressBar = document.getElementById('ad-progress');
-                        let progress = 100;
-                        const duration = 15; // secondes
-                        const step = 100 / duration;
-                        
-                        progressInterval = setInterval(() => {
-                            progress -= step;
-                            if (progressBar) progressBar.style.width = progress + '%';
-                            if (progress <= 0) {
-                                clearInterval(progressInterval);
-                                this.closeAd();
-                            }
-                        }, 1000);
-                        
-                        autoCloseTimer = setTimeout(() => this.closeAd(), duration * 1000);
-                    }
-                    
-                    // Event listeners
-                    document.getElementById('ad-close-btn').addEventListener('click', () => {
-                        clearTimeout(autoCloseTimer);
-                        clearInterval(progressInterval);
-                        this.closeAd();
-                    });
-                    
-                    document.getElementById('ad-cta-btn').addEventListener('click', () => {
-                        this.trackClick();
-                    });
-                    
-                    // Fermer en cliquant sur le backdrop
-                    overlay.addEventListener('click', (e) => {
-                        if (e.target === overlay) {
-                            clearTimeout(autoCloseTimer);
-                            clearInterval(progressInterval);
-                            this.closeAd();
-                        }
-                    });
-                    
-                    // Escape key
-                    const escapeHandler = (e) => {
-                        if (e.key === 'Escape') {
-                            clearTimeout(autoCloseTimer);
-                            clearInterval(progressInterval);
-                            this.closeAd();
-                            document.removeEventListener('keydown', escapeHandler);
-                        }
-                    };
-                    document.addEventListener('keydown', escapeHandler);
-                },
-                
-                closeAd: function() {
-                    const overlay = document.getElementById('brandia-ad-overlay');
-                    if (overlay) {
-                        overlay.style.animation = 'ad-fade-out 0.3s ease-in';
-                        setTimeout(() => {
-                            overlay.remove();
-                            document.body.style.overflow = '';
-                        }, 300);
-                    }
-                },
-                
-                trackView: async function() {
-                    try {
-                        await fetch(`${API_URL}/public/campaigns/view`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ campaign_id: this.campaign.id })
-                        });
-                    } catch (e) {
-                        console.error('[AdSystem] Track view error:', e);
-                    }
-                },
-                
-                trackClick: async function() {
-                    try {
-                        await fetch(`${API_URL}/public/campaigns/click`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ campaign_id: this.campaign.id })
-                        });
-                    } catch (e) {
-                        console.error('[AdSystem] Track click error:', e);
-                    }
-                }
-            };
-            
-            // Démarrer
-            AdSystem.init();
-            
-            // Exposer globalement pour debug
-            window.BrandiaAdSystem = AdSystem;
-        }
-
-        // ============================================
-        // DEBUG & DIAGNOSTICS
-        // ============================================
-        
-        // Fonction pour tester le chargement d'images
-        function testImageLoading() {
-            console.log('=== IMAGE DEBUG INFO ===');
-            console.log('Current Product:', currentProduct);
-            console.log('Main Image URL:', currentProduct?.main_image_url);
-            console.log('Image Element:', document.getElementById('mainImage'));
-            console.log('Image Natural Size:', document.getElementById('mainImage')?.naturalWidth, 'x', document.getElementById('mainImage')?.naturalHeight);
-            console.log('========================');
-        }
-
-        // Exposer pour debug dans console
-        window.debugProduct = {
-            getProduct: () => currentProduct,
-            getCart: () => cart,
-            getFavorites: () => favorites,
-            testImages: testImageLoading,
-            reload: loadProductData
-        };
-
-        // Log initial pour vérifier que le script charge bien
-        console.log('Product.html loaded successfully');
-        console.log('API_URL:', API_URL);
+        // Debug
+        console.log('[Product] Script chargé avec succès');
+        console.log('[Product] API_URL:', API_URL);
     </script>
 </body>
 </html>
