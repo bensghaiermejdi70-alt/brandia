@@ -652,66 +652,177 @@ from { transform: translateX(100%); opacity: 0; }
 to { transform: translateX(0); opacity: 1; }
 }
 
-/* Video Ad Overlay */
-.video-ad-overlay {
+/* 🔥 NOUVEAU: Brandia Ads Overlay (sans vidéo) */
+.brandia-ad-overlay {
 position: fixed;
 inset: 0;
 background: rgba(0, 0, 0, 0.9);
-z-index: 9999;
+backdrop-filter: blur(8px);
+z-index: 99999;
 display: none;
 align-items: center;
 justify-content: center;
+opacity: 0;
+transition: opacity 0.3s ease;
 }
 
-.video-ad-overlay.active { display: flex; }
+.brandia-ad-overlay.active {
+display: flex;
+opacity: 1;
+}
 
-.video-ad-container {
+.brandia-ad-container {
 position: relative;
 width: 90%;
-max-width: 800px;
-background: var(--brandia-card);
-border-radius: 20px;
+max-width: 500px;
+background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+border-radius: 24px;
 overflow: hidden;
+box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+border: 1px solid rgba(99, 102, 241, 0.4);
+transform: scale(0.9) translateY(30px);
+transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.video-ad-close {
-position: absolute;
-top: 1rem;
-right: 1rem;
-background: rgba(0, 0, 0, 0.7);
-color: white;
-border: none;
-width: 40px;
-height: 40px;
+.brandia-ad-overlay.active .brandia-ad-container {
+transform: scale(1) translateY(0);
+}
+
+.brandia-ad-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 18px 24px;
+background: rgba(15, 23, 42, 0.9);
+border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.brandia-ad-badge {
+font-size: 13px;
+color: #818cf8;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.8px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.brandia-ad-close {
+width: 36px;
+height: 36px;
 border-radius: 50%;
+background: rgba(239, 68, 68, 0.2);
+border: 1px solid rgba(239, 68, 68, 0.4);
+color: #ef4444;
 cursor: pointer;
-z-index: 10;
 display: flex;
 align-items: center;
 justify-content: center;
+transition: all 0.2s;
+font-size: 16px;
 }
 
-.video-ad-content {
+.brandia-ad-close:hover {
+background: rgba(239, 68, 68, 0.4);
+transform: scale(1.1);
+}
+
+.brandia-ad-media {
+position: relative;
+width: 100%;
+height: 280px;
+background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+overflow: hidden;
+}
+
+.brandia-ad-media img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+display: block;
+}
+
+.brandia-ad-timer {
+position: absolute;
+bottom: 16px;
+right: 16px;
+background: rgba(0,0,0,0.85);
+color: white;
+padding: 8px 14px;
+border-radius: 20px;
+font-size: 13px;
+font-weight: 700;
+display: flex;
+align-items: center;
+gap: 6px;
+border: 1px solid rgba(255,255,255,0.1);
+}
+
+.brandia-ad-content {
+padding: 24px;
+}
+
+.brandia-ad-title {
+font-size: 22px;
+font-weight: 800;
+color: white;
+margin-bottom: 10px;
+line-height: 1.3;
+letter-spacing: -0.2px;
+}
+
+.brandia-ad-desc {
+font-size: 15px;
+color: #94a3b8;
+margin-bottom: 24px;
+line-height: 1.6;
+}
+
+.brandia-ad-cta {
+display: block;
+width: 100%;
+padding: 16px;
+background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+color: white;
+text-align: center;
+border-radius: 14px;
+font-weight: 700;
+text-decoration: none;
+transition: all 0.3s;
+border: none;
+cursor: pointer;
+font-size: 16px;
+box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+}
+
+.brandia-ad-cta:hover {
+transform: translateY(-3px);
+box-shadow: 0 12px 30px -5px rgba(236,72,153,0.5);
+}
+
+.brandia-ad-footer {
+margin-top: 18px;
+font-size: 12px;
+color: #64748b;
+text-align: center;
+font-weight: 500;
+}
+
+.brandia-ad-progress {
+height: 4px;
+background: #1e293b;
+width: 100%;
 position: relative;
 }
 
-.video-ad-info {
-padding: 1.5rem;
-}
-
-.video-ad-progress {
-position: absolute;
-bottom: 0;
-left: 0;
-right: 0;
-height: 4px;
-background: rgba(255, 255, 255, 0.3);
-}
-
-.video-ad-progress-bar {
+.brandia-ad-progress-bar {
 height: 100%;
-background: var(--brandia-primary);
-width: 0%;
+width: 100%;
+background: linear-gradient(90deg, #ec4899, #8b5cf6);
+position: absolute;
+top: 0;
+left: 0;
 transition: width 0.1s linear;
 }
 </style>
@@ -808,21 +919,35 @@ transition: width 0.1s linear;
 </section>
 </main>
 
-<!-- Video Ad Overlay -->
-<div class="video-ad-overlay" id="video-ad-overlay">
-<div class="video-ad-container">
-<button class="video-ad-close" onclick="VideoAd.close()">
+<!-- 🔥 NOUVEAU: Brandia Ads Overlay (Image uniquement, pas de vidéo) -->
+<div class="brandia-ad-overlay" id="brandia-ad-overlay">
+<div class="brandia-ad-container">
+<div class="brandia-ad-header">
+<span class="brandia-ad-badge">
+<i class="fas fa-sparkles" style="color: #ec4899;"></i> Sponsorisé
+</span>
+<button class="brandia-ad-close" onclick="BrandiaAd.close()">
 <i class="fas fa-times"></i>
 </button>
-<div class="video-ad-content">
-<video id="video-ad-player" class="w-full" muted playsinline></video>
-<div class="video-ad-progress">
-<div class="video-ad-progress-bar" id="video-ad-progress"></div>
+</div>
+<div class="brandia-ad-media">
+<img id="brandia-ad-img" src="" alt="Publicité" style="width: 100%; height: 100%; object-fit: cover;">
+<div class="brandia-ad-timer">
+<i class="fas fa-clock" style="color: #ec4899;"></i> <span id="brandia-ad-timer-text">15</span>s
 </div>
 </div>
-<div class="video-ad-info">
-<h4 id="video-ad-brand" style="font-weight: 700; margin-bottom: 0.5rem;"></h4>
-<p id="video-ad-headline" style="color: var(--brandia-text-muted); font-size: 0.875rem;"></p>
+<div class="brandia-ad-content">
+<h4 id="brandia-ad-title" class="brandia-ad-title"></h4>
+<p id="brandia-ad-desc" class="brandia-ad-desc"></p>
+<a href="#" id="brandia-ad-cta" class="brandia-ad-cta" onclick="BrandiaAd.handleClick(event)">
+Voir l'offre <i class="fas fa-arrow-right" style="margin-left: 10px;"></i>
+</a>
+<p class="brandia-ad-footer">
+<i class="fas fa-info-circle" style="margin-right: 6px;"></i> Contenu proposé par la marque que vous consultez
+</p>
+</div>
+<div class="brandia-ad-progress">
+<div class="brandia-ad-progress-bar" id="brandia-ad-progress-bar"></div>
 </div>
 </div>
 </div>
@@ -835,7 +960,7 @@ transition: width 0.1s linear;
 // CONFIGURATION
 // ============================================
 const API_URL = 'https://brandia-1.onrender.com/api';
-const DEFAULT_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWUyOTNiIi8+PHN2ZyB4PSI1MCUiIHk9IjUwJSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiM2NDc0OGIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00MCwgLTQwKSI+PHBhdGggZD0iTTIxIDE5VjVjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2MTRjMCAxLjEuOSAyIDIgMmgxNGMxLjEgMCAyLS45IDItMnpNOC41IDEzLjVsMi41IDMuMDFMMTQuNSAxMmw0LjUgNmg1bC02LTgtNC41IDZ6Ii8+PC9zdmc+PC9zdmc+';
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&auto=format&fit=crop&q=80';
 
 // ============================================
 // ÉTAT GLOBAL
@@ -847,16 +972,8 @@ let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
 // ============================================
 // UTILITAIRES IMAGES
 // ============================================
-function getFallbackImage(width = 800, height = 800, text = 'Image') {
-const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-<rect width="100%" height="100%" fill="#1e293b"/>
-<text x="50%" y="50%" font-family="system-ui" font-size="20" fill="#64748b" text-anchor="middle" dy=".3em">${text}</text>
-</svg>`;
-return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-}
-
 function getProductImageUrl(product) {
-if (!product) return DEFAULT_IMAGE;
+if (!product) return FALLBACK_IMAGE;
 const fields = ['main_image_url', 'image_url', 'image', 'img_url', 'photo_url'];
 for (let field of fields) {
 if (product[field] && typeof product[field] === 'string' && product[field].trim() !== '') {
@@ -866,19 +983,195 @@ return API_URL.replace('/api', '') + product[field];
 return product[field];
 }
 }
-return DEFAULT_IMAGE;
+return FALLBACK_IMAGE;
 }
 
 function handleImageError(img) {
-img.src = DEFAULT_IMAGE;
+img.src = FALLBACK_IMAGE;
 img.onerror = null;
 }
+
+// 🔥 CONVERTIR VIDÉO EN IMAGE (pour éviter Tracking Prevention)
+function getSafeImageUrl(mediaUrl, mediaType) {
+if (!mediaUrl || mediaUrl === 'null' || mediaUrl === 'undefined') {
+return FALLBACK_IMAGE;
+}
+
+// Si c'est une vidéo, convertir en image
+if (mediaType === 'video' || mediaUrl.includes('.mp4') || mediaUrl.includes('.mov') || mediaUrl.includes('.webm')) {
+console.log('[BrandiaAd] Converting video to image:', mediaUrl);
+try {
+// Pattern Cloudinary: .../upload/v.../brandia/campaigns/xxx.mp4
+const match = mediaUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.(mp4|mov|webm)/i);
+if (match) {
+const basePath = match[1];
+// URL image avec frame 0
+return `https://res.cloudinary.com/dsm9w1jzx/image/upload/c_fill,w_600,h_400,q_auto/${basePath}.jpg`;
+}
+} catch (e) {
+console.error('[BrandiaAd] Conversion error:', e);
+}
+return FALLBACK_IMAGE;
+}
+
+return mediaUrl;
+}
+
+// ============================================
+// 🔥 NOUVEAU: BRANDIA AD SYSTEM (v4.0 - Images uniquement)
+// ============================================
+const BrandiaAd = {
+SESSION_KEY: 'brandia_ad_seen_v4',
+campaign: null,
+timer: null,
+countdown: 15,
+
+canShow: function() {
+return !sessionStorage.getItem(this.SESSION_KEY);
+},
+
+markAsSeen: function() {
+sessionStorage.setItem(this.SESSION_KEY, 'true');
+},
+
+check: async function(product) {
+if (!this.canShow()) {
+console.log('[BrandiaAd] Already seen this session');
+return;
+}
+
+if (!product || !product.supplier_id) {
+console.log('[BrandiaAd] No supplier_id');
+return;
+}
+
+try {
+console.log('[BrandiaAd] Checking for campaigns...');
+const response = await fetch(`${API_URL}/supplier/public/campaigns?supplier=${product.supplier_id}&product=${product.id}`);
+const data = await response.json();
+
+if (data.success && data.data) {
+console.log('[BrandiaAd] Campaign found:', data.data.id);
+this.show(data.data);
+} else {
+console.log('[BrandiaAd] No active campaign');
+}
+} catch (error) {
+console.error('[BrandiaAd] Error:', error);
+}
+},
+
+show: function(campaign) {
+this.campaign = campaign;
+const overlay = document.getElementById('brandia-ad-overlay');
+const img = document.getElementById('brandia-ad-img');
+const title = document.getElementById('brandia-ad-title');
+const desc = document.getElementById('brandia-ad-desc');
+const cta = document.getElementById('brandia-ad-cta');
+const timerText = document.getElementById('brandia-ad-timer-text');
+const progressBar = document.getElementById('brandia-ad-progress-bar');
+
+if (!overlay) return;
+
+// 🔥 CONVERSION FORCÉE EN IMAGE (pas de vidéo!)
+const safeImageUrl = getSafeImageUrl(campaign.media_url, campaign.media_type);
+console.log('[BrandiaAd] Using image:', safeImageUrl);
+
+// Remplir contenu
+img.src = safeImageUrl;
+img.onerror = function() {
+this.src = FALLBACK_IMAGE;
+};
+title.textContent = campaign.headline || 'Offre spéciale';
+desc.textContent = campaign.description || 'Découvrez cette offre exclusive';
+cta.href = campaign.cta_link || '#';
+cta.innerHTML = `${campaign.cta_text || "Voir l'offre"} <i class="fas fa-arrow-right" style="margin-left: 10px;"></i>`;
+
+// Afficher
+overlay.classList.add('active');
+this.markAsSeen();
+
+// Timer
+this.countdown = 15;
+timerText.textContent = this.countdown;
+progressBar.style.width = '100%';
+
+// Animation progression
+let elapsed = 0;
+const totalDuration = 15000; // 15s
+const interval = 50; // update every 50ms
+
+this.timer = setInterval(() => {
+elapsed += interval;
+const remaining = Math.ceil((totalDuration - elapsed) / 1000);
+const percent = ((totalDuration - elapsed) / totalDuration) * 100;
+
+this.countdown = remaining;
+timerText.textContent = remaining;
+progressBar.style.width = percent + '%';
+
+if (elapsed >= totalDuration) {
+clearInterval(this.timer);
+this.close();
+}
+}, interval);
+
+// Track view
+this.trackView(campaign.id);
+},
+
+close: function() {
+if (this.timer) {
+clearInterval(this.timer);
+this.timer = null;
+}
+
+const overlay = document.getElementById('brandia-ad-overlay');
+if (overlay) {
+overlay.classList.remove('active');
+}
+
+this.campaign = null;
+},
+
+handleClick: function(e) {
+e.preventDefault();
+if (this.campaign) {
+this.trackClick(this.campaign.id);
+setTimeout(() => {
+const link = this.campaign.cta_link || '#';
+this.close();
+if (link !== '#') window.location.href = link;
+}, 100);
+}
+},
+
+trackView: async function(campaignId) {
+try {
+await fetch(`${API_URL}/supplier/public/campaigns/view`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ campaign_id: campaignId })
+});
+} catch (e) {}
+},
+
+trackClick: async function(campaignId) {
+try {
+await fetch(`${API_URL}/supplier/public/campaigns/click`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ campaign_id: campaignId })
+});
+} catch (e) {}
+}
+};
 
 // ============================================
 // INITIALISATION
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-console.log('[Product] Initialisation...');
+console.log('[Product] Initializing...');
 
 // Récupérer l'ID depuis l'URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -902,24 +1195,24 @@ async function loadProductData() {
 const section = document.getElementById('product-section');
 
 try {
-console.log('[Product] Chargement depuis:', `${API_URL}/products/${currentProductId}`);
+console.log('[Product] Loading from:', `${API_URL}/products/${currentProductId}`);
 
 const response = await fetch(`${API_URL}/products/${currentProductId}`);
-console.log('[Product] Statut:', response.status);
+console.log('[Product] Status:', response.status);
 
 if (!response.ok) {
 throw new Error(`HTTP ${response.status}`);
 }
 
 const data = await response.json();
-console.log('[Product] Données:', data);
+console.log('[Product] Data:', data);
 
 if (!data.success || !data.data) {
 throw new Error('Produit non trouvé');
 }
 
 currentProduct = data.data.product || data.data;
-console.log('[Product] Produit chargé:', currentProduct.name);
+console.log('[Product] Loaded:', currentProduct.name);
 
 // Afficher le produit
 renderProduct(currentProduct);
@@ -929,11 +1222,13 @@ if (currentProduct.category_id) {
 loadRelatedProducts(currentProduct.category_id);
 }
 
-// Vérifier publicité vidéo
-checkVideoAd(currentProduct);
+// 🔥 Vérifier publicité (nouveau système image)
+setTimeout(() => {
+BrandiaAd.check(currentProduct);
+}, 2000);
 
 } catch (error) {
-console.error('[Product] Erreur:', error);
+console.error('[Product] Error:', error);
 showError('Impossible de charger le produit: ' + error.message);
 }
 }
@@ -966,7 +1261,7 @@ section.innerHTML = `
 <img src="${imageUrl}" alt="${product.name}" onerror="handleImageError(this)">
 </div>
 <div class="thumbnail-list">
-<div class="thumbnail active" onclick="changeImage(this, '${imageUrl}')">
+<div class="thumbnail active">
 <img src="${imageUrl}" alt="Vue 1" onerror="handleImageError(this)">
 </div>
 </div>
@@ -1096,7 +1391,7 @@ const products = (Array.isArray(data.data) ? data.data : (data.data.products || 
 renderRelatedProducts(products);
 }
 } catch (error) {
-console.error('[Product] Erreur produits similaires:', error);
+console.error('[Product] Error loading related:', error);
 }
 }
 
@@ -1134,12 +1429,6 @@ ${hasDiscount ? `<span style="color: var(--brandia-text-muted); text-decoration:
 // ============================================
 // INTERACTIONS
 // ============================================
-function changeImage(thumbnail, src) {
-document.getElementById('mainImage').src = src;
-document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
-thumbnail.classList.add('active');
-}
-
 function updateQty(change) {
 const input = document.getElementById('qtyInput');
 const value = parseInt(input.value) + change;
@@ -1165,17 +1454,6 @@ quantity: qty
 }
 
 localStorage.setItem('brandia_cart', JSON.stringify(cart));
-
-// Feedback
-const btn = document.getElementById('add-to-cart-btn');
-const original = btn.innerHTML;
-btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
-btn.style.background = 'linear-gradient(135deg, var(--brandia-success), #059669)';
-setTimeout(() => {
-btn.innerHTML = original;
-btn.style.background = '';
-}, 2000);
-
 showToast('Produit ajouté au panier !');
 }
 
@@ -1227,97 +1505,6 @@ setTimeout(() => toast.remove(), 3000);
 }
 
 // ============================================
-// VIDEO AD SYSTEM (15s, 1x/session, skippable)
-// ============================================
-const VideoAd = {
-SESSION_KEY: 'brandia_video_ad_seen',
-
-canShow: function() {
-return !sessionStorage.getItem(VideoAd.SESSION_KEY);
-},
-
-markAsSeen: function() {
-sessionStorage.setItem(VideoAd.SESSION_KEY, 'true');
-},
-
-check: async function(product) {
-if (!VideoAd.canShow()) return;
-
-try {
-const supplierId = product.supplier_id;
-if (!supplierId) return;
-
-const response = await fetch(`${API_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${product.id}`);
-const data = await response.json();
-
-if (data.success && data.data) {
-VideoAd.show(data.data);
-}
-} catch (error) {
-console.error('[VideoAd] Erreur:', error);
-}
-},
-
-show: function(campaign) {
-const overlay = document.getElementById('video-ad-overlay');
-const player = document.getElementById('video-ad-player');
-const progress = document.getElementById('video-ad-progress');
-const brand = document.getElementById('video-ad-brand');
-const headline = document.getElementById('video-ad-headline');
-
-if (!overlay || !player) return;
-
-// Charger vidéo
-player.src = campaign.media_url;
-brand.textContent = campaign.headline || 'Offre spéciale';
-headline.textContent = campaign.description || 'Découvrez nos produits';
-
-// Afficher
-overlay.classList.add('active');
-VideoAd.markAsSeen();
-
-// Lancer
-player.play().catch(e => console.log('Autoplay bloqué:', e));
-
-// Progress bar
-let duration = 15;
-let elapsed = 0;
-const interval = setInterval(() => {
-elapsed++;
-const percent = (elapsed / duration) * 100;
-progress.style.width = percent + '%';
-
-if (elapsed >= duration) {
-clearInterval(interval);
-VideoAd.close();
-}
-}, 1000);
-
-// Track view
-fetch(`${API_URL}/supplier/public/campaigns/view`, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ campaign_id: campaign.id })
-}).catch(e => {});
-},
-
-close: function() {
-const overlay = document.getElementById('video-ad-overlay');
-const player = document.getElementById('video-ad-player');
-
-if (overlay) overlay.classList.remove('active');
-if (player) {
-player.pause();
-player.src = '';
-}
-}
-};
-
-function checkVideoAd(product) {
-VideoAd.check(product);
-}
-
-// ============================================
 // HEADER SCROLL EFFECT
 // ============================================
 window.addEventListener('scroll', function() {
@@ -1329,7 +1516,7 @@ header.style.background = 'rgba(15, 23, 42, 0.95)';
 }
 });
 
-console.log('[Product] Script chargé');
+console.log('[Product] Script loaded v4.0');
 </script>
 </body>
 </html>
