@@ -5,19 +5,17 @@
 [build.environment]
   CI = "false"
 
-# Désactive les functions pour débloquer
+# Désactive les functions
 [functions]
-  directory = "netlify/functions"
-  node_bundler = "none"
+  directory = "functions"
+  included_files = []
 
-# Redirections API
 [[redirects]]
   from = "/api/*"
   to = "https://brandia-1.onrender.com/api/:splat"
   status = 200
   force = true
 
-# SPA routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
