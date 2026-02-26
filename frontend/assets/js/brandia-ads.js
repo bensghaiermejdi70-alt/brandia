@@ -1,6 +1,6 @@
 // ============================================
 // BRANDIA ADS SYSTEM - v3.3 FINAL PRODUCTION
-// Fix: Syntaxe JS + Fallback vidéo Cloudinary
+// Fix: TOUTES syntaxe JS + Fallback vidéo Cloudinary
 // ============================================
 (function() {
   'use strict';
@@ -187,7 +187,7 @@
       
       const isVideo = campaign.media_type === 'video';
       
-      // 🔥 FALLBACK VIDÉO : poster + gestion erreur
+      // 🔥 FALLBACK VIDÉO : poster + gestion erreur Tracking Prevention
       const videoPoster = campaign.media_url.replace('/upload/', '/upload/f_auto,q_auto/');
       const mediaHtml = isVideo 
         ? `<video src="${campaign.media_url}" poster="${videoPoster}?format=jpg" muted playsinline autoplay class="w-full h-full object-cover" id="ad-video" crossorigin="anonymous"></video>`
@@ -269,17 +269,26 @@
         setTimeout(() => this.closeAd('clicked', supplierId), 100);
       });
       
-      // 🔥 GESTION VIDÉO AVEC FALLBACK
+      // 🔥 GESTION VIDÉO AVEC FALLBACK POUR TRACKING PREVENTION
       if (isVideo) {
         const video = document.getElementById('ad-video');
         if (video) {
-          // Fallback si vidéo bloquée
+          // Fallback si vidéo bloquée par navigateur
           video.addEventListener('error', () => {
-            console.log('[BrandiaAds] Video blocked, showing poster');
+            console.log('[BrandiaAds] Video blocked by Tracking Prevention, showing poster');
             video.style.display = 'none';
             video.parentElement.style.backgroundImage = `url('${videoPoster}?format=jpg')`;
             video.parentElement.style.backgroundSize = 'cover';
             video.parentElement.style.backgroundPosition = 'center';
+            video.parentElement.innerHTML += `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;"><i class="fas fa-image mr-2"></i>Image de campagne</div>`;
+          });
+          
+          // Essayer de jouer, fallback si bloqué
+          video.play().catch(() => {
+            console.log('[BrandiaAds] Video autoplay blocked, showing poster');
+            video.style.display = 'none';
+            video.parentElement.style.backgroundImage = `url('${videoPoster}?format=jpg')`;
+            video.parentElement.style.backgroundSize = 'cover';
           });
           
           this.startTimer(video);
