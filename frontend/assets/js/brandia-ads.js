@@ -1,6 +1,6 @@
 // ============================================
-// BRANDIA ADS SYSTEM - v3.3 PRODUCTION
-// Fix: Syntaxe JS, position centrée, fermeture immédiate, tracking
+// BRANDIA ADS SYSTEM - v3.3 PRODUCTION FINAL
+// Fix: Position centrée, fermeture immédiate, syntaxe JS
 // ============================================
 (function() {
   'use strict';
