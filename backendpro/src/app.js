@@ -1,6 +1,6 @@
 // ============================================
-// APP.JS - Brandia Backend v3.6 PRODUCTION
-// Avec Proxy Vidéo pour contourner Tracking Prevention
+// APP.JS - Brandia Backend v3.7 STABLE
+// Compatible Node 18+ (fetch natif)
 // ============================================
 
 const express = require('express');
@@ -8,7 +8,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
-const fetch = require('node-fetch');
+const http = require('http');
+const https = require('https');
 
 const app = express();
 
@@ -26,17 +27,14 @@ app.use(helmet({
     }
 }));
 
-// Logging
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-// Parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// CORS
 app.use(cors({
     origin: true,
     credentials: true,
@@ -45,7 +43,7 @@ app.use(cors({
 }));
 
 // ============================================
-// 🔥 PROXY VIDÉO - Contourne Tracking Prevention
+// 🔥 PROXY VIDÉO - Version simple avec http/https natif
 // ============================================
 
 app.get('/api/proxy/video', async (req, res) => {
@@ -59,86 +57,68 @@ app.get('/api/proxy/video', async (req, res) => {
             });
         }
 
-        // Validation URL Cloudinary uniquement (sécurité)
-        const allowedDomains = [
-            'res.cloudinary.com',
-            'cloudinary.com',
-            'video.cloudinary.com'
-        ];
-        
+        // Validation URL Cloudinary uniquement
+        const allowedDomains = ['res.cloudinary.com', 'cloudinary.com'];
         const urlObj = new URL(videoUrl);
         const isAllowed = allowedDomains.some(domain => urlObj.hostname.includes(domain));
         
         if (!isAllowed) {
-            console.warn('[Proxy] Blocked domain:', urlObj.hostname);
             return res.status(403).json({ 
                 success: false, 
                 message: 'Domaine non autorisé' 
             });
         }
 
-        console.log('[Proxy] Fetching video:', videoUrl);
+        console.log('[Proxy] Streaming:', videoUrl);
 
-        // Récupérer la vidéo depuis Cloudinary avec timeout
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        // Utiliser http ou https selon l'URL
+        const client = videoUrl.startsWith('https:') ? https : http;
+        
+        const proxyReq = client.get(videoUrl, (proxyRes) => {
+            // Headers
+            res.set('Content-Type', proxyRes.headers['content-type'] || 'video/mp4');
+            if (proxyRes.headers['content-length']) {
+                res.set('Content-Length', proxyRes.headers['content-length']);
+            }
+            res.set('Cache-Control', 'public, max-age=3600');
+            res.set('Accept-Ranges', 'bytes');
+            
+            // Stream
+            proxyRes.pipe(res);
+        });
 
-        const response = await fetch(videoUrl, {
-            signal: controller.signal,
-            headers: {
-                'User-Agent': 'Brandia-Proxy/1.0',
-                'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8'
+        proxyReq.on('error', (err) => {
+            console.error('[Proxy] Error:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ 
+                    success: false, 
+                    message: 'Erreur streaming vidéo' 
+                });
             }
         });
 
-        clearTimeout(timeout);
-
-        if (!response.ok) {
-            throw new Error(`Cloudinary error: ${response.status} ${response.statusText}`);
-        }
-
-        // Headers de la réponse
-        const contentType = response.headers.get('content-type') || 'video/mp4';
-        const contentLength = response.headers.get('content-length');
-
-        // Stream la réponse au client
-        res.set('Content-Type', contentType);
-        if (contentLength) res.set('Content-Length', contentLength);
-        res.set('Cache-Control', 'public, max-age=3600');
-        res.set('Accept-Ranges', 'bytes');
-        res.set('Access-Control-Allow-Origin', '*');
-
-        // Pipe le stream vidéo
-        response.body.pipe(res);
-
-        // Gestion erreur stream
-        response.body.on('error', (err) => {
-            console.error('[Proxy] Stream error:', err);
+        // Timeout
+        proxyReq.setTimeout(30000, () => {
+            proxyReq.destroy();
             if (!res.headersSent) {
-                res.status(500).end();
+                res.status(504).json({ 
+                    success: false, 
+                    message: 'Timeout' 
+                });
             }
         });
 
     } catch (error) {
         console.error('[Proxy] Error:', error.message);
-        
-        if (error.name === 'AbortError') {
-            return res.status(504).json({ 
-                success: false, 
-                message: 'Timeout lors du chargement vidéo' 
-            });
-        }
-        
         res.status(500).json({ 
             success: false, 
-            message: 'Erreur proxy vidéo',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Erreur proxy vidéo'
         });
     }
 });
 
 // ============================================
-// DÉTECTION DU DOSSIER FRONTEND
+// DÉTECTION FRONTEND
 // ============================================
 
 function findFrontendPath() {
@@ -152,14 +132,11 @@ function findFrontendPath() {
     ];
 
     for (const testPath of possiblePaths) {
-        console.log(`[App] Checking path: ${testPath}`);
         if (fs.existsSync(testPath) && fs.existsSync(path.join(testPath, 'index.html'))) {
-            console.log(`[App] ✅ Frontend found at: ${testPath}`);
+            console.log(`[App] Frontend found: ${testPath}`);
             return testPath;
         }
     }
-
-    console.warn('[App] ⚠️ No frontend folder found, serving API only');
     return null;
 }
 
@@ -172,45 +149,35 @@ const publicPath = findFrontendPath();
 if (publicPath) {
     app.use(express.static(publicPath));
     app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-    console.log(`[App] Serving static files from: ${publicPath}`);
-} else {
-    console.log('[App] Running in API-only mode');
 }
 
 // ============================================
 // ROUTES API
 // ============================================
 
-console.log('[App] Loading API routes...');
-
-// 1. Health check (public)
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
         timestamp: new Date().toISOString(),
         frontend: publicPath ? 'connected' : 'not found',
-        proxy: 'available'
+        proxy: 'available',
+        node_version: process.version
     });
 });
 
-// 2. Supplier routes (public campaigns + protected)
+// Routes existantes
 const supplierRoutes = require('./modules/supplier/supplier.routes');
 app.use('/api/supplier', supplierRoutes);
-console.log('[App] ✅ Supplier routes mounted at /api/supplier');
 
-// 3. Product routes (public)
 const productRoutes = require('./modules/products/product.routes');
 app.use('/api/products', productRoutes);
-console.log('[App] ✅ Product routes mounted at /api/products');
 
-// 4. Other routes (index.js)
 const indexRoutes = require('./routes/index');
 app.use('/api', indexRoutes);
-console.log('[App] ✅ Index routes mounted at /api');
 
 // ============================================
-// ROUTE CATCH-ALL POUR LE FRONTEND (SPA)
+// CATCH-ALL FRONTEND
 // ============================================
 
 if (publicPath) {
@@ -218,32 +185,17 @@ if (publicPath) {
         if (req.path.startsWith('/api/')) {
             return res.status(404).json({
                 success: false,
-                message: 'API endpoint non trouvé',
-                path: req.path
+                message: 'API endpoint non trouvé'
             });
         }
-        
-        const indexPath = path.join(publicPath, 'index.html');
-        if (fs.existsSync(indexPath)) {
-            res.sendFile(indexPath);
-        } else {
-            res.status(404).json({
-                success: false,
-                message: 'Frontend not found'
-            });
-        }
+        res.sendFile(path.join(publicPath, 'index.html'));
     });
 } else {
     app.get('/', (req, res) => {
         res.json({
             success: true,
-            message: 'Brandia API is running',
-            endpoints: {
-                health: '/api/health',
-                products: '/api/products',
-                supplier: '/api/supplier',
-                proxy: '/api/proxy/video?url=VIDEO_URL'
-            }
+            message: 'Brandia API',
+            endpoints: ['/api/health', '/api/products', '/api/supplier', '/api/proxy/video']
         });
     });
 }
@@ -254,7 +206,6 @@ if (publicPath) {
 
 app.use((err, req, res, next) => {
     console.error('[Error]', err);
-    
     res.status(err.status || 500).json({
         success: false,
         message: err.message || 'Erreur serveur'
