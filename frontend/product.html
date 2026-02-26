@@ -638,11 +638,7 @@ to { transform: translateX(0); opacity: 1; }
 }
 
 /* ============================================
-🔥 PRODUCTION: BRANDIA VIDEO AD SYSTEM v5.0
-Stratégies anti-Tracking Prevention:
-1. Proxy vidéo via votre backend
-2. Blob URL (mémoire locale)
-3. Fallback immédiat sur image
+🔥 VRAI SYSTÈME VIDÉO v5.1 - PRODUCTION
 ============================================ */
 .brandia-ad-overlay {
 position: fixed;
@@ -664,8 +660,8 @@ opacity: 1;
 
 .brandia-ad-container {
 position: relative;
-width: 90%;
-max-width: 800px;
+width: 95%;
+max-width: 900px;
 background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
 border-radius: 24px;
 overflow: hidden;
@@ -719,33 +715,36 @@ background: rgba(239, 68, 68, 0.4);
 transform: scale(1.1);
 }
 
-/* Container vidéo avec ratio 16:9 */
+/* Container vidéo 16:9 */
 .brandia-ad-video-wrapper {
 position: relative;
 width: 100%;
-padding-top: 56.25%; /* 16:9 */
+padding-top: 56.25%;
 background: #000;
 overflow: hidden;
 }
 
+/* 🔥 VIDÉO RÉELLE */
 .brandia-ad-video {
 position: absolute;
 top: 0;
 left: 0;
 width: 100%;
 height: 100%;
-object-fit: cover;
+object-fit: contain;
+background: #000;
 }
 
-/* Fallback image quand vidéo bloquée */
+/* Fallback image si vidéo bloquée */
 .brandia-ad-fallback {
 position: absolute;
 inset: 0;
-background-size: cover;
-background-position: center;
+background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 display: none;
 align-items: center;
 justify-content: center;
+flex-direction: column;
+gap: 20px;
 }
 
 .brandia-ad-fallback.active {
@@ -756,10 +755,14 @@ display: flex;
 width: 100%;
 height: 100%;
 object-fit: cover;
+position: absolute;
+inset: 0;
+opacity: 0.6;
 }
 
-/* Bouton play pour fallback */
 .brandia-ad-play-btn {
+position: relative;
+z-index: 2;
 width: 80px;
 height: 80px;
 background: rgba(236, 72, 153, 0.9);
@@ -845,6 +848,11 @@ margin-top: 20px;
 font-size: 12px;
 color: #64748b;
 font-weight: 500;
+display: flex;
+align-items: center;
+justify-content: space-between;
+flex-wrap: wrap;
+gap: 10px;
 }
 
 .brandia-ad-progress {
@@ -866,9 +874,6 @@ transition: width 0.1s linear;
 
 /* Bouton téléchargement */
 .brandia-ad-download {
-position: absolute;
-bottom: 16px;
-right: 16px;
 background: rgba(255,255,255,0.1);
 backdrop-filter: blur(10px);
 color: white;
@@ -877,12 +882,11 @@ border-radius: 20px;
 font-size: 12px;
 font-weight: 600;
 text-decoration: none;
-display: flex;
+display: inline-flex;
 align-items: center;
 gap: 6px;
 transition: all 0.2s;
 border: 1px solid rgba(255,255,255,0.2);
-z-index: 10;
 }
 
 .brandia-ad-download:hover {
@@ -983,14 +987,14 @@ background: rgba(255,255,255,0.2);
 </main>
 
 <!-- ============================================
-🔥 PRODUCTION: BRANDIA VIDEO AD OVERLAY v5.0
+🔥 VRAI SYSTÈME VIDÉO v5.1 - AVEC PROXY
 ============================================ -->
 <div class="brandia-ad-overlay" id="brandia-ad-overlay">
 <div class="brandia-ad-container">
 <!-- Header -->
 <div class="brandia-ad-header">
 <span class="brandia-ad-badge">
-<i class="fas fa-sparkles" style="color: #ec4899;"></i> Sponsorisé • <span id="brandia-ad-timer">15</span>s
+<i class="fas fa-sparkles" style="color: #ec4899;"></i> Sponsorisé • <span id="brandia-ad-timer-text">15</span>s
 </span>
 <button class="brandia-ad-close" onclick="BrandiaVideoAd.close()">
 <i class="fas fa-times"></i>
@@ -998,8 +1002,8 @@ background: rgba(255,255,255,0.2);
 </div>
 
 <!-- Video Container -->
-<div class="brandia-ad-video-wrapper" id="brandia-ad-video-wrapper">
-<!-- Vidéo principale -->
+<div class="brandia-ad-video-wrapper">
+<!-- 🔥 VIDÉO RÉELLE via proxy -->
 <video 
 id="brandia-ad-video" 
 class="brandia-ad-video" 
@@ -1009,7 +1013,7 @@ preload="auto"
 crossorigin="anonymous">
 </video>
 
-<!-- Fallback image si vidéo bloquée -->
+<!-- Fallback si vidéo bloquée -->
 <div class="brandia-ad-fallback" id="brandia-ad-fallback">
 <img id="brandia-ad-fallback-img" src="" alt="Publicité">
 <div class="brandia-ad-play-btn" onclick="BrandiaVideoAd.retryVideo()">
@@ -1021,11 +1025,6 @@ crossorigin="anonymous">
 <div class="brandia-ad-timer">
 <i class="fas fa-clock" style="color: #ec4899;"></i> <span id="brandia-ad-timer-display">15</span>s
 </div>
-
-<!-- Bouton téléchargement -->
-<a href="#" id="brandia-ad-download" class="brandia-ad-download" download target="_blank">
-<i class="fas fa-download"></i> Télécharger
-</a>
 </div>
 
 <!-- Progress -->
@@ -1037,14 +1036,16 @@ crossorigin="anonymous">
 <div class="brandia-ad-content">
 <h4 id="brandia-ad-title" class="brandia-ad-title"></h4>
 <p id="brandia-ad-desc" class="brandia-ad-desc"></p>
-<div style="display: flex; gap: 12px; flex-wrap: wrap;">
+<div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
 <a href="#" id="brandia-ad-cta" class="brandia-ad-cta" onclick="BrandiaVideoAd.handleClick(event)">
 Voir l'offre <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
 </a>
+<a href="#" id="brandia-ad-download" class="brandia-ad-download" download target="_blank">
+<i class="fas fa-download"></i> Télécharger vidéo
+</a>
 </div>
 <p class="brandia-ad-footer">
-<i class="fas fa-info-circle" style="margin-right: 6px;"></i> Contenu proposé par la marque que vous consultez • 
-<a href="#" id="brandia-ad-download-link" style="color: #818cf8; text-decoration: none;">Télécharger la vidéo</a>
+<i class="fas fa-info-circle" style="margin-right: 6px;"></i> Contenu proposé par la marque
 </p>
 </div>
 </div>
@@ -1058,7 +1059,7 @@ Voir l'offre <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
 // CONFIGURATION PRODUCTION
 // ============================================
 const API_URL = 'https://brandia-1.onrender.com/api';
-const PROXY_URL = 'https://brandia-1.onrender.com/api/proxy/video'; // 🔥 Votre endpoint proxy
+const PROXY_URL = 'https://brandia-1.onrender.com/api/proxy/video';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&auto=format&fit=crop&q=80';
 
 // ============================================
@@ -1090,28 +1091,17 @@ img.src = FALLBACK_IMAGE;
 img.onerror = null;
 }
 
-// Convertir URL Cloudinary vidéo en image poster
-function getVideoPosterUrl(videoUrl) {
-try {
-const match = videoUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.(mp4|mov|webm)/i);
-if (match) {
-return `https://res.cloudinary.com/dsm9w1jzx/image/upload/c_fill,w_800,h_450,q_auto/${match[1]}.jpg`;
-}
-} catch (e) {}
-return FALLBACK_IMAGE;
-}
-
 // ============================================
-// 🔥 PRODUCTION: BRANDIA VIDEO AD SYSTEM v5.0
+// 🔥 VRAI SYSTÈME VIDÉO v5.1 - AVEC PROXY
 // ============================================
 const BrandiaVideoAd = {
-SESSION_KEY: 'brandia_video_ad_seen_v5',
+SESSION_KEY: 'brandia_video_ad_seen_v51',
 campaign: null,
-timer: null;
+timer: null,
 progressTimer: null,
-countdown: 15;
-videoBlobUrl: null;
-isFallback: false;
+countdown: 15,
+videoBlobUrl: null,
+isFallback: false,
 
 canShow() {
 return !sessionStorage.getItem(this.SESSION_KEY);
@@ -1133,16 +1123,13 @@ return;
 }
 
 try {
-console.log('[BrandiaVideoAd] Checking for video campaigns...');
+console.log('[BrandiaVideoAd] Checking for campaigns...');
 const response = await fetch(`${API_URL}/supplier/public/campaigns?supplier=${product.supplier_id}&product=${product.id}`);
 const data = await response.json();
 
-if (data.success && data.data && data.data.media_type === 'video') {
-console.log('[BrandiaVideoAd] Video campaign found:', data.data.id);
+if (data.success && data.data) {
+console.log('[BrandiaVideoAd] Campaign found:', data.data.id, 'Type:', data.data.media_type);
 this.show(data.data);
-} else if (data.success && data.data) {
-console.log('[BrandiaVideoAd] Image campaign found, using image mode');
-this.showImageMode(data.data);
 } else {
 console.log('[BrandiaVideoAd] No active campaign');
 }
@@ -1151,32 +1138,20 @@ console.error('[BrandiaVideoAd] Error:', error);
 }
 },
 
-// 🔥 STRATÉGIE 1: Charger vidéo via proxy (contourne Tracking Prevention)
+// 🔥 CHARGER VIDÉO VIA PROXY (contourne Tracking Prevention)
 async loadVideoViaProxy(videoUrl) {
 try {
-console.log('[BrandiaVideoAd] Loading via proxy...');
-const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(videoUrl)}`;
-const response = await fetch(proxyUrl);
+console.log('[BrandiaVideoAd] Loading via proxy:', PROXY_URL);
+const proxyFullUrl = `${PROXY_URL}?url=${encodeURIComponent(videoUrl)}`;
+console.log('[BrandiaVideoAd] Full proxy URL:', proxyFullUrl);
+	
+const response = await fetch(proxyFullUrl);
+if (!response.ok) throw new Error(`Proxy error: ${response.status}`);
+	
 const blob = await response.blob();
 return URL.createObjectURL(blob);
 } catch (error) {
 console.error('[BrandiaVideoAd] Proxy failed:', error);
-return null;
-}
-},
-
-// 🔥 STRATÉGIE 2: Créer blob depuis URL direct (parfois fonctionne)
-async loadVideoAsBlob(videoUrl) {
-try {
-console.log('[BrandiaVideoAd] Loading as blob...');
-const response = await fetch(videoUrl, {
-mode: 'cors',
-credentials: 'omit'
-});
-const blob = await response.blob();
-return URL.createObjectURL(blob);
-} catch (error) {
-console.error('[BrandiaVideoAd] Blob failed:', error);
 return null;
 }
 },
@@ -1193,60 +1168,41 @@ const title = document.getElementById('brandia-ad-title');
 const desc = document.getElementById('brandia-ad-desc');
 const cta = document.getElementById('brandia-ad-cta');
 const downloadBtn = document.getElementById('brandia-ad-download');
-const downloadLink = document.getElementById('brandia-ad-download-link');
 
 if (!overlay) return;
 
-// Préparer fallback
-const posterUrl = getVideoPosterUrl(campaign.media_url);
+// Préparer fallback (image poster de la vidéo)
+const posterUrl = campaign.media_url.replace('.mp4', '.jpg').replace('/upload/', '/upload/so_0/');
 fallbackImg.src = posterUrl;
-fallbackImg.onerror = () => {
-fallbackImg.src = FALLBACK_IMAGE;
-};
+fallbackImg.onerror = () => { fallbackImg.src = FALLBACK_IMAGE; };
 
 // Remplir contenu
 title.textContent = campaign.headline || 'Offre spéciale';
 desc.textContent = campaign.description || 'Découvrez cette offre exclusive';
 cta.href = campaign.cta_link || '#';
 downloadBtn.href = campaign.media_url;
-downloadLink.href = campaign.media_url;
 
 // Afficher overlay
 overlay.classList.add('active');
 this.markAsSeen();
 
-// 🔥 ESSAYER LES STRATÉGIES DE CHARGEMENT VIDÉO
-let videoLoaded = false;
-
-// Stratégie 1: Proxy
+// 🔥 ESSAYER CHARGEMENT VIDÉO VIA PROXY
+console.log('[BrandiaVideoAd] Attempting video load...');
 this.videoBlobUrl = await this.loadVideoViaProxy(campaign.media_url);
+
 if (this.videoBlobUrl) {
-videoLoaded = await this.playVideo(this.videoBlobUrl);
-}
-
-// Stratégie 2: Blob direct (si proxy échoue)
-if (!videoLoaded) {
-this.videoBlobUrl = await this.loadVideoAsBlob(campaign.media_url);
-if (this.videoBlobUrl) {
-videoLoaded = await this.playVideo(this.videoBlobUrl);
-}
-}
-
-// Stratégie 3: URL directe avec gestion d'erreur
-if (!videoLoaded) {
-videoLoaded = await this.playVideo(campaign.media_url);
-}
-
-// Si tout échoue → fallback image
-if (!videoLoaded) {
-console.log('[BrandiaVideoAd] All video strategies failed, using fallback');
-this.showFallback();
-return;
-}
-
-// Démarrer timer et tracking
+console.log('[BrandiaVideoAd] Proxy success, playing video...');
+const success = await this.playVideo(this.videoBlobUrl);
+if (success) {
 this.startTimer();
 this.trackView(campaign.id);
+return;
+}
+}
+
+// Si échec → fallback image
+console.log('[BrandiaVideoAd] Video failed, using fallback');
+this.showFallback();
 },
 
 playVideo(src) {
@@ -1256,68 +1212,43 @@ const fallback = document.getElementById('brandia-ad-fallback');
 
 video.src = src;
 video.onloadeddata = () => {
-console.log('[BrandiaVideoAd] Video loaded successfully');
+console.log('[BrandiaVideoAd] Video data loaded');
 fallback.classList.remove('active');
 video.play().then(() => {
+console.log('[BrandiaVideoAd] Video playing');
 resolve(true);
-}).catch(() => {
-console.log('[BrandiaVideoAd] Autoplay blocked');
-resolve(false);
+}).catch((err) => {
+console.log('[BrandiaVideoAd] Autoplay blocked:', err);
+// Essayer avec son désactivé
+video.muted = true;
+video.play().then(() => resolve(true)).catch(() => resolve(false));
 });
 };
 
-video.onerror = () => {
-console.log('[BrandiaVideoAd] Video error');
+video.onerror = (e) => {
+console.error('[BrandiaVideoAd] Video error:', e);
 resolve(false);
 };
 
-// Timeout de sécurité
-setTimeout(() => resolve(false), 5000);
+setTimeout(() => resolve(false), 10000); // Timeout 10s
 });
 },
 
 showFallback() {
 this.isFallback = true;
-const fallback = document.getElementById('brandia-ad-fallback');
 const video = document.getElementById('brandia-ad-video');
+const fallback = document.getElementById('brandia-ad-fallback');
 
 video.style.display = 'none';
 fallback.classList.add('active');
 
 this.startTimer();
-this.trackView(this.campaign.id);
-},
-
-// Mode image (pour campagnes non-vidéo)
-showImageMode(campaign) {
-this.campaign = campaign;
-this.isFallback = true;
-
-const overlay = document.getElementById('brandia-ad-overlay');
-const video = document.getElementById('brandia-ad-video');
-const fallback = document.getElementById('brandia-ad-fallback');
-const fallbackImg = document.getElementById('brandia-ad-fallback-img');
-const title = document.getElementById('brandia-ad-title');
-const desc = document.getElementById('brandia-ad-desc');
-const cta = document.getElementById('brandia-ad-cta');
-
-video.style.display = 'none';
-fallbackImg.src = campaign.media_url || FALLBACK_IMAGE;
-fallback.classList.add('active');
-
-title.textContent = campaign.headline || 'Offre spéciale';
-desc.textContent = campaign.description || 'Découvrez cette offre exclusive';
-cta.href = campaign.cta_link || '#';
-
-overlay.classList.add('active');
-this.markAsSeen();
-this.startTimer();
-this.trackView(campaign.id);
+if (this.campaign) this.trackView(this.campaign.id);
 },
 
 retryVideo() {
 if (!this.campaign) return;
-console.log('[BrandiaVideoAd] Retrying video...');
+console.log('[BrandiaVideoAd] Retrying...');
 const fallback = document.getElementById('brandia-ad-fallback');
 const video = document.getElementById('brandia-ad-video');
 
@@ -1328,8 +1259,8 @@ this.playVideo(this.campaign.media_url);
 
 startTimer() {
 this.countdown = 15;
-const timerDisplay = document.getElementById('brandia-ad-timer');
-const timerDisplay2 = document.getElementById('brandia-ad-timer-display');
+const timerText = document.getElementById('brandia-ad-timer-text');
+const timerDisplay = document.getElementById('brandia-ad-timer-display');
 const progressBar = document.getElementById('brandia-ad-progress-bar');
 
 const totalDuration = 15000;
@@ -1341,8 +1272,8 @@ const remaining = Math.max(0, Math.ceil((totalDuration - elapsed) / 1000));
 const percent = Math.max(0, ((totalDuration - elapsed) / totalDuration) * 100);
 
 this.countdown = remaining;
+if (timerText) timerText.textContent = remaining;
 if (timerDisplay) timerDisplay.textContent = remaining;
-if (timerDisplay2) timerDisplay2.textContent = remaining;
 if (progressBar) progressBar.style.width = percent + '%';
 
 if (elapsed >= totalDuration) {
@@ -1363,16 +1294,13 @@ video.pause();
 video.src = '';
 }
 
-// Nettoyer blob URL
 if (this.videoBlobUrl) {
 URL.revokeObjectURL(this.videoBlobUrl);
 this.videoBlobUrl = null;
 }
 
 const overlay = document.getElementById('brandia-ad-overlay');
-if (overlay) {
-overlay.classList.remove('active');
-}
+if (overlay) overlay.classList.remove('active');
 
 this.campaign = null;
 },
@@ -1414,7 +1342,7 @@ body: JSON.stringify({ campaign_id: campaignId })
 // INITIALISATION
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-console.log('[Product] Initializing v5.0...');
+console.log('[Product] Initializing v5.1...');
 
 const urlParams = new URLSearchParams(window.location.search);
 currentProductId = urlParams.get('id');
@@ -1445,7 +1373,7 @@ if (currentProduct.category_id) {
 loadRelatedProducts(currentProduct.category_id);
 }
 
-// Délai avant publicité
+// Délai avant publicité vidéo
 setTimeout(() => {
 BrandiaVideoAd.check(currentProduct);
 }, 2000);
@@ -1457,7 +1385,7 @@ showError('Impossible de charger le produit: ' + error.message);
 }
 
 // ============================================
-// RENDU PRODUIT (simplifié pour clarté)
+// RENDU PRODUIT
 // ============================================
 function renderProduct(product) {
 document.getElementById('product-loader').style.display = 'none';
@@ -1570,7 +1498,7 @@ document.body.appendChild(toast);
 setTimeout(() => toast.remove(), 3000);
 }
 
-console.log('[Product] v5.0 loaded');
+console.log('[Product] v5.1 loaded - Real Video System');
 </script>
 </body>
 </html>
