@@ -1,22 +1,22 @@
 // ============================================
-// BRANDIA ADS SYSTEM - v3.3 FINAL PRODUCTION
-// Fix: TOUTES syntaxe JS + Fallback vidéo Cloudinary
+// BRANDIA ADS SYSTEM - v3.4 FINAL PRODUCTION
+// Fix: URLs corrigées, gestion erreurs média, scope fixé
 // ============================================
 (function() {
   'use strict';
   
-  if (window.BrandiaAds && window.BrandiaAds.version === '3.3') return;
+  if (window.BrandiaAds && window.BrandiaAds.version === '3.4') return;
   
   function waitForAPI(callback, maxAttempts = 50) {
     let attempts = 0;
     const check = () => {
       attempts++;
       if (window.BrandiaAPI && window.BrandiaAPI.Supplier) {
-        callback();
+        callback(false); // API disponible
       } else if (attempts < maxAttempts) {
         setTimeout(check, 100);
       } else {
-        callback(true);
+        callback(true); // Fallback mode
       }
     };
     check();
@@ -25,7 +25,7 @@
   const CONFIG = {
     overlayDuration: 15000,
     initDelay: 2000,
-    fallbackAPI: 'https://brandia-1.onrender.com/api'
+    fallbackAPI: 'https://brandia-1.onrender.com/api' // 🔥 ESPACE SUPPRIMÉ
   };
   
   const AdsStorage = {
@@ -46,7 +46,7 @@
   };
   
   const BrandiaAds = {
-    version: '3.3',
+    version: '3.4',
     state: {
       currentCampaign: null,
       currentSupplierId: null,
@@ -58,7 +58,7 @@
     },
     
     init: function(fallbackMode = false) {
-      console.log('[BrandiaAds] Initializing v3.3...');
+      console.log('[BrandiaAds] Initializing v3.4...');
       this.state.apiAvailable = !fallbackMode && !!window.BrandiaAPI;
       this.state.isClosed = false;
       
@@ -80,6 +80,7 @@
     },
     
     initFallback: function(productId) {
+      const self = this; // 🔥 PRESERVE SCOPE
       const apiBase = CONFIG.fallbackAPI;
       
       fetch(`${apiBase}/products/${productId}`)
@@ -94,13 +95,15 @@
         .then(r => r ? r.json() : null)
         .then(campaignData => {
           if (campaignData?.success && campaignData.data) {
-            this.showAd(campaignData.data, null);
+            self.showAd(campaignData.data, null); // 🔥 UTILISE self AU LIEU DE this
           }
         })
         .catch(err => console.error('[BrandiaAds] Fallback error:', err));
     },
     
     initWithAPI: async function(productId) {
+      const self = this; // 🔥 PRESERVE SCOPE POUR LES CALLBACKS
+      
       try {
         const productResponse = await fetch(`${CONFIG.fallbackAPI}/products/${productId}`);
         const productData = await productResponse.json();
@@ -156,7 +159,7 @@
         console.log(`[BrandiaAds] Campaign found: ${campaign.id}`);
         
         setTimeout(() => {
-          this.showAd(campaign, supplierId);
+          self.showAd(campaign, supplierId); // 🔥 UTILISE self
         }, CONFIG.initDelay);
         
       } catch (error) {
@@ -168,6 +171,7 @@
     showAd: function(campaign, supplierId) {
       if (!campaign || AdsStorage.hasSeenCampaign(campaign.id) || this.state.isClosed) return;
       
+      const self = this; // 🔥 PRESERVE SCOPE
       console.log(`[BrandiaAds] Showing ad: ${campaign.id}`);
       
       const wrapper = document.createElement('div');
@@ -187,11 +191,22 @@
       
       const isVideo = campaign.media_type === 'video';
       
-      // 🔥 FALLBACK VIDÉO : poster + gestion erreur Tracking Prevention
-      const videoPoster = campaign.media_url.replace('/upload/', '/upload/f_auto,q_auto/');
+      // 🔥 FALLBACK IMAGE CORRIGÉE AVEC HTTPS
+      const fallbackImg = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400&auto=format&fit=crop';
+      
+      // 🔥 GESTION MEDIA URL AVEC FALLBACK
+      let mediaUrl = campaign.media_url;
+      if (!mediaUrl || mediaUrl === 'null' || mediaUrl === 'undefined') {
+        console.warn('[BrandiaAds] No media URL, using fallback');
+        mediaUrl = fallbackImg;
+      }
+      
+      const videoPoster = isVideo ? mediaUrl.replace('/upload/', '/upload/f_auto,q_auto/') : '';
+      
+      // 🔥 HTML AVEC GESTION ERREUR CHARGEMENT
       const mediaHtml = isVideo 
-        ? `<video src="${campaign.media_url}" poster="${videoPoster}?format=jpg" muted playsinline autoplay class="w-full h-full object-cover" id="ad-video" crossorigin="anonymous"></video>`
-        : `<img src="${campaign.media_url}" class="w-full h-full object-cover" alt="${campaign.headline}" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">`;
+        ? `<video src="${mediaUrl}" poster="${videoPoster}?format=jpg" muted playsinline autoplay class="w-full h-full object-cover" id="ad-video" crossorigin="anonymous" onerror="this.style.display='none'; this.parentElement.style.backgroundImage='url(${videoPoster}?format=jpg)'; this.parentElement.style.backgroundSize='cover';"></video>`
+        : `<img src="${mediaUrl}" class="w-full h-full object-cover" alt="${campaign.headline || ''}" onerror="this.src='${fallbackImg}'; this.onerror=null;" style="min-height: 250px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">`;
       
       wrapper.innerHTML = `
         <div id="brandia-ad-container" style="
@@ -247,26 +262,30 @@
         }, 100);
       });
       
-      const closeBtn = document.getElementById('ad-close-btn');
+      // 🔥 CLOSE HANDLER AVEC BIND CORRECT
       const closeAdHandler = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         console.log('[BrandiaAds] Close triggered');
-        this.closeAd('dismissed', supplierId);
+        self.closeAd('dismissed', supplierId); // 🔥 UTILISE self ET PASSE supplierId
       };
       
+      const closeBtn = document.getElementById('ad-close-btn');
       closeBtn.addEventListener('click', closeAdHandler);
       closeBtn.addEventListener('touchend', closeAdHandler);
       wrapper.addEventListener('click', (e) => { if (e.target === wrapper) closeAdHandler(e); });
       
       const escapeHandler = (e) => {
-        if (e.key === 'Escape') { closeAdHandler(e); document.removeEventListener('keydown', escapeHandler); }
+        if (e.key === 'Escape') { 
+          closeAdHandler(e); 
+          document.removeEventListener('keydown', escapeHandler); 
+        }
       };
       document.addEventListener('keydown', escapeHandler);
       
       const ctaBtn = document.getElementById('ad-cta-btn');
       ctaBtn.addEventListener('click', () => {
-        this.trackClick(campaign.id);
-        setTimeout(() => this.closeAd('clicked', supplierId), 100);
+        self.trackClick(campaign.id);
+        setTimeout(() => self.closeAd('clicked', supplierId), 100); // 🔥 UTILISE self
       });
       
       // 🔥 GESTION VIDÉO AVEC FALLBACK POUR TRACKING PREVENTION
@@ -280,7 +299,13 @@
             video.parentElement.style.backgroundImage = `url('${videoPoster}?format=jpg')`;
             video.parentElement.style.backgroundSize = 'cover';
             video.parentElement.style.backgroundPosition = 'center';
-            video.parentElement.innerHTML += `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;"><i class="fas fa-image mr-2"></i>Image de campagne</div>`;
+            if (!video.parentElement.querySelector('.video-fallback')) {
+              const fallbackDiv = document.createElement('div');
+              fallbackDiv.className = 'video-fallback';
+              fallbackDiv.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;';
+              fallbackDiv.innerHTML = '<i class="fas fa-image mr-2"></i>Image de campagne';
+              video.parentElement.appendChild(fallbackDiv);
+            }
           });
           
           // Essayer de jouer, fallback si bloqué
@@ -291,12 +316,12 @@
             video.parentElement.style.backgroundSize = 'cover';
           });
           
-          this.startTimer(video);
-          video.onended = () => setTimeout(() => this.closeAd('completed', supplierId), 500);
+          this.startTimer(video, supplierId); // 🔥 PASSE supplierId
+          video.onended = () => setTimeout(() => self.closeAd('completed', supplierId), 500); // 🔥 UTILISE self
         }
       } else {
-        this.startTimer(null);
-        setTimeout(() => this.closeAd('completed', supplierId), CONFIG.overlayDuration);
+        this.startTimer(null, supplierId); // 🔥 PASSE supplierId
+        setTimeout(() => self.closeAd('completed', supplierId), CONFIG.overlayDuration); // 🔥 UTILISE self
       }
       
       AdsStorage.markCampaignSeen(campaign.id);
@@ -304,13 +329,17 @@
       this.trackView(campaign.id);
     },
     
-    startTimer: function(video) {
+    startTimer: function(video, supplierId) { // 🔥 AJOUTE supplierId EN PARAMÈTRE
+      const self = this;
       this.state.countdown = 15;
       const timerEl = document.getElementById('ad-timer');
       this.state.timer = setInterval(() => {
-        this.state.countdown--;
-        if (timerEl) timerEl.textContent = this.state.countdown;
-        if (this.state.countdown <= 0) clearInterval(this.state.timer);
+        self.state.countdown--;
+        if (timerEl) timerEl.textContent = self.state.countdown;
+        if (self.state.countdown <= 0) {
+          clearInterval(self.state.timer);
+          self.state.timer = null;
+        }
       }, 1000);
     },
     
@@ -364,10 +393,10 @@
   window.BrandiaAds = BrandiaAds;
   
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => waitForAPI((f) => BrandiaAds.init(f)));
+    document.addEventListener('DOMContentLoaded', () => waitForAPI((fallback) => BrandiaAds.init(fallback)));
   } else {
-    waitForAPI((f) => BrandiaAds.init(f));
+    waitForAPI((fallback) => BrandiaAds.init(fallback));
   }
   
-  console.log('[BrandiaAds] Loader v3.3 ready');
+  console.log('[BrandiaAds] Loader v3.4 ready');
 })();
