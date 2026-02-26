@@ -1,10 +1,11 @@
 // ============================================
-// BRANDIA BACKEND – ENTRY POINT (Render Ready)
+// SERVER.JS - Brandia Backend Entry Point v3.6
+// Render Ready avec gestion proxy vidéo
 // ============================================
 
 const { validateEnv, env } = require('./config/env');
 const { testConnection } = require('./config/db');
-const initDatabase = require('./config/init-db'); // ✅ UN SEUL import
+const initDatabase = require('./config/init-db');
 const app = require('./app');
 const logger = require('./utils/logger');
 
@@ -13,54 +14,78 @@ const logger = require('./utils/logger');
 // ============================================
 
 const startServer = async () => {
-  try {
-    // 1️⃣ Validate environment variables
-    logger.info('🔍 Validating environment variables...');
-    validateEnv();
+    try {
+        // 1️⃣ Validate environment variables
+        logger.info('🔍 Validating environment variables...');
+        validateEnv();
 
-    // 2️⃣ Test database connection
-    logger.info('📦 Testing database connection...');
-    await testConnection();
-    logger.info('✅ Database connected');
+        // 2️⃣ Test database connection
+        logger.info('📦 Testing database connection...');
+        await testConnection();
+        logger.info('✅ Database connected');
 
-    // 3️⃣ 🎯 INITIALISATION DB (création tables si manquantes)
-    logger.info('🔧 Initializing database tables...');
-    await initDatabase();
-    logger.info('✅ Database initialized');
+        // 3️⃣ Initialisation DB
+        logger.info('🔧 Initializing database tables...');
+        await initDatabase();
+        logger.info('✅ Database initialized');
 
-    // 4️⃣ Start HTTP server
-    const PORT = env.PORT || process.env.PORT || 4000;
+        // 4️⃣ Vérification dépendances
+        logger.info('📦 Checking dependencies...');
+        try {
+            require('node-fetch');
+            logger.info('✅ node-fetch available');
+        } catch (e) {
+            logger.warn('⚠️ node-fetch not found, installing...');
+            // En production Render, les dépendances sont déjà installées via package.json
+        }
 
-    const server = app.listen(PORT, () => {
-      logger.info(`🚀 Brandia API running on ${env.API_URL || `http://localhost:${PORT}`}`);
-      logger.info(`📍 Environment: ${env.NODE_ENV || 'development'}`);
-    });
+        // 5️⃣ Start HTTP server
+        const PORT = env.PORT || process.env.PORT || 4000;
 
-    // ============================================
-    // Graceful shutdown
-    // ============================================
+        const server = app.listen(PORT, '0.0.0.0', () => {
+            logger.info(`🚀 Brandia API running on port ${PORT}`);
+            logger.info(`📍 Environment: ${env.NODE_ENV || 'development'}`);
+            logger.info(`🔗 Health check: http://localhost:${PORT}/api/health`);
+            logger.info(`📹 Video proxy: http://localhost:${PORT}/api/proxy/video`);
+        });
 
-    const gracefulShutdown = (signal) => {
-      logger.info(`📴 Received ${signal}. Shutting down gracefully...`);
+        // ============================================
+        // Graceful shutdown
+        // ============================================
 
-      server.close(() => {
-        logger.info('🔌 HTTP server closed');
-        process.exit(0);
-      });
+        const gracefulShutdown = (signal) => {
+            logger.info(`📴 Received ${signal}. Shutting down gracefully...`);
 
-      setTimeout(() => {
-        logger.error('⏱️ Forced shutdown after timeout');
+            server.close(() => {
+                logger.info('🔌 HTTP server closed');
+                process.exit(0);
+            });
+
+            // Force shutdown après 30s
+            setTimeout(() => {
+                logger.error('⏱️ Forced shutdown after timeout');
+                process.exit(1);
+            }, 30000);
+        };
+
+        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+        // Gestion erreurs non capturées
+        process.on('uncaughtException', (err) => {
+            logger.error('💥 Uncaught Exception:', err);
+            process.exit(1);
+        });
+
+        process.on('unhandledRejection', (reason, promise) => {
+            logger.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+        });
+
+    } catch (error) {
+        logger.error('❌ Server startup failed:', error.message);
+        logger.error('Stack:', error.stack);
         process.exit(1);
-      }, 30000);
-    };
-
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-  } catch (error) {
-    logger.error('❌ Server startup failed:', error.message);
-    process.exit(1);
-  }
+    }
 };
 
 // Launch

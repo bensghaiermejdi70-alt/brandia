@@ -1,5 +1,6 @@
 // ============================================
-// APP.JS - Configuration Express Brandia v3.5 CORRIGÉ (Chemins Render)
+// APP.JS - Brandia Backend v3.6 PRODUCTION
+// Avec Proxy Vidéo pour contourner Tracking Prevention
 // ============================================
 
 const express = require('express');
@@ -7,6 +8,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
+const fetch = require('node-fetch');
 
 const app = express();
 
@@ -43,18 +45,108 @@ app.use(cors({
 }));
 
 // ============================================
-// 🔥 DÉTECTION DU DOSSIER FRONTEND
+// 🔥 PROXY VIDÉO - Contourne Tracking Prevention
+// ============================================
+
+app.get('/api/proxy/video', async (req, res) => {
+    try {
+        const videoUrl = req.query.url;
+        
+        if (!videoUrl) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'URL vidéo requise' 
+            });
+        }
+
+        // Validation URL Cloudinary uniquement (sécurité)
+        const allowedDomains = [
+            'res.cloudinary.com',
+            'cloudinary.com',
+            'video.cloudinary.com'
+        ];
+        
+        const urlObj = new URL(videoUrl);
+        const isAllowed = allowedDomains.some(domain => urlObj.hostname.includes(domain));
+        
+        if (!isAllowed) {
+            console.warn('[Proxy] Blocked domain:', urlObj.hostname);
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Domaine non autorisé' 
+            });
+        }
+
+        console.log('[Proxy] Fetching video:', videoUrl);
+
+        // Récupérer la vidéo depuis Cloudinary avec timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+        const response = await fetch(videoUrl, {
+            signal: controller.signal,
+            headers: {
+                'User-Agent': 'Brandia-Proxy/1.0',
+                'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8'
+            }
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+            throw new Error(`Cloudinary error: ${response.status} ${response.statusText}`);
+        }
+
+        // Headers de la réponse
+        const contentType = response.headers.get('content-type') || 'video/mp4';
+        const contentLength = response.headers.get('content-length');
+
+        // Stream la réponse au client
+        res.set('Content-Type', contentType);
+        if (contentLength) res.set('Content-Length', contentLength);
+        res.set('Cache-Control', 'public, max-age=3600');
+        res.set('Accept-Ranges', 'bytes');
+        res.set('Access-Control-Allow-Origin', '*');
+
+        // Pipe le stream vidéo
+        response.body.pipe(res);
+
+        // Gestion erreur stream
+        response.body.on('error', (err) => {
+            console.error('[Proxy] Stream error:', err);
+            if (!res.headersSent) {
+                res.status(500).end();
+            }
+        });
+
+    } catch (error) {
+        console.error('[Proxy] Error:', error.message);
+        
+        if (error.name === 'AbortError') {
+            return res.status(504).json({ 
+                success: false, 
+                message: 'Timeout lors du chargement vidéo' 
+            });
+        }
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Erreur proxy vidéo',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// ============================================
+// DÉTECTION DU DOSSIER FRONTEND
 // ============================================
 
 function findFrontendPath() {
     const possiblePaths = [
-        // Structure Render (frontend à la racine du projet)
         path.join(__dirname, '../../frontend'),
         path.join(__dirname, '../frontend'),
-        // Structure locale/backendpro
         path.join(__dirname, '../public'),
         path.join(__dirname, '../../public'),
-        // Dossier courant
         path.join(process.cwd(), 'frontend'),
         path.join(process.cwd(), 'public')
     ];
@@ -97,7 +189,8 @@ app.get('/api/health', (req, res) => {
         success: true,
         status: 'OK',
         timestamp: new Date().toISOString(),
-        frontend: publicPath ? 'connected' : 'not found'
+        frontend: publicPath ? 'connected' : 'not found',
+        proxy: 'available'
     });
 });
 
@@ -122,7 +215,6 @@ console.log('[App] ✅ Index routes mounted at /api');
 
 if (publicPath) {
     app.get('*', (req, res) => {
-        // Ne pas interférer avec les routes API
         if (req.path.startsWith('/api/')) {
             return res.status(404).json({
                 success: false,
@@ -131,7 +223,6 @@ if (publicPath) {
             });
         }
         
-        // Servir index.html pour les routes client-side
         const indexPath = path.join(publicPath, 'index.html');
         if (fs.existsSync(indexPath)) {
             res.sendFile(indexPath);
@@ -143,7 +234,6 @@ if (publicPath) {
         }
     });
 } else {
-    // Fallback si pas de frontend
     app.get('/', (req, res) => {
         res.json({
             success: true,
@@ -151,7 +241,8 @@ if (publicPath) {
             endpoints: {
                 health: '/api/health',
                 products: '/api/products',
-                supplier: '/api/supplier'
+                supplier: '/api/supplier',
+                proxy: '/api/proxy/video?url=VIDEO_URL'
             }
         });
     });
