@@ -1,8 +1,7 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.8 CORRIGÉ
-// Fix: updated_at SQL + Product targeting + Description field
+// SUPPLIER CAMPAIGNS MODULE - v5.9 PRODUCTION
+// Fix: Syntaxe JS, ciblage produit, description, CTA, upload
 // ============================================
-
 window.SupplierCampaigns = {
   state: {
     campaigns: [],
@@ -13,20 +12,16 @@ window.SupplierCampaigns = {
     editingCampaignId: null,
     currentChartData: null
   },
-
-  FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWduZTwvdGV4dD48L3N2Zz4=',
-
-  // ==========================================
-  // INITIALISATION
-  // ==========================================
+  
+  FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWlnbjwvdGV4dD48L3N2Zz4=',
   
   init: async function() {
-    console.log('[Campaigns] Initializing v5.8...');
+    console.log('[Campaigns] Initializing v5.9...');
     await this.loadProducts();
     await this.loadCampaigns();
     this.initChart();
   },
-
+  
   loadProducts: async function() {
     try {
       console.log('[Campaigns] Loading products...');
@@ -34,7 +29,6 @@ window.SupplierCampaigns = {
       console.log('[Campaigns] Products API response:', response);
       
       let productsArray = [];
-      
       if (response.success && response.data) {
         if (Array.isArray(response.data)) {
           productsArray = response.data;
@@ -47,16 +41,14 @@ window.SupplierCampaigns = {
       
       this.state.products = productsArray;
       console.log('[Campaigns] Products loaded:', this.state.products.length);
-      
       return this.state.products;
-      
     } catch (error) {
       console.error('[Campaigns] Error loading products:', error);
       this.state.products = [];
       return [];
     }
   },
-
+  
   loadCampaigns: async function() {
     try {
       console.log('[Campaigns] Loading campaigns...');
@@ -78,33 +70,24 @@ window.SupplierCampaigns = {
       this.showToast('Erreur chargement campagnes', 'error');
     }
   },
-
-  // ==========================================
-  // RENDU LISTE CAMPAGNES
-  // ==========================================
   
   renderList: function() {
     const container = document.getElementById('campaigns-list');
-    if (!container) {
-      console.error('[Campaigns] Container #campaigns-list not found');
-      return;
-    }
-
+    if (!container) { console.error('[Campaigns] Container #campaigns-list not found'); return; }
+    
     if (this.state.campaigns.length === 0) {
       container.innerHTML = `
         <div class="p-8 text-center text-slate-500">
           <i class="fas fa-bullhorn text-4xl mb-4 opacity-50"></i>
           <p class="text-lg mb-2">Aucune campagne active</p>
           <p class="text-sm mb-4">Créez votre première publicité contextuelle</p>
-          <button onclick="SupplierCampaigns.openModal()" 
-                  class="btn-primary px-6 py-3 rounded-lg text-sm bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 transition-all">
+          <button onclick="SupplierCampaigns.openModal()" class="btn-primary px-6 py-3 rounded-lg text-sm bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 transition-all">
             <i class="fas fa-plus mr-2"></i>Créer une campagne
           </button>
-        </div>
-      `;
+        </div>`;
       return;
     }
-
+    
     let html = '';
     for (const c of this.state.campaigns) {
       const targetCount = (c.target_products && c.target_products.length) || 0;
@@ -115,18 +98,11 @@ window.SupplierCampaigns = {
         <div class="campaign-row p-6 flex items-center gap-4 hover:bg-slate-800/30 transition-colors border-b border-slate-800 last:border-0 group">
           <div class="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
             ${c.media_type === 'video' 
-              ? `<div class="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                   <i class="fas fa-play-circle text-white text-2xl"></i>
-                 </div>
-                 <video src="${mediaUrl}" class="w-full h-full object-cover" muted></video>`
-              : `<img src="${mediaUrl}" class="w-full h-full object-cover" 
-                      onerror="this.src='${this.FALLBACK_IMAGE}'">`
+              ? `<div class="absolute inset-0 flex items-center justify-center bg-black/50 z-10"><i class="fas fa-play-circle text-white text-2xl"></i></div><video src="${mediaUrl}" class="w-full h-full object-cover" muted></video>`
+              : `<img src="${mediaUrl}" class="w-full h-full object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'">`
             }
-            ${c.status === 'active' 
-              ? '<span class="absolute top-1 left-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse z-20"></span>' 
-              : ''}
+            ${c.status === 'active' ? '<span class="absolute top-1 left-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse z-20"></span>' : ''}
           </div>
-          
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
               <h4 class="font-semibold text-white truncate">${c.name || 'Sans nom'}</h4>
@@ -137,51 +113,32 @@ window.SupplierCampaigns = {
             <div class="flex items-center gap-4 text-xs text-slate-500">
               <span><i class="fas fa-crosshairs mr-1"></i>${targetCount} produits</span>
               <span><i class="fas fa-calendar mr-1"></i>${this.formatDate(c.start_date)} - ${this.formatDate(c.end_date)}</span>
-              ${c.media_type === 'video' 
-                ? '<span><i class="fas fa-video mr-1"></i>Vidéo</span>' 
-                : '<span><i class="fas fa-image mr-1"></i>Image</span>'}
+              ${c.media_type === 'video' ? '<span><i class="fas fa-video mr-1"></i>Vidéo</span>' : '<span><i class="fas fa-image mr-1"></i>Image</span>'}
             </div>
           </div>
-          
           <div class="text-right">
             <div class="flex items-center gap-4 mb-2">
-              <div class="text-center">
-                <p class="text-lg font-bold text-white">${parseInt(c.views_count) || 0}</p>
-                <p class="text-xs text-slate-500">Vues</p>
-              </div>
-              <div class="text-center">
-                <p class="text-lg font-bold text-indigo-400">${parseInt(c.clicks_count) || 0}</p>
-                <p class="text-xs text-slate-500">Clics</p>
-              </div>
-              <div class="text-center">
-                <p class="text-lg font-bold text-emerald-400">${ctr}%</p>
-                <p class="text-xs text-slate-500">CTR</p>
-              </div>
+              <div class="text-center"><p class="text-lg font-bold text-white">${parseInt(c.views_count) || 0}</p><p class="text-xs text-slate-500">Vues</p></div>
+              <div class="text-center"><p class="text-lg font-bold text-indigo-400">${parseInt(c.clicks_count) || 0}</p><p class="text-xs text-slate-500">Clics</p></div>
+              <div class="text-center"><p class="text-lg font-bold text-emerald-400">${ctr}%</p><p class="text-xs text-slate-500">CTR</p></div>
             </div>
             <div class="flex gap-2 justify-end">
-              <button onclick="event.stopPropagation(); SupplierCampaigns.editCampaign(${c.id})" 
-                      class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors">
+              <button onclick="event.stopPropagation(); SupplierCampaigns.editCampaign(${c.id})" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors">
                 <i class="fas fa-edit mr-1"></i>Modifier
               </button>
-              <button onclick="event.stopPropagation(); SupplierCampaigns.toggleStatus(${c.id}, '${c.status === 'active' ? 'paused' : 'active'}')" 
-                      class="px-3 py-1.5 rounded-lg text-xs font-medium ${c.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'} transition-colors">
-                ${c.status === 'active' 
-                  ? '<i class="fas fa-pause mr-1"></i>Pause' 
-                  : '<i class="fas fa-play mr-1"></i>Activer'}
+              <button onclick="event.stopPropagation(); SupplierCampaigns.toggleStatus(${c.id}, '${c.status === 'active' ? 'paused' : 'active'}')" class="px-3 py-1.5 rounded-lg text-xs font-medium ${c.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'} transition-colors">
+                ${c.status === 'active' ? '<i class="fas fa-pause mr-1"></i>Pause' : '<i class="fas fa-play mr-1"></i>Activer'}
               </button>
-              <button onclick="event.stopPropagation(); SupplierCampaigns.deleteCampaign(${c.id})" 
-                      class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+              <button onclick="event.stopPropagation(); SupplierCampaigns.deleteCampaign(${c.id})" class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
           </div>
-        </div>
-      `;
+        </div>`;
     }
-    
     container.innerHTML = html;
   },
-
+  
   updateStats: function() {
     const totalViews = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count) || 0), 0);
     const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count) || 0), 0);
@@ -195,51 +152,31 @@ window.SupplierCampaigns = {
     if (clicksEl) clicksEl.textContent = totalClicks.toLocaleString();
     if (ctrEl) ctrEl.textContent = ctr + '%';
   },
-
-  // ==========================================
-  // MODAL & FORMULAIRE - CORRIGÉ v5.8
-  // ==========================================
   
   openModal: async function(campaignId = null) {
     console.log('[Campaigns] Opening modal, editing:', campaignId);
-    
     this.state.editingCampaignId = campaignId;
     this.state.uploadedMedia = null;
     this.state.currentMediaType = 'image';
     
     const modal = document.getElementById('campaign-modal');
-    if (!modal) {
-      console.error('[Campaigns] Modal not found');
-      return;
-    }
+    if (!modal) { console.error('[Campaigns] Modal not found'); return; }
     
-    // S'assurer que les produits sont chargés
     if (!this.state.products || this.state.products.length === 0) {
       console.log('[Campaigns] Products not loaded, loading now...');
       await this.loadProducts();
     }
     
-    // Reset form
     const form = document.getElementById('campaign-form');
-    if (form) {
-      form.reset();
-      console.log('[Campaigns] Form reset');
-    }
+    if (form) form.reset();
     
-    // Reset UI upload
     this.resetUploadUI();
-    
-    // Charger liste produits pour ciblage et CTA
     this.renderTargetProductsList();
     this.renderCtaProductSelect();
     
     if (campaignId) {
       const campaign = this.state.campaigns.find(c => c.id === campaignId);
-      if (!campaign) {
-        this.showToast('Campagne non trouvée', 'error');
-        return;
-      }
-      
+      if (!campaign) { this.showToast('Campagne non trouvée', 'error'); return; }
       this.fillFormForEdit(campaign);
       this.showModalStats(campaign);
     } else {
@@ -248,13 +185,11 @@ window.SupplierCampaigns = {
       const nextMonth = new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       
-      // Dates par défaut
       const startInput = this.getFormField('start_date');
       const endInput = this.getFormField('end_date');
       if (startInput) startInput.value = today;
       if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
       
-      // Reset CTA à product par défaut
       const ctaTypeSelect = document.getElementById('cta-link-type');
       if (ctaTypeSelect) {
         ctaTypeSelect.value = 'product';
@@ -262,96 +197,62 @@ window.SupplierCampaigns = {
       }
     }
     
-    // Attacher les écouteurs pour la preview en temps réel
     this.attachPreviewListeners();
-    
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    
     this.updatePreview();
   },
-
-  // Attacher les écouteurs d'événements
+  
   attachPreviewListeners: function() {
-    const fields = [
-      { name: 'name' },
-      { name: 'headline' },
-      { name: 'description' }, // Sera trouvé par name
-      { name: 'cta_text' }
-    ];
-    
+    const fields = [{ name: 'name' }, { name: 'headline' }, { name: 'description' }, { name: 'cta_text' }];
     fields.forEach(field => {
       const element = this.getFormField(field.name);
-      
       if (element) {
-        console.log(`[Campaigns] Attaching listener to ${field.name}`);
-        
-        // Retirer l'ancien écouteur pour éviter les doublons
         element.removeEventListener('input', this.previewHandler);
         element.removeEventListener('keyup', this.previewHandler);
-        
-        // Ajouter les nouveaux écouteurs
         element.addEventListener('input', () => this.updatePreview());
         element.addEventListener('keyup', () => this.updatePreview());
-      } else {
-        console.warn(`[Campaigns] Field not found:`, field.name);
       }
     });
   },
-
-  // Handler pour la preview
+  
   previewHandler: function() {
-    if (window.SupplierCampaigns) {
-      window.SupplierCampaigns.updatePreview();
-    }
+    if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview();
   },
-
-  // 🔥 CORRECTION : getFormField simplifié et robuste
+  
   getFormField: function(fieldName) {
-    // Chercher d'abord dans le modal par name
     const modal = document.getElementById('campaign-modal');
     if (modal) {
       const byName = modal.querySelector(`[name="${fieldName}"]`);
       if (byName) return byName;
     }
-    
-    // Fallback: chercher globalement par name
     const global = document.querySelector(`[name="${fieldName}"]`);
     if (global) return global;
-    
-    // Fallback: chercher par ID spécifique pour description
     if (fieldName === 'description') {
       const byId = document.getElementById('campaign-description');
       if (byId) return byId;
     }
-    
     console.warn(`[Campaigns] Field "${fieldName}" not found`);
     return null;
   },
-
+  
   resetUploadUI: function() {
     const dropzone = document.getElementById('campaign-dropzone');
     const fileInput = document.getElementById('campaign-media');
-    
-    if (fileInput) {
-      fileInput.value = '';
-    }
-    
+    if (fileInput) fileInput.value = '';
     if (dropzone) {
       dropzone.innerHTML = `
         <div id="campaign-media-placeholder">
           <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-3"></i>
           <p class="text-slate-400 text-sm">Cliquez ou glissez votre fichier ici</p>
           <p class="text-slate-600 text-xs mt-1">Format recommandé: 1200x800px, max 5MB (image) ou 50MB (vidéo)</p>
-        </div>
-      `;
+        </div>`;
       dropzone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
       dropzone.classList.add('border-slate-700');
     }
   },
-
+  
   fillFormForEdit: function(campaign) {
-    // Utiliser getFormField pour tous les champs
     const nameField = this.getFormField('name');
     const headlineField = this.getFormField('headline');
     const descField = this.getFormField('description');
@@ -363,30 +264,21 @@ window.SupplierCampaigns = {
     if (headlineField && campaign.headline) headlineField.value = campaign.headline;
     if (descField && campaign.description) descField.value = campaign.description;
     if (ctaTextField && campaign.cta_text) ctaTextField.value = campaign.cta_text;
-    if (startDateField && campaign.start_date) {
-      startDateField.value = campaign.start_date.split('T')[0];
-    }
-    if (endDateField && campaign.end_date) {
-      endDateField.value = campaign.end_date.split('T')[0];
-    }
-
-    // CTA Link
+    if (startDateField && campaign.start_date) startDateField.value = campaign.start_date.split('T')[0];
+    if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
+    
     if (campaign.cta_link) {
       const ctaTypeSelect = document.getElementById('cta-link-type');
       if (ctaTypeSelect) {
         if (campaign.cta_link.startsWith('http')) {
           ctaTypeSelect.value = 'external';
           const externalInput = document.getElementById('cta-external-url');
-          if (externalInput) {
-            externalInput.value = campaign.cta_link;
-          }
+          if (externalInput) externalInput.value = campaign.cta_link;
           this.handleCtaType('external');
         } else {
           ctaTypeSelect.value = 'product';
           const productSelect = document.getElementById('cta-product-select');
-          if (productSelect) {
-            productSelect.value = campaign.cta_link;
-          }
+          if (productSelect) productSelect.value = campaign.cta_link;
           this.handleCtaType('product');
         }
       }
@@ -416,11 +308,10 @@ window.SupplierCampaigns = {
       }, 100);
     }
   },
-
+  
   showModalStats: function(campaign) {
     const statsContainer = document.getElementById('campaign-quick-stats');
     if (!statsContainer) return;
-    
     statsContainer.classList.remove('hidden');
     
     const viewsEl = document.getElementById('modal-ad-views');
@@ -435,12 +326,12 @@ window.SupplierCampaigns = {
     if (clicksEl) clicksEl.textContent = clicks.toLocaleString();
     if (ctrEl) ctrEl.textContent = ctr + '%';
   },
-
+  
   hideModalStats: function() {
     const statsContainer = document.getElementById('campaign-quick-stats');
     if (statsContainer) statsContainer.classList.add('hidden');
   },
-
+  
   closeModal: function() {
     const modal = document.getElementById('campaign-modal');
     if (modal) {
@@ -450,21 +341,12 @@ window.SupplierCampaigns = {
     this.state.editingCampaignId = null;
     this.state.uploadedMedia = null;
   },
-
-  // ==========================================
-  // GESTION MÉDIAS
-  // ==========================================
   
   handleMediaSelect: function(event) {
     console.log('[Campaigns] File selected:', event);
     const file = event.target.files[0];
-    if (!file) {
-      console.log('[Campaigns] No file selected');
-      return;
-    }
+    if (!file) { console.log('[Campaigns] No file selected'); return; }
     
-    console.log('[Campaigns] File details:', file.name, file.type, file.size);
-
     const maxSize = this.state.currentMediaType === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
     if (file.size > maxSize) {
       this.showToast(`Fichier trop grand (max ${this.state.currentMediaType === 'video' ? '50' : '5'}MB)`, 'error');
@@ -472,27 +354,22 @@ window.SupplierCampaigns = {
     }
     
     if (this.state.currentMediaType === 'image' && !file.type.startsWith('image/')) {
-      this.showToast('Veuillez sélectionner une image', 'error');
-      return;
+      this.showToast('Veuillez sélectionner une image', 'error'); return;
     }
     if (this.state.currentMediaType === 'video' && !file.type.startsWith('video/')) {
-      this.showToast('Veuillez sélectionner une vidéo', 'error');
-      return;
+      this.showToast('Veuillez sélectionner une vidéo', 'error'); return;
     }
-
+    
     if (this.state.currentMediaType === 'video') {
       this.checkVideoDuration(file).then(isValid => {
-        if (!isValid) {
-          this.showToast('La vidéo ne doit pas dépasser 15 secondes', 'error');
-          return;
-        }
+        if (!isValid) { this.showToast('La vidéo ne doit pas dépasser 15 secondes', 'error'); return; }
         this.processSelectedFile(file);
       });
     } else {
       this.processSelectedFile(file);
     }
   },
-
+  
   checkVideoDuration: function(file) {
     return new Promise((resolve) => {
       const video = document.createElement('video');
@@ -505,25 +382,19 @@ window.SupplierCampaigns = {
       video.src = URL.createObjectURL(file);
     });
   },
-
+  
   processSelectedFile: function(file) {
     const url = URL.createObjectURL(file);
     this.showMediaPreview(url, this.state.currentMediaType);
-    
     this.state.uploadedMedia = {
-      isNew: true,
-      file: file,
-      type: this.state.currentMediaType,
-      localUrl: url
+      isNew: true, file: file, type: this.state.currentMediaType, localUrl: url
     };
-    
     this.updatePreview();
   },
-
+  
   showMediaPreview: function(url, type) {
     const dropzone = document.getElementById('campaign-dropzone');
     if (!dropzone) return;
-    
     dropzone.classList.remove('border-slate-700');
     dropzone.classList.add('border-indigo-500', 'bg-indigo-500/10');
     
@@ -531,101 +402,76 @@ window.SupplierCampaigns = {
       dropzone.innerHTML = `
         <div class="relative w-full">
           <video src="${url}" class="w-full h-48 object-cover rounded-lg" controls muted></video>
-          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" 
-                  class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
             <i class="fas fa-times"></i>
           </button>
-        </div>
-      `;
+        </div>`;
     } else {
       dropzone.innerHTML = `
         <div class="relative w-full">
           <img src="${url}" class="w-full h-48 object-cover rounded-lg">
-          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" 
-                  class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
             <i class="fas fa-times"></i>
           </button>
-        </div>
-      `;
+        </div>`;
     }
   },
-
+  
   removeMedia: function() {
     this.state.uploadedMedia = null;
     this.resetUploadUI();
     this.updatePreview();
   },
-
+  
   toggleMediaType: function(type) {
     this.state.currentMediaType = type;
     this.removeMedia();
-    
     const fileInput = document.getElementById('campaign-media');
     if (fileInput) {
       fileInput.accept = type === 'video' ? 'video/mp4,video/mov,video/webm' : 'image/*';
     }
   },
-
-  // ==========================================
-  // UPLOAD CLOUDINARY
-  // ==========================================
   
   uploadMediaToCloudinary: async function() {
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
-        if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
-            return {
-                url: this.state.uploadedMedia.existingUrl,
-                type: this.state.uploadedMedia.existingType
-            };
-        }
-        return null;
+      if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
+        return { url: this.state.uploadedMedia.existingUrl, type: this.state.uploadedMedia.existingType };
+      }
+      return null;
     }
-
+    
     const file = this.state.uploadedMedia.file;
     const type = this.state.uploadedMedia.type;
-    
     console.log('[Campaigns Upload] Starting upload:', file.name, type);
-
+    
     const formData = new FormData();
     formData.append('media', file);
-
+    
     try {
-        this.showLoading(true);
-        
-        const result = type === 'video' 
-            ? await BrandiaAPI.Upload.uploadVideo(formData)
-            : await BrandiaAPI.Upload.uploadImage(formData);
-        
-        console.log('[Campaigns Upload] Success:', result);
-
-        if (result.success) {
-            const mediaUrl = result.data?.url || result.data?.secure_url;
-            if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
-            
-            return { url: mediaUrl, type: type };
-        } else {
-            throw new Error(result.message || 'Erreur upload');
-        }
+      this.showLoading(true);
+      const result = type === 'video' 
+        ? await BrandiaAPI.Upload.uploadVideo(formData)
+        : await BrandiaAPI.Upload.uploadImage(formData);
+      
+      console.log('[Campaigns Upload] Success:', result);
+      if (result.success) {
+        const mediaUrl = result.data?.url || result.data?.secure_url;
+        if (!mediaUrl) throw new Error('URL média non trouvée');
+        return { url: mediaUrl, type: type };
+      } else { throw new Error(result.message || 'Erreur upload'); }
     } catch (error) {
-        console.error('[Campaigns Upload] Error:', error);
-        throw error;
-    } finally {
-        this.showLoading(false);
-    }
+      console.error('[Campaigns Upload] Error:', error);
+      throw error;
+    } finally { this.showLoading(false); }
   },
-
+  
   showLoading: function(show) {
-    if (window.showLoading) {
-      window.showLoading(show);
-    } else {
+    if (window.showLoading) { window.showLoading(show); }
+    else {
       const overlay = document.getElementById('loading-overlay');
       if (overlay) overlay.classList.toggle('hidden', !show);
     }
   },
-
-  // ==========================================
-  // CIBLAGE PRODUITS
-  // ==========================================
   
   renderTargetProductsList: function() {
     const container = document.getElementById('target-products-list');
@@ -636,32 +482,30 @@ window.SupplierCampaigns = {
       return;
     }
     
+    const supplierId = BrandiaAPI.getSupplierId?.() || null;
+    const supplierProducts = supplierId 
+      ? this.state.products.filter(p => p.supplier_id === supplierId)
+      : this.state.products;
+    
     let html = '';
-    for (const p of this.state.products) {
+    for (const p of supplierProducts) {
       const imageUrl = p.main_image_url || this.FALLBACK_IMAGE;
       html += `
         <label class="flex items-center gap-3 p-2 hover:bg-slate-700 rounded cursor-pointer">
-          <input type="checkbox" name="target_product_${p.id}" value="${p.id}" 
-                 class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500">
-          <img src="${imageUrl}" class="w-10 h-10 rounded object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'">
+          <input type="checkbox" name="target_product_${p.id}" value="${p.id}" class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500">
+          <img src="${imageUrl}" class="w-10 h-10 rounded object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'" data-product-id="${p.id}" data-product-name="${p.name}">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-white truncate">${p.name}</p>
             <p class="text-xs text-slate-500">${parseFloat(p.price).toFixed(2)} €</p>
           </div>
-        </label>
-      `;
+        </label>`;
     }
-    
     container.innerHTML = html;
   },
-
+  
   renderCtaProductSelect: function() {
     const select = document.getElementById('cta-product-select');
-    if (!select) {
-      console.error('[Campaigns] CTA product select not found');
-      return;
-    }
-    
+    if (!select) { console.error('[Campaigns] CTA product select not found'); return; }
     select.innerHTML = '';
     
     const defaultOption = document.createElement('option');
@@ -680,42 +524,26 @@ window.SupplierCampaigns = {
       option.textContent = `${p.name} - ${parseFloat(p.price).toFixed(2)} €`;
       select.appendChild(option);
     }
-    
     console.log('[Campaigns] CTA select populated with', this.state.products.length, 'products');
   },
-
+  
   handleCtaType: function(type) {
     console.log('[Campaigns] handleCtaType called with:', type);
-    
     const productSelect = document.getElementById('cta-product-select');
     const externalUrl = document.getElementById('cta-external-url');
     
-    if (!productSelect || !externalUrl) {
-      console.error('[Campaigns] CTA elements not found');
-      return;
-    }
+    if (!productSelect || !externalUrl) { console.error('[Campaigns] CTA elements not found'); return; }
     
     if (type === 'external') {
-      productSelect.classList.add('hidden');
-      productSelect.required = false;
-      productSelect.value = '';
-      
-      externalUrl.classList.remove('hidden');
-      externalUrl.required = true;
-      externalUrl.focus();
+      productSelect.classList.add('hidden'); productSelect.required = false; productSelect.value = '';
+      externalUrl.classList.remove('hidden'); externalUrl.required = true; externalUrl.focus();
     } else {
-      externalUrl.classList.add('hidden');
-      externalUrl.required = false;
-      externalUrl.value = '';
-      
-      productSelect.classList.remove('hidden');
-      productSelect.required = true;
+      externalUrl.classList.add('hidden'); externalUrl.required = false; externalUrl.value = '';
+      productSelect.classList.remove('hidden'); productSelect.required = true;
     }
-    
     console.log('[Campaigns] CTA type changed to:', type);
   },
-
-  // updatePreview avec protection
+  
   updatePreview: function() {
     try {
       const nameField = this.getFormField('name');
@@ -727,12 +555,6 @@ window.SupplierCampaigns = {
       const headline = headlineField?.value || 'Votre titre';
       const description = descField?.value || 'Description de votre offre...';
       const ctaText = ctaField?.value || "Voir l'offre";
-      
-      console.log('[Campaigns] Preview update:', { 
-        name, 
-        headline: headline.substring(0, 30), 
-        description: description.substring(0, 30) 
-      });
       
       const headlineEl = document.getElementById('ad-preview-headline');
       const descEl = document.getElementById('ad-preview-desc');
@@ -753,20 +575,12 @@ window.SupplierCampaigns = {
       } else if (mediaEl) {
         mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-2xl"></i>';
       }
-    } catch (error) {
-      console.error('[Campaigns] updatePreview error:', error);
-    }
+    } catch (error) { console.error('[Campaigns] updatePreview error:', error); }
   },
-
-  // ==========================================
-  // SAUVEGARDE CAMPAGNE - v5.8 CORRIGÉ
-  // ==========================================
   
   save: async function() {
     console.log('[Campaigns] ========== SAVE STARTED ==========');
-    
     try {
-      // Récupérer les champs avec getFormField robuste
       const nameField = this.getFormField('name');
       const headlineField = this.getFormField('headline');
       const descField = this.getFormField('description');
@@ -774,59 +588,23 @@ window.SupplierCampaigns = {
       const endDateField = this.getFormField('end_date');
       const ctaTextField = this.getFormField('cta_text');
       
-      console.log('[Campaigns] Fields found:', {
-        name: !!nameField,
-        headline: !!headlineField,
-        description: !!descField,
-        startDate: !!startDateField,
-        endDate: !!endDateField
-      });
-
       const name = nameField?.value?.trim();
       const headline = headlineField?.value?.trim();
-      const description = descField?.value?.trim() || ''; // Description optionnelle mais fonctionnelle
+      const description = descField?.value?.trim() || '';
       const startDate = startDateField?.value;
       const endDate = endDateField?.value;
       const ctaText = ctaTextField?.value?.trim() || "Voir l'offre";
-
-      console.log('[Campaigns] Values:', { 
-        name, 
-        headline, 
-        description: description.substring(0, 50) + '...',
-        startDate, 
-        endDate 
-      });
-
-      // Validation
-      if (!name) {
-        this.showToast('Le nom de la campagne est requis', 'error');
-        nameField?.focus();
-        return false;
-      }
       
-      if (!headline) {
-        this.showToast('Le titre principal est requis', 'error');
-        headlineField?.focus();
-        return false;
-      }
+      if (!name) { this.showToast('Le nom de la campagne est requis', 'error'); nameField?.focus(); return false; }
+      if (!headline) { this.showToast('Le titre principal est requis', 'error'); headlineField?.focus(); return false; }
+      if (!startDate || !endDate) { this.showToast('Les dates de début et fin sont requises', 'error'); return false; }
+      if (new Date(endDate) <= new Date(startDate)) { this.showToast('La date de fin doit être après la date de début', 'error'); return false; }
       
-      if (!startDate || !endDate) {
-        this.showToast('Les dates de début et fin sont requises', 'error');
-        return false;
-      }
-      
-      if (new Date(endDate) <= new Date(startDate)) {
-        this.showToast('La date de fin doit être après la date de début', 'error');
-        return false;
-      }
-
-      // CTA Link
       const ctaTypeSelect = document.getElementById('cta-link-type');
       const ctaType = ctaTypeSelect?.value || 'product';
-      
       let ctaLink = '';
       let ctaSourceElement = null;
-
+      
       if (ctaType === 'external') {
         ctaSourceElement = document.getElementById('cta-external-url');
         ctaLink = ctaSourceElement?.value?.trim();
@@ -834,14 +612,9 @@ window.SupplierCampaigns = {
         ctaSourceElement = document.getElementById('cta-product-select');
         ctaLink = ctaSourceElement?.value;
       }
-
-      if (!ctaLink) {
-        this.showToast('Veuillez sélectionner un produit ou entrer un lien de destination', 'error');
-        ctaSourceElement?.focus();
-        return false;
-      }
-
-      // Produits ciblés
+      
+      if (!ctaLink) { this.showToast('Veuillez sélectionner un produit ou entrer un lien de destination', 'error'); ctaSourceElement?.focus(); return false; }
+      
       const targetProducts = [];
       const checkboxes = document.querySelectorAll('input[name^="target_product_"]:checked');
       checkboxes.forEach(cb => {
@@ -849,23 +622,16 @@ window.SupplierCampaigns = {
         if (!isNaN(productId)) targetProducts.push(productId);
       });
       
-      if (targetProducts.length === 0) {
-        this.showToast('Sélectionnez au moins un produit cible', 'error');
-        return false;
-      }
-
-      // Upload média
+      if (targetProducts.length === 0) { this.showToast('Sélectionnez au moins un produit cible', 'error'); return false; }
+      
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
-
+      
       if (this.state.uploadedMedia?.isNew) {
         try {
           this.showLoading(true);
           const uploadResult = await this.uploadMediaToCloudinary();
-          if (uploadResult) {
-            mediaUrl = uploadResult.url;
-            mediaType = uploadResult.type;
-          }
+          if (uploadResult) { mediaUrl = uploadResult.url; mediaType = uploadResult.type; }
         } catch (err) {
           this.showLoading(false);
           this.showToast('Erreur upload: ' + err.message, 'error');
@@ -875,29 +641,16 @@ window.SupplierCampaigns = {
         mediaUrl = this.state.uploadedMedia.existingUrl;
         mediaType = this.state.uploadedMedia.existingType;
       }
-
-      if (!mediaUrl && !this.state.editingCampaignId) {
-        this.showToast('Une image ou vidéo est requise', 'error');
-        return false;
-      }
-
+      
+      if (!mediaUrl && !this.state.editingCampaignId) { this.showToast('Une image ou vidéo est requise', 'error'); return false; }
+      
       const campaignData = {
-        name: name,
-        type: 'overlay',
-        media_url: mediaUrl,
-        media_type: mediaType,
-        headline: headline,
-        description: description,
-        cta_text: ctaText,
-        cta_link: ctaLink,
-        target_products: targetProducts,
-        start_date: startDate,
-        end_date: endDate,
-        status: 'active'
+        name: name, type: 'overlay', media_url: mediaUrl, media_type: mediaType,
+        headline: headline, description: description, cta_text: ctaText, cta_link: ctaLink,
+        target_products: targetProducts, start_date: startDate, end_date: endDate, status: 'active'
       };
-
+      
       console.log('[Campaigns] Sending data:', campaignData);
-
       this.showLoading(true);
       
       let response;
@@ -913,9 +666,7 @@ window.SupplierCampaigns = {
         this.showToast(this.state.editingCampaignId ? 'Campagne mise à jour' : 'Campagne créée avec succès !', 'success');
         this.closeModal();
         await this.loadCampaigns();
-      } else {
-        throw new Error(response.message || 'Erreur serveur');
-      }
+      } else { throw new Error(response.message || 'Erreur serveur'); }
       
     } catch (error) {
       console.error('[Campaigns] Save error:', error);
@@ -923,82 +674,44 @@ window.SupplierCampaigns = {
       this.showToast('Erreur: ' + error.message, 'error');
     }
   },
-
-  // ==========================================
-  // ACTIONS CAMPAGNES
-  // ==========================================
   
-  editCampaign: function(id) {
-    this.openModal(id);
-  },
-
+  editCampaign: function(id) { this.openModal(id); },
+  
   toggleStatus: async function(id, newStatus) {
     try {
       const response = await BrandiaAPI.Supplier.updateCampaign(id, { status: newStatus });
-      
       if (response.success) {
         this.showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
         await this.loadCampaigns();
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error) {
-      this.showToast('Erreur: ' + error.message, 'error');
-    }
+      } else { throw new Error(response.message); }
+    } catch (error) { this.showToast('Erreur: ' + error.message, 'error'); }
   },
-
+  
   deleteCampaign: async function(id) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
-    
     try {
       const response = await BrandiaAPI.Supplier.deleteCampaign(id);
-      
-      if (response.success) {
-        this.showToast('Campagne supprimée', 'success');
-        await this.loadCampaigns();
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error) {
-      this.showToast('Erreur: ' + error.message, 'error');
-    }
+      if (response.success) { this.showToast('Campagne supprimée', 'success'); await this.loadCampaigns(); }
+      else { throw new Error(response.message); }
+    } catch (error) { this.showToast('Erreur: ' + error.message, 'error'); }
   },
-
-  // ==========================================
-  // GRAPHIQUE PERFORMANCE
-  // ==========================================
   
   initChart: function() {
     const ctx = document.getElementById('campaignChart');
     if (!ctx) return;
-    
-    if (this.state.chart) {
-      this.state.chart.destroy();
-    }
+    if (this.state.chart) this.state.chart.destroy();
     
     this.state.chart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: [],
-        datasets: [{
-          label: 'Vues',
-          data: [],
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          fill: true,
-          tension: 0.4
-        }, {
-          label: 'Clics',
-          data: [],
-          borderColor: '#ec4899',
-          backgroundColor: 'rgba(236, 72, 153, 0.1)',
-          fill: true,
-          tension: 0.4
-        }]
+        datasets: [
+          { label: 'Vues', data: [], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 },
+          { label: 'Clics', data: [], borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.1)', fill: true, tension: 0.4 }
+        ]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: true } },
         scales: {
           y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#94a3b8' } },
@@ -1007,103 +720,52 @@ window.SupplierCampaigns = {
       }
     });
   },
-
+  
   updateChart: function() {
     if (!this.state.chart) return;
-    
-    const labels = [];
-    const viewsData = [];
-    const clicksData = [];
-    
+    const labels = [], viewsData = [], clicksData = [];
     for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
+      const date = new Date(); date.setDate(date.getDate() - i);
       labels.push(date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
-      
       const totalViews = this.state.campaigns.reduce((sum, c) => sum + (c.views_count || 0), 0);
       const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (c.clicks_count || 0), 0);
-      
       viewsData.push(Math.floor(totalViews / 30 * (0.5 + Math.random())));
       clicksData.push(Math.floor(totalClicks / 30 * (0.5 + Math.random())));
     }
-    
     this.state.chart.data.labels = labels;
     this.state.chart.data.datasets[0].data = viewsData;
     this.state.chart.data.datasets[1].data = clicksData;
     this.state.chart.update();
   },
-
-  // ==========================================
-  // UTILITAIRES
-  // ==========================================
   
   formatDate: function(dateString) {
     if (!dateString) return '--';
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   },
-
+  
   showToast: function(message, type) {
     type = type || 'success';
-    if (window.showToast) {
-      window.showToast(message, type);
-    } else {
-      console.log('[' + type + '] ' + message);
-    }
+    if (window.showToast) { window.showToast(message, type); }
+    else { console.log('[' + type + '] ' + message); }
   }
 };
 
 // ==========================================
 // FONCTIONS GLOBALES
 // ==========================================
-
-window.openCampaignModal = function() {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.openModal();
-};
-
-window.saveCampaign = function() {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.save();
-};
-
+window.openCampaignModal = function() { if (window.SupplierCampaigns) window.SupplierCampaigns.openModal(); };
+window.saveCampaign = function() { if (window.SupplierCampaigns) window.SupplierCampaigns.save(); };
 window.closeModal = function(modalId) {
-  if (modalId === 'campaign-modal' && window.SupplierCampaigns) {
-    window.SupplierCampaigns.closeModal();
-  } else {
+  if (modalId === 'campaign-modal' && window.SupplierCampaigns) { window.SupplierCampaigns.closeModal(); }
+  else {
     const modal = document.getElementById(modalId);
-    if (modal) {
-      modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
+    if (modal) { modal.classList.add('hidden'); document.body.style.overflow = ''; }
   }
 };
-
-window.toggleCampaignStatus = function(id, status) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleStatus(id, status);
-};
-
-window.deleteCampaign = function(id) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.deleteCampaign(id);
-};
-
-window.editCampaign = function(id) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.editCampaign(id);
-};
-
-window.handleCampaignMedia = function(e) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.handleMediaSelect(e);
-};
-
-window.updateAdPreview = function() {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview();
-};
-
-window.toggleMediaType = function(type) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleMediaType(type);
-};
-
-window.handleCtaType = function(type) {
-  if (window.SupplierCampaigns) window.SupplierCampaigns.handleCtaType(type);
-};
+window.toggleCampaignStatus = function(id, status) { if (window.SupplierCampaigns) window.SupplierCampaigns.toggleStatus(id, status); };
+window.deleteCampaign = function(id) { if (window.SupplierCampaigns) window.SupplierCampaigns.deleteCampaign(id); };
+window.editCampaign = function(id) { if (window.SupplierCampaigns) window.SupplierCampaigns.editCampaign(id); };
+window.handleCampaignMedia = function(e) { if (window.SupplierCampaigns) window.SupplierCampaigns.handleMediaSelect(e); };
+window.updateAdPreview = function() { if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview(); };
+window.toggleMediaType = function(type) { if (window.SupplierCampaigns) window.SupplierCampaigns.toggleMediaType(type); };
+window.handleCtaType = function(type) { if (window.SupplierCampaigns) window.SupplierCampaigns.handleCtaType(type); };
