@@ -1,6 +1,6 @@
 // ============================================
 // BRANDIA ADS SYSTEM - v3.3 FINAL PRODUCTION
-// Fix: TOUTES les erreurs de syntaxe corrigées
+// Fix: Syntaxe JS + Fallback vidéo Cloudinary
 // ============================================
 (function() {
   'use strict';
@@ -186,8 +186,11 @@
       `;
       
       const isVideo = campaign.media_type === 'video';
+      
+      // 🔥 FALLBACK VIDÉO : poster + gestion erreur
+      const videoPoster = campaign.media_url.replace('/upload/', '/upload/f_auto,q_auto/');
       const mediaHtml = isVideo 
-        ? `<video src="${campaign.media_url}" muted playsinline autoplay class="w-full h-full object-cover" id="ad-video"></video>`
+        ? `<video src="${campaign.media_url}" poster="${videoPoster}?format=jpg" muted playsinline autoplay class="w-full h-full object-cover" id="ad-video" crossorigin="anonymous"></video>`
         : `<img src="${campaign.media_url}" class="w-full h-full object-cover" alt="${campaign.headline}" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400'">`;
       
       wrapper.innerHTML = `
@@ -266,9 +269,19 @@
         setTimeout(() => this.closeAd('clicked', supplierId), 100);
       });
       
+      // 🔥 GESTION VIDÉO AVEC FALLBACK
       if (isVideo) {
         const video = document.getElementById('ad-video');
         if (video) {
+          // Fallback si vidéo bloquée
+          video.addEventListener('error', () => {
+            console.log('[BrandiaAds] Video blocked, showing poster');
+            video.style.display = 'none';
+            video.parentElement.style.backgroundImage = `url('${videoPoster}?format=jpg')`;
+            video.parentElement.style.backgroundSize = 'cover';
+            video.parentElement.style.backgroundPosition = 'center';
+          });
+          
           this.startTimer(video);
           video.onended = () => setTimeout(() => this.closeAd('completed', supplierId), 500);
         }

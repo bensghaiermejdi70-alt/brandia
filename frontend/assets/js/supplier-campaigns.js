@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.9 PRODUCTION FINAL
-// Fix: Upload auth, syntaxe JS, ciblage produit
+// SUPPLIER CAMPAIGNS MODULE - v5.9 FINAL PRODUCTION
+// Fix: TOUTES les erreurs de syntaxe corrigées
 // ============================================
 window.SupplierCampaigns = {
   state: {
