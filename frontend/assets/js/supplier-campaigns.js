@@ -1,7 +1,27 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v5.9 FINAL PRODUCTION
-// Fix: TOUTES les erreurs de syntaxe corrigées
+// SUPPLIER CAMPAIGNS MODULE - v6.0 PRODUCTION
+// Fix: Vérification BrandiaAPI, gestion erreurs améliorée
 // ============================================
+
+// Vérification que BrandiaAPI existe
+if (typeof BrandiaAPI === 'undefined') {
+    console.error('[Campaigns] CRITICAL: BrandiaAPI is not defined. Make sure app.js is loaded before supplier-campaigns.js');
+    window.BrandiaAPI = window.BrandiaAPI || {
+        Supplier: {
+            getProducts: async () => ({ success: false, message: 'API not loaded', data: [] }),
+            getCampaigns: async () => ({ success: false, message: 'API not loaded', data: [] }),
+            createCampaign: async () => ({ success: false, message: 'API not loaded' }),
+            updateCampaign: async () => ({ success: false, message: 'API not loaded' }),
+            deleteCampaign: async () => ({ success: false, message: 'API not loaded' })
+        },
+        Upload: {
+            uploadImage: async () => ({ success: false, message: 'API not loaded' }),
+            uploadVideo: async () => ({ success: false, message: 'API not loaded' })
+        },
+        getSupplierId: () => null
+    };
+}
+
 window.SupplierCampaigns = {
   state: {
     campaigns: [],
@@ -10,16 +30,22 @@ window.SupplierCampaigns = {
     currentMediaType: 'image',
     uploadedMedia: null,
     editingCampaignId: null,
-    currentChartData: null
+    currentChartData: null,
+    isLoading: false
   },
   
-  FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWlnbjwvdGV4dD48L3N2Zz4=',
+  FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWduPC90ZXh0Pjwvc3ZnPg==',
   
   init: async function() {
-    console.log('[Campaigns] Initializing v5.9...');
-    await this.loadProducts();
-    await this.loadCampaigns();
-    this.initChart();
+    console.log('[Campaigns] Initializing v6.0...');
+    try {
+      await this.loadProducts();
+      await this.loadCampaigns();
+      this.initChart();
+    } catch (error) {
+      console.error('[Campaigns] Init error:', error);
+      this.showToast('Erreur initialisation module campagnes', 'error');
+    }
   },
   
   loadProducts: async function() {
@@ -29,7 +55,7 @@ window.SupplierCampaigns = {
       console.log('[Campaigns] Products API response:', response);
       
       let productsArray = [];
-      if (response.success && response.data) {
+      if (response && response.success && response.data) {
         if (Array.isArray(response.data)) {
           productsArray = response.data;
         } else if (response.data.products && Array.isArray(response.data.products)) {
@@ -55,15 +81,15 @@ window.SupplierCampaigns = {
       const response = await BrandiaAPI.Supplier.getCampaigns();
       console.log('[Campaigns] API response:', response);
       
-      if (response.success) {
+      if (response && response.success) {
         this.state.campaigns = response.data || [];
         console.log('[Campaigns] Loaded:', this.state.campaigns.length);
         this.renderList();
         this.updateStats();
         this.updateChart();
       } else {
-        console.error('[Campaigns] API error:', response.message);
-        this.showToast('Erreur chargement campagnes: ' + response.message, 'error');
+        console.error('[Campaigns] API error:', response?.message || 'Unknown error');
+        this.showToast('Erreur chargement campagnes: ' + (response?.message || 'Erreur inconnue'), 'error');
       }
     } catch (error) {
       console.error('[Campaigns] Load error:', error);
@@ -73,7 +99,10 @@ window.SupplierCampaigns = {
   
   renderList: function() {
     const container = document.getElementById('campaigns-list');
-    if (!container) { console.error('[Campaigns] Container #campaigns-list not found'); return; }
+    if (!container) { 
+      console.error('[Campaigns] Container #campaigns-list not found'); 
+      return; 
+    }
     
     if (this.state.campaigns.length === 0) {
       container.innerHTML = `
@@ -91,7 +120,9 @@ window.SupplierCampaigns = {
     let html = '';
     for (const c of this.state.campaigns) {
       const targetCount = (c.target_products && c.target_products.length) || 0;
-      const ctr = c.views_count > 0 ? ((c.clicks_count / c.views_count) * 100).toFixed(1) : 0;
+      const views = parseInt(c.views_count) || 0;
+      const clicks = parseInt(c.clicks_count) || 0;
+      const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
       const mediaUrl = c.media_url || this.FALLBACK_IMAGE;
       
       html += `
@@ -118,8 +149,8 @@ window.SupplierCampaigns = {
           </div>
           <div class="text-right">
             <div class="flex items-center gap-4 mb-2">
-              <div class="text-center"><p class="text-lg font-bold text-white">${parseInt(c.views_count) || 0}</p><p class="text-xs text-slate-500">Vues</p></div>
-              <div class="text-center"><p class="text-lg font-bold text-indigo-400">${parseInt(c.clicks_count) || 0}</p><p class="text-xs text-slate-500">Clics</p></div>
+              <div class="text-center"><p class="text-lg font-bold text-white">${views.toLocaleString()}</p><p class="text-xs text-slate-500">Vues</p></div>
+              <div class="text-center"><p class="text-lg font-bold text-indigo-400">${clicks.toLocaleString()}</p><p class="text-xs text-slate-500">Clics</p></div>
               <div class="text-center"><p class="text-lg font-bold text-emerald-400">${ctr}%</p><p class="text-xs text-slate-500">CTR</p></div>
             </div>
             <div class="flex gap-2 justify-end">
@@ -160,7 +191,10 @@ window.SupplierCampaigns = {
     this.state.currentMediaType = 'image';
     
     const modal = document.getElementById('campaign-modal');
-    if (!modal) { console.error('[Campaigns] Modal not found'); return; }
+    if (!modal) { 
+      console.error('[Campaigns] Modal #campaign-modal not found'); 
+      return; 
+    }
     
     if (!this.state.products || this.state.products.length === 0) {
       console.log('[Campaigns] Products not loaded, loading now...');
@@ -176,7 +210,10 @@ window.SupplierCampaigns = {
     
     if (campaignId) {
       const campaign = this.state.campaigns.find(c => c.id === campaignId);
-      if (!campaign) { this.showToast('Campagne non trouvée', 'error'); return; }
+      if (!campaign) { 
+        this.showToast('Campagne non trouvée', 'error'); 
+        return; 
+      }
       this.fillFormForEdit(campaign);
       this.showModalStats(campaign);
     } else {
@@ -204,14 +241,12 @@ window.SupplierCampaigns = {
   },
   
   attachPreviewListeners: function() {
-    const fields = [{ name: 'name' }, { name: 'headline' }, { name: 'description' }, { name: 'cta_text' }];
-    fields.forEach(field => {
-      const element = this.getFormField(field.name);
+    const fields = ['name', 'headline', 'description', 'cta_text'];
+    fields.forEach(fieldName => {
+      const element = this.getFormField(fieldName);
       if (element) {
         element.removeEventListener('input', this.previewHandler);
-        element.removeEventListener('keyup', this.previewHandler);
         element.addEventListener('input', () => this.updatePreview());
-        element.addEventListener('keyup', () => this.updatePreview());
       }
     });
   },
@@ -345,7 +380,10 @@ window.SupplierCampaigns = {
   handleMediaSelect: function(event) {
     console.log('[Campaigns] File selected:', event);
     const file = event.target.files[0];
-    if (!file) { console.log('[Campaigns] No file selected'); return; }
+    if (!file) { 
+      console.log('[Campaigns] No file selected'); 
+      return; 
+    }
     
     const maxSize = this.state.currentMediaType === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -354,15 +392,20 @@ window.SupplierCampaigns = {
     }
     
     if (this.state.currentMediaType === 'image' && !file.type.startsWith('image/')) {
-      this.showToast('Veuillez sélectionner une image', 'error'); return;
+      this.showToast('Veuillez sélectionner une image', 'error'); 
+      return;
     }
     if (this.state.currentMediaType === 'video' && !file.type.startsWith('video/')) {
-      this.showToast('Veuillez sélectionner une vidéo', 'error'); return;
+      this.showToast('Veuillez sélectionner une vidéo', 'error'); 
+      return;
     }
     
     if (this.state.currentMediaType === 'video') {
       this.checkVideoDuration(file).then(isValid => {
-        if (!isValid) { this.showToast('La vidéo ne doit pas dépasser 15 secondes', 'error'); return; }
+        if (!isValid) { 
+          this.showToast('La vidéo ne doit pas dépasser 15 secondes', 'error'); 
+          return; 
+        }
         this.processSelectedFile(file);
       });
     } else {
@@ -387,7 +430,10 @@ window.SupplierCampaigns = {
     const url = URL.createObjectURL(file);
     this.showMediaPreview(url, this.state.currentMediaType);
     this.state.uploadedMedia = {
-      isNew: true, file: file, type: this.state.currentMediaType, localUrl: url
+      isNew: true, 
+      file: file, 
+      type: this.state.currentMediaType, 
+      localUrl: url
     };
     this.updatePreview();
   },
@@ -454,20 +500,26 @@ window.SupplierCampaigns = {
         : await BrandiaAPI.Upload.uploadImage(formData);
       
       console.log('[Campaigns Upload] Success:', result);
-      if (result.success) {
+      if (result && result.success) {
         const mediaUrl = result.data?.url || result.data?.secure_url;
-        if (!mediaUrl) throw new Error('URL média non trouvée');
+        if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
         return { url: mediaUrl, type: type };
-      } else { throw new Error(result.message || 'Erreur upload'); }
+      } else { 
+        throw new Error(result?.message || 'Erreur upload inconnue'); 
+      }
     } catch (error) {
       console.error('[Campaigns Upload] Error:', error);
       throw error;
-    } finally { this.showLoading(false); }
+    } finally { 
+      this.showLoading(false); 
+    }
   },
   
   showLoading: function(show) {
-    if (window.showLoading) { window.showLoading(show); }
-    else {
+    this.state.isLoading = show;
+    if (window.showLoading) { 
+      window.showLoading(show); 
+    } else {
       const overlay = document.getElementById('loading-overlay');
       if (overlay) overlay.classList.toggle('hidden', !show);
     }
@@ -505,7 +557,10 @@ window.SupplierCampaigns = {
   
   renderCtaProductSelect: function() {
     const select = document.getElementById('cta-product-select');
-    if (!select) { console.error('[Campaigns] CTA product select not found'); return; }
+    if (!select) { 
+      console.error('[Campaigns] CTA product select #cta-product-select not found'); 
+      return; 
+    }
     select.innerHTML = '';
     
     const defaultOption = document.createElement('option');
@@ -532,14 +587,24 @@ window.SupplierCampaigns = {
     const productSelect = document.getElementById('cta-product-select');
     const externalUrl = document.getElementById('cta-external-url');
     
-    if (!productSelect || !externalUrl) { console.error('[Campaigns] CTA elements not found'); return; }
+    if (!productSelect || !externalUrl) { 
+      console.error('[Campaigns] CTA elements not found'); 
+      return; 
+    }
     
     if (type === 'external') {
-      productSelect.classList.add('hidden'); productSelect.required = false; productSelect.value = '';
-      externalUrl.classList.remove('hidden'); externalUrl.required = true; externalUrl.focus();
+      productSelect.classList.add('hidden'); 
+      productSelect.required = false; 
+      productSelect.value = '';
+      externalUrl.classList.remove('hidden'); 
+      externalUrl.required = true; 
+      externalUrl.focus();
     } else {
-      externalUrl.classList.add('hidden'); externalUrl.required = false; externalUrl.value = '';
-      productSelect.classList.remove('hidden'); productSelect.required = true;
+      externalUrl.classList.add('hidden'); 
+      externalUrl.required = false; 
+      externalUrl.value = '';
+      productSelect.classList.remove('hidden'); 
+      productSelect.required = true;
     }
     console.log('[Campaigns] CTA type changed to:', type);
   },
@@ -575,11 +640,18 @@ window.SupplierCampaigns = {
       } else if (mediaEl) {
         mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-2xl"></i>';
       }
-    } catch (error) { console.error('[Campaigns] updatePreview error:', error); }
+    } catch (error) { 
+      console.error('[Campaigns] updatePreview error:', error); 
+    }
   },
   
   save: async function() {
     console.log('[Campaigns] ========== SAVE STARTED ==========');
+    if (this.state.isLoading) {
+      console.log('[Campaigns] Save already in progress, ignoring');
+      return;
+    }
+    
     try {
       const nameField = this.getFormField('name');
       const headlineField = this.getFormField('headline');
@@ -595,10 +667,25 @@ window.SupplierCampaigns = {
       const endDate = endDateField?.value;
       const ctaText = ctaTextField?.value?.trim() || "Voir l'offre";
       
-      if (!name) { this.showToast('Le nom de la campagne est requis', 'error'); nameField?.focus(); return false; }
-      if (!headline) { this.showToast('Le titre principal est requis', 'error'); headlineField?.focus(); return false; }
-      if (!startDate || !endDate) { this.showToast('Les dates de début et fin sont requises', 'error'); return false; }
-      if (new Date(endDate) <= new Date(startDate)) { this.showToast('La date de fin doit être après la date de début', 'error'); return false; }
+      // Validation
+      if (!name) { 
+        this.showToast('Le nom de la campagne est requis', 'error'); 
+        nameField?.focus(); 
+        return; 
+      }
+      if (!headline) { 
+        this.showToast('Le titre principal est requis', 'error'); 
+        headlineField?.focus(); 
+        return; 
+      }
+      if (!startDate || !endDate) { 
+        this.showToast('Les dates de début et fin sont requises', 'error'); 
+        return; 
+      }
+      if (new Date(endDate) <= new Date(startDate)) { 
+        this.showToast('La date de fin doit être après la date de début', 'error'); 
+        return; 
+      }
       
       const ctaTypeSelect = document.getElementById('cta-link-type');
       const ctaType = ctaTypeSelect?.value || 'product';
@@ -613,7 +700,11 @@ window.SupplierCampaigns = {
         ctaLink = ctaSourceElement?.value;
       }
       
-      if (!ctaLink) { this.showToast('Veuillez sélectionner un produit ou entrer un lien de destination', 'error'); ctaSourceElement?.focus(); return false; }
+      if (!ctaLink) { 
+        this.showToast('Veuillez sélectionner un produit ou entrer un lien de destination', 'error'); 
+        ctaSourceElement?.focus(); 
+        return; 
+      }
       
       const targetProducts = [];
       const checkboxes = document.querySelectorAll('input[name^="target_product_"]:checked');
@@ -622,32 +713,49 @@ window.SupplierCampaigns = {
         if (!isNaN(productId)) targetProducts.push(productId);
       });
       
-      if (targetProducts.length === 0) { this.showToast('Sélectionnez au moins un produit cible', 'error'); return false; }
+      if (targetProducts.length === 0) { 
+        this.showToast('Sélectionnez au moins un produit cible', 'error'); 
+        return; 
+      }
       
+      // Upload média si nouveau
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
       
       if (this.state.uploadedMedia?.isNew) {
         try {
-          this.showLoading(true);
           const uploadResult = await this.uploadMediaToCloudinary();
-          if (uploadResult) { mediaUrl = uploadResult.url; mediaType = uploadResult.type; }
+          if (uploadResult) { 
+            mediaUrl = uploadResult.url; 
+            mediaType = uploadResult.type; 
+          }
         } catch (err) {
-          this.showLoading(false);
           this.showToast('Erreur upload: ' + err.message, 'error');
-          return false;
+          return;
         }
       } else if (this.state.uploadedMedia?.existingUrl) {
         mediaUrl = this.state.uploadedMedia.existingUrl;
         mediaType = this.state.uploadedMedia.existingType;
       }
       
-      if (!mediaUrl && !this.state.editingCampaignId) { this.showToast('Une image ou vidéo est requise', 'error'); return false; }
+      if (!mediaUrl && !this.state.editingCampaignId) { 
+        this.showToast('Une image ou vidéo est requise', 'error'); 
+        return; 
+      }
       
       const campaignData = {
-        name: name, type: 'overlay', media_url: mediaUrl, media_type: mediaType,
-        headline: headline, description: description, cta_text: ctaText, cta_link: ctaLink,
-        target_products: targetProducts, start_date: startDate, end_date: endDate, status: 'active'
+        name: name, 
+        type: 'overlay', 
+        media_url: mediaUrl, 
+        media_type: mediaType,
+        headline: headline, 
+        description: description, 
+        cta_text: ctaText, 
+        cta_link: ctaLink,
+        target_products: targetProducts, 
+        start_date: startDate, 
+        end_date: endDate, 
+        status: 'active'
       };
       
       console.log('[Campaigns] Sending data:', campaignData);
@@ -662,38 +770,53 @@ window.SupplierCampaigns = {
       
       this.showLoading(false);
       
-      if (response.success) {
+      if (response && response.success) {
         this.showToast(this.state.editingCampaignId ? 'Campagne mise à jour' : 'Campagne créée avec succès !', 'success');
         this.closeModal();
         await this.loadCampaigns();
-      } else { throw new Error(response.message || 'Erreur serveur'); }
+      } else { 
+        throw new Error(response?.message || 'Erreur serveur inconnue'); 
+      }
       
     } catch (error) {
       console.error('[Campaigns] Save error:', error);
       this.showLoading(false);
-      this.showToast('Erreur: ' + error.message, 'error');
+      this.showToast('Erreur: ' + (error.message || 'Erreur inconnue'), 'error');
     }
   },
   
-  editCampaign: function(id) { this.openModal(id); },
+  editCampaign: function(id) { 
+    this.openModal(id); 
+  },
   
   toggleStatus: async function(id, newStatus) {
     try {
       const response = await BrandiaAPI.Supplier.updateCampaign(id, { status: newStatus });
-      if (response.success) {
+      if (response && response.success) {
         this.showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
         await this.loadCampaigns();
-      } else { throw new Error(response.message); }
-    } catch (error) { this.showToast('Erreur: ' + error.message, 'error'); }
+      } else { 
+        throw new Error(response?.message || 'Erreur inconnue'); 
+      }
+    } catch (error) { 
+      this.showToast('Erreur: ' + (error.message || 'Erreur inconnue'), 'error'); 
+    }
   },
   
   deleteCampaign: async function(id) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
     try {
       const response = await BrandiaAPI.Supplier.deleteCampaign(id);
-      if (response.success) { this.showToast('Campagne supprimée', 'success'); await this.loadCampaigns(); }
-      else { throw new Error(response.message); }
-    } catch (error) { this.showToast('Erreur: ' + error.message, 'error'); }
+      if (response && response.success) { 
+        this.showToast('Campagne supprimée', 'success'); 
+        await this.loadCampaigns(); 
+      }
+      else { 
+        throw new Error(response?.message || 'Erreur inconnue'); 
+      }
+    } catch (error) { 
+      this.showToast('Erreur: ' + (error.message || 'Erreur inconnue'), 'error'); 
+    }
   },
   
   initChart: function() {
@@ -711,7 +834,8 @@ window.SupplierCampaigns = {
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true, 
+        maintainAspectRatio: false,
         plugins: { legend: { display: true } },
         scales: {
           y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#94a3b8' } },
@@ -725,7 +849,8 @@ window.SupplierCampaigns = {
     if (!this.state.chart) return;
     const labels = [], viewsData = [], clicksData = [];
     for (let i = 29; i >= 0; i--) {
-      const date = new Date(); date.setDate(date.getDate() - i);
+      const date = new Date(); 
+      date.setDate(date.getDate() - i);
       labels.push(date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
       const totalViews = this.state.campaigns.reduce((sum, c) => sum + (c.views_count || 0), 0);
       const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (c.clicks_count || 0), 0);
@@ -740,32 +865,70 @@ window.SupplierCampaigns = {
   
   formatDate: function(dateString) {
     if (!dateString) return '--';
-    return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch (e) {
+      return '--';
+    }
   },
   
   showToast: function(message, type) {
     type = type || 'success';
-    if (window.showToast) { window.showToast(message, type); }
-    else { console.log('[' + type + '] ' + message); }
+    if (window.showToast) { 
+      window.showToast(message, type); 
+    } else { 
+      console.log(`[${type}] ${message}`); 
+    }
   }
 };
 
 // ==========================================
 // FONCTIONS GLOBALES
 // ==========================================
-window.openCampaignModal = function() { if (window.SupplierCampaigns) window.SupplierCampaigns.openModal(); };
-window.saveCampaign = function() { if (window.SupplierCampaigns) window.SupplierCampaigns.save(); };
+window.openCampaignModal = function() { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.openModal(); 
+};
+
+window.saveCampaign = function() { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.save(); 
+};
+
 window.closeModal = function(modalId) {
-  if (modalId === 'campaign-modal' && window.SupplierCampaigns) { window.SupplierCampaigns.closeModal(); }
-  else {
+  if (modalId === 'campaign-modal' && window.SupplierCampaigns) { 
+    window.SupplierCampaigns.closeModal(); 
+  } else {
     const modal = document.getElementById(modalId);
-    if (modal) { modal.classList.add('hidden'); document.body.style.overflow = ''; }
+    if (modal) { 
+      modal.classList.add('hidden'); 
+      document.body.style.overflow = ''; 
+    }
   }
 };
-window.toggleCampaignStatus = function(id, status) { if (window.SupplierCampaigns) window.SupplierCampaigns.toggleStatus(id, status); };
-window.deleteCampaign = function(id) { if (window.SupplierCampaigns) window.SupplierCampaigns.deleteCampaign(id); };
-window.editCampaign = function(id) { if (window.SupplierCampaigns) window.SupplierCampaigns.editCampaign(id); };
-window.handleCampaignMedia = function(e) { if (window.SupplierCampaigns) window.SupplierCampaigns.handleMediaSelect(e); };
-window.updateAdPreview = function() { if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview(); };
-window.toggleMediaType = function(type) { if (window.SupplierCampaigns) window.SupplierCampaigns.toggleMediaType(type); };
-window.handleCtaType = function(type) { if (window.SupplierCampaigns) window.SupplierCampaigns.handleCtaType(type); };
+
+window.toggleCampaignStatus = function(id, status) { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleStatus(id, status); 
+};
+
+window.deleteCampaign = function(id) { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.deleteCampaign(id); 
+};
+
+window.editCampaign = function(id) { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.editCampaign(id); 
+};
+
+window.handleCampaignMedia = function(e) { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.handleMediaSelect(e); 
+};
+
+window.updateAdPreview = function() { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview(); 
+};
+
+window.toggleMediaType = function(type) { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleMediaType(type); 
+};
+
+window.handleCtaType = function(type) { 
+  if (window.SupplierCampaigns) window.SupplierCampaigns.handleCtaType(type); 
+};

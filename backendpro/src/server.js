@@ -1,6 +1,6 @@
 // ============================================
-// SERVER.JS - Brandia Backend Entry Point v3.6
-// Render Ready avec gestion proxy vidéo
+// SERVER.JS - Brandia Backend Entry Point v3.7
+// Render Ready avec gestion proxy vidéo améliorée
 // ============================================
 
 const { validateEnv, env } = require('./config/env');
@@ -29,24 +29,14 @@ const startServer = async () => {
         await initDatabase();
         logger.info('✅ Database initialized');
 
-        // 4️⃣ Vérification dépendances
-        logger.info('📦 Checking dependencies...');
-        try {
-            require('node-fetch');
-            logger.info('✅ node-fetch available');
-        } catch (e) {
-            logger.warn('⚠️ node-fetch not found, installing...');
-            // En production Render, les dépendances sont déjà installées via package.json
-        }
-
-        // 5️⃣ Start HTTP server
+        // 4️⃣ Start HTTP server
         const PORT = env.PORT || process.env.PORT || 4000;
 
         const server = app.listen(PORT, '0.0.0.0', () => {
-            logger.info(`🚀 Brandia API running on port ${PORT}`);
+            logger.info(`🚀 Brandia API v3.7 running on port ${PORT}`);
             logger.info(`📍 Environment: ${env.NODE_ENV || 'development'}`);
             logger.info(`🔗 Health check: http://localhost:${PORT}/api/health`);
-            logger.info(`📹 Video proxy: http://localhost:${PORT}/api/proxy/video`);
+            logger.info(`📹 Video proxy: http://localhost:${PORT}/api/proxy/video?url=VIDEO_URL`);
         });
 
         // ============================================
