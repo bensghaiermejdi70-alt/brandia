@@ -553,46 +553,107 @@ class SupplierController {
     }
   }
 
-  async createCampaign(req, res) {
-    try {
-      const userId = req.user?.id;
-      if (!userId) return res.status(401).json({ success: false, message: 'Non authentifié' });
+  // supplier.controller.js - createCampaign CORRIGÉ
 
-      const supplierResult = await db.query('SELECT id FROM suppliers WHERE user_id = $1 LIMIT 1', [userId]);
-      if (supplierResult.rows.length === 0) return res.status(404).json({ success: false, message: 'Profil fournisseur non trouvé' });
+async createCampaign(req, res) {
+  try {
+    const supplierId = req.user.id;
+    const {
+      name,
+      type,
+      media_url,
+      media_type,
+      headline,
+      description,
+      cta_text,
+      cta_link,
+      target_products,
+      start_date,
+      end_date,
+      status
+    } = req.body;
 
-      const supplierId = supplierResult.rows[0].id;
-      
-      // Vérifier limite
-      const settingsResult = await db.query('SELECT max_campaigns FROM supplier_ad_settings WHERE supplier_id = $1', [supplierId]);
-      const maxCampaigns = settingsResult.rows[0]?.max_campaigns || 5;
-      
-      const countResult = await db.query('SELECT COUNT(*) as count FROM supplier_campaigns WHERE supplier_id = $1 AND status = $2', [supplierId, 'active']);
-      if (parseInt(countResult.rows[0].count) >= maxCampaigns) {
-        return res.status(400).json({ success: false, message: `Limite de ${maxCampaigns} campagnes atteinte` });
-      }
-
-      const { name, media_url, media_type, headline, description, cta_text, cta_link, start_date, end_date, target_products } = req.body;
-      
-      // Auto-ciblage: si pas de produits spécifiés, prendre tous les produits du fournisseur
-      let finalTargetProducts = target_products;
-      if (!target_products || target_products.length === 0) {
-        const productsResult = await db.query('SELECT id FROM products WHERE supplier_id = $1 AND is_active = true', [supplierId]);
-        finalTargetProducts = productsResult.rows.map(p => p.id);
-      }
-
-      const result = await db.query(`
-        INSERT INTO supplier_campaigns (supplier_id, name, media_url, media_type, headline, description, cta_text, cta_link, start_date, end_date, target_products, status, views_count, clicks_count)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active',0,0) RETURNING *
-      `, [supplierId, name, media_url, media_type || 'image', headline, description, cta_text, cta_link, start_date, end_date, finalTargetProducts]);
-
-      res.json({ success: true, data: result.rows[0] });
-    } catch (error) {
-      console.error('[Create Campaign] Error:', error);
-      res.status(500).json({ success: false, message: 'Erreur serveur' });
+    // Validation minimale
+    if (!name || !headline || !media_url || !start_date || !end_date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Champs requis: name, headline, media_url, start_date, end_date'
+      });
     }
-  }
 
+    // Requête SQL adaptée à VOTRE structure de table
+    const query = `
+      INSERT INTO supplier_campaigns (
+        supplier_id,
+        name,
+        type,
+        media_type,
+        media_url,
+        headline,
+        description,
+        cta_text,
+        cta_link,
+        target_products,
+        status,
+        start_date,
+        end_date,
+        views_count,
+        clicks_count,
+        daily_budget,
+        spent_today,
+        total_spent,
+        impressions,
+        clicks,
+        ctr,
+        score,
+        created_at,
+        updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        NOW(), NOW()
+      )
+      RETURNING *
+    `;
+
+    const values = [
+      supplierId,
+      name,
+      type || 'overlay',
+      media_type || 'image',
+      media_url,
+      headline,
+      description || '',
+      cta_text || 'Voir l\'offre',
+      cta_link || '',
+      target_products ? JSON.stringify(target_products) : null,
+      status || 'active',
+      start_date,
+      end_date
+    ];
+
+    const result = await db.query(query, values);
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+      message: 'Campagne créée avec succès'
+    });
+
+  } catch (error) {
+    console.error('[Create Campaign] Error:', error);
+    
+    // Log détaillé pour debug
+    console.error('[Create Campaign] SQL Error Code:', error.code);
+    console.error('[Create Campaign] SQL Detail:', error.detail);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erreur création campagne: ' + error.message,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
   async updateCampaign(req, res) {
     try {
       const userId = req.user?.id;
