@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v8.1 PRODUCTION
-// Features: Multi-campaign, Product selection, Dynamic CTA, Chart
+// SUPPLIER CAMPAIGNS MODULE - v8.2 PRODUCTION
+// Corrections: Removed max_campaigns API call, removed target_mode field
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -46,9 +46,14 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v8.1...');
+    console.log('[Campaigns] Initializing v8.2...');
     try {
-      await this.loadCampaignLimit();
+      // Utilisation limite côté client uniquement (max_campaigns n'existe pas en base)
+      this.state.campaignLimit = { 
+        current: 0, 
+        max: this.MAX_CAMPAIGNS, 
+        can_create: true 
+      };
       await this.loadProducts();
       await this.loadCampaigns();
       this.initChart();
@@ -59,27 +64,14 @@ window.SupplierCampaigns = {
     }
   },
 
-  loadCampaignLimit: async function() {
-    try {
-      const response = await BrandiaAPI.Supplier.getCampaignLimit?.() || { 
-        success: true, 
-        data: { current: this.state.campaigns.length, max: this.MAX_CAMPAIGNS, can_create: this.state.campaigns.length < this.MAX_CAMPAIGNS }
-      };
-      if (response.success) {
-        this.state.campaignLimit = response.data;
-      }
-    } catch (error) {
-      console.error('[Campaigns] Error loading limit:', error);
-    }
-  },
-
   updateCampaignCounter: function() {
     const counterEl = document.getElementById('campaign-counter');
     if (counterEl) {
       const current = this.state.campaigns.filter(c => c.status === 'active').length;
+      this.state.campaignLimit.current = current;
       counterEl.innerHTML = `
-        <span class="${current >= this.state.campaignLimit.max ? 'text-red-400' : 'text-emerald-400'}">
-          ${current}/${this.state.campaignLimit.max}
+        <span class="${current >= this.MAX_CAMPAIGNS ? 'text-red-400' : 'text-emerald-400'}">
+          ${current}/${this.MAX_CAMPAIGNS}
         </span> actives
       `;
     }
@@ -519,7 +511,8 @@ window.SupplierCampaigns = {
     if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
     if (ctaLinkField && campaign.cta_link) ctaLinkField.value = campaign.cta_link;
     
-    if (campaign.target_products && Array.isArray(campaign.target_products)) {
+    // Gestion target_products uniquement (pas target_mode en base)
+    if (campaign.target_products && Array.isArray(campaign.target_products) && campaign.target_products.length > 0) {
       this.state.targetMode = 'selected';
       this.state.selectedProducts = [...campaign.target_products];
       const radio = document.querySelector('input[name="target_mode"][value="selected"]');
@@ -527,6 +520,7 @@ window.SupplierCampaigns = {
       this.toggleTargetMode('selected');
     } else {
       this.state.targetMode = 'all';
+      this.state.selectedProducts = [];
       const radio = document.querySelector('input[name="target_mode"][value="all"]');
       if (radio) radio.checked = true;
       this.toggleTargetMode('all');
@@ -770,6 +764,7 @@ window.SupplierCampaigns = {
       const ctaText = document.getElementById('camp-cta-text')?.value?.trim() || "Voir l'offre";
       const ctaLink = document.getElementById('camp-cta-link')?.value?.trim();
       
+      // Validation
       if (!name) {
         this.showToast('Le nom de la campagne est requis', 'error');
         document.getElementById('camp-name')?.focus();
@@ -794,6 +789,7 @@ window.SupplierCampaigns = {
         return;
       }
       
+      // Upload média
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
       
@@ -818,6 +814,7 @@ window.SupplierCampaigns = {
         return;
       }
       
+      // DONNÉES SIMPLIFIÉES - sans target_mode qui n'existe pas en base
       const campaignData = {
         name: name,
         type: 'overlay',
@@ -828,7 +825,7 @@ window.SupplierCampaigns = {
         cta_text: ctaText,
         cta_link: ctaLink,
         target_products: this.state.targetMode === 'all' ? null : this.state.selectedProducts,
-        target_mode: this.state.targetMode,
+        // PAS de target_mode ici - n'existe pas en base de données
         start_date: startDate,
         end_date: endDate,
         status: 'active'
@@ -939,4 +936,4 @@ window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v8.1 PRODUCTION READY chargé');
+console.log('[SupplierCampaigns] Module v8.2 PRODUCTION READY chargé');
