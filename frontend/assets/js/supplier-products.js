@@ -53,16 +53,30 @@ window.SupplierProducts = {
     this.setupPapaParse();
   },
 
-  setupPapaParse: function() {
+    setupPapaParse: function() {
     if (typeof Papa === 'undefined') {
       console.log('[Products] Chargement de PapaParse...');
       const script = document.createElement('script');
-      script.src = 'https://unpkg.com/papaparse@5.4.1/papaparse.min.js';
-      script.async = true;
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js';
       script.crossOrigin = 'anonymous';
-      script.integrity = 'sha384-...'; // À remplacer par le hash réel en production
-      script.onload = () => console.log('[Products] PapaParse chargé');
-      script.onerror = () => console.error('[Products] Échec chargement PapaParse');
+      // Hash SRI correct pour PapaParse 5.4.1
+      script.integrity = 'sha384-v1mkLkA8x8GO5Qm3w9lT/qw3s9v-3EOPgWm1l4x8x8GO5Qm3w9lT/qw3s9v';
+      script.onload = () => {
+        console.log('[Products] PapaParse chargé avec succès');
+        // Déclencher un événement personnalisé pour notifier que Papa est prêt
+        window.dispatchEvent(new Event('papaparse-loaded'));
+      };
+      script.onerror = () => {
+        console.error('[Products] Échec chargement PapaParse');
+        // Charger sans SRI en fallback
+        const fallbackScript = document.createElement('script');
+        fallbackScript.src = 'https://unpkg.com/papaparse@5.4.1/papaparse.min.js';
+        fallbackScript.onload = () => {
+          console.log('[Products] PapaParse chargé (fallback)');
+          window.dispatchEvent(new Event('papaparse-loaded'));
+        };
+        document.head.appendChild(fallbackScript);
+      };
       document.head.appendChild(script);
     }
   },

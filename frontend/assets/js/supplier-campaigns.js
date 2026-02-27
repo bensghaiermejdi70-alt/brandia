@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v7.0 PRODUCTION
-// Changes: Reduced size, auto-target all products, 5 campaigns limit
+// SUPPLIER CAMPAIGNS MODULE - v7.1 PRODUCTION
+// Changes: Fixed form handling, corrected DOM selectors
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -35,12 +35,12 @@ window.SupplierCampaigns = {
     campaignLimit: { current: 0, max: 5, can_create: true }
   },
   
-  MAX_CAMPAIGNS: 5, // Limite configurable par marque (admin peut modifier)
+  MAX_CAMPAIGNS: 5,
   
   FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWduPC90ZXh0Pjwvc3ZnPg==',
   
   init: async function() {
-    console.log('[Campaigns] Initializing v7.0...');
+    console.log('[Campaigns] Initializing v7.1...');
     try {
       await this.loadCampaignLimit();
       await this.loadProducts();
@@ -53,7 +53,6 @@ window.SupplierCampaigns = {
     }
   },
   
-  // NOUVEAU : Charger la limite de campagnes
   loadCampaignLimit: async function() {
     try {
       const response = await BrandiaAPI.Supplier.getCampaignLimit?.() || { 
@@ -68,18 +67,16 @@ window.SupplierCampaigns = {
     }
   },
   
-  // NOUVEAU : Mettre à jour le compteur dans l'UI
   updateCampaignCounter: function() {
     const counterEl = document.getElementById('campaign-counter');
     if (counterEl) {
       counterEl.innerHTML = `
         <span class="${this.state.campaignLimit.current >= this.state.campaignLimit.max ? 'text-red-400' : 'text-emerald-400'}">
           ${this.state.campaignLimit.current}/${this.state.campaignLimit.max}
-        </span> campagnes actives
+        </span> campagnes
       `;
     }
     
-    // Désactiver le bouton créer si limite atteinte
     const createBtn = document.getElementById('btn-create-campaign');
     if (createBtn) {
       if (this.state.campaignLimit.current >= this.state.campaignLimit.max && !this.state.editingCampaignId) {
@@ -133,7 +130,7 @@ window.SupplierCampaigns = {
         this.renderList();
         this.updateStats();
         this.updateChart();
-        this.updateCampaignCounter(); // Mettre à jour le compteur
+        this.updateCampaignCounter();
       } else {
         console.error('[Campaigns] API error:', response?.message || 'Unknown error');
         this.showToast('Erreur chargement campagnes: ' + (response?.message || 'Erreur inconnue'), 'error');
@@ -166,8 +163,6 @@ window.SupplierCampaigns = {
     
     let html = '';
     for (const c of this.state.campaigns) {
-      // MODIFIÉ : Plus besoin d'afficher le nombre de produits ciblés individuellement
-      // car ça cible automatiquement tous les produits du fournisseur
       const views = parseInt(c.views_count) || 0;
       const clicks = parseInt(c.clicks_count) || 0;
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
@@ -235,7 +230,6 @@ window.SupplierCampaigns = {
   openModal: async function(campaignId = null) {
     console.log('[Campaigns] Opening modal, editing:', campaignId);
     
-    // Vérifier la limite si création nouvelle campagne
     if (!campaignId && this.state.campaignLimit.current >= this.state.campaignLimit.max) {
       this.showToast(`Vous avez atteint la limite de ${this.state.campaignLimit.max} campagnes. Contactez l'administrateur pour augmenter votre quota.`, 'error');
       return;
@@ -260,7 +254,6 @@ window.SupplierCampaigns = {
     if (form) form.reset();
     
     this.resetUploadUI();
-    // SUPPRESSION : Plus besoin de renderTargetProductsList car auto-target tous les produits
     
     if (campaignId) {
       const campaign = this.state.campaigns.find(c => c.id === campaignId);
@@ -276,8 +269,8 @@ window.SupplierCampaigns = {
       const nextMonth = new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       
-      const startInput = this.getFormField('start_date');
-      const endInput = this.getFormField('end_date');
+      const startInput = document.getElementById('camp-start-date');
+      const endInput = document.getElementById('camp-end-date');
       if (startInput) startInput.value = today;
       if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
     }
@@ -289,9 +282,9 @@ window.SupplierCampaigns = {
   },
   
   attachPreviewListeners: function() {
-    const fields = ['name', 'headline', 'description', 'cta_text'];
-    fields.forEach(fieldName => {
-      const element = this.getFormField(fieldName);
+    const fields = ['camp-name', 'camp-headline', 'camp-description', 'camp-cta-text'];
+    fields.forEach(fieldId => {
+      const element = document.getElementById(fieldId);
       if (element) {
         element.removeEventListener('input', this.previewHandler);
         element.addEventListener('input', () => this.updatePreview());
@@ -303,28 +296,13 @@ window.SupplierCampaigns = {
     if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview();
   },
   
-  getFormField: function(fieldName) {
-    const modal = document.getElementById('campaign-modal');
-    if (modal) {
-      const byName = modal.querySelector(`[name="${fieldName}"]`);
-      if (byName) return byName;
-    }
-    const global = document.querySelector(`[name="${fieldName}"]`);
-    if (global) return global;
-    if (fieldName === 'description') {
-      const byId = document.getElementById('campaign-description');
-      if (byId) return byId;
-    }
-    console.warn(`[Campaigns] Field "${fieldName}" not found`);
-    return null;
-  },
-  
   resetUploadUI: function() {
     const dropzone = document.getElementById('campaign-dropzone');
     const fileInput = document.getElementById('campaign-media');
     if (fileInput) fileInput.value = '';
     if (dropzone) {
       dropzone.innerHTML = `
+        <input type="file" id="campaign-media" class="hidden" accept="image/*" onchange="handleCampaignMedia(event)">
         <div id="campaign-media-placeholder">
           <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 mb-2"></i>
           <p class="text-slate-400 text-xs">Cliquez ou glissez votre fichier ici</p>
@@ -336,13 +314,13 @@ window.SupplierCampaigns = {
   },
   
   fillFormForEdit: function(campaign) {
-    const nameField = this.getFormField('name');
-    const headlineField = this.getFormField('headline');
-    const descField = this.getFormField('description');
-    const ctaTextField = this.getFormField('cta_text');
-    const startDateField = this.getFormField('start_date');
-    const endDateField = this.getFormField('end_date');
-    const ctaLinkField = this.getFormField('cta_link');
+    const nameField = document.getElementById('camp-name');
+    const headlineField = document.getElementById('camp-headline');
+    const descField = document.getElementById('camp-description');
+    const ctaTextField = document.getElementById('camp-cta-text');
+    const startDateField = document.getElementById('camp-start-date');
+    const endDateField = document.getElementById('camp-end-date');
+    const ctaLinkField = document.getElementById('camp-cta-link');
     
     if (nameField && campaign.name) nameField.value = campaign.name;
     if (headlineField && campaign.headline) headlineField.value = campaign.headline;
@@ -549,14 +527,12 @@ window.SupplierCampaigns = {
     }
   },
   
-  // SUPPRESSION : Plus besoin de renderTargetProductsList car auto-target
-  
   updatePreview: function() {
     try {
-      const nameField = this.getFormField('name');
-      const headlineField = this.getFormField('headline');
-      const descField = this.getFormField('description');
-      const ctaField = this.getFormField('cta_text');
+      const nameField = document.getElementById('camp-name');
+      const headlineField = document.getElementById('camp-headline');
+      const descField = document.getElementById('camp-description');
+      const ctaField = document.getElementById('camp-cta-text');
       
       const name = nameField?.value || '';
       const headline = headlineField?.value || 'Votre titre';
@@ -595,13 +571,14 @@ window.SupplierCampaigns = {
     }
     
     try {
-      const nameField = this.getFormField('name');
-      const headlineField = this.getFormField('headline');
-      const descField = this.getFormField('description');
-      const startDateField = this.getFormField('start_date');
-      const endDateField = this.getFormField('end_date');
-      const ctaTextField = this.getFormField('cta_text');
-      const ctaLinkField = this.getFormField('cta_link');
+      // Utiliser les IDs corrigés des champs
+      const nameField = document.getElementById('camp-name');
+      const headlineField = document.getElementById('camp-headline');
+      const descField = document.getElementById('camp-description');
+      const startDateField = document.getElementById('camp-start-date');
+      const endDateField = document.getElementById('camp-end-date');
+      const ctaTextField = document.getElementById('camp-cta-text');
+      const ctaLinkField = document.getElementById('camp-cta-link');
       
       const name = nameField?.value?.trim();
       const headline = headlineField?.value?.trim();
@@ -661,7 +638,6 @@ window.SupplierCampaigns = {
         return; 
       }
       
-      // MODIFIÉ : target_products est null (tous les produits du fournisseur)
       const campaignData = {
         name: name, 
         type: 'overlay', 
@@ -671,7 +647,7 @@ window.SupplierCampaigns = {
         description: description, 
         cta_text: ctaText, 
         cta_link: ctaLink,
-        target_products: null, // NULL = tous les produits du fournisseur
+        target_products: null,
         start_date: startDate, 
         end_date: endDate, 
         status: 'active'
@@ -802,48 +778,41 @@ window.SupplierCampaigns = {
 };
 
 // ==========================================
-// FONCTIONS GLOBALES
+// FONCTIONS GLOBALES (wrappers)
 // ==========================================
+
 window.openCampaignModal = function() { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.openModal(); 
+  if (window.SupplierCampaigns) SupplierCampaigns.openModal(); 
 };
 
-window.saveCampaign = function() { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.save(); 
+window.saveCampaignForm = function() { 
+  if (window.SupplierCampaigns) SupplierCampaigns.save(); 
 };
 
-window.closeModal = function(modalId) {
-  if (modalId === 'campaign-modal' && window.SupplierCampaigns) { 
-    window.SupplierCampaigns.closeModal(); 
-  } else {
-    const modal = document.getElementById(modalId);
-    if (modal) { 
-      modal.classList.add('hidden'); 
-      document.body.style.overflow = ''; 
-    }
-  }
+window.closeCampaignModal = function() {
+  if (window.SupplierCampaigns) SupplierCampaigns.closeModal();
 };
 
 window.toggleCampaignStatus = function(id, status) { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleStatus(id, status); 
+  if (window.SupplierCampaigns) SupplierCampaigns.toggleStatus(id, status); 
 };
 
 window.deleteCampaign = function(id) { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.deleteCampaign(id); 
+  if (window.SupplierCampaigns) SupplierCampaigns.deleteCampaign(id); 
 };
 
 window.editCampaign = function(id) { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.editCampaign(id); 
+  if (window.SupplierCampaigns) SupplierCampaigns.editCampaign(id); 
 };
 
 window.handleCampaignMedia = function(e) { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.handleMediaSelect(e); 
+  if (window.SupplierCampaigns) SupplierCampaigns.handleMediaSelect(e); 
 };
 
 window.updateAdPreview = function() { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.updatePreview(); 
+  if (window.SupplierCampaigns) SupplierCampaigns.updatePreview(); 
 };
 
 window.toggleMediaType = function(type) { 
-  if (window.SupplierCampaigns) window.SupplierCampaigns.toggleMediaType(type); 
+  if (window.SupplierCampaigns) SupplierCampaigns.toggleMediaType(type); 
 };
