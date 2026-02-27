@@ -1,7 +1,6 @@
 // ============================================
-// APP.JS - Brandia Backend v3.8 STABLE
-// Compatible Node 18+ (fetch natif)
-// Corrections: Proxy vidéo, CORS, Error handling
+// APP.JS - Brandia Backend v4.0 STABLE
+// Fix: Ordre de chargement des routes, éviter le double montage supplier
 // ============================================
 
 const express = require('express');
@@ -46,10 +45,9 @@ app.use(cors({
 }));
 
 // ============================================
-// 🔥 PROXY VIDÉO - Version robuste avec gestion CORS preflight
+// 🔥 PROXY VIDÉO - Version robuste
 // ============================================
 
-// Gestion des requêtes OPTIONS pour le proxy vidéo (CORS preflight)
 app.options('/api/proxy/video', cors());
 
 app.get('/api/proxy/video', async (req, res) => {
@@ -63,7 +61,6 @@ app.get('/api/proxy/video', async (req, res) => {
             });
         }
 
-        // Validation URL Cloudinary uniquement
         const allowedDomains = ['res.cloudinary.com', 'cloudinary.com'];
         let urlObj;
         try {
@@ -86,7 +83,6 @@ app.get('/api/proxy/video', async (req, res) => {
 
         console.log('[Proxy] Streaming:', videoUrl);
 
-        // Utiliser http ou https selon l'URL
         const client = videoUrl.startsWith('https:') ? https : http;
         
         const proxyReq = client.get(videoUrl, {
@@ -98,7 +94,6 @@ app.get('/api/proxy/video', async (req, res) => {
             },
             timeout: 30000
         }, (proxyRes) => {
-            // Vérifier le status code
             if (proxyRes.statusCode !== 200) {
                 console.error('[Proxy] Upstream error:', proxyRes.statusCode);
                 if (!res.headersSent) {
@@ -110,13 +105,10 @@ app.get('/api/proxy/video', async (req, res) => {
                 return;
             }
 
-            // Headers de sécurité et CORS
             res.set('Access-Control-Allow-Origin', '*');
             res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
             res.set('Access-Control-Allow-Headers', 'Content-Type, Range');
             res.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
-            
-            // Headers vidéo
             res.set('Content-Type', proxyRes.headers['content-type'] || 'video/mp4');
             if (proxyRes.headers['content-length']) {
                 res.set('Content-Length', proxyRes.headers['content-length']);
@@ -124,7 +116,6 @@ app.get('/api/proxy/video', async (req, res) => {
             res.set('Cache-Control', 'public, max-age=3600');
             res.set('Accept-Ranges', 'bytes');
             
-            // Streaming
             proxyRes.pipe(res);
         });
 
@@ -200,9 +191,10 @@ if (publicPath) {
 }
 
 // ============================================
-// ROUTES API
+// 🔥 ROUTES API - ORDRE CRITIQUE
 // ============================================
 
+// Health check (avant les autres routes)
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
@@ -215,29 +207,20 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Routes existantes
-try {
-    const supplierRoutes = require('./modules/supplier/supplier.routes');
-    app.use('/api/supplier', supplierRoutes);
-    console.log('[App] Supplier routes loaded');
-} catch (e) {
-    console.error('[App] Failed to load supplier routes:', e.message);
-}
+// ============================================
+// 🔥 CHARGEMENT UNIQUE DES ROUTES
+// ============================================
 
-try {
-    const productRoutes = require('./modules/products/product.routes');
-    app.use('/api/products', productRoutes);
-    console.log('[App] Product routes loaded');
-} catch (e) {
-    console.error('[App] Failed to load product routes:', e.message);
-}
+// SUPPRESSION du chargement direct de supplier ici (déplacé dans index.js)
+// pour éviter le double montage et les conflits de middleware
 
 try {
     const indexRoutes = require('./routes/index');
     app.use('/api', indexRoutes);
-    console.log('[App] Index routes loaded');
+    console.log('[App] ✅ All API routes loaded via index.js');
 } catch (e) {
-    console.error('[App] Failed to load index routes:', e.message);
+    console.error('[App] ❌ Failed to load index routes:', e.message);
+    console.error(e.stack);
 }
 
 // ============================================
@@ -259,7 +242,7 @@ if (publicPath) {
         res.json({
             success: true,
             message: 'Brandia API',
-            version: '3.8',
+            version: '4.0',
             endpoints: [
                 '/api/health',
                 '/api/products',

@@ -1,6 +1,6 @@
 // ============================================
-// ROUTES PRINCIPALES - API Brandia v3.3 CORRIGÉ
-// Ajout des routes Supplier manquantes
+// ROUTES PRINCIPALES - API Brandia v4.0 CORRIGÉ
+// Fix: Ordre des routes, pas de double montage supplier, gestion 404 correcte
 // ============================================
 
 const express = require('express');
@@ -14,27 +14,55 @@ const authController = require('../modules/auth/auth.controller');
 const orderRoutes = require('../modules/orders/order.routes');
 const paymentRoutes = require('../modules/payments/payment.routes');
 const countryRoutes = require('../modules/countries/country.routes');
+const productRoutes = require('../modules/products/product.routes');
 
-// 🔥 NOUVEAU: Import des routes Supplier
+// 🔥 Import des routes Supplier (seul montage, ici uniquement)
 const supplierRoutes = require('../modules/supplier/supplier.routes');
 
-// 🔥 Import du middleware (uniquement pour routes spécifiques)
+// Middleware auth
 const { authenticate } = require('../middlewares/auth.middleware');
 
-console.log('[Routes Index] Loading v3.3...');
+console.log('[Routes Index] Loading v4.0...');
 
 // ============================================
 // ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
 // ============================================
 
-// Health check
-router.get('/health', (req, res) => {
+// Documentation racine
+router.get('/', (req, res) => {
     res.json({
         success: true,
-        status: 'OK',
+        service: 'Brandia API',
+        version: '4.0.0',
+        status: 'operational',
         timestamp: new Date().toISOString(),
-        service: 'brandia-api',
-        version: '3.3.0'
+        endpoints: {
+            public: {
+                health: 'GET /api/health',
+                categories: 'GET /api/categories',
+                products: 'GET /api/products',
+                product_detail: 'GET /api/products/:id',
+                promotions: 'GET /api/public/promotions/active',
+                supplier_public: {
+                    campaigns: 'GET /api/supplier/public/campaigns?supplier=X&product=Y',
+                    campaign_view: 'POST /api/supplier/public/campaigns/view',
+                    campaign_click: 'POST /api/supplier/public/campaigns/click',
+                    ad_settings: 'GET /api/supplier/public/ad-settings?supplier=X'
+                }
+            },
+            authentication: {
+                register: 'POST /api/auth/register',
+                login: 'POST /api/auth/login',
+                refresh: 'POST /api/auth/refresh',
+                me: 'GET /api/auth/me (protected)',
+                logout: 'POST /api/auth/logout (protected)'
+            },
+            protected: {
+                orders: '/api/orders/*',
+                payments: '/api/payments/*',
+                supplier_dashboard: '/api/supplier/* (stats, products, orders, campaigns, etc.)'
+            }
+        }
     });
 });
 
@@ -84,7 +112,10 @@ router.get('/categories', async (req, res, next) => {
     }
 });
 
-// Promotions publiques (pour offre.html)
+// Products (publiques)
+router.use('/products', productRoutes);
+
+// Promotions publiques
 router.get('/public/promotions/active', async (req, res, next) => {
     try {
         const db = require('../config/db');
@@ -120,8 +151,8 @@ router.get('/public/promotions/active', async (req, res, next) => {
 // ============================================
 // 🔥 ROUTES SUPPLIER (MIXTE: publique + protégée)
 // ============================================
-// IMPORTANT: supplier.routes.js gère lui-même la séparation
-// des routes publiques (avant middleware) et protégées (après)
+// CRITICAL: Montage AVANT les routes protégées car supplier.routes.js
+// gère lui-même la séparation publique/protégée avec ses propres middlewares
 router.use('/supplier', supplierRoutes);
 
 console.log('[Routes Index] ✅ Supplier routes mounted at /api/supplier');
@@ -148,61 +179,19 @@ router.post('/auth/logout', authenticate, async (req, res, next) => {
 });
 
 // Orders (protégé)
-router.use('/orders', authenticate, (req, res, next) => {
-    next();
-}, orderRoutes);
+router.use('/orders', authenticate, orderRoutes);
 
 // Payments (protégé)
-router.use('/payments', authenticate, (req, res, next) => {
-    next();
-}, paymentRoutes);
+router.use('/payments', authenticate, paymentRoutes);
 
-// Countries (publique)
+// Countries (publique mais après auth pour la cohérence)
 router.use('/countries', countryRoutes);
-
-// ============================================
-// DOCUMENTATION API (publique)
-// ============================================
-router.get('/', (req, res) => {
-    res.json({
-        success: true,
-        service: 'Brandia API',
-        version: '3.3.0',
-        status: 'operational',
-        timestamp: new Date().toISOString(),
-        endpoints: {
-            public: {
-                health: 'GET /api/health',
-                categories: 'GET /api/categories',
-                products: 'GET /api/products',
-                promotions: 'GET /api/public/promotions/active',
-                supplier_public: {
-                    campaigns: 'GET /api/supplier/public/campaigns?supplier=X&product=Y',
-                    campaign_view: 'POST /api/supplier/public/campaigns/view',
-                    campaign_click: 'POST /api/supplier/public/campaigns/click',
-                    ad_settings: 'GET /api/supplier/public/ad-settings?supplier=X'
-                }
-            },
-            authentication: {
-                register: 'POST /api/auth/register',
-                login: 'POST /api/auth/login',
-                refresh: 'POST /api/auth/refresh',
-                me: 'GET /api/auth/me (protected)',
-                logout: 'POST /api/auth/logout (protected)'
-            },
-            protected: {
-                orders: '/api/orders/*',
-                payments: '/api/payments/*',
-                supplier_dashboard: '/api/supplier/* (stats, products, orders, campaigns, etc.)'
-            }
-        }
-    });
-});
 
 // ============================================
 // GESTION ERREURS 404 (DOIT ÊTRE DERNIER)
 // ============================================
 router.use((req, res) => {
+    console.log(`[404] Route not found: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
         success: false,
         message: 'Endpoint non trouvé',
@@ -212,6 +201,6 @@ router.use((req, res) => {
     });
 });
 
-console.log('[Routes Index] ✅ Loaded successfully v3.3');
+console.log('[Routes Index] ✅ Loaded successfully v4.0');
 
 module.exports = router;
