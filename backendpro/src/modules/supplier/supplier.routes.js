@@ -1,33 +1,25 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v5.7 PRODUCTION READY
+// SUPPLIER ROUTES - v6.0 PRODUCTION
+// Changes: Added campaign limit endpoint
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v5.7...');
-
-// ============================================
-// IMPORTS
-// ============================================
+console.log('[Supplier Routes] Loading v6.0...');
 
 const supplierController = require('./supplier.controller');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const { authenticate, requireRole } = authMiddleware;
-
-// ============================================
-// WRAPPER pour gestion async des erreurs
-// ============================================
 
 const asyncHandler = (fn) => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 // ============================================
-// ROUTES PUBLIQUES (sans authentification)
+// ROUTES PUBLIQUES
 // ============================================
 
-// 🔥 CAMPAIGNS PUBLIQUES - Doivent être AVANT le middleware auth
 router.get('/public/campaigns', asyncHandler(async (req, res) => {
     const { supplier, product } = req.query;
     
@@ -62,7 +54,7 @@ router.get('/public/ad-settings', asyncHandler(async (req, res) => {
     const db = require('../../config/db');
     
     const result = await db.query(`
-        SELECT max_ads_per_session, priority, is_active
+        SELECT max_ads_per_session, priority, is_active, max_campaigns
         FROM supplier_ad_settings
         WHERE supplier_id = $1 AND is_active = true
     `, [supplier]);
@@ -73,6 +65,7 @@ router.get('/public/ad-settings', asyncHandler(async (req, res) => {
             data: { 
                 max_ads_per_session: 1, 
                 priority: 5,
+                max_campaigns: 5,
                 is_default: true
             }
         });
@@ -83,24 +76,24 @@ router.get('/public/ad-settings', asyncHandler(async (req, res) => {
         data: {
             max_ads_per_session: parseInt(result.rows[0].max_ads_per_session) || 1,
             priority: parseInt(result.rows[0].priority) || 5,
+            max_campaigns: parseInt(result.rows[0].max_campaigns) || 5,
             is_default: false
         }
     });
 }));
 
 // ============================================
-// MIDDLEWARES D'AUTHENTIFICATION (APRÈS les routes publiques)
+// MIDDLEWARES AUTH
 // ============================================
 router.use(authenticate);
 router.use(requireRole('supplier'));
 
-console.log('[Supplier Routes] Auth middleware applied to protected routes');
+console.log('[Supplier Routes] Auth middleware applied');
 
 // ============================================
-// ROUTES PROTÉGÉES FOURNISSEUR
+// ROUTES PROTÉGÉES
 // ============================================
 
-// Stats
 router.get('/stats', asyncHandler(async (req, res) => {
     await supplierController.getStats(req, res);
 }));
@@ -109,15 +102,12 @@ router.get('/stats', asyncHandler(async (req, res) => {
 router.get('/products', asyncHandler(async (req, res) => {
     await supplierController.getProducts(req, res);
 }));
-
 router.post('/products', asyncHandler(async (req, res) => {
     await supplierController.createProduct(req, res);
 }));
-
 router.put('/products/:id', asyncHandler(async (req, res) => {
     await supplierController.updateProduct(req, res);
 }));
-
 router.delete('/products/:id', asyncHandler(async (req, res) => {
     await supplierController.deleteProduct(req, res);
 }));
@@ -126,7 +116,6 @@ router.delete('/products/:id', asyncHandler(async (req, res) => {
 router.post('/upload-image', supplierController.uploadImageMiddleware, asyncHandler(async (req, res) => {
     await supplierController.uploadImage(req, res);
 }));
-
 router.post('/upload-video', supplierController.uploadVideoMiddleware, asyncHandler(async (req, res) => {
     await supplierController.uploadCampaignVideo(req, res);
 }));
@@ -135,11 +124,9 @@ router.post('/upload-video', supplierController.uploadVideoMiddleware, asyncHand
 router.get('/orders', asyncHandler(async (req, res) => {
     await supplierController.getOrders(req, res);
 }));
-
 router.get('/orders/:id', asyncHandler(async (req, res) => {
     await supplierController.getOrderById(req, res);
 }));
-
 router.put('/orders/:id/status', asyncHandler(async (req, res) => {
     await supplierController.updateOrderStatus(req, res);
 }));
@@ -148,11 +135,9 @@ router.put('/orders/:id/status', asyncHandler(async (req, res) => {
 router.get('/payments', asyncHandler(async (req, res) => {
     await supplierController.getPayments(req, res);
 }));
-
 router.post('/payouts', asyncHandler(async (req, res) => {
     await supplierController.requestPayout(req, res);
 }));
-
 router.get('/payouts', asyncHandler(async (req, res) => {
     await supplierController.getPayouts(req, res);
 }));
@@ -161,15 +146,12 @@ router.get('/payouts', asyncHandler(async (req, res) => {
 router.get('/promotions', asyncHandler(async (req, res) => {
     await supplierController.getPromotions(req, res);
 }));
-
 router.post('/promotions', asyncHandler(async (req, res) => {
     await supplierController.createPromotion(req, res);
 }));
-
 router.put('/promotions/:id', asyncHandler(async (req, res) => {
     await supplierController.updatePromotion(req, res);
 }));
-
 router.delete('/promotions/:id', asyncHandler(async (req, res) => {
     await supplierController.deletePromotion(req, res);
 }));
@@ -178,28 +160,28 @@ router.delete('/promotions/:id', asyncHandler(async (req, res) => {
 router.get('/campaigns', asyncHandler(async (req, res) => {
     await supplierController.getCampaigns(req, res);
 }));
-
+// NOUVEAU: Endpoint pour récupérer la limite
+router.get('/campaigns/limit', asyncHandler(async (req, res) => {
+    await supplierController.getCampaignLimit(req, res);
+}));
 router.post('/campaigns', asyncHandler(async (req, res) => {
     await supplierController.createCampaign(req, res);
 }));
-
 router.put('/campaigns/:id', asyncHandler(async (req, res) => {
     await supplierController.updateCampaign(req, res);
 }));
-
 router.delete('/campaigns/:id', asyncHandler(async (req, res) => {
     await supplierController.deleteCampaign(req, res);
 }));
-
 router.put('/campaigns/:id/status', asyncHandler(async (req, res) => {
     await supplierController.toggleCampaignStatus(req, res);
 }));
 
-// Ad Settings (protégées)
+// Ad Settings
 router.get('/ad-settings', asyncHandler(async (req, res) => {
     await supplierController.getAdSettings(req, res);
 }));
 
-console.log('[Supplier Routes] ✅ All routes registered successfully');
+console.log('[Supplier Routes] ✅ v6.0 loaded - Campaign limit endpoint added');
 
 module.exports = router;

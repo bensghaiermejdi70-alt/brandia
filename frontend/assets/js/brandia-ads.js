@@ -1,11 +1,11 @@
 // ============================================
-// BRANDIA ADS SYSTEM - v3.6 EMERGENCY FIX
-// Fix: Désactivation totale des vidéos - Images uniquement
+// BRANDIA ADS SYSTEM - v4.0 PRODUCTION
+// Changes: 30% size, auto-target all supplier products, 5 campaigns limit support
 // ============================================
 (function() {
   'use strict';
   
-  if (window.BrandiaAds && window.BrandiaAds.version === '3.6') return;
+  if (window.BrandiaAds && window.BrandiaAds.version === '4.0') return;
   
   function waitForAPI(callback, maxAttempts = 50) {
     let attempts = 0;
@@ -26,62 +26,55 @@
     overlayDuration: 15000,
     initDelay: 2000,
     fallbackAPI: 'https://brandia-1.onrender.com/api',
-    fallbackImage: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&auto=format&fit=crop&q=80'
+    fallbackImage: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&auto=format&fit=crop&q=80',
+    // NOUVEAU: Configuration taille réduite
+    overlayWidth: '30%',        // Réduit de 40% à 30%
+    overlayMaxWidth: '500px',   // Max 500px
+    overlayMaxHeight: '70vh'    // Max 70% viewport height
   };
   
   const AdsStorage = {
     getSeenCampaigns: () => {
       try {
-        return JSON.parse(sessionStorage.getItem('brandia_seen_campaigns_v3') || '[]');
+        return JSON.parse(sessionStorage.getItem('brandia_seen_campaigns_v4') || '[]');
       } catch { return []; }
     },
     markCampaignSeen: (campaignId) => {
       const seen = AdsStorage.getSeenCampaigns();
       if (!seen.includes(campaignId)) {
         seen.push(campaignId);
-        sessionStorage.setItem('brandia_seen_campaigns_v3', JSON.stringify(seen));
+        sessionStorage.setItem('brandia_seen_campaigns_v4', JSON.stringify(seen));
       }
     },
     hasSeenCampaign: (campaignId) => AdsStorage.getSeenCampaigns().includes(campaignId),
-    reset: () => sessionStorage.removeItem('brandia_seen_campaigns_v3')
+    reset: () => sessionStorage.removeItem('brandia_seen_campaigns_v4')
   };
   
-  // 🔥 FONCTION UTILITAIRE : Convertir n'importe quelle URL en image sûre
+  // Convertir URL vidéo en image (fallback)
   function getSafeImageUrl(mediaUrl, mediaType) {
     if (!mediaUrl || mediaUrl === 'null' || mediaUrl === 'undefined') {
       console.log('[BrandiaAds] Using fallback image');
       return CONFIG.fallbackImage;
     }
     
-    // Si c'est une vidéo, convertir en image
     if (mediaType === 'video' || mediaUrl.includes('.mp4') || mediaUrl.includes('.mov') || mediaUrl.includes('.webm')) {
       console.log('[BrandiaAds] Converting video to image:', mediaUrl);
-      
-      // Extraction ID Cloudinary et conversion en image
       try {
-        // Pattern: https://res.cloudinary.com/.../upload/v.../brandia/campaigns/xxx.mp4
         const match = mediaUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.(mp4|mov|webm)/i);
         if (match) {
           const basePath = match[1];
-          // Créer URL image avec transformation Cloudinary
-          const imageUrl = `https://res.cloudinary.com/dsm9w1jzx/image/upload/c_fill,w_600,h_400,q_auto/${basePath}.jpg`;
-          console.log('[BrandiaAds] Converted to:', imageUrl);
-          return imageUrl;
+          return `https://res.cloudinary.com/dsm9w1jzx/image/upload/c_fill,w_600,h_400,q_auto/${basePath}.jpg`;
         }
       } catch (e) {
         console.error('[BrandiaAds] Conversion error:', e);
       }
-      
-      // Fallback si échec conversion
       return CONFIG.fallbackImage;
     }
-    
-    // C'est déjà une image
     return mediaUrl;
   }
   
   const BrandiaAds = {
-    version: '3.6',
+    version: '4.0',
     state: {
       currentCampaign: null,
       currentSupplierId: null,
@@ -93,7 +86,7 @@
     },
     
     init: function(fallbackMode = false) {
-      console.log('[BrandiaAds] Initializing v3.6 (VIDEO DISABLED)...');
+      console.log('[BrandiaAds] Initializing v4.0 (30% overlay)...');
       this.state.apiAvailable = !fallbackMode && !!window.BrandiaAPI;
       this.state.isClosed = false;
       
@@ -125,12 +118,25 @@
           const product = data.data.product || data.data;
           const supplierId = product.supplier_id;
           if (!supplierId) return;
+          // MODIFIÉ: Nouveau endpoint pour récupérer TOUTES les campagnes actives du fournisseur
           return fetch(`${apiBase}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`);
         })
         .then(r => r ? r.json() : null)
         .then(campaignData => {
           if (campaignData?.success && campaignData.data) {
-            self.showAd(campaignData.data, null);
+            // MODIFIÉ: Gestion de plusieurs campagnes (rotation aléatoire si plusieurs)
+            const campaigns = Array.isArray(campaignData.data) ? campaignData.data : [campaignData.data];
+            const availableCampaigns = campaigns.filter(c => !AdsStorage.hasSeenCampaign(c.id));
+            
+            if (availableCampaigns.length > 0) {
+              // Choisir une campagne aléatoire parmi les disponibles
+              const selectedCampaign = availableCampaigns[Math.floor(Math.random() * availableCampaigns.length)];
+              self.showAd(selectedCampaign, null);
+            } else if (campaigns.length > 0) {
+              // Toutes vues, prendre la première (ou reset si tu préfères)
+              console.log('[BrandiaAds] All campaigns seen, showing first');
+              self.showAd(campaigns[0], null);
+            }
           }
         })
         .catch(err => console.error('[BrandiaAds] Fallback error:', err));
@@ -158,12 +164,14 @@
         
         this.state.currentSupplierId = supplierId;
         
+        // Vérifier si déjà vu pour ce fournisseur (session)
         const sessionKey = `ad_seen_supplier_${supplierId}`;
         if (sessionStorage.getItem(sessionKey)) {
           console.log('[BrandiaAds] Already seen for this supplier');
           return;
         }
         
+        // MODIFIÉ: Récupérer toutes les campagnes actives du fournisseur pour ce produit
         const campaignResponse = await fetch(
           `${CONFIG.fallbackAPI}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`
         );
@@ -174,26 +182,32 @@
           return;
         }
         
-        const campaign = campaignData.data;
-        
-        if (AdsStorage.hasSeenCampaign(campaign.id)) {
-          console.log('[BrandiaAds] Campaign already seen');
-          return;
-        }
-        
+        // MODIFIÉ: Gérer un tableau de campagnes
+        const campaigns = Array.isArray(campaignData.data) ? campaignData.data : [campaignData.data];
         const now = new Date();
-        const startDate = new Date(campaign.start_date);
-        const endDate = new Date(campaign.end_date);
         
-        if (now < startDate || now > endDate) {
-          console.log('[BrandiaAds] Campaign not active (dates)');
+        // Filtrer les campagnes actives (dates)
+        const activeCampaigns = campaigns.filter(c => {
+          const startDate = new Date(c.start_date);
+          const endDate = new Date(c.end_date);
+          return now >= startDate && now <= endDate;
+        });
+        
+        if (activeCampaigns.length === 0) {
+          console.log('[BrandiaAds] No active campaigns (dates)');
           return;
         }
         
-        console.log(`[BrandiaAds] Campaign found: ${campaign.id}, Type: ${campaign.media_type}`);
+        // Filtrer celles pas encore vues
+        const availableCampaigns = activeCampaigns.filter(c => !AdsStorage.hasSeenCampaign(c.id));
+        const campaignsToShow = availableCampaigns.length > 0 ? availableCampaigns : activeCampaigns;
+        
+        // Sélection aléatoire
+        const selectedCampaign = campaignsToShow[Math.floor(Math.random() * campaignsToShow.length)];
+        console.log(`[BrandiaAds] Selected campaign: ${selectedCampaign.id} (among ${campaignsToShow.length})`);
         
         setTimeout(() => {
-          self.showAd(campaign, supplierId);
+          self.showAd(selectedCampaign, supplierId);
         }, CONFIG.initDelay);
         
       } catch (error) {
@@ -203,14 +217,12 @@
     },
     
     showAd: function(campaign, supplierId) {
-      if (!campaign || AdsStorage.hasSeenCampaign(campaign.id) || this.state.isClosed) return;
+      if (!campaign || this.state.isClosed) return;
       
       const self = this;
       console.log(`[BrandiaAds] Showing ad: ${campaign.id}`);
       
-      // 🔥 CONVERSION FORCÉE EN IMAGE (peu importe le type)
       const safeImageUrl = getSafeImageUrl(campaign.media_url, campaign.media_type);
-      console.log('[BrandiaAds] Safe image URL:', safeImageUrl);
       
       const wrapper = document.createElement('div');
       wrapper.id = 'brandia-ad-wrapper';
@@ -221,65 +233,62 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.9);
-        backdrop-filter: blur(10px);
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
         opacity: 0;
         transition: opacity 0.3s ease;
       `;
       
+      // MODIFIÉ: Container réduit à 30% / max 500px
       wrapper.innerHTML = `
         <div id="brandia-ad-container" style="
-          width: 92%; max-width: 480px; max-height: 85vh;
+          width: ${CONFIG.overlayWidth};
+          max-width: ${CONFIG.overlayMaxWidth};
+          max-height: ${CONFIG.overlayMaxHeight};
           background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-          border-radius: 24px; overflow: hidden;
+          border-radius: 16px;
+          overflow: hidden;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-          border: 1px solid rgba(99, 102, 241, 0.4);
-          transform: scale(0.9) translateY(30px);
+          border: 1px solid rgba(99, 102, 241, 0.3);
+          transform: scale(0.9) translateY(20px);
           transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-          display: flex; flex-direction: column;
+          display: flex;
+          flex-direction: column;
         ">
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid rgba(99, 102, 241, 0.2);">
-            <span style="font-size: 13px; color: #818cf8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid rgba(99, 102, 241, 0.2);">
+            <span style="font-size: 11px; color: #818cf8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
               <i class="fas fa-sparkles" style="color: #ec4899;"></i> Sponsorisé
             </span>
-            <button id="ad-close-btn" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 16px;" onmouseover="this.style.background='rgba(239,68,68,0.4)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.transform='scale(1)'">
+            <button id="ad-close-btn" style="width: 28px; height: 28px; border-radius: 50%; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 12px;" onmouseover="this.style.background='rgba(239,68,68,0.4)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.transform='scale(1)'">
               <i class="fas fa-times"></i>
             </button>
           </div>
           
-          <div style="position: relative; width: 100%; height: 280px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); overflow: hidden;">
+          <div style="position: relative; width: 100%; height: 200px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); overflow: hidden;">
             <img id="ad-media-img" src="${safeImageUrl}" 
                  style="width: 100%; height: 100%; object-fit: cover; display: block;" 
                  alt="${campaign.headline || 'Publicité'}"
-                 onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:#64748b;\\'><i class=\\'fas fa-image\\' style=\\'font-size:48px;\\'></i></div>';">
+                 onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:#64748b;\\'><i class=\\'fas fa-image\\' style=\\'font-size:32px;\\'></i></div>';">
             
-            ${campaign.media_type === 'video' ? `
-            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;">
-              <div style="width: 70px; height: 70px; background: rgba(236, 72, 153, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(236, 72, 153, 0.4);">
-                <i class="fas fa-play" style="color: white; font-size: 28px; margin-left: 5px;"></i>
-              </div>
-            </div>
-            ` : ''}
-            
-            <div style="position: absolute; bottom: 16px; right: 16px; background: rgba(0,0,0,0.85); color: white; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.85); color: white; padding: 6px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,0.1);">
               <i class="fas fa-clock" style="color: #ec4899;"></i> <span id="ad-timer">15</span>s
             </div>
           </div>
           
-          <div style="padding: 24px;">
-            <h3 style="font-size: 22px; font-weight: 800; color: white; margin-bottom: 10px; line-height: 1.3; letter-spacing: -0.2px;">${campaign.headline || 'Offre spéciale'}</h3>
-            <p style="font-size: 15px; color: #94a3b8; margin-bottom: 24px; line-height: 1.6;">${campaign.description || 'Découvrez cette offre exclusive de la marque'}</p>
+          <div style="padding: 16px;">
+            <h3 style="font-size: 16px; font-weight: 700; color: white; margin-bottom: 6px; line-height: 1.3;">${campaign.headline || 'Offre spéciale'}</h3>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${campaign.description || 'Découvrez cette offre exclusive de la marque'}</p>
             
-            <a href="${campaign.cta_link || '#'}" id="ad-cta-btn" style="display: block; width: 100%; padding: 16px; background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); color: white; text-align: center; border-radius: 14px; font-weight: 700; text-decoration: none; transition: all 0.3s; border: none; cursor: pointer; font-size: 16px; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px -5px rgba(236,72,153,0.5)'" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(236, 72, 153, 0.3)'">
-              ${campaign.cta_text || "Voir l'offre"} <i class="fas fa-arrow-right" style="margin-left: 10px; transition: transform 0.2s;" onmouseover="this.style.transform='translateX(4px)'"></i>
+            <a href="${campaign.cta_link || '#'}" id="ad-cta-btn" style="display: block; width: 100%; padding: 12px; background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); color: white; text-align: center; border-radius: 10px; font-weight: 600; text-decoration: none; transition: all 0.3s; border: none; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px -4px rgba(236,72,153,0.4)'" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(236, 72, 153, 0.3)'">
+              ${campaign.cta_text || "Voir l'offre"} <i class="fas fa-arrow-right" style="margin-left: 6px;"></i>
             </a>
             
-            <p style="margin-top: 18px; font-size: 12px; color: #64748b; text-align: center; font-weight: 500;">
-              <i class="fas fa-info-circle" style="margin-right: 6px;"></i> Contenu proposé par la marque que vous consultez
+            <p style="margin-top: 12px; font-size: 10px; color: #64748b; text-align: center;">
+              <i class="fas fa-info-circle" style="margin-right: 4px;"></i> Publicité de la marque consultée
             </p>
           </div>
           
-          <div style="height: 4px; background: #1e293b; width: 100%; position: relative;">
+          <div style="height: 3px; background: #1e293b; width: 100%; position: relative;">
             <div id="ad-progress" style="height: 100%; width: 100%; background: linear-gradient(90deg, #ec4899, #8b5cf6); position: absolute; top: 0; left: 0; transition: width ${CONFIG.overlayDuration}ms linear;"></div>
           </div>
         </div>
@@ -287,15 +296,13 @@
       
       document.body.appendChild(wrapper);
       
-      // Animation d'entrée
+      // Animation entrée
       requestAnimationFrame(() => {
         wrapper.style.opacity = '1';
         const container = document.getElementById('brandia-ad-container');
         if (container) {
           container.style.transform = 'scale(1) translateY(0)';
         }
-        
-        // Démarrer la barre de progression
         setTimeout(() => {
           const progress = document.getElementById('ad-progress');
           if (progress) progress.style.width = '0%';
@@ -340,15 +347,12 @@
         });
       }
       
-      // Timer
       this.startTimer(supplierId);
       
-      // Fermeture auto
       setTimeout(() => {
         self.closeAd('completed', supplierId);
       }, CONFIG.overlayDuration);
       
-      // Tracking
       AdsStorage.markCampaignSeen(campaign.id);
       if (supplierId) sessionStorage.setItem(`ad_seen_supplier_${supplierId}`, 'true');
       this.trackView(campaign.id);
@@ -383,7 +387,7 @@
       if (wrapper) {
         wrapper.style.opacity = '0';
         const container = document.getElementById('brandia-ad-container');
-        if (container) container.style.transform = 'scale(0.9) translateY(30px)';
+        if (container) container.style.transform = 'scale(0.9) translateY(20px)';
         
         setTimeout(() => {
           if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
@@ -431,5 +435,5 @@
     waitForAPI((fallback) => BrandiaAds.init(fallback));
   }
   
-  console.log('[BrandiaAds] Loader v3.6 ready - VIDEO DISABLED');
+  console.log('[BrandiaAds] Loader v4.0 ready - 30% overlay');
 })();
