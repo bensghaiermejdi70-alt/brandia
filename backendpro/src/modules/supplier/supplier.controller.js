@@ -553,7 +553,7 @@ class SupplierController {
     }
   }
 
-  // supplier.controller.js - createCampaign FIXED v2
+  // supplier.controller.js - createCampaign CORRIGÉ
 
 async createCampaign(req, res) {
   try {
@@ -581,59 +581,83 @@ async createCampaign(req, res) {
       });
     }
 
-    // Récupérer les colonnes réelles de la table pour éviter l'erreur "more expressions than target columns"
-    const columnsResult = await db.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'supplier_campaigns' 
-      ORDER BY ordinal_position
-    `);
-    const existingColumns = columnsResult.rows.map(r => r.column_name);
-    console.log('[Create Campaign] Colonnes disponibles:', existingColumns);
+    // Vérification préventive de chevauchement de dates
+    try {
+      const overlapCheck = await db.query(`
+        SELECT id, name, start_date, end_date 
+        FROM supplier_campaigns 
+        WHERE supplier_id = $1 
+          AND status != 'deleted'
+          AND daterange(start_date::date, end_date::date, '[]') && daterange($2::date, $3::date, '[]')
+        LIMIT 1
+      `, [supplierId, start_date, end_date]);
 
-    // Colonnes de base toujours présentes
-    const baseData = {
-      supplier_id: supplierId,
-      name: name,
-      type: type || 'overlay',
-      media_type: media_type || 'image',
-      media_url: media_url,
-      headline: headline,
-      description: description || '',
-      cta_text: cta_text || "Voir l'offre",
-      cta_link: cta_link || '',
-      target_products: target_products ? JSON.stringify(target_products) : null,
-      status: status || 'active',
-      start_date: start_date,
-      end_date: end_date
-    };
-
-    // Colonnes optionnelles avec valeur par défaut 0 — ajoutées seulement si elles existent
-    const optionalNumericCols = [
-      'views_count', 'clicks_count', 'daily_budget',
-      'spent_today', 'total_spent', 'impressions',
-      'clicks', 'ctr', 'score'
-    ];
-    for (const col of optionalNumericCols) {
-      if (existingColumns.includes(col)) {
-        baseData[col] = 0;
+      if (overlapCheck.rows.length > 0) {
+        const conflict = overlapCheck.rows[0];
+        return res.status(409).json({
+          success: false,
+          message: `Conflit avec la campagne "${conflict.name}" (${new Date(conflict.start_date).toLocaleDateString('fr-FR')} - ${new Date(conflict.end_date).toLocaleDateString('fr-FR')}). Veuillez choisir des dates différentes.`,
+          error_type: 'CAMPAIGN_DATE_OVERLAP',
+          conflicting_campaign: { id: conflict.id, name: conflict.name }
+        });
       }
+    } catch (overlapErr) {
+      // La vérification préventive a échoué (ex: colonne daterange non supportée) — on continue et on laisse la contrainte SQL gérer
+      console.warn('[Create Campaign] Overlap pre-check failed:', overlapErr.message);
     }
 
-    // Construire la requête dynamiquement
-    const cols = Object.keys(baseData);
-    const vals = Object.values(baseData);
-    const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-    const colsList = cols.join(', ');
-
+    // Requête SQL adaptée à VOTRE structure de table
     const query = `
-      INSERT INTO supplier_campaigns (${colsList})
-      VALUES (${placeholders})
+      INSERT INTO supplier_campaigns (
+        supplier_id,
+        name,
+        type,
+        media_type,
+        media_url,
+        headline,
+        description,
+        cta_text,
+        cta_link,
+        target_products,
+        status,
+        start_date,
+        end_date,
+        views_count,
+        clicks_count,
+        daily_budget,
+        spent_today,
+        total_spent,
+        impressions,
+        clicks,
+        ctr,
+        score,
+        created_at,
+        updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        NOW(), NOW()
+      )
       RETURNING *
     `;
 
-    console.log('[Create Campaign] Inserting cols:', cols);
-    const result = await db.query(query, vals);
+    const values = [
+      supplierId,
+      name,
+      type || 'overlay',
+      media_type || 'image',
+      media_url,
+      headline,
+      description || '',
+      cta_text || 'Voir l\'offre',
+      cta_link || '',
+      target_products ? JSON.stringify(target_products) : null,
+      status || 'active',
+      start_date,
+      end_date
+    ];
+
+    const result = await db.query(query, values);
 
     res.status(201).json({
       success: true,
@@ -645,6 +669,15 @@ async createCampaign(req, res) {
     console.error('[Create Campaign] Error:', error);
     console.error('[Create Campaign] SQL Error Code:', error.code);
     console.error('[Create Campaign] SQL Detail:', error.detail);
+
+    // Erreur de chevauchement de dates (contrainte no_overlapping_campaigns)
+    if (error.code === '23P01') {
+      return res.status(409).json({
+        success: false,
+        message: 'Vous avez déjà une campagne active sur cette période. Choisissez des dates différentes ou supprimez la campagne existante.',
+        error_type: 'CAMPAIGN_DATE_OVERLAP'
+      });
+    }
 
     res.status(500).json({
       success: false,
