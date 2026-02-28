@@ -1,4 +1,4 @@
- // ============================================
+// ============================================
 // SUPPLIER CAMPAIGNS MODULE - v9.0 PRODUCTION
 // Corrections: 
 // - Removed custom link section (only category redirect)
@@ -784,9 +784,9 @@ window.SupplierCampaigns = {
         this.showToast('Une image ou vidéo est requise', 'error');
         return;
       }
-      // Vérification de sécurité : ne jamais envoyer une blob: URL au backend (ERR_FILE_NOT_FOUND)
+      // Garde : ne jamais envoyer une blob: URL au backend (ERR_FILE_NOT_FOUND)
       if (mediaUrl && mediaUrl.startsWith('blob:')) {
-        this.showToast('Erreur : le fichier n'a pas été uploadé. Veuillez re-sélectionner votre image/vidéo.', 'error');
+        this.showToast("Fichier non uploadé. Veuillez re-sélectionner votre image/vidéo.", 'error');
         this.state.uploadedMedia = null;
         this.resetUploadUI();
         return;
@@ -834,40 +834,42 @@ window.SupplierCampaigns = {
         this.closeModal();
         await this.loadCampaigns();
       } else {
-        // Gestion spécifique du chevauchement de dates
-        if (response?.error_type === 'CAMPAIGN_DATE_OVERLAP' || response?.message?.includes('Conflit')) {
+        const errMsg = response?.message || 'Erreur serveur';
+        // Gestion spéciale chevauchement de dates
+        if (response?.error_type === 'CAMPAIGN_DATE_OVERLAP' || errMsg.includes('Conflit')) {
           this.showLoading(false);
-          this.showToast('⚠️ ' + (response.message || 'Chevauchement de dates détecté'), 'error', 6000);
-          // Mettre en surbrillance les champs de date
-          const startEl = document.getElementById('campaign-start-date');
-          const endEl = document.getElementById('campaign-end-date');
-          if (startEl) startEl.style.borderColor = '#ef4444';
-          if (endEl) endEl.style.borderColor = '#ef4444';
+          this.showToast('⚠️ ' + errMsg, 'error');
+          ['campaign-start-date', 'campaign-end-date'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.borderColor = '#ef4444';
+          });
           return;
         }
-        throw new Error(response?.message || 'Erreur serveur');
+        throw new Error(errMsg);
       }
       
     } catch (error) {
       console.error('[Campaigns] Save error:', error);
       this.showLoading(false);
 
-      // Message d'erreur clair selon le type d'erreur
-      let errorMsg = error.message || 'Erreur inconnue';
+      const msg = error.message || 'Erreur inconnue';
+      // Chevauchement de dates
       if (
-        error.message?.includes('CAMPAIGN_DATE_OVERLAP') ||
-        error.message?.includes('Conflit') ||
-        error.message?.includes('conflicts with existing') ||
-        error.message?.includes('no_overlapping') ||
-        error.message?.includes('déjà une campagne active')
+        msg.includes('Conflit') ||
+        msg.includes('CAMPAIGN_DATE_OVERLAP') ||
+        msg.includes('no_overlapping') ||
+        msg.includes('chevauchement') ||
+        msg.includes('already') ||
+        msg.includes('campagne active')
       ) {
-        // Extraire le message clair du serveur si disponible
-        errorMsg = error.message.includes('Conflit avec') 
-          ? error.message 
-          : '⚠️ Chevauchement de dates : vous avez déjà une campagne active sur cette période. Modifiez les dates ou supprimez la campagne existante.';
-        this.showToast(errorMsg, 'error', 6000);
+        this.showToast('⚠️ ' + msg, 'error');
+        // Mettre en rouge les champs de date
+        ['campaign-start-date', 'campaign-end-date'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.borderColor = '#ef4444';
+        });
       } else {
-        this.showToast('Erreur: ' + errorMsg, 'error');
+        this.showToast('Erreur : ' + msg, 'error');
       }
     }
   },
@@ -921,21 +923,20 @@ window.SupplierCampaigns = {
     if (window.showLoading) window.showLoading(show);
   },
 
-  showToast: function(message, type, duration) {
-    // Afficher aussi dans la console pour debug
-    console.log(`[Campaigns Toast][${type}] ${message}`);
+  showToast: function(message, type) {
+    console.log('[Campaigns][' + (type || 'info') + '] ' + message);
     if (window.showToast) {
       window.showToast(message, type);
     } else {
-      // Toast de secours intégré si showToast global non disponible
-      const container = document.getElementById('toast-container') || document.body;
+      // Toast de secours intégré
+      const bgBorder = type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#10b981';
+      const iconCls = type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-check-circle';
       const toast = document.createElement('div');
-      const bgColor = type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#10b981';
-      const icon = type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-check-circle';
-      toast.style.cssText = `position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:#1e293b;border-left:4px solid ${bgColor};border-radius:10px;padding:1rem 1.25rem;color:#f8fafc;font-size:.875rem;font-weight:500;display:flex;align-items:flex-start;gap:.75rem;max-width:400px;box-shadow:0 20px 40px -10px rgba(0,0,0,.5);animation:slideIn .3s ease;`;
-      toast.innerHTML = `<i class="fas ${icon}" style="color:${bgColor};margin-top:2px;flex-shrink:0;"></i><span>${message}</span>`;
+      toast.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:#1e293b;border-left:4px solid '
+        + bgBorder + ';border-radius:10px;padding:1rem 1.25rem;color:#f8fafc;font-size:.875rem;font-weight:500;display:flex;align-items:flex-start;gap:.75rem;max-width:420px;box-shadow:0 20px 40px -10px rgba(0,0,0,.5);';
+      toast.innerHTML = '<i class="fas ' + iconCls + '" style="color:' + bgBorder + ';margin-top:2px;flex-shrink:0;"></i><span>' + message + '</span>';
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), duration || 4000);
+      setTimeout(function() { toast.remove(); }, 5000);
     }
   },
 
