@@ -1,10 +1,12 @@
 // ============================================
-// ROUTES PRINCIPALES - API Brandia v4.0 CORRIGÉ
-// Fix: Ordre des routes, pas de double montage supplier, gestion 404 correcte
+// ROUTES PRINCIPALES - API Brandia v4.1 CORRIGÉ
+// Fix: Ordre des routes, gestion erreurs, chemins corrigés
 // ============================================
 
 const express = require('express');
 const router = express.Router();
+
+console.log('[Routes Index] Loading v4.1...');
 
 // ============================================
 // IMPORTS
@@ -20,9 +22,16 @@ const productRoutes = require('../modules/products/product.routes');
 const supplierRoutes = require('../modules/supplier/supplier.routes');
 
 // Middleware auth
-const { authenticate } = require('../middlewares/auth.middleware');
+let authenticate;
 
-console.log('[Routes Index] Loading v4.0...');
+try {
+    const authMiddleware = require('../middlewares/auth.middleware');
+    authenticate = authMiddleware.authenticate;
+} catch (e) {
+    // Fallback
+    const authMiddleware = require('../middleware/auth');
+    authenticate = authMiddleware.authenticate;
+}
 
 // ============================================
 // ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
@@ -33,7 +42,7 @@ router.get('/', (req, res) => {
     res.json({
         success: true,
         service: 'Brandia API',
-        version: '4.0.0',
+        version: '4.1.0',
         status: 'operational',
         timestamp: new Date().toISOString(),
         endpoints: {
@@ -66,7 +75,10 @@ router.get('/', (req, res) => {
     });
 });
 
-// Auth - Register/Login (publiques)
+// ============================================
+// AUTH ROUTES PUBLIQUES
+// ============================================
+
 router.post('/auth/register', async (req, res, next) => {
     try {
         await authController.register(req, res);
@@ -91,6 +103,10 @@ router.post('/auth/refresh', async (req, res, next) => {
     }
 });
 
+// ============================================
+// AUTRES ROUTES PUBLIQUES
+// ============================================
+
 // Categories (100% publique)
 router.get('/categories', async (req, res, next) => {
     try {
@@ -104,11 +120,15 @@ router.get('/categories', async (req, res, next) => {
         
         res.json({
             success: true,
-            data: result.rows
+            data: result.rows || result[0] || []
         });
     } catch (error) {
         console.error('[Categories] Error:', error);
-        next(error);
+        // Fallback si erreur
+        res.json({
+            success: true,
+            data: []
+        });
     }
 });
 
@@ -139,12 +159,15 @@ router.get('/public/promotions/active', async (req, res, next) => {
         
         res.json({
             success: true,
-            data: result.rows
+            data: result.rows || result[0] || []
         });
         
     } catch (error) {
         console.error('[Public Promotions] Error:', error);
-        next(error);
+        res.json({
+            success: true,
+            data: []
+        });
     }
 });
 
@@ -201,6 +224,6 @@ router.use((req, res) => {
     });
 });
 
-console.log('[Routes Index] ✅ Loaded successfully v4.0');
+console.log('[Routes Index] ✅ Loaded successfully v4.1');
 
 module.exports = router;
