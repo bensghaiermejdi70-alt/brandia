@@ -553,7 +553,7 @@ class SupplierController {
     }
   }
 
-  // supplier.controller.js - createCampaign CORRIGÉ
+  // supplier.controller.js - createCampaign FIXED v2
 
 async createCampaign(req, res) {
   try {
@@ -581,58 +581,59 @@ async createCampaign(req, res) {
       });
     }
 
-    // Requête SQL adaptée à VOTRE structure de table
+    // Récupérer les colonnes réelles de la table pour éviter l'erreur "more expressions than target columns"
+    const columnsResult = await db.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'supplier_campaigns' 
+      ORDER BY ordinal_position
+    `);
+    const existingColumns = columnsResult.rows.map(r => r.column_name);
+    console.log('[Create Campaign] Colonnes disponibles:', existingColumns);
+
+    // Colonnes de base toujours présentes
+    const baseData = {
+      supplier_id: supplierId,
+      name: name,
+      type: type || 'overlay',
+      media_type: media_type || 'image',
+      media_url: media_url,
+      headline: headline,
+      description: description || '',
+      cta_text: cta_text || "Voir l'offre",
+      cta_link: cta_link || '',
+      target_products: target_products ? JSON.stringify(target_products) : null,
+      status: status || 'active',
+      start_date: start_date,
+      end_date: end_date
+    };
+
+    // Colonnes optionnelles avec valeur par défaut 0 — ajoutées seulement si elles existent
+    const optionalNumericCols = [
+      'views_count', 'clicks_count', 'daily_budget',
+      'spent_today', 'total_spent', 'impressions',
+      'clicks', 'ctr', 'score'
+    ];
+    for (const col of optionalNumericCols) {
+      if (existingColumns.includes(col)) {
+        baseData[col] = 0;
+      }
+    }
+
+    // Construire la requête dynamiquement
+    const cols = Object.keys(baseData);
+    const vals = Object.values(baseData);
+    const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+    const colsList = cols.join(', ');
+
     const query = `
-      INSERT INTO supplier_campaigns (
-        supplier_id,
-        name,
-        type,
-        media_type,
-        media_url,
-        headline,
-        description,
-        cta_text,
-        cta_link,
-        target_products,
-        status,
-        start_date,
-        end_date,
-        views_count,
-        clicks_count,
-        daily_budget,
-        spent_today,
-        total_spent,
-        impressions,
-        clicks,
-        ctr,
-        score,
-        created_at,
-        updated_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        NOW(), NOW()
-      )
+      INSERT INTO supplier_campaigns (${colsList})
+      VALUES (${placeholders})
       RETURNING *
     `;
 
-    const values = [
-      supplierId,
-      name,
-      type || 'overlay',
-      media_type || 'image',
-      media_url,
-      headline,
-      description || '',
-      cta_text || 'Voir l\'offre',
-      cta_link || '',
-      target_products ? JSON.stringify(target_products) : null,
-      status || 'active',
-      start_date,
-      end_date
-    ];
-
-    const result = await db.query(query, values);
+    console.log('[Create Campaign] Inserting cols:', cols);
+    const result = await db.query(query, vals);
 
     res.status(201).json({
       success: true,
@@ -642,11 +643,9 @@ async createCampaign(req, res) {
 
   } catch (error) {
     console.error('[Create Campaign] Error:', error);
-    
-    // Log détaillé pour debug
     console.error('[Create Campaign] SQL Error Code:', error.code);
     console.error('[Create Campaign] SQL Detail:', error.detail);
-    
+
     res.status(500).json({
       success: false,
       message: 'Erreur création campagne: ' + error.message,
