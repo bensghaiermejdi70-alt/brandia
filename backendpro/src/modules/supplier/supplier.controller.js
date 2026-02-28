@@ -1,9 +1,8 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v6.1 STABLE
-// Toutes les méthodes requises par supplier.routes.js
+// SUPPLIER.CONTROLLER.JS - v6.2 STABLE
+// Fix: Removed express-validator dependency
 // ============================================
 
-const { validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../../config/db');
 const logger = require('../../utils/logger');
@@ -21,16 +20,15 @@ const handleError = (res, error, message = 'Erreur serveur', status = 500) => {
     });
 };
 
-const validateRequest = (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            success: false,
-            message: 'Données invalides',
-            errors: errors.array()
-        });
+// Validation simple sans express-validator
+const validateRequired = (fields, data) => {
+    const missing = [];
+    for (const field of fields) {
+        if (!data[field] && data[field] !== 0) {
+            missing.push(field);
+        }
     }
-    return null;
+    return missing;
 };
 
 // ============================================
@@ -150,6 +148,15 @@ const createProduct = async (req, res) => {
             seo_description
         } = req.body;
         
+        // Validation manuelle
+        const missing = validateRequired(['name', 'price'], req.body);
+        if (missing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Champs requis manquants: ${missing.join(', ')}`
+            });
+        }
+        
         const productId = uuidv4();
         
         await db.query(
@@ -159,7 +166,7 @@ const createProduct = async (req, res) => {
                 images, variants, seo_title, seo_description, status, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())`,
             [
-                productId, supplierId, name, description, price || 0, compare_price || null,
+                productId, supplierId, name, description, parseFloat(price) || 0, compare_price || null,
                 cost_price || null, sku || null, barcode || null, inventory_quantity || 0, category || null,
                 JSON.stringify(images || []), JSON.stringify(variants || []),
                 seo_title || null, seo_description || null
@@ -351,6 +358,14 @@ const updateOrderStatus = async (req, res) => {
         const { id } = req.params;
         const { status, tracking_number } = req.body;
         
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        if (status && !validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Statut invalide'
+            });
+        }
+        
         const [result] = await db.query(
             'UPDATE orders SET status = ?, tracking_number = ?, updated_at = NOW() WHERE id = ? AND supplier_id = ?',
             [status, tracking_number || null, id, supplierId]
@@ -409,14 +424,13 @@ const getCampaignLimit = async (req, res) => {
     try {
         const supplierId = req.user.id;
         
-        // Compter les campagnes actives
         const [countResult] = await db.query(
             `SELECT COUNT(*) as count FROM campaigns WHERE supplier_id = ? AND status != 'ended'`,
             [supplierId]
         );
         
         const currentCount = countResult[0]?.count || 0;
-        const maxCampaigns = 5; // Limite par défaut
+        const maxCampaigns = 5;
         
         res.json({
             success: true,
@@ -446,6 +460,15 @@ const createCampaign = async (req, res) => {
             ad_creative,
             ad_format
         } = req.body;
+        
+        // Validation manuelle
+        const missing = validateRequired(['name', 'product_id', 'budget', 'start_date', 'end_date'], req.body);
+        if (missing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Champs requis manquants: ${missing.join(', ')}`
+            });
+        }
         
         // Vérifier la limite
         const [countResult] = await db.query(
@@ -482,7 +505,7 @@ const createCampaign = async (req, res) => {
                 status, spent, impressions, clicks, conversions, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, 0, 0, 0, NOW())`,
             [
-                campaignId, supplierId, name, product_id, budget || 100, daily_budget || null,
+                campaignId, supplierId, name, product_id, parseFloat(budget) || 100, daily_budget || null,
                 start_date, end_date, 
                 JSON.stringify(targeting || {}),
                 JSON.stringify(ad_creative || {}),
@@ -615,6 +638,14 @@ const toggleCampaignStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
         
+        const validStatuses = ['active', 'paused', 'pending', 'ended'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Statut invalide'
+            });
+        }
+        
         const [existing] = await db.query(
             'SELECT id FROM campaigns WHERE id = ? AND supplier_id = ?',
             [id, supplierId]
@@ -681,6 +712,10 @@ const trackCampaignView = async (req, res) => {
     try {
         const { campaign_id } = req.body;
         
+        if (!campaign_id) {
+            return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        }
+        
         await db.query(
             'UPDATE campaigns SET impressions = impressions + 1 WHERE id = ?',
             [campaign_id]
@@ -695,6 +730,10 @@ const trackCampaignView = async (req, res) => {
 const trackCampaignClick = async (req, res) => {
     try {
         const { campaign_id } = req.body;
+        
+        if (!campaign_id) {
+            return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        }
         
         await db.query(
             'UPDATE campaigns SET clicks = clicks + 1 WHERE id = ?',
@@ -756,6 +795,13 @@ const requestPayout = async (req, res) => {
         const supplierId = req.user.id;
         const { amount, method } = req.body;
         
+        if (!amount || parseFloat(amount) < 50) {
+            return res.status(400).json({
+                success: false,
+                message: 'Le montant minimum de retrait est de 50€'
+            });
+        }
+        
         const [balanceResult] = await db.query(
             `SELECT 
                 COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0) as balance
@@ -766,16 +812,10 @@ const requestPayout = async (req, res) => {
         
         const balance = balanceResult[0]?.balance || 0;
         
-        if (amount > balance) {
+        if (parseFloat(amount) > balance) {
             return res.status(400).json({
                 success: false,
                 message: 'Solde insuffisant'
-            });
-        }
-        if (amount < 50) {
-            return res.status(400).json({
-                success: false,
-                message: 'Le montant minimum de retrait est de 50€'
             });
         }
         
@@ -784,13 +824,13 @@ const requestPayout = async (req, res) => {
         await db.query(
             `INSERT INTO payouts (id, supplier_id, amount, method, status, created_at) 
              VALUES (?, ?, ?, ?, 'pending', NOW())`,
-            [payoutId, supplierId, amount, method || 'bank_transfer']
+            [payoutId, supplierId, parseFloat(amount), method || 'bank_transfer']
         );
         
         await db.query(
             `INSERT INTO transactions (id, supplier_id, type, amount, description, created_at) 
              VALUES (?, ?, 'debit', ?, ?, NOW())`,
-            [uuidv4(), supplierId, amount, `Demande de retrait #${payoutId}`]
+            [uuidv4(), supplierId, parseFloat(amount), `Demande de retrait #${payoutId}`]
         );
         
         res.json({
@@ -860,6 +900,14 @@ const createPromotion = async (req, res) => {
             usage_limit
         } = req.body;
         
+        const missing = validateRequired(['code', 'discount_type', 'discount_value'], req.body);
+        if (missing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Champs requis manquants: ${missing.join(', ')}`
+            });
+        }
+        
         const promotionId = uuidv4();
         
         await db.query(
@@ -869,8 +917,8 @@ const createPromotion = async (req, res) => {
                 status, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active', NOW())`,
             [
-                promotionId, supplierId, code, discount_type || 'percentage', discount_value || 0,
-                minimum_order || 0, start_date || new Date(), end_date || null, usage_limit || null
+                promotionId, supplierId, code, discount_type, parseFloat(discount_value) || 0,
+                parseFloat(minimum_order) || 0, start_date || new Date(), end_date || null, usage_limit || null
             ]
         );
         

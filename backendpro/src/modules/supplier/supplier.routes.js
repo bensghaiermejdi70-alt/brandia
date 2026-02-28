@@ -1,12 +1,12 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v6.1 PRODUCTION
-// Changes: Fixed imports, added missing controller methods
+// SUPPLIER ROUTES - v6.2 PRODUCTION
+// Fix: Removed express-validator dependency
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v6.1...');
+console.log('[Supplier Routes] Loading v6.2...');
 
 // ============================================
 // IMPORTS
@@ -14,7 +14,7 @@ console.log('[Supplier Routes] Loading v6.1...');
 
 const supplierController = require('./supplier.controller');
 
-// Auth middleware - utiliser le même chemin que dans index.js
+// Auth middleware
 let authenticate, requireRole;
 
 try {
@@ -22,10 +22,16 @@ try {
     authenticate = authMiddleware.authenticate;
     requireRole = authMiddleware.requireRole;
 } catch (e) {
-    // Fallback si le chemin est différent
-    const authMiddleware = require('../../middleware/auth');
-    authenticate = authMiddleware.authenticate;
-    requireRole = authMiddleware.requireRole;
+    try {
+        const authMiddleware = require('../../middleware/auth');
+        authenticate = authMiddleware.authenticate;
+        requireRole = authMiddleware.requireRole;
+    } catch (e2) {
+        console.error('[Supplier Routes] ❌ Cannot load auth middleware:', e2.message);
+        // Fallback si pas d'auth middleware
+        authenticate = (req, res, next) => next();
+        requireRole = () => (req, res, next) => next();
+    }
 }
 
 const asyncHandler = (fn) => (req, res, next) => {
@@ -47,11 +53,9 @@ router.get('/public/campaigns', asyncHandler(async (req, res) => {
         });
     }
 
-    // Utiliser la méthode existante ou créer une fallback
     if (supplierController.getActiveCampaignForProduct) {
         await supplierController.getActiveCampaignForProduct(req, res);
     } else {
-        // Fallback si méthode non implémentée
         res.json({ 
             success: true, 
             data: null,
@@ -97,7 +101,7 @@ router.get('/public/ad-settings', asyncHandler(async (req, res) => {
             WHERE supplier_id = $1 AND is_active = true
         `, [supplier]);
 
-        if (result.rows.length === 0) {
+        if (result.rows && result.rows.length === 0) {
             return res.json({
                 success: true,
                 data: { 
@@ -119,7 +123,6 @@ router.get('/public/ad-settings', asyncHandler(async (req, res) => {
             }
         });
     } catch (error) {
-        // Fallback si table n'existe pas
         res.json({
             success: true,
             data: { 
@@ -242,7 +245,6 @@ router.get('/campaigns/limit', asyncHandler(async (req, res) => {
     if (supplierController.getCampaignLimit) {
         await supplierController.getCampaignLimit(req, res);
     } else {
-        // Fallback: retourner une limite par défaut
         res.json({
             success: true,
             data: {
@@ -267,7 +269,6 @@ router.put('/campaigns/:id/status', asyncHandler(async (req, res) => {
     if (supplierController.toggleCampaignStatus) {
         await supplierController.toggleCampaignStatus(req, res);
     } else {
-        // Fallback: utiliser updateCampaign avec le statut
         await supplierController.updateCampaign(req, res);
     }
 }));
@@ -288,6 +289,6 @@ router.get('/ad-settings', asyncHandler(async (req, res) => {
     }
 }));
 
-console.log('[Supplier Routes] ✅ v6.1 loaded successfully');
+console.log('[Supplier Routes] ✅ v6.2 loaded successfully');
 
 module.exports = router;

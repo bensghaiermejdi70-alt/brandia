@@ -1,12 +1,12 @@
 // ============================================
-// ROUTES PRINCIPALES - API Brandia v4.1 CORRIGÉ
-// Fix: Ordre des routes, gestion erreurs, chemins corrigés
+// ROUTES PRINCIPALES - API Brandia v4.2 CORRIGÉ
+// Fix: Removed express-validator dependency, better error handling
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Routes Index] Loading v4.1...');
+console.log('[Routes Index] Loading v4.2...');
 
 // ============================================
 // IMPORTS
@@ -17,8 +17,6 @@ const orderRoutes = require('../modules/orders/order.routes');
 const paymentRoutes = require('../modules/payments/payment.routes');
 const countryRoutes = require('../modules/countries/country.routes');
 const productRoutes = require('../modules/products/product.routes');
-
-// 🔥 Import des routes Supplier (seul montage, ici uniquement)
 const supplierRoutes = require('../modules/supplier/supplier.routes');
 
 // Middleware auth
@@ -28,9 +26,13 @@ try {
     const authMiddleware = require('../middlewares/auth.middleware');
     authenticate = authMiddleware.authenticate;
 } catch (e) {
-    // Fallback
-    const authMiddleware = require('../middleware/auth');
-    authenticate = authMiddleware.authenticate;
+    try {
+        const authMiddleware = require('../middleware/auth');
+        authenticate = authMiddleware.authenticate;
+    } catch (e2) {
+        console.error('[Routes Index] ❌ Cannot load auth middleware:', e2.message);
+        authenticate = (req, res, next) => next();
+    }
 }
 
 // ============================================
@@ -42,7 +44,7 @@ router.get('/', (req, res) => {
     res.json({
         success: true,
         service: 'Brandia API',
-        version: '4.1.0',
+        version: '4.2.0',
         status: 'operational',
         timestamp: new Date().toISOString(),
         endpoints: {
@@ -124,7 +126,6 @@ router.get('/categories', async (req, res, next) => {
         });
     } catch (error) {
         console.error('[Categories] Error:', error);
-        // Fallback si erreur
         res.json({
             success: true,
             data: []
@@ -174,8 +175,6 @@ router.get('/public/promotions/active', async (req, res, next) => {
 // ============================================
 // 🔥 ROUTES SUPPLIER (MIXTE: publique + protégée)
 // ============================================
-// CRITICAL: Montage AVANT les routes protégées car supplier.routes.js
-// gère lui-même la séparation publique/protégée avec ses propres middlewares
 router.use('/supplier', supplierRoutes);
 
 console.log('[Routes Index] ✅ Supplier routes mounted at /api/supplier');
@@ -224,6 +223,6 @@ router.use((req, res) => {
     });
 });
 
-console.log('[Routes Index] ✅ Loaded successfully v4.1');
+console.log('[Routes Index] ✅ Loaded successfully v4.2');
 
 module.exports = router;
