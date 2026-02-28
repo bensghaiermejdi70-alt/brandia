@@ -1054,34 +1054,60 @@
           </p>
         </div>
 
-        <!-- LIEN DESTINATION DYNAMIQUE -->
-        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3">
-          <label class="block text-xs font-medium text-indigo-300 mb-1">
-            <i class="fas fa-link mr-1"></i>Lien de destination *
-          </label>
-          <p class="text-xs text-slate-400 mb-2" id="cta-link-help">
-            Redirection lors du clic sur la publicité
-          </p>
+        <!-- Section CTA - SIMPLIFIÉE (pas de lien personnalisé) -->
+        <div class="space-y-4">
+          <h4 class="text-sm font-medium text-white flex items-center gap-2">
+            <i class="fas fa-link text-indigo-400"></i>
+            Destination du lien
+          </h4>
           
-          <!-- Option lien -->
-          <div class="space-y-2">
-            <label class="flex items-center gap-2 text-xs text-slate-300">
-              <input type="radio" name="cta_type" value="shop" checked onchange="updateCtaOptions()" class="text-indigo-500">
-              Ma boutique
-            </label>
-            <label class="flex items-center gap-2 text-xs text-slate-300">
-              <input type="radio" name="cta_type" value="category" onchange="updateCtaOptions()" class="text-indigo-500">
-              Une catégorie
-            </label>
-            <label class="flex items-center gap-2 text-xs text-slate-300">
-              <input type="radio" name="cta_type" value="custom" onchange="updateCtaOptions()" class="text-indigo-500">
-              Lien personnalisé
-            </label>
+          <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+            <div class="flex items-center gap-3 mb-3">
+              <i class="fas fa-info-circle text-indigo-400"></i>
+              <span class="text-sm text-slate-300">Redirection automatique</span>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700">
+                <input type="radio" name="target_mode" value="all" checked 
+                       onchange="toggleTargetMode('all')"
+                       class="w-4 h-4 text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-white">Ma boutique</p>
+                  <p class="text-xs text-slate-400">Redirige vers la page d'accueil</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700">
+                <input type="radio" name="target_mode" value="selected" 
+                       onchange="toggleTargetMode('selected')"
+                       class="w-4 h-4 text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-white">Une catégorie</p>
+                  <p class="text-xs text-slate-400">Redirige vers la catégorie des produits sélectionnés</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Panneau de sélection des produits (caché par défaut) -->
+            <div id="product-selection-panel" class="hidden mt-4 p-3 bg-slate-900/30 rounded-lg border border-slate-700/50">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400">Produits sélectionnés: <span id="selected-count" class="text-indigo-400 font-bold">0</span></span>
+                <button type="button" onclick="toggleAllProducts()" class="text-xs text-indigo-400 hover:text-indigo-300">
+                  Tout sélectionner
+                </button>
+              </div>
+              <div id="products-checklist" class="max-h-40 overflow-y-auto space-y-1">
+                <!-- Rempli dynamiquement -->
+              </div>
+            </div>
+            
+            <!-- Champ caché pour le lien (auto-généré) -->
+            <input type="hidden" id="camp-cta-link" value="https://brandia-marketplace.netlify.app">
+            <p id="cta-link-help" class="mt-2 text-xs text-slate-500">
+              Redirige vers votre boutique principale
+            </p>
           </div>
-
-          <input type="url" name="cta_link" id="camp-cta-link" required
-                 class="w-full mt-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" 
-                 placeholder="https://votreboutique.com">
         </div>
 
         <!-- Preview -->

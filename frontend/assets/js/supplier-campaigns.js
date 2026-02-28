@@ -1,25 +1,28 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v8.2 PRODUCTION
-// Corrections: Removed max_campaigns API call, removed target_mode field
+// SUPPLIER CAMPAIGNS MODULE - v9.0 PRODUCTION
+// Corrections: 
+// - Removed custom link section (only category redirect)
+// - Fixed SQL INSERT mismatch
+// - Added round-robin ad rotation support
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
-    console.error('[Campaigns] CRITICAL: BrandiaAPI is not defined');
-    window.BrandiaAPI = window.BrandiaAPI || {
-        Supplier: {
-            getProducts: async () => ({ success: false, message: 'API not loaded', data: [] }),
-            getCampaigns: async () => ({ success: false, message: 'API not loaded', data: [] }),
-            createCampaign: async () => ({ success: false, message: 'API not loaded' }),
-            updateCampaign: async () => ({ success: false, message: 'API not loaded' }),
-            deleteCampaign: async () => ({ success: false, message: 'API not loaded' }),
-            getCampaignLimit: async () => ({ success: true, data: { current: 0, max: 5, can_create: true } })
-        },
-        Upload: {
-            uploadImage: async () => ({ success: false, message: 'API not loaded' }),
-            uploadVideo: async () => ({ success: false, message: 'API not loaded' })
-        },
-        getSupplierId: () => null
-    };
+  console.error('[Campaigns] CRITICAL: BrandiaAPI is not defined');
+  window.BrandiaAPI = window.BrandiaAPI || {
+    Supplier: {
+      getProducts: async () => ({ success: false, message: 'API not loaded', data: [] }),
+      getCampaigns: async () => ({ success: false, message: 'API not loaded', data: [] }),
+      createCampaign: async () => ({ success: false, message: 'API not loaded' }),
+      updateCampaign: async () => ({ success: false, message: 'API not loaded' }),
+      deleteCampaign: async () => ({ success: false, message: 'API not loaded' }),
+      getCampaignLimit: async () => ({ success: true, data: { current: 0, max: 5, can_create: true } })
+    },
+    Upload: {
+      uploadImage: async () => ({ success: false, message: 'API not loaded' }),
+      uploadVideo: async () => ({ success: false, message: 'API not loaded' })
+    },
+    getSupplierId: () => null
+  };
 }
 
 window.SupplierCampaigns = {
@@ -32,7 +35,6 @@ window.SupplierCampaigns = {
     uploadedMedia: null,
     editingCampaignId: null,
     targetMode: 'all',
-    ctaType: 'shop',
     isLoading: false,
     campaignLimit: { current: 0, max: 5, can_create: true }
   },
@@ -46,9 +48,8 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v8.2...');
+    console.log('[Campaigns] Initializing v9.0...');
     try {
-      // Utilisation limite côté client uniquement (max_campaigns n'existe pas en base)
       this.state.campaignLimit = { 
         current: 0, 
         max: this.MAX_CAMPAIGNS, 
@@ -310,7 +311,6 @@ window.SupplierCampaigns = {
     this.state.currentMediaType = 'image';
     this.state.targetMode = 'all';
     this.state.selectedProducts = [];
-    this.state.ctaType = 'shop';
     
     const modal = document.getElementById('campaign-modal');
     if (!modal) return;
@@ -415,6 +415,7 @@ window.SupplierCampaigns = {
     this.updateSelectedCount();
     this.renderProductChecklist();
     this.updatePreview();
+    this.updateCtaLink(); // Met à jour le lien si on change les produits
   },
 
   toggleAllProducts: function() {
@@ -425,6 +426,7 @@ window.SupplierCampaigns = {
     }
     this.renderProductChecklist();
     this.updatePreview();
+    this.updateCtaLink();
   },
 
   updateSelectedCount: function() {
@@ -437,59 +439,30 @@ window.SupplierCampaigns = {
     const panel = document.getElementById('product-selection-panel');
     if (panel) panel.classList.toggle('hidden', mode === 'all');
     this.updatePreview();
-  },
-
-  updateCtaOptions: function() {
-    const radios = document.getElementsByName('cta_type');
-    for (const radio of radios) {
-      if (radio.checked) {
-        this.state.ctaType = radio.value;
-        break;
-      }
-    }
     this.updateCtaLink();
   },
 
+  // SUPPRESSION DE LA SECTION LIEN PERSONNALISÉ - Uniquement redirection catégorie
   updateCtaLink: function() {
     const linkInput = document.getElementById('camp-cta-link');
     const helpText = document.getElementById('cta-link-help');
     if (!linkInput) return;
     
-    let url = '';
-    let help = '';
+    let url = this.SHOP_URLS.base;
+    let help = 'Redirige vers votre boutique principale';
     
-    switch(this.state.ctaType) {
-      case 'shop':
-        url = this.SHOP_URLS.base;
-        help = 'Redirige vers votre boutique principale';
-        break;
-      case 'category':
-        if (this.state.selectedProducts.length > 0 && this.state.products.length > 0) {
-          const firstProduct = this.state.products.find(p => p.id === this.state.selectedProducts[0]);
-          if (firstProduct?.category_id) {
-            url = `${this.SHOP_URLS.base}/category.html?id=${firstProduct.category_id}`;
-          } else {
-            url = this.SHOP_URLS.base;
-          }
-        } else {
-          url = this.SHOP_URLS.base;
-        }
+    if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
+      // Si des produits sont sélectionnés, rediriger vers la catégorie du premier produit
+      const firstProduct = this.state.products.find(p => p.id === this.state.selectedProducts[0]);
+      if (firstProduct?.category_id) {
+        url = `${this.SHOP_URLS.base}/category.html?id=${firstProduct.category_id}`;
         help = 'Redirige vers la catégorie des produits sélectionnés';
-        break;
-      case 'custom':
-        url = linkInput.value || 'https://';
-        help = 'Saisissez votre propre URL de destination';
-        break;
+      }
     }
     
-    if (this.state.ctaType !== 'custom') {
-      linkInput.value = url;
-      linkInput.readOnly = true;
-      linkInput.classList.add('bg-slate-900', 'text-slate-400');
-    } else {
-      linkInput.readOnly = false;
-      linkInput.classList.remove('bg-slate-900', 'text-slate-400');
-    }
+    linkInput.value = url;
+    linkInput.readOnly = true;
+    linkInput.classList.add('bg-slate-900', 'text-slate-400');
     
     if (helpText) helpText.textContent = help;
   },
@@ -509,9 +482,8 @@ window.SupplierCampaigns = {
     if (ctaTextField && campaign.cta_text) ctaTextField.value = campaign.cta_text;
     if (startDateField && campaign.start_date) startDateField.value = campaign.start_date.split('T')[0];
     if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
-    if (ctaLinkField && campaign.cta_link) ctaLinkField.value = campaign.cta_link;
     
-    // Gestion target_products uniquement (pas target_mode en base)
+    // Gestion target_products
     if (campaign.target_products && Array.isArray(campaign.target_products) && campaign.target_products.length > 0) {
       this.state.targetMode = 'selected';
       this.state.selectedProducts = [...campaign.target_products];
@@ -762,7 +734,6 @@ window.SupplierCampaigns = {
       const startDate = document.getElementById('camp-start-date')?.value;
       const endDate = document.getElementById('camp-end-date')?.value;
       const ctaText = document.getElementById('camp-cta-text')?.value?.trim() || "Voir l'offre";
-      const ctaLink = document.getElementById('camp-cta-link')?.value?.trim();
       
       // Validation
       if (!name) {
@@ -814,7 +785,16 @@ window.SupplierCampaigns = {
         return;
       }
       
-      // DONNÉES SIMPLIFIÉES - sans target_mode qui n'existe pas en base
+      // Construction du lien CTA automatique (pas de lien personnalisé)
+      let ctaLink = this.SHOP_URLS.base;
+      if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
+        const firstProduct = this.state.products.find(p => p.id === this.state.selectedProducts[0]);
+        if (firstProduct?.category_id) {
+          ctaLink = `${this.SHOP_URLS.base}/category.html?id=${firstProduct.category_id}`;
+        }
+      }
+      
+      // DONNÉES SIMPLIFIÉES pour le backend
       const campaignData = {
         name: name,
         type: 'overlay',
@@ -825,7 +805,6 @@ window.SupplierCampaigns = {
         cta_text: ctaText,
         cta_link: ctaLink,
         target_products: this.state.targetMode === 'all' ? null : this.state.selectedProducts,
-        // PAS de target_mode ici - n'existe pas en base de données
         start_date: startDate,
         end_date: endDate,
         status: 'active'
@@ -931,9 +910,8 @@ window.toggleMediaType = (type) => SupplierCampaigns.toggleMediaType(type);
 window.toggleTargetMode = (mode) => SupplierCampaigns.toggleTargetMode(mode);
 window.toggleProductSelection = (id) => SupplierCampaigns.toggleProductSelection(id);
 window.toggleAllProducts = () => SupplierCampaigns.toggleAllProducts();
-window.updateCtaOptions = () => SupplierCampaigns.updateCtaOptions();
 window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v8.2 PRODUCTION READY chargé');
+console.log('[SupplierCampaigns] Module v9.0 PRODUCTION READY chargé');
