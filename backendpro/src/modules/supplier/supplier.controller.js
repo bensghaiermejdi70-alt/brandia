@@ -1,15 +1,20 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v6.2 STABLE
-// Fix: Removed express-validator dependency
+// SUPPLIER.CONTROLLER.JS - v6.3 STABLE
+// Fix: Removed uuid dependency, use native crypto
 // ============================================
 
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const db = require('../../config/db');
 const logger = require('../../utils/logger');
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
+
+// Génération UUID v4 native (sans dépendance externe)
+const generateUUID = () => {
+    return crypto.randomUUID();
+};
 
 const handleError = (res, error, message = 'Erreur serveur', status = 500) => {
     logger.error(`[SupplierController] ${message}:`, error);
@@ -157,7 +162,7 @@ const createProduct = async (req, res) => {
             });
         }
         
-        const productId = uuidv4();
+        const productId = generateUUID();
         
         await db.query(
             `INSERT INTO products (
@@ -496,7 +501,7 @@ const createCampaign = async (req, res) => {
             });
         }
         
-        const campaignId = uuidv4();
+        const campaignId = generateUUID();
         
         await db.query(
             `INSERT INTO campaigns (
@@ -819,7 +824,7 @@ const requestPayout = async (req, res) => {
             });
         }
         
-        const payoutId = uuidv4();
+        const payoutId = generateUUID();
         
         await db.query(
             `INSERT INTO payouts (id, supplier_id, amount, method, status, created_at) 
@@ -830,7 +835,7 @@ const requestPayout = async (req, res) => {
         await db.query(
             `INSERT INTO transactions (id, supplier_id, type, amount, description, created_at) 
              VALUES (?, ?, 'debit', ?, ?, NOW())`,
-            [uuidv4(), supplierId, parseFloat(amount), `Demande de retrait #${payoutId}`]
+            [generateUUID(), supplierId, parseFloat(amount), `Demande de retrait #${payoutId}`]
         );
         
         res.json({
@@ -908,7 +913,7 @@ const createPromotion = async (req, res) => {
             });
         }
         
-        const promotionId = uuidv4();
+        const promotionId = generateUUID();
         
         await db.query(
             `INSERT INTO promotions (
