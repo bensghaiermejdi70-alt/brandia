@@ -1,12 +1,12 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v6.2 PRODUCTION
-// Fix: Removed express-validator dependency
+// SUPPLIER ROUTES - v6.3 PRODUCTION
+// Fix: SQL syntax compatible PostgreSQL/MySQL, removed express-validator dependency
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v6.2...');
+console.log('[Supplier Routes] Loading v6.3...');
 
 // ============================================
 // IMPORTS
@@ -81,7 +81,7 @@ router.post('/public/campaigns/click', asyncHandler(async (req, res) => {
     }
 }));
 
-// Paramètres publicitaires
+// Paramètres publicitaires - FIX SQL syntax
 router.get('/public/ad-settings', asyncHandler(async (req, res) => {
     const { supplier } = req.query;
 
@@ -95,13 +95,37 @@ router.get('/public/ad-settings', asyncHandler(async (req, res) => {
     try {
         const db = require('../../config/db');
         
-        const result = await db.query(`
-            SELECT max_ads_per_session, priority, is_active, max_campaigns
-            FROM supplier_ad_settings
-            WHERE supplier_id = $1 AND is_active = true
-        `, [supplier]);
+        // Détecter le type de base de données
+        const isPostgres = db.query.toString().includes('postgres') || 
+                          (db.pool && db.pool.options && db.pool.options.database);
+        
+        let query;
+        let params;
+        
+        if (isPostgres) {
+            // Syntaxe PostgreSQL avec $1
+            query = `
+                SELECT max_ads_per_session, priority, is_active, max_campaigns
+                FROM supplier_ad_settings
+                WHERE supplier_id = $1 AND is_active = true
+            `;
+            params = [supplier];
+        } else {
+            // Syntaxe MySQL avec ?
+            query = `
+                SELECT max_ads_per_session, priority, is_active, max_campaigns
+                FROM supplier_ad_settings
+                WHERE supplier_id = ? AND is_active = true
+            `;
+            params = [supplier];
+        }
 
-        if (result.rows && result.rows.length === 0) {
+        const result = await db.query(query, params);
+        
+        // Normaliser le résultat (PostgreSQL retourne rows, MySQL retourne [rows])
+        const rows = result.rows || result[0] || [];
+
+        if (rows.length === 0) {
             return res.json({
                 success: true,
                 data: { 
@@ -116,13 +140,14 @@ router.get('/public/ad-settings', asyncHandler(async (req, res) => {
         res.json({
             success: true,
             data: {
-                max_ads_per_session: parseInt(result.rows[0].max_ads_per_session) || 1,
-                priority: parseInt(result.rows[0].priority) || 5,
-                max_campaigns: parseInt(result.rows[0].max_campaigns) || 5,
+                max_ads_per_session: parseInt(rows[0].max_ads_per_session) || 1,
+                priority: parseInt(rows[0].priority) || 5,
+                max_campaigns: parseInt(rows[0].max_campaigns) || 5,
                 is_default: false
             }
         });
     } catch (error) {
+        console.error('[Ad Settings] Error:', error);
         res.json({
             success: true,
             data: { 
@@ -289,6 +314,6 @@ router.get('/ad-settings', asyncHandler(async (req, res) => {
     }
 }));
 
-console.log('[Supplier Routes] ✅ v6.2 loaded successfully');
+console.log('[Supplier Routes] ✅ v6.3 loaded successfully');
 
 module.exports = router;

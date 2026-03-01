@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER-CAMPAIGNS.JS - v9.1 FIXED
-// Correction: Modal, round-robin, suppression custom link
+// SUPPLIER-CAMPAIGNS.JS - v9.2 FIXED
+// Correction: BrandiaAPI global check, Modal, round-robin, suppression custom link
 // ============================================
 
 const SupplierCampaigns = (function() {
@@ -11,7 +11,7 @@ const SupplierCampaigns = (function() {
     // ============================================
     
     const CONFIG = {
-        version: '9.1',
+        version: '9.2',
         debug: true,
         selectors: {
             container: '#campaigns-section',
@@ -61,12 +61,41 @@ const SupplierCampaigns = (function() {
         return new Date(dateStr).toLocaleDateString('fr-FR');
     };
     
+    // Helper pour appeler l'API avec vérification
+    const apiCall = async (method, endpoint, data = null) => {
+        // Attendre que BrandiaAPI soit disponible (max 5 secondes)
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (typeof window.BrandiaAPI === 'undefined' && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (typeof window.BrandiaAPI === 'undefined') {
+            throw new Error('BrandiaAPI non disponible');
+        }
+        
+        if (!window.BrandiaAPI[method]) {
+            throw new Error(`BrandiaAPI.${method} n'existe pas`);
+        }
+        
+        return await window.BrandiaAPI[method](endpoint, data);
+    };
+    
     // ============================================
     // INITIALISATION
     // ============================================
     
     function init() {
         log(`Initializing v${CONFIG.version}...`);
+        
+        // Vérifier que BrandiaAPI existe avant de continuer
+        if (typeof window.BrandiaAPI === 'undefined') {
+            log('BrandiaAPI not loaded yet, waiting...');
+            setTimeout(init, 500);
+            return;
+        }
         
         loadProducts();
         loadCampaigns();
@@ -132,7 +161,7 @@ const SupplierCampaigns = (function() {
     async function loadProducts() {
         try {
             log('Loading products...');
-            const response = await BrandiaAPI.get('/supplier/products');
+            const response = await apiCall('get', '/supplier/products');
             
             if (response.success) {
                 state.products = response.data || [];
@@ -148,7 +177,7 @@ const SupplierCampaigns = (function() {
     async function loadCampaigns() {
         try {
             log('Loading campaigns...');
-            const response = await BrandiaAPI.get('/supplier/campaigns');
+            const response = await apiCall('get', '/supplier/campaigns');
             
             if (response.success) {
                 state.campaigns = response.data || [];
@@ -558,10 +587,10 @@ const SupplierCampaigns = (function() {
             
             if (state.currentEditId) {
                 // Update
-                response = await BrandiaAPI.put(`/supplier/campaigns/${state.currentEditId}`, campaignData);
+                response = await apiCall('put', `/supplier/campaigns/${state.currentEditId}`, campaignData);
             } else {
                 // Create
-                response = await BrandiaAPI.post('/supplier/campaigns', campaignData);
+                response = await apiCall('post', '/supplier/campaigns', campaignData);
             }
             
             log('API Response:', response);
@@ -588,7 +617,7 @@ const SupplierCampaigns = (function() {
     
     async function pauseCampaign(id) {
         try {
-            const response = await BrandiaAPI.put(`/supplier/campaigns/${id}`, { status: 'paused' });
+            const response = await apiCall('put', `/supplier/campaigns/${id}`, { status: 'paused' });
             if (response.success) {
                 showNotification('Campagne mise en pause', 'success');
                 await loadCampaigns();
@@ -600,7 +629,7 @@ const SupplierCampaigns = (function() {
     
     async function resumeCampaign(id) {
         try {
-            const response = await BrandiaAPI.put(`/supplier/campaigns/${id}`, { status: 'active' });
+            const response = await apiCall('put', `/supplier/campaigns/${id}`, { status: 'active' });
             if (response.success) {
                 showNotification('Campagne reprise', 'success');
                 await loadCampaigns();
@@ -614,7 +643,7 @@ const SupplierCampaigns = (function() {
         if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
         
         try {
-            const response = await BrandiaAPI.delete(`/supplier/campaigns/${id}`);
+            const response = await apiCall('delete', `/supplier/campaigns/${id}`);
             if (response.success) {
                 showNotification('Campagne supprimée avec succès', 'success');
                 await loadCampaigns();
@@ -767,8 +796,12 @@ if (typeof module !== 'undefined' && module.exports) {
     
     // Auto-initialize si le DOM est prêt
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', SupplierCampaigns.init);
+        document.addEventListener('DOMContentLoaded', () => {
+            // Delay to ensure BrandiaAPI is loaded
+            setTimeout(SupplierCampaigns.init, 100);
+        });
     } else {
-        SupplierCampaigns.init();
+        // Delay to ensure BrandiaAPI is loaded
+        setTimeout(SupplierCampaigns.init, 100);
     }
 }

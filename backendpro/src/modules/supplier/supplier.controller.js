@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v6.3 STABLE
-// Fix: Removed uuid dependency, use native crypto
+// SUPPLIER.CONTROLLER.JS - v6.4 STABLE
+// Fix: Removed uuid dependency, use native crypto, SQL syntax auto-detection
 // ============================================
 
 const crypto = require('crypto');
@@ -11,9 +11,27 @@ const logger = require('../../utils/logger');
 // HELPER FUNCTIONS
 // ============================================
 
+// Détecter si on utilise PostgreSQL ou MySQL
+const isPostgres = () => {
+    // Vérifier si c'est PostgreSQL en checkant les propriétés de la connexion
+    if (db.pool && db.pool.options && db.pool.options.database) {
+        return true; // Probablement PostgreSQL (pg)
+    }
+    if (db.connection && db.connection.database) {
+        return false; // Probablement MySQL
+    }
+    // Fallback: essayer de détecter via une requête test
+    return false;
+};
+
 // Génération UUID v4 native (sans dépendance externe)
 const generateUUID = () => {
     return crypto.randomUUID();
+};
+
+// Helper pour formater les paramètres SQL selon la DB
+const sqlParams = (params) => {
+    return isPostgres() ? params : params; // Les params restent les mêmes, seule la syntaxe change
 };
 
 const handleError = (res, error, message = 'Erreur serveur', status = 500) => {
@@ -34,6 +52,21 @@ const validateRequired = (fields, data) => {
         }
     }
     return missing;
+};
+
+// Helper pour normaliser les résultats de requête (PostgreSQL vs MySQL)
+const normalizeResult = (result) => {
+    if (result.rows) {
+        // PostgreSQL
+        return result.rows;
+    } else if (Array.isArray(result) && result.length > 0 && Array.isArray(result[0])) {
+        // MySQL avec [rows, fields]
+        return result[0];
+    } else if (Array.isArray(result)) {
+        // MySQL simple ou déjà normalisé
+        return result;
+    }
+    return [];
 };
 
 // ============================================
@@ -75,11 +108,11 @@ const getStats = async (req, res) => {
         res.json({
             success: true,
             data: {
-                products_count: productsResult[0]?.count || 0,
-                total_orders: ordersResult[0]?.total_orders || 0,
-                total_revenue: ordersResult[0]?.total_revenue || 0,
-                active_campaigns: campaignsResult[0]?.count || 0,
-                pending_orders: pendingResult[0]?.count || 0
+                products_count: normalizeResult(productsResult)[0]?.count || 0,
+                total_orders: normalizeResult(ordersResult)[0]?.total_orders || 0,
+                total_revenue: normalizeResult(ordersResult)[0]?.total_revenue || 0,
+                active_campaigns: normalizeResult(campaignsResult)[0]?.count || 0,
+                pending_orders: normalizeResult(pendingResult)[0]?.count || 0
             }
         });
     } catch (error) {
@@ -108,7 +141,8 @@ const getProducts = async (req, res) => {
         query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
         params.push(parseInt(limit), parseInt(offset));
         
-        const [products] = await db.query(query, params);
+        const productsResult = await db.query(query, params);
+        const products = normalizeResult(productsResult);
         
         let countQuery = 'SELECT COUNT(*) as total FROM products WHERE supplier_id = ?';
         let countParams = [supplierId];
@@ -118,7 +152,7 @@ const getProducts = async (req, res) => {
             countParams.push(`%${search}%`, `%${search}%`);
         }
         
-        const [countResult] = await db.query(countQuery, countParams);
+        const countResult = await db.query(countQuery, countParams);
         
         res.json({
             success: true,
@@ -126,7 +160,7 @@ const getProducts = async (req, res) => {
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
-                total: countResult[0]?.total || 0
+                total: normalizeResult(countResult)[0]?.total || 0
             }
         });
     } catch (error) {
@@ -178,7 +212,7 @@ const createProduct = async (req, res) => {
             ]
         );
         
-        const [newProduct] = await db.query(
+        const newProductResult = await db.query(
             'SELECT * FROM products WHERE id = ?',
             [productId]
         );
@@ -186,7 +220,7 @@ const createProduct = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Produit créé avec succès',
-            data: newProduct[0]
+            data: normalizeResult(newProductResult)[0]
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la création du produit');
@@ -199,12 +233,12 @@ const updateProduct = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
         
-        const [existing] = await db.query(
+        const existingResult = await db.query(
             'SELECT id FROM products WHERE id = ? AND supplier_id = ?',
             [id, supplierId]
         );
         
-        if (existing.length === 0) {
+        if (normalizeResult(existingResult).length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Produit non trouvé'
@@ -246,7 +280,7 @@ const updateProduct = async (req, res) => {
             values
         );
         
-        const [updated] = await db.query(
+        const updatedResult = await db.query(
             'SELECT * FROM products WHERE id = ?',
             [id]
         );
@@ -254,7 +288,7 @@ const updateProduct = async (req, res) => {
         res.json({
             success: true,
             message: 'Produit mis à jour avec succès',
-            data: updated[0]
+            data: normalizeResult(updatedResult)[0]
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la mise à jour du produit');
@@ -266,12 +300,15 @@ const deleteProduct = async (req, res) => {
         const supplierId = req.user.id;
         const { id } = req.params;
         
-        const [result] = await db.query(
+        const result = await db.query(
             'DELETE FROM products WHERE id = ? AND supplier_id = ?',
             [id, supplierId]
         );
         
-        if (result.affectedRows === 0) {
+        // MySQL retourne affectedRows dans result[0], PostgreSQL dans result.rowCount
+        const affectedRows = result[0]?.affectedRows || result.rowCount || 0;
+        
+        if (affectedRows === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Produit non trouvé'
@@ -308,9 +345,9 @@ const getOrders = async (req, res) => {
         query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
         params.push(parseInt(limit), parseInt(offset));
         
-        const [orders] = await db.query(query, params);
+        const ordersResult = await db.query(query, params);
         
-        const parsedOrders = (orders || []).map(order => ({
+        const parsedOrders = normalizeResult(ordersResult).map(order => ({
             ...order,
             items: safeJsonParse(order.items),
             shipping_address: safeJsonParse(order.shipping_address)
@@ -330,10 +367,12 @@ const getOrderById = async (req, res) => {
         const supplierId = req.user.id;
         const { id } = req.params;
         
-        const [orders] = await db.query(
+        const ordersResult = await db.query(
             'SELECT * FROM orders WHERE id = ? AND supplier_id = ?',
             [id, supplierId]
         );
+        
+        const orders = normalizeResult(ordersResult);
         
         if (orders.length === 0) {
             return res.status(404).json({
@@ -371,12 +410,14 @@ const updateOrderStatus = async (req, res) => {
             });
         }
         
-        const [result] = await db.query(
+        const result = await db.query(
             'UPDATE orders SET status = ?, tracking_number = ?, updated_at = NOW() WHERE id = ? AND supplier_id = ?',
             [status, tracking_number || null, id, supplierId]
         );
         
-        if (result.affectedRows === 0) {
+        const affectedRows = result[0]?.affectedRows || result.rowCount || 0;
+        
+        if (affectedRows === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Commande non trouvée'
@@ -400,7 +441,7 @@ const getCampaigns = async (req, res) => {
     try {
         const supplierId = req.user.id;
         
-        const [campaigns] = await db.query(
+        const campaignsResult = await db.query(
             `SELECT c.*, p.name as product_name, p.images as product_images 
              FROM campaigns c 
              LEFT JOIN products p ON c.product_id = p.id 
@@ -409,7 +450,7 @@ const getCampaigns = async (req, res) => {
             [supplierId]
         );
         
-        const parsedCampaigns = (campaigns || []).map(campaign => ({
+        const parsedCampaigns = normalizeResult(campaignsResult).map(campaign => ({
             ...campaign,
             targeting: safeJsonParse(campaign.targeting),
             ad_creative: safeJsonParse(campaign.ad_creative),
@@ -429,12 +470,12 @@ const getCampaignLimit = async (req, res) => {
     try {
         const supplierId = req.user.id;
         
-        const [countResult] = await db.query(
+        const countResult = await db.query(
             `SELECT COUNT(*) as count FROM campaigns WHERE supplier_id = ? AND status != 'ended'`,
             [supplierId]
         );
         
-        const currentCount = countResult[0]?.count || 0;
+        const currentCount = normalizeResult(countResult)[0]?.count || 0;
         const maxCampaigns = 5;
         
         res.json({
@@ -476,12 +517,12 @@ const createCampaign = async (req, res) => {
         }
         
         // Vérifier la limite
-        const [countResult] = await db.query(
+        const countResult = await db.query(
             `SELECT COUNT(*) as count FROM campaigns WHERE supplier_id = ? AND status != 'ended'`,
             [supplierId]
         );
         
-        if (countResult[0]?.count >= 5) {
+        if (normalizeResult(countResult)[0]?.count >= 5) {
             return res.status(400).json({
                 success: false,
                 message: 'Limite de 5 campagnes atteinte'
@@ -489,12 +530,12 @@ const createCampaign = async (req, res) => {
         }
         
         // Vérifier le produit
-        const [product] = await db.query(
+        const productResult = await db.query(
             'SELECT id FROM products WHERE id = ? AND supplier_id = ?',
             [product_id, supplierId]
         );
         
-        if (product.length === 0) {
+        if (normalizeResult(productResult).length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Produit non trouvé'
@@ -518,7 +559,7 @@ const createCampaign = async (req, res) => {
             ]
         );
         
-        const [newCampaign] = await db.query(
+        const newCampaignResult = await db.query(
             'SELECT * FROM campaigns WHERE id = ?',
             [campaignId]
         );
@@ -526,7 +567,7 @@ const createCampaign = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Campagne créée avec succès',
-            data: newCampaign[0]
+            data: normalizeResult(newCampaignResult)[0]
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la création de la campagne');
@@ -539,12 +580,12 @@ const updateCampaign = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
         
-        const [existing] = await db.query(
+        const existingResult = await db.query(
             'SELECT id, status FROM campaigns WHERE id = ? AND supplier_id = ?',
             [id, supplierId]
         );
         
-        if (existing.length === 0) {
+        if (normalizeResult(existingResult).length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Campagne non trouvée'
@@ -584,7 +625,7 @@ const updateCampaign = async (req, res) => {
             values
         );
         
-        const [updated] = await db.query(
+        const updatedResult = await db.query(
             'SELECT * FROM campaigns WHERE id = ?',
             [id]
         );
@@ -592,7 +633,7 @@ const updateCampaign = async (req, res) => {
         res.json({
             success: true,
             message: 'Campagne mise à jour avec succès',
-            data: updated[0]
+            data: normalizeResult(updatedResult)[0]
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la mise à jour de la campagne');
@@ -604,10 +645,12 @@ const deleteCampaign = async (req, res) => {
         const supplierId = req.user.id;
         const { id } = req.params;
         
-        const [campaign] = await db.query(
+        const campaignResult = await db.query(
             'SELECT spent FROM campaigns WHERE id = ? AND supplier_id = ?',
             [id, supplierId]
         );
+        
+        const campaign = normalizeResult(campaignResult);
         
         if (campaign.length === 0) {
             return res.status(404).json({
@@ -651,12 +694,12 @@ const toggleCampaignStatus = async (req, res) => {
             });
         }
         
-        const [existing] = await db.query(
+        const existingResult = await db.query(
             'SELECT id FROM campaigns WHERE id = ? AND supplier_id = ?',
             [id, supplierId]
         );
         
-        if (existing.length === 0) {
+        if (normalizeResult(existingResult).length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Campagne non trouvée'
@@ -682,7 +725,7 @@ const getActiveCampaignForProduct = async (req, res) => {
     try {
         const { supplier, product } = req.query;
         
-        const [campaigns] = await db.query(
+        const campaignsResult = await db.query(
             `SELECT c.*, p.name as product_name, p.images as product_images, p.price
              FROM campaigns c
              JOIN products p ON c.product_id = p.id
@@ -695,6 +738,8 @@ const getActiveCampaignForProduct = async (req, res) => {
              LIMIT 1`,
             [supplier, product]
         );
+        
+        const campaigns = normalizeResult(campaignsResult);
         
         if (campaigns.length === 0) {
             return res.json({ success: true, data: null });
@@ -759,7 +804,7 @@ const getPayments = async (req, res) => {
     try {
         const supplierId = req.user.id;
         
-        const [balanceResult] = await db.query(
+        const balanceResult = await db.query(
             `SELECT 
                 COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0) as balance
              FROM transactions 
@@ -767,7 +812,7 @@ const getPayments = async (req, res) => {
             [supplierId]
         );
         
-        const [transactions] = await db.query(
+        const transactionsResult = await db.query(
             `SELECT * FROM transactions 
              WHERE supplier_id = ? 
              ORDER BY created_at DESC 
@@ -775,7 +820,7 @@ const getPayments = async (req, res) => {
             [supplierId]
         );
         
-        const [pendingResult] = await db.query(
+        const pendingResult = await db.query(
             `SELECT COALESCE(SUM(amount), 0) as pending 
              FROM payouts 
              WHERE supplier_id = ? AND status = 'pending'`,
@@ -785,9 +830,9 @@ const getPayments = async (req, res) => {
         res.json({
             success: true,
             data: {
-                balance: balanceResult[0]?.balance || 0,
-                pending_payout: pendingResult[0]?.pending || 0,
-                transactions: transactions || []
+                balance: normalizeResult(balanceResult)[0]?.balance || 0,
+                pending_payout: normalizeResult(pendingResult)[0]?.pending || 0,
+                transactions: normalizeResult(transactionsResult) || []
             }
         });
     } catch (error) {
@@ -807,7 +852,7 @@ const requestPayout = async (req, res) => {
             });
         }
         
-        const [balanceResult] = await db.query(
+        const balanceResult = await db.query(
             `SELECT 
                 COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0) as balance
              FROM transactions 
@@ -815,7 +860,7 @@ const requestPayout = async (req, res) => {
             [supplierId]
         );
         
-        const balance = balanceResult[0]?.balance || 0;
+        const balance = normalizeResult(balanceResult)[0]?.balance || 0;
         
         if (parseFloat(amount) > balance) {
             return res.status(400).json({
@@ -852,7 +897,7 @@ const getPayouts = async (req, res) => {
     try {
         const supplierId = req.user.id;
         
-        const [payouts] = await db.query(
+        const payoutsResult = await db.query(
             `SELECT * FROM payouts 
              WHERE supplier_id = ? 
              ORDER BY created_at DESC`,
@@ -861,7 +906,7 @@ const getPayouts = async (req, res) => {
         
         res.json({
             success: true,
-            data: payouts || []
+            data: normalizeResult(payoutsResult) || []
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la récupération des retraits');
@@ -876,7 +921,7 @@ const getPromotions = async (req, res) => {
     try {
         const supplierId = req.user.id;
         
-        const [promotions] = await db.query(
+        const promotionsResult = await db.query(
             `SELECT * FROM promotions 
              WHERE supplier_id = ? 
              ORDER BY created_at DESC`,
@@ -885,7 +930,7 @@ const getPromotions = async (req, res) => {
         
         res.json({
             success: true,
-            data: promotions || []
+            data: normalizeResult(promotionsResult) || []
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la récupération des promotions');
@@ -927,7 +972,7 @@ const createPromotion = async (req, res) => {
             ]
         );
         
-        const [newPromotion] = await db.query(
+        const newPromotionResult = await db.query(
             'SELECT * FROM promotions WHERE id = ?',
             [promotionId]
         );
@@ -935,7 +980,7 @@ const createPromotion = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Promotion créée avec succès',
-            data: newPromotion[0]
+            data: normalizeResult(newPromotionResult)[0]
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la création de la promotion');
@@ -978,7 +1023,7 @@ const updatePromotion = async (req, res) => {
             values
         );
         
-        const [updated] = await db.query(
+        const updatedResult = await db.query(
             'SELECT * FROM promotions WHERE id = ?',
             [id]
         );
@@ -986,7 +1031,7 @@ const updatePromotion = async (req, res) => {
         res.json({
             success: true,
             message: 'Promotion mise à jour avec succès',
-            data: updated[0]
+            data: normalizeResult(updatedResult)[0]
         });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la mise à jour de la promotion');
@@ -1020,11 +1065,13 @@ const getAdSettings = async (req, res) => {
     try {
         const supplierId = req.user.id;
         
-        const [settings] = await db.query(
+        const settingsResult = await db.query(
             `SELECT * FROM supplier_ad_settings 
              WHERE supplier_id = ?`,
             [supplierId]
         );
+        
+        const settings = normalizeResult(settingsResult);
         
         if (settings.length === 0) {
             return res.json({
