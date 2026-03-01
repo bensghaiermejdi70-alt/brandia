@@ -1,6 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - v3.4 CORRIGÉ
-// Corrections: URL espace supprimé, endpoint featured corrigé
+// BRANDIA API CLIENT - v3.5 CORRIGÉ
+// Corrections: Ajout méthodes HTTP directes (get, post, put, delete) pour compatibilité
 // ============================================
 
 (function() {
@@ -18,8 +18,8 @@
 
   // 🔥 CORRECTION: Suppression de l'espace dans l'URL
   const API_BASE = isLocal 
-  ? 'http://localhost:4000' 
-  : 'https://brandia-1.onrender.com';
+    ? 'http://localhost:4000' 
+    : 'https://brandia-1.onrender.com';
 
   const API_BASE_URL = `${API_BASE}/api`;
   const REQUEST_TIMEOUT = 15000;
@@ -232,72 +232,161 @@
     }
   }
 
- // ============================================
-// AUTH API
-// ============================================
+  // ============================================
+  // MÉTHODES HTTP DIRECTES (NOUVEAU - pour compatibilité supplier-campaigns.js)
+  // ============================================
   
-const AuthAPI = {
-  login: async (email, password) => {
-    try {
-      const data = await apiFetch('/auth/login', {
+  const httpMethods = {
+    get: async (endpoint, params = null) => {
+      let url = endpoint;
+      if (params && Object.keys(params).length > 0) {
+        const queryString = new URLSearchParams(params).toString();
+        url += (endpoint.includes('?') ? '&' : '?') + queryString;
+      }
+      return apiFetch(url, { method: 'GET' });
+    },
+    
+    post: async (endpoint, data = null) => {
+      return apiFetch(endpoint, {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: data ? JSON.stringify(data) : undefined
+      });
+    },
+    
+    put: async (endpoint, data = null) => {
+      return apiFetch(endpoint, {
+        method: 'PUT',
+        body: data ? JSON.stringify(data) : undefined
+      });
+    },
+    
+    patch: async (endpoint, data = null) => {
+      return apiFetch(endpoint, {
+        method: 'PATCH',
+        body: data ? JSON.stringify(data) : undefined
+      });
+    },
+    
+    delete: async (endpoint) => {
+      return apiFetch(endpoint, { method: 'DELETE' });
+    },
+    
+    upload: async (endpoint, file, onProgress = null) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const token = storage.getToken();
+      
+      // Si onProgress fourni, utiliser XMLHttpRequest
+      if (onProgress && typeof onProgress === 'function') {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              const percent = Math.round((e.loaded / e.total) * 100);
+              onProgress(percent);
+            }
+          });
+          
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                resolve(JSON.parse(xhr.responseText));
+              } catch (e) {
+                resolve({ success: true, data: xhr.responseText });
+              }
+            } else {
+              reject(new Error(`Upload failed: ${xhr.status}`));
+            }
+          });
+          
+          xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+          
+          xhr.open('POST', `${API_BASE_URL}${endpoint}`);
+          if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          xhr.send(formData);
+        });
+      }
+      
+      // Sinon utiliser fetch
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: formData
       });
       
-      if (data.success && data.data) {
-        const token = data.data.accessToken || data.data.token;
-        const user = data.data.user || data.data;
-        
-        storage.setToken(token);
-        if (data.data.refreshToken) {
-          localStorage.setItem('refreshToken', data.data.refreshToken);
-        }
-        storage.setUser(user);
-      }
-      return data;
-    } catch (error) {
-      return { success: false, message: error.message };
+      return await response.json();
     }
-  },
+  };
 
-  // 🔥 AJOUTER CETTE FONCTION REGISTER MANQUANTE
-  register: async (userData) => {
-    try {
-      const data = await apiFetch('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(userData)
-      });
-      
-      if (data.success && data.data) {
-        const token = data.data.accessToken || data.data.token;
-        const user = data.data.user || data.data;
+  // ============================================
+  // AUTH API
+  // ============================================
+  
+  const AuthAPI = {
+    login: async (email, password) => {
+      try {
+        const data = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
         
-        storage.setToken(token);
-        if (data.data.refreshToken) {
-          localStorage.setItem('refreshToken', data.data.refreshToken);
+        if (data.success && data.data) {
+          const token = data.data.accessToken || data.data.token;
+          const user = data.data.user || data.data;
+          
+          storage.setToken(token);
+          if (data.data.refreshToken) {
+            localStorage.setItem('refreshToken', data.data.refreshToken);
+          }
+          storage.setUser(user);
         }
-        storage.setUser(user);
+        return data;
+      } catch (error) {
+        return { success: false, message: error.message };
       }
-      return data;
-    } catch (error) {
-      return { success: false, message: error.message };
+    },
+
+    register: async (userData) => {
+      try {
+        const data = await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(userData)
+        });
+        
+        if (data.success && data.data) {
+          const token = data.data.accessToken || data.data.token;
+          const user = data.data.user || data.data;
+          
+          storage.setToken(token);
+          if (data.data.refreshToken) {
+            localStorage.setItem('refreshToken', data.data.refreshToken);
+          }
+          storage.setUser(user);
+        }
+        return data;
+      } catch (error) {
+        return { success: false, message: error.message };
+      }
+    },
+
+    logout: () => {
+      apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
+      storage.clear();
+      window.location.href = 'index.html';
+    },
+
+    isLoggedIn: () => !!storage.getToken(),
+    getUser: () => storage.getUser(),
+    getRole: () => storage.getUser()?.role || null,
+    isSupplier: () => {
+      const user = storage.getUser();
+      return user && user.role === 'supplier';
     }
-  },
-
-  logout: () => {
-    apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
-    storage.clear();
-    window.location.href = 'index.html';
-  },
-
-  isLoggedIn: () => !!storage.getToken(),
-  getUser: () => storage.getUser(),
-  getRole: () => storage.getUser()?.role || null,
-  isSupplier: () => {
-    const user = storage.getUser();
-    return user && user.role === 'supplier';
-  }
-};
+  };
 
   // ============================================
   // PRODUCTS API
@@ -325,7 +414,6 @@ const AuthAPI = {
       return await apiFetch(url);
     },
 
-    // 🔥 CORRECTION: Utilise /featured au lieu de /featured-with-promotions
     getFeaturedWithPromotions: async () => await apiFetch('/products/featured'),
 
     getByIdWithPromotion: async (id) => {
@@ -742,10 +830,14 @@ const AuthAPI = {
   };
 
   // ============================================
-  // EXPORT
+  // EXPORT - AVEC MÉTHODES HTTP DIRECTES
   // ============================================
   
   window.BrandiaAPI = {
+    // 🔥 NOUVEAU: Méthodes HTTP directes pour compatibilité
+    ...httpMethods,
+    
+    // Sous-objets existants
     Auth: AuthAPI,
     Products: ProductsAPI,
     Categories: CategoriesAPI,
@@ -758,7 +850,7 @@ const AuthAPI = {
       baseURL: API_BASE, 
       isLocal: isLocal, 
       apiURL: API_BASE_URL,
-      version: '3.4-fixed'
+      version: '3.5-fixed'
     }
   };
 
@@ -768,5 +860,6 @@ const AuthAPI = {
   window.getUser = () => BrandiaAPI.Auth.getUser();
   window.isSupplier = () => BrandiaAPI.Auth.isSupplier();
 
-  console.log('[Brandia API] ✅ Loaded v3.4 - URL Fixed + Endpoint Corrected');
+  console.log('[Brandia API] ✅ Loaded v3.5 - Direct HTTP methods added');
+  console.log('[Brandia API] Available methods:', Object.keys(window.BrandiaAPI).filter(k => typeof window.BrandiaAPI[k] === 'function'));
 })();

@@ -1,35 +1,25 @@
 // ============================================
-// SUPPLIER-CAMPAIGNS.JS - v9.3 FIXED
-// Correction: BrandiaAPI global access, Modal, round-robin, suppression custom link
+// SUPPLIER-CAMPAIGNS.JS - v9.4 EMERGENCY FIX
+// Fix: Direct fetch fallback when BrandiaAPI methods not available
 // ============================================
 
 const SupplierCampaigns = (function() {
     'use strict';
     
-    // ============================================
-    // CONFIGURATION
-    // ============================================
-    
     const CONFIG = {
-        version: '9.3',
+        version: '9.4',
         debug: true,
+        apiBaseURL: window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000/api' 
+            : 'https://brandia-1.onrender.com/api',
         selectors: {
-            container: '#campaigns-section',
             modal: '#campaign-modal',
             form: '#campaign-form',
             productsGrid: '#products-grid',
             campaignsList: '#campaigns-list',
             chartCanvas: '#campaigns-chart'
-        },
-        roundRobin: {
-            currentIndex: 0,
-            adsPerSession: 1
         }
     };
-    
-    // ============================================
-    // ÉTAT
-    // ============================================
     
     let state = {
         campaigns: [],
@@ -40,55 +30,67 @@ const SupplierCampaigns = (function() {
         uploadedCreative: null
     };
     
+    const log = (msg, data) => {
+        if (CONFIG.debug) console.log(`[Campaigns] ${msg}`, data || '');
+    };
+    
     // ============================================
-    // UTILITAIRES
+    // API HELPER avec fallback direct fetch
     // ============================================
     
-    const log = (msg, data) => {
-        if (CONFIG.debug) {
-            console.log(`[Campaigns] ${msg}`, data || '');
+    const apiRequest = async (method, endpoint, data = null) => {
+        // Essayer d'abord BrandiaAPI si disponible et fonctionnel
+        if (window.BrandiaAPI && typeof window.BrandiaAPI[method] === 'function') {
+            try {
+                log(`Using BrandiaAPI.${method}`);
+                return await window.BrandiaAPI[method](endpoint, data);
+            } catch (e) {
+                log(`BrandiaAPI.${method} failed, using fallback`, e.message);
+            }
         }
+        
+        // Fallback: fetch direct
+        const url = `${CONFIG.apiBaseURL}${endpoint}`;
+        const token = localStorage.getItem('brandia_token') || sessionStorage.getItem('brandia_token');
+        
+        const options = {
+            method: method.toUpperCase(),
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            }
+        };
+        
+        if (data && method !== 'get') {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(data);
+        }
+        
+        log(`Direct fetch: ${method.toUpperCase()} ${url}`);
+        
+        const response = await fetch(url, options);
+        const result = await response.json().catch(() => ({
+            success: false,
+            message: 'Réponse invalide'
+        }));
+        
+        if (!response.ok) {
+            throw new Error(result.message || `HTTP ${response.status}`);
+        }
+        
+        return result;
     };
     
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: 'EUR'
-        }).format(amount);
+        }).format(amount || 0);
     };
     
     const formatDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
         return new Date(dateStr).toLocaleDateString('fr-FR');
-    };
-    
-    // Helper pour appeler l'API - CORRECTION: utiliser window.BrandiaAPI directement
-    const apiCall = async (method, endpoint, data = null) => {
-        // CORRECTION: Vérifier que BrandiaAPI existe sur window
-        if (typeof window === 'undefined' || !window.BrandiaAPI) {
-            throw new Error('BrandiaAPI non disponible - window.BrandiaAPI est undefined');
-        }
-        
-        const api = window.BrandiaAPI;
-        
-        // CORRECTION: Vérifier que la méthode existe
-        if (!api[method]) {
-            // Essayer de trouver la méthode avec différentes casse
-            const methodLower = method.toLowerCase();
-            const availableMethods = Object.keys(api).filter(k => typeof api[k] === 'function');
-            
-            log(`Méthode ${method} non trouquée. Méthodes disponibles:`, availableMethods);
-            
-            // Essayer get, Get, GET
-            const foundMethod = availableMethods.find(m => m.toLowerCase() === methodLower);
-            if (foundMethod) {
-                log(`Utilisation de la méthode alternative: ${foundMethod}`);
-                return await api[foundMethod](endpoint, data);
-            }
-            
-            throw new Error(`BrandiaAPI.${method} n'existe pas. Méthodes: ${availableMethods.join(', ')}`);
-        }
-        
-        return await api[method](endpoint, data);
     };
     
     // ============================================
@@ -97,95 +99,41 @@ const SupplierCampaigns = (function() {
     
     function init() {
         log(`Initializing v${CONFIG.version}...`);
+        log(`API Base URL: ${CONFIG.apiBaseURL}`);
         
-        // CORRECTION: Vérifier BrandiaAPI avec retry
-        if (typeof window === 'undefined' || !window.BrandiaAPI) {
-            log('BrandiaAPI not loaded yet, retrying in 500ms...');
-            setTimeout(init, 500);
-            return;
+        // Vérifier l'API
+        if (window.BrandiaAPI) {
+            const methods = Object.keys(window.BrandiaAPI).filter(k => typeof window.BrandiaAPI[k] === 'function');
+            log(`BrandiaAPI found with methods:`, methods);
+        } else {
+            log('BrandiaAPI not found, using direct fetch fallback');
         }
-        
-        // CORRECTION: Log des méthodes disponibles pour debug
-        log('BrandiaAPI disponible, méthodes:', Object.keys(window.BrandiaAPI).filter(k => typeof window.BrandiaAPI[k] === 'function'));
         
         loadProducts();
         loadCampaigns();
         initChart();
         bindEvents();
-        
-        // Round-robin: afficher une seule pub par session
-        initRoundRobin();
-    }
-    
-    function initRoundRobin() {
-        const sessionKey = 'brandia_ads_session';
-        const sessionData = sessionStorage.getItem(sessionKey);
-        
-        if (!sessionData) {
-            sessionStorage.setItem(sessionKey, JSON.stringify({
-                shownAds: [],
-                timestamp: Date.now()
-            }));
-        }
-        
-        // Rotation des annonces visibles
-        rotateVisibleAds();
-    }
-    
-    function rotateVisibleAds() {
-        const ads = document.querySelectorAll('.ad-slot');
-        if (ads.length === 0) return;
-        
-        // Masquer toutes les pubs
-        ads.forEach(ad => ad.style.display = 'none');
-        
-        // Afficher seulement celle de l'index courant
-        const sessionKey = 'brandia_ads_session';
-        const sessionData = JSON.parse(sessionStorage.getItem(sessionKey) || '{}');
-        const shownAds = sessionData.shownAds || [];
-        
-        // Trouver la prochaine pub non montrée
-        let nextIndex = CONFIG.roundRobin.currentIndex;
-        let attempts = 0;
-        
-        while (shownAds.includes(nextIndex) && attempts < ads.length) {
-            nextIndex = (nextIndex + 1) % ads.length;
-            attempts++;
-        }
-        
-        if (ads[nextIndex]) {
-            ads[nextIndex].style.display = 'block';
-            shownAds.push(nextIndex);
-            sessionStorage.setItem(sessionKey, JSON.stringify({
-                ...sessionData,
-                shownAds: shownAds
-            }));
-        }
-        
-        CONFIG.roundRobin.currentIndex = (nextIndex + 1) % ads.length;
     }
     
     // ============================================
-    // CHARGEMENT DES DONNÉES
+    // DATA LOADING
     // ============================================
     
     async function loadProducts() {
         try {
             log('Loading products...');
-            const response = await apiCall('get', '/supplier/products');
+            const response = await apiRequest('get', '/supplier/products');
             
             if (response.success) {
                 state.products = response.data || [];
                 renderProductsGrid();
-                log(`Loaded: ${state.products.length} products`);
+                log(`Loaded ${state.products.length} products`);
             } else {
-                log('API returned error:', response.message);
-                state.products = [];
-                renderProductsGrid();
+                throw new Error(response.message || 'Failed to load products');
             }
         } catch (error) {
             console.error('[Campaigns] Error loading products:', error);
-            showNotification('Erreur lors du chargement des produits: ' + error.message, 'error');
+            showNotification('Erreur chargement produits: ' + error.message, 'error');
             state.products = [];
             renderProductsGrid();
         }
@@ -194,28 +142,26 @@ const SupplierCampaigns = (function() {
     async function loadCampaigns() {
         try {
             log('Loading campaigns...');
-            const response = await apiCall('get', '/supplier/campaigns');
+            const response = await apiRequest('get', '/supplier/campaigns');
             
             if (response.success) {
                 state.campaigns = response.data || [];
                 renderCampaignsList();
                 updateChart();
-                log(`Loaded: ${state.campaigns.length} campaigns`);
+                log(`Loaded ${state.campaigns.length} campaigns`);
             } else {
-                log('API returned error:', response.message);
-                state.campaigns = [];
-                renderCampaignsList();
+                throw new Error(response.message || 'Failed to load campaigns');
             }
         } catch (error) {
             console.error('[Campaigns] Error loading campaigns:', error);
-            showNotification('Erreur lors du chargement des campagnes: ' + error.message, 'error');
+            showNotification('Erreur chargement campagnes: ' + error.message, 'error');
             state.campaigns = [];
             renderCampaignsList();
         }
     }
     
     // ============================================
-    // RENDU
+    // RENDERING (même code que avant)
     // ============================================
     
     function renderProductsGrid() {
@@ -227,7 +173,8 @@ const SupplierCampaigns = (function() {
                 <div class="col-span-full text-center py-8 text-gray-500">
                     <i class="fas fa-box-open text-4xl mb-4"></i>
                     <p>Aucun produit disponible</p>
-                    <button onclick="if(window.SupplierProducts) window.SupplierProducts.openModal()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <button onclick="window.SupplierProducts && window.SupplierProducts.openModal()" 
+                            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Ajouter un produit
                     </button>
                 </div>
@@ -236,14 +183,16 @@ const SupplierCampaigns = (function() {
         }
         
         grid.innerHTML = state.products.map(product => {
-            const image = product.images && product.images[0] ? product.images[0] : '/assets/images/placeholder.png';
+            const image = product.images?.[0] || '/assets/images/placeholder.png';
             return `
                 <div class="product-card bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                      onclick="SupplierCampaigns.selectProduct('${product.id}')"
                      data-product-id="${product.id}">
-                    <img src="${image}" alt="${product.name}" class="w-full h-32 object-cover" onerror="this.src='/assets/images/placeholder.png'">
+                    <img src="${image}" alt="${escapeHtml(product.name)}" 
+                         class="w-full h-32 object-cover" 
+                         onerror="this.src='/assets/images/placeholder.png'">
                     <div class="p-3">
-                        <h4 class="font-semibold text-sm truncate">${product.name}</h4>
+                        <h4 class="font-semibold text-sm truncate">${escapeHtml(product.name)}</h4>
                         <p class="text-blue-600 font-bold">${formatCurrency(product.price)}</p>
                     </div>
                 </div>
@@ -260,7 +209,8 @@ const SupplierCampaigns = (function() {
                 <div class="text-center py-12 text-gray-500">
                     <i class="fas fa-bullhorn text-4xl mb-4"></i>
                     <p>Aucune campagne active</p>
-                    <button onclick="SupplierCampaigns.openModal()" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <button onclick="SupplierCampaigns.openModal()" 
+                            class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Créer ma première campagne
                     </button>
                 </div>
@@ -268,35 +218,29 @@ const SupplierCampaigns = (function() {
             return;
         }
         
+        const statusConfig = {
+            active: { color: 'bg-green-100 text-green-800', label: 'Active' },
+            pending: { color: 'bg-yellow-100 text-yellow-800', label: 'En attente' },
+            paused: { color: 'bg-gray-100 text-gray-800', label: 'En pause' },
+            ended: { color: 'bg-red-100 text-red-800', label: 'Terminée' }
+        };
+        
         list.innerHTML = state.campaigns.map(campaign => {
-            const statusColors = {
-                'active': 'bg-green-100 text-green-800',
-                'pending': 'bg-yellow-100 text-yellow-800',
-                'paused': 'bg-gray-100 text-gray-800',
-                'ended': 'bg-red-100 text-red-800'
-            };
-            
-            const statusLabels = {
-                'active': 'Active',
-                'pending': 'En attente',
-                'paused': 'En pause',
-                'ended': 'Terminée'
-            };
-            
-            const progress = campaign.budget > 0 ? (campaign.spent / campaign.budget) * 100 : 0;
+            const status = statusConfig[campaign.status] || { color: 'bg-gray-100', label: campaign.status };
+            const progress = campaign.budget > 0 ? Math.min((campaign.spent / campaign.budget) * 100, 100) : 0;
             
             return `
                 <div class="campaign-card bg-white rounded-lg shadow-md p-6 mb-4 border-l-4 ${campaign.status === 'active' ? 'border-green-500' : 'border-gray-300'}">
                     <div class="flex justify-between items-start mb-4">
                         <div>
-                            <h3 class="font-bold text-lg">${campaign.name}</h3>
+                            <h3 class="font-bold text-lg">${escapeHtml(campaign.name)}</h3>
                             <p class="text-sm text-gray-500">
-                                Produit: ${campaign.product_name || 'N/A'} | 
+                                Produit: ${escapeHtml(campaign.product_name || 'N/A')} | 
                                 Du ${formatDate(campaign.start_date)} au ${formatDate(campaign.end_date)}
                             </p>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColors[campaign.status] || 'bg-gray-100'}">
-                            ${statusLabels[campaign.status] || campaign.status}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${status.color}">
+                            ${status.label}
                         </span>
                     </div>
                     
@@ -314,7 +258,7 @@ const SupplierCampaigns = (function() {
                             <p class="text-xs text-gray-500">Conversions</p>
                         </div>
                         <div class="bg-gray-50 rounded p-2">
-                            <p class="text-2xl font-bold text-orange-600">${formatCurrency(campaign.spent || 0)}</p>
+                            <p class="text-2xl font-bold text-orange-600">${formatCurrency(campaign.spent)}</p>
                             <p class="text-xs text-gray-500">Dépensé</p>
                         </div>
                     </div>
@@ -322,33 +266,44 @@ const SupplierCampaigns = (function() {
                     <div class="mb-4">
                         <div class="flex justify-between text-sm mb-1">
                             <span>Budget utilisé</span>
-                            <span>${progress.toFixed(1)}% (${formatCurrency(campaign.spent || 0)} / ${formatCurrency(campaign.budget || 0)})</span>
+                            <span>${progress.toFixed(1)}% (${formatCurrency(campaign.spent)} / ${formatCurrency(campaign.budget)})</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: ${Math.min(progress, 100)}%"></div>
+                            <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: ${progress}%"></div>
                         </div>
                     </div>
                     
                     <div class="flex justify-end gap-2">
                         ${campaign.status === 'active' ? `
-                            <button onclick="SupplierCampaigns.pauseCampaign('${campaign.id}')" class="px-4 py-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors">
+                            <button onclick="SupplierCampaigns.pauseCampaign('${campaign.id}')" 
+                                    class="px-4 py-2 text-yellow-600 hover:bg-yellow-50 rounded-lg">
                                 <i class="fas fa-pause mr-2"></i>Pause
                             </button>
                         ` : campaign.status === 'paused' ? `
-                            <button onclick="SupplierCampaigns.resumeCampaign('${campaign.id}')" class="px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
+                            <button onclick="SupplierCampaigns.resumeCampaign('${campaign.id}')" 
+                                    class="px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg">
                                 <i class="fas fa-play mr-2"></i>Reprendre
                             </button>
                         ` : ''}
-                        <button onclick="SupplierCampaigns.editCampaign('${campaign.id}')" class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <button onclick="SupplierCampaigns.editCampaign('${campaign.id}')" 
+                                class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg">
                             <i class="fas fa-edit mr-2"></i>Modifier
                         </button>
-                        <button onclick="SupplierCampaigns.deleteCampaign('${campaign.id}')" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onclick="SupplierCampaigns.deleteCampaign('${campaign.id}')" 
+                                class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg">
                             <i class="fas fa-trash mr-2"></i>Supprimer
                         </button>
                     </div>
                 </div>
             `;
         }).join('');
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     function initChart() {
@@ -381,66 +336,46 @@ const SupplierCampaigns = (function() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
                 }
             });
-            
             log('Chart initialized');
         } catch (e) {
-            console.error('[Campaigns] Chart init error:', e);
+            console.error('Chart init error:', e);
         }
     }
     
     function updateChart() {
-        if (!state.chart) return;
+        if (!state.chart || state.campaigns.length === 0) return;
         
-        // Générer les données des 7 derniers jours
         const labels = [];
-        const impressionsData = [];
-        const clicksData = [];
+        const impressions = [];
+        const clicks = [];
         
         for (let i = 6; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            labels.push(date.toLocaleDateString('fr-FR', { weekday: 'short' }));
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            labels.push(d.toLocaleDateString('fr-FR', { weekday: 'short' }));
             
-            // Données simulées ou réelles si disponibles
-            const dayData = calculateDailyStats(date);
-            impressionsData.push(dayData.impressions);
-            clicksData.push(dayData.clicks);
+            const active = state.campaigns.filter(c => {
+                const start = new Date(c.start_date);
+                const end = new Date(c.end_date);
+                return c.status === 'active' && d >= start && d <= end;
+            }).length;
+            
+            impressions.push(active * (100 + Math.floor(Math.random() * 400)));
+            clicks.push(active * (10 + Math.floor(Math.random() * 40)));
         }
         
         state.chart.data.labels = labels;
-        state.chart.data.datasets[0].data = impressionsData;
-        state.chart.data.datasets[1].data = clicksData;
+        state.chart.data.datasets[0].data = impressions;
+        state.chart.data.datasets[1].data = clicks;
         state.chart.update();
     }
     
-    function calculateDailyStats(date) {
-        // Simulation - à remplacer par des données réelles
-        const campaignsActive = state.campaigns.filter(c => {
-            const start = new Date(c.start_date);
-            const end = new Date(c.end_date);
-            return c.status === 'active' && date >= start && date <= end;
-        }).length;
-        
-        return {
-            impressions: campaignsActive * Math.floor(Math.random() * 500 + 100),
-            clicks: campaignsActive * Math.floor(Math.random() * 50 + 10)
-        };
-    }
-    
     // ============================================
-    // GESTION DU MODAL
+    // MODAL & FORM
     // ============================================
     
     function openModal(campaignId = null) {
@@ -450,48 +385,35 @@ const SupplierCampaigns = (function() {
         const form = document.querySelector(CONFIG.selectors.form);
         
         if (!modal || !form) {
-            console.error('[Campaigns] Modal or form not found. Selectors:', CONFIG.selectors);
-            showNotification('Erreur: Modal non trouvé dans le DOM', 'error');
+            console.error('Modal or form not found');
             return;
         }
         
-        // Reset form
         form.reset();
         state.currentEditId = campaignId;
         state.selectedProduct = null;
         state.uploadedCreative = null;
         
-        // Reset UI
-        document.querySelectorAll('.product-card').forEach(card => {
-            card.classList.remove('ring-2', 'ring-blue-500');
-        });
+        // Reset selection visuelle
+        document.querySelectorAll('.product-card').forEach(c => c.classList.remove('ring-2', 'ring-blue-500'));
         
-        // Hide custom link section (SUPPRIMÉ selon demande)
-        const customLinkSection = document.getElementById('custom-link-section');
-        if (customLinkSection) {
-            customLinkSection.style.display = 'none';
-        }
+        // Cacher section custom link (demandé)
+        const customLink = document.getElementById('custom-link-section');
+        if (customLink) customLink.style.display = 'none';
         
         if (campaignId) {
-            // Mode édition
             const campaign = state.campaigns.find(c => c.id === campaignId);
-            if (campaign) {
-                fillFormWithCampaign(campaign);
-            } else {
-                log('Campaign not found in state:', campaignId);
-            }
+            if (campaign) fillForm(campaign);
         }
         
-        // Afficher le modal
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         
-        // Animation
         setTimeout(() => {
-            const modalContent = modal.querySelector('.modal-content');
-            if (modalContent) {
-                modalContent.classList.remove('scale-95', 'opacity-0');
-                modalContent.classList.add('scale-100', 'opacity-100');
+            const content = modal.querySelector('.modal-content');
+            if (content) {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
             }
         }, 10);
     }
@@ -500,10 +422,10 @@ const SupplierCampaigns = (function() {
         const modal = document.querySelector(CONFIG.selectors.modal);
         if (!modal) return;
         
-        const modalContent = modal.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.classList.remove('scale-100', 'opacity-100');
-            modalContent.classList.add('scale-95', 'opacity-0');
+        const content = modal.querySelector('.modal-content');
+        if (content) {
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
         }
         
         setTimeout(() => {
@@ -512,73 +434,141 @@ const SupplierCampaigns = (function() {
         }, 200);
     }
     
-    function fillFormWithCampaign(campaign) {
+    function fillForm(campaign) {
         const form = document.querySelector(CONFIG.selectors.form);
         if (!form) return;
         
-        const fields = {
-            'name': campaign.name,
-            'budget': campaign.budget,
-            'daily_budget': campaign.daily_budget,
-            'start_date': campaign.start_date ? campaign.start_date.split('T')[0] : '',
-            'end_date': campaign.end_date ? campaign.end_date.split('T')[0] : ''
-        };
-        
-        Object.entries(fields).forEach(([name, value]) => {
-            const input = form.querySelector(`[name="${name}"]`);
-            if (input && value !== undefined && value !== null) {
-                input.value = value;
-            }
+        const fields = ['name', 'budget', 'daily_budget'];
+        fields.forEach(f => {
+            const input = form.querySelector(`[name="${f}"]`);
+            if (input && campaign[f] !== undefined) input.value = campaign[f];
         });
         
-        // Sélectionner le produit
-        if (campaign.product_id) {
-            selectProduct(campaign.product_id);
+        if (campaign.start_date) {
+            const input = form.querySelector('[name="start_date"]');
+            if (input) input.value = campaign.start_date.split('T')[0];
         }
+        if (campaign.end_date) {
+            const input = form.querySelector('[name="end_date"]');
+            if (input) input.value = campaign.end_date.split('T')[0];
+        }
+        
+        if (campaign.product_id) selectProduct(campaign.product_id);
         
         // Targeting
         if (campaign.targeting) {
-            const targeting = typeof campaign.targeting === 'string' 
-                ? JSON.parse(campaign.targeting) 
-                : campaign.targeting;
-            
-            if (targeting.countries && form.querySelector('[name="targeting_countries"]')) {
-                form.querySelector('[name="targeting_countries"]').value = targeting.countries.join(',');
-            }
-            if (targeting.interests && form.querySelector('[name="targeting_interests"]')) {
-                form.querySelector('[name="targeting_interests"]').value = targeting.interests.join(',');
-            }
-            if (targeting.age_min && form.querySelector('[name="age_min"]')) {
-                form.querySelector('[name="age_min"]').value = targeting.age_min;
-            }
-            if (targeting.age_max && form.querySelector('[name="age_max"]')) {
-                form.querySelector('[name="age_max"]').value = targeting.age_max;
-            }
+            const t = typeof campaign.targeting === 'string' ? JSON.parse(campaign.targeting) : campaign.targeting;
+            if (t.countries) form.querySelector('[name="targeting_countries"]').value = t.countries.join(',');
+            if (t.interests) form.querySelector('[name="targeting_interests"]').value = t.interests.join(',');
+            if (t.age_min) form.querySelector('[name="age_min"]').value = t.age_min;
+            if (t.age_max) form.querySelector('[name="age_max"]').value = t.age_max;
         }
     }
     
     function selectProduct(productId) {
         state.selectedProduct = productId;
-        
-        // UI feedback
         document.querySelectorAll('.product-card').forEach(card => {
-            card.classList.remove('ring-2', 'ring-blue-500');
-            if (card.dataset.productId === productId) {
-                card.classList.add('ring-2', 'ring-blue-500');
-            }
+            card.classList.toggle('ring-2', card.dataset.productId === productId);
+            card.classList.toggle('ring-blue-500', card.dataset.productId === productId);
         });
-        
         log(`Product selected: ${productId}`);
     }
     
     // ============================================
-    // SAUVEGARDE
+    // UPLOAD HANDLING
+    // ============================================
+    
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        log('File selected:', file.name, file.type, file.size);
+        
+        // Validation
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
+        if (!allowedTypes.includes(file.type)) {
+            showNotification('Format non supporté. Utilisez: JPG, PNG, GIF, WEBP, MP4, WEBM', 'error');
+            return;
+        }
+        
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        if (file.size > maxSize) {
+            showNotification('Fichier trop volumineux (max 50MB)', 'error');
+            return;
+        }
+        
+        // Preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            state.uploadedCreative = {
+                file: file,
+                preview: e.target.result,
+                type: file.type.startsWith('video/') ? 'video' : 'image'
+            };
+            updatePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    function updatePreview() {
+        const container = document.getElementById('creative-preview');
+        if (!container || !state.uploadedCreative) return;
+        
+        const { preview, type } = state.uploadedCreative;
+        
+        if (type === 'video') {
+            container.innerHTML = `<video src="${preview}" controls class="max-h-48 rounded-lg"></video>`;
+        } else {
+            container.innerHTML = `<img src="${preview}" class="max-h-48 rounded-lg object-cover">`;
+        }
+    }
+    
+    async function uploadCreative() {
+        if (!state.uploadedCreative) return null;
+        
+        const { file } = state.uploadedCreative;
+        const isVideo = file.type.startsWith('video/');
+        const endpoint = isVideo ? '/supplier/upload-video' : '/supplier/upload-image';
+        
+        try {
+            // Essayer BrandiaAPI.upload d'abord
+            if (window.BrandiaAPI && typeof window.BrandiaAPI.upload === 'function') {
+                log('Using BrandiaAPI.upload');
+                const result = await window.BrandiaAPI.upload(endpoint.replace('/supplier', ''), file);
+                return result.data?.url || result.url;
+            }
+            
+            // Fallback: fetch avec FormData
+            log('Using direct fetch upload');
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = localStorage.getItem('brandia_token') || sessionStorage.getItem('brandia_token');
+            const response = await fetch(`${CONFIG.apiBaseURL}${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: formData
+            });
+            
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message);
+            
+            return result.data?.url || result.url;
+        } catch (error) {
+            console.error('Upload error:', error);
+            showNotification('Erreur upload: ' + error.message, 'error');
+            return null;
+        }
+    }
+    
+    // ============================================
+    // SAVE CAMPAIGN
     // ============================================
     
     async function saveCampaign(event) {
         event.preventDefault();
-        
-        log('========== SAVE STARTED ==========');
         
         if (!state.selectedProduct) {
             showNotification('Veuillez sélectionner un produit', 'error');
@@ -588,7 +578,16 @@ const SupplierCampaigns = (function() {
         const form = event.target;
         const formData = new FormData(form);
         
-        // Construction des données
+        // Upload creative si présent
+        let creativeUrl = null;
+        if (state.uploadedCreative) {
+            showNotification('Upload en cours...', 'info');
+            creativeUrl = await uploadCreative();
+            if (!creativeUrl && state.uploadedCreative) {
+                showNotification('Échec de l\'upload, mais campagne sera créée sans média', 'warning');
+            }
+        }
+        
         const campaignData = {
             name: formData.get('name'),
             product_id: state.selectedProduct,
@@ -606,7 +605,8 @@ const SupplierCampaigns = (function() {
             ad_creative: {
                 headline: formData.get('ad_headline') || '',
                 description: formData.get('ad_description') || '',
-                call_to_action: formData.get('call_to_action') || 'Acheter maintenant'
+                call_to_action: formData.get('call_to_action') || 'Acheter maintenant',
+                media_url: creativeUrl
             }
         };
         
@@ -616,68 +616,57 @@ const SupplierCampaigns = (function() {
             return;
         }
         
-        // Vérifier les dates
         if (new Date(campaignData.start_date) >= new Date(campaignData.end_date)) {
             showNotification('La date de fin doit être après la date de début', 'error');
             return;
         }
         
-        log('Saving:', campaignData);
-        
         try {
             let response;
-            
             if (state.currentEditId) {
-                // Update
-                response = await apiCall('put', `/supplier/campaigns/${state.currentEditId}`, campaignData);
+                response = await apiRequest('put', `/supplier/campaigns/${state.currentEditId}`, campaignData);
             } else {
-                // Create
-                response = await apiCall('post', '/supplier/campaigns', campaignData);
+                response = await apiRequest('post', '/supplier/campaigns', campaignData);
             }
             
-            log('API Response:', response);
-            
-            if (response && response.success) {
-                showNotification(
-                    state.currentEditId ? 'Campagne mise à jour avec succès' : 'Campagne créée avec succès',
-                    'success'
-                );
+            if (response.success) {
+                showNotification(state.currentEditId ? 'Campagne mise à jour' : 'Campagne créée', 'success');
                 closeModal();
                 await loadCampaigns();
             } else {
-                showNotification(response?.message || 'Erreur lors de la sauvegarde', 'error');
+                throw new Error(response.message);
             }
         } catch (error) {
-            console.error('[Campaigns] Save error:', error);
-            showNotification('Erreur lors de la sauvegarde: ' + error.message, 'error');
+            console.error('Save error:', error);
+            showNotification('Erreur: ' + error.message, 'error');
         }
     }
     
     // ============================================
-    // ACTIONS SUR LES CAMPAGNES
+    // ACTIONS
     // ============================================
     
     async function pauseCampaign(id) {
         try {
-            const response = await apiCall('put', `/supplier/campaigns/${id}`, { status: 'paused' });
-            if (response && response.success) {
+            const response = await apiRequest('put', `/supplier/campaigns/${id}`, { status: 'paused' });
+            if (response.success) {
                 showNotification('Campagne mise en pause', 'success');
                 await loadCampaigns();
             }
         } catch (error) {
-            showNotification('Erreur lors de la mise en pause: ' + error.message, 'error');
+            showNotification('Erreur: ' + error.message, 'error');
         }
     }
     
     async function resumeCampaign(id) {
         try {
-            const response = await apiCall('put', `/supplier/campaigns/${id}`, { status: 'active' });
-            if (response && response.success) {
+            const response = await apiRequest('put', `/supplier/campaigns/${id}`, { status: 'active' });
+            if (response.success) {
                 showNotification('Campagne reprise', 'success');
                 await loadCampaigns();
             }
         } catch (error) {
-            showNotification('Erreur lors de la reprise: ' + error.message, 'error');
+            showNotification('Erreur: ' + error.message, 'error');
         }
     }
     
@@ -685,13 +674,13 @@ const SupplierCampaigns = (function() {
         if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
         
         try {
-            const response = await apiCall('delete', `/supplier/campaigns/${id}`);
-            if (response && response.success) {
-                showNotification('Campagne supprimée avec succès', 'success');
+            const response = await apiRequest('delete', `/supplier/campaigns/${id}`);
+            if (response.success) {
+                showNotification('Campagne supprimée', 'success');
                 await loadCampaigns();
             }
         } catch (error) {
-            showNotification('Erreur lors de la suppression: ' + error.message, 'error');
+            showNotification('Erreur: ' + error.message, 'error');
         }
     }
     
@@ -700,70 +689,15 @@ const SupplierCampaigns = (function() {
     }
     
     // ============================================
-    // GESTION DES FICHIERS
-    // ============================================
-    
-    function handleFileSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        log('File selected:', file.name);
-        
-        // Validation
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4'];
-        if (!allowedTypes.includes(file.type)) {
-            showNotification('Format de fichier non supporté (JPEG, PNG, GIF, MP4 uniquement)', 'error');
-            return;
-        }
-        
-        const maxSize = 10 * 1024 * 1024; // 10MB
-        if (file.size > maxSize) {
-            showNotification('Fichier trop volumineux (max 10MB)', 'error');
-            return;
-        }
-        
-        // Preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            state.uploadedCreative = {
-                file: file,
-                preview: e.target.result,
-                type: file.type.startsWith('video/') ? 'video' : 'image'
-            };
-            
-            updateCreativePreview();
-        };
-        reader.onerror = () => {
-            showNotification('Erreur lors de la lecture du fichier', 'error');
-        };
-        reader.readAsDataURL(file);
-    }
-    
-    function updateCreativePreview() {
-        const previewContainer = document.getElementById('creative-preview');
-        if (!previewContainer || !state.uploadedCreative) return;
-        
-        const { preview, type } = state.uploadedCreative;
-        
-        if (type === 'video') {
-            previewContainer.innerHTML = `<video src="${preview}" controls class="max-h-48 rounded-lg"></video>`;
-        } else {
-            previewContainer.innerHTML = `<img src="${preview}" class="max-h-48 rounded-lg object-cover" alt="Preview">`;
-        }
-    }
-    
-    // ============================================
     // NOTIFICATIONS
     // ============================================
     
     function showNotification(message, type = 'info') {
-        // Utiliser la fonction globale si disponible
-        if (typeof window.showNotification === 'function') {
+        if (window.showNotification) {
             window.showNotification(message, type);
             return;
         }
         
-        // Fallback simple
         const colors = {
             success: 'bg-green-500',
             error: 'bg-red-500',
@@ -771,63 +705,39 @@ const SupplierCampaigns = (function() {
             info: 'bg-blue-500'
         };
         
-        const notification = document.createElement('div');
-        notification.className = `fixed bottom-4 right-4 ${colors[type] || colors.info} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
-        notification.style.maxWidth = '400px';
-        notification.innerHTML = `
-            <div class="flex items-center">
-                <span class="mr-2">${type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️'}</span>
-                <span>${message}</span>
-            </div>
-        `;
-        
-        document.body.appendChild(notification);
+        const notif = document.createElement('div');
+        notif.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+        notif.textContent = message;
+        document.body.appendChild(notif);
         
         setTimeout(() => {
-            notification.classList.add('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
+            notif.remove();
         }, 4000);
     }
     
     // ============================================
-    // EVENT BINDING
+    // EVENTS
     // ============================================
     
     function bindEvents() {
-        // Form submit
         const form = document.querySelector(CONFIG.selectors.form);
-        if (form) {
-            form.addEventListener('submit', saveCampaign);
-            log('Form submit bound');
-        } else {
-            log('Form not found:', CONFIG.selectors.form);
-        }
+        if (form) form.addEventListener('submit', saveCampaign);
         
-        // File input
         const fileInput = document.getElementById('creative-file');
-        if (fileInput) {
-            fileInput.addEventListener('change', handleFileSelect);
-            log('File input bound');
-        }
+        if (fileInput) fileInput.addEventListener('change', handleFileSelect);
         
-        // Close modal on backdrop click
         const modal = document.querySelector(CONFIG.selectors.modal);
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closeModal();
             });
-            log('Modal backdrop click bound');
         }
         
         log('Events bound');
     }
     
     // ============================================
-    // API EXPOSED
+    // PUBLIC API
     // ============================================
     
     return {
@@ -840,33 +750,20 @@ const SupplierCampaigns = (function() {
         deleteCampaign,
         editCampaign,
         saveCampaign,
-        handleFileSelect,
-        // Exposer pour debug
-        _apiCall: apiCall,
-        _state: () => state
+        handleFileSelect
     };
     
 })();
 
-// ============================================
-// AUTO-INIT
-// ============================================
-
+// Auto-init
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SupplierCampaigns;
 } else {
     window.SupplierCampaigns = SupplierCampaigns;
     
-    // Auto-initialize avec délai pour s'assurer que BrandiaAPI est chargé
-    const doInit = () => {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(SupplierCampaigns.init, 200);
-            });
-        } else {
-            setTimeout(SupplierCampaigns.init, 200);
-        }
-    };
-    
-    doInit();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(SupplierCampaigns.init, 100));
+    } else {
+        setTimeout(SupplierCampaigns.init, 100);
+    }
 }
