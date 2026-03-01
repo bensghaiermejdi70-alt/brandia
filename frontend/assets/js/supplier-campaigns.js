@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER-CAMPAIGNS.JS - v9.2 FIXED
-// Correction: BrandiaAPI global check, Modal, round-robin, suppression custom link
+// SUPPLIER-CAMPAIGNS.JS - v9.3 FIXED
+// Correction: BrandiaAPI global access, Modal, round-robin, suppression custom link
 // ============================================
 
 const SupplierCampaigns = (function() {
@@ -11,7 +11,7 @@ const SupplierCampaigns = (function() {
     // ============================================
     
     const CONFIG = {
-        version: '9.2',
+        version: '9.3',
         debug: true,
         selectors: {
             container: '#campaigns-section',
@@ -61,26 +61,34 @@ const SupplierCampaigns = (function() {
         return new Date(dateStr).toLocaleDateString('fr-FR');
     };
     
-    // Helper pour appeler l'API avec vérification
+    // Helper pour appeler l'API - CORRECTION: utiliser window.BrandiaAPI directement
     const apiCall = async (method, endpoint, data = null) => {
-        // Attendre que BrandiaAPI soit disponible (max 5 secondes)
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        while (typeof window.BrandiaAPI === 'undefined' && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
+        // CORRECTION: Vérifier que BrandiaAPI existe sur window
+        if (typeof window === 'undefined' || !window.BrandiaAPI) {
+            throw new Error('BrandiaAPI non disponible - window.BrandiaAPI est undefined');
         }
         
-        if (typeof window.BrandiaAPI === 'undefined') {
-            throw new Error('BrandiaAPI non disponible');
+        const api = window.BrandiaAPI;
+        
+        // CORRECTION: Vérifier que la méthode existe
+        if (!api[method]) {
+            // Essayer de trouver la méthode avec différentes casse
+            const methodLower = method.toLowerCase();
+            const availableMethods = Object.keys(api).filter(k => typeof api[k] === 'function');
+            
+            log(`Méthode ${method} non trouquée. Méthodes disponibles:`, availableMethods);
+            
+            // Essayer get, Get, GET
+            const foundMethod = availableMethods.find(m => m.toLowerCase() === methodLower);
+            if (foundMethod) {
+                log(`Utilisation de la méthode alternative: ${foundMethod}`);
+                return await api[foundMethod](endpoint, data);
+            }
+            
+            throw new Error(`BrandiaAPI.${method} n'existe pas. Méthodes: ${availableMethods.join(', ')}`);
         }
         
-        if (!window.BrandiaAPI[method]) {
-            throw new Error(`BrandiaAPI.${method} n'existe pas`);
-        }
-        
-        return await window.BrandiaAPI[method](endpoint, data);
+        return await api[method](endpoint, data);
     };
     
     // ============================================
@@ -90,12 +98,15 @@ const SupplierCampaigns = (function() {
     function init() {
         log(`Initializing v${CONFIG.version}...`);
         
-        // Vérifier que BrandiaAPI existe avant de continuer
-        if (typeof window.BrandiaAPI === 'undefined') {
-            log('BrandiaAPI not loaded yet, waiting...');
+        // CORRECTION: Vérifier BrandiaAPI avec retry
+        if (typeof window === 'undefined' || !window.BrandiaAPI) {
+            log('BrandiaAPI not loaded yet, retrying in 500ms...');
             setTimeout(init, 500);
             return;
         }
+        
+        // CORRECTION: Log des méthodes disponibles pour debug
+        log('BrandiaAPI disponible, méthodes:', Object.keys(window.BrandiaAPI).filter(k => typeof window.BrandiaAPI[k] === 'function'));
         
         loadProducts();
         loadCampaigns();
@@ -167,10 +178,16 @@ const SupplierCampaigns = (function() {
                 state.products = response.data || [];
                 renderProductsGrid();
                 log(`Loaded: ${state.products.length} products`);
+            } else {
+                log('API returned error:', response.message);
+                state.products = [];
+                renderProductsGrid();
             }
         } catch (error) {
             console.error('[Campaigns] Error loading products:', error);
-            showNotification('Erreur lors du chargement des produits', 'error');
+            showNotification('Erreur lors du chargement des produits: ' + error.message, 'error');
+            state.products = [];
+            renderProductsGrid();
         }
     }
     
@@ -184,10 +201,16 @@ const SupplierCampaigns = (function() {
                 renderCampaignsList();
                 updateChart();
                 log(`Loaded: ${state.campaigns.length} campaigns`);
+            } else {
+                log('API returned error:', response.message);
+                state.campaigns = [];
+                renderCampaignsList();
             }
         } catch (error) {
             console.error('[Campaigns] Error loading campaigns:', error);
-            showNotification('Erreur lors du chargement des campagnes', 'error');
+            showNotification('Erreur lors du chargement des campagnes: ' + error.message, 'error');
+            state.campaigns = [];
+            renderCampaignsList();
         }
     }
     
@@ -204,7 +227,7 @@ const SupplierCampaigns = (function() {
                 <div class="col-span-full text-center py-8 text-gray-500">
                     <i class="fas fa-box-open text-4xl mb-4"></i>
                     <p>Aucun produit disponible</p>
-                    <button onclick="SupplierProducts.openModal()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <button onclick="if(window.SupplierProducts) window.SupplierProducts.openModal()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Ajouter un produit
                     </button>
                 </div>
@@ -218,7 +241,7 @@ const SupplierCampaigns = (function() {
                 <div class="product-card bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                      onclick="SupplierCampaigns.selectProduct('${product.id}')"
                      data-product-id="${product.id}">
-                    <img src="${image}" alt="${product.name}" class="w-full h-32 object-cover">
+                    <img src="${image}" alt="${product.name}" class="w-full h-32 object-cover" onerror="this.src='/assets/images/placeholder.png'">
                     <div class="p-3">
                         <h4 class="font-semibold text-sm truncate">${product.name}</h4>
                         <p class="text-blue-600 font-bold">${formatCurrency(product.price)}</p>
@@ -299,7 +322,7 @@ const SupplierCampaigns = (function() {
                     <div class="mb-4">
                         <div class="flex justify-between text-sm mb-1">
                             <span>Budget utilisé</span>
-                            <span>${progress.toFixed(1)}% (${formatCurrency(campaign.spent)} / ${formatCurrency(campaign.budget)})</span>
+                            <span>${progress.toFixed(1)}% (${formatCurrency(campaign.spent || 0)} / ${formatCurrency(campaign.budget || 0)})</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2">
                             <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: ${Math.min(progress, 100)}%"></div>
@@ -330,44 +353,51 @@ const SupplierCampaigns = (function() {
     
     function initChart() {
         const canvas = document.querySelector(CONFIG.selectors.chartCanvas);
-        if (!canvas || typeof Chart === 'undefined') return;
+        if (!canvas || typeof Chart === 'undefined') {
+            log('Chart.js not available');
+            return;
+        }
         
-        const ctx = canvas.getContext('2d');
-        state.chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Impressions',
-                    data: [],
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4
-                }, {
-                    label: 'Clics',
-                    data: [],
-                    borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
+        try {
+            const ctx = canvas.getContext('2d');
+            state.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Impressions',
+                        data: [],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Clics',
+                        data: [],
+                        borderColor: 'rgb(16, 185, 129)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
-        
-        log('Chart initialized');
+            });
+            
+            log('Chart initialized');
+        } catch (e) {
+            console.error('[Campaigns] Chart init error:', e);
+        }
     }
     
     function updateChart() {
@@ -420,7 +450,8 @@ const SupplierCampaigns = (function() {
         const form = document.querySelector(CONFIG.selectors.form);
         
         if (!modal || !form) {
-            console.error('[Campaigns] Modal or form not found');
+            console.error('[Campaigns] Modal or form not found. Selectors:', CONFIG.selectors);
+            showNotification('Erreur: Modal non trouvé dans le DOM', 'error');
             return;
         }
         
@@ -446,6 +477,8 @@ const SupplierCampaigns = (function() {
             const campaign = state.campaigns.find(c => c.id === campaignId);
             if (campaign) {
                 fillFormWithCampaign(campaign);
+            } else {
+                log('Campaign not found in state:', campaignId);
             }
         }
         
@@ -483,11 +516,20 @@ const SupplierCampaigns = (function() {
         const form = document.querySelector(CONFIG.selectors.form);
         if (!form) return;
         
-        form.querySelector('[name="name"]').value = campaign.name || '';
-        form.querySelector('[name="budget"]').value = campaign.budget || '';
-        form.querySelector('[name="daily_budget"]').value = campaign.daily_budget || '';
-        form.querySelector('[name="start_date"]').value = campaign.start_date ? campaign.start_date.split('T')[0] : '';
-        form.querySelector('[name="end_date"]').value = campaign.end_date ? campaign.end_date.split('T')[0] : '';
+        const fields = {
+            'name': campaign.name,
+            'budget': campaign.budget,
+            'daily_budget': campaign.daily_budget,
+            'start_date': campaign.start_date ? campaign.start_date.split('T')[0] : '',
+            'end_date': campaign.end_date ? campaign.end_date.split('T')[0] : ''
+        };
+        
+        Object.entries(fields).forEach(([name, value]) => {
+            const input = form.querySelector(`[name="${name}"]`);
+            if (input && value !== undefined && value !== null) {
+                input.value = value;
+            }
+        });
         
         // Sélectionner le produit
         if (campaign.product_id) {
@@ -500,16 +542,16 @@ const SupplierCampaigns = (function() {
                 ? JSON.parse(campaign.targeting) 
                 : campaign.targeting;
             
-            if (targeting.countries) {
+            if (targeting.countries && form.querySelector('[name="targeting_countries"]')) {
                 form.querySelector('[name="targeting_countries"]').value = targeting.countries.join(',');
             }
-            if (targeting.interests) {
+            if (targeting.interests && form.querySelector('[name="targeting_interests"]')) {
                 form.querySelector('[name="targeting_interests"]').value = targeting.interests.join(',');
             }
-            if (targeting.age_min) {
+            if (targeting.age_min && form.querySelector('[name="age_min"]')) {
                 form.querySelector('[name="age_min"]').value = targeting.age_min;
             }
-            if (targeting.age_max) {
+            if (targeting.age_max && form.querySelector('[name="age_max"]')) {
                 form.querySelector('[name="age_max"]').value = targeting.age_max;
             }
         }
@@ -530,7 +572,7 @@ const SupplierCampaigns = (function() {
     }
     
     // ============================================
-    // SAUVEGARDE - CORRECTION PRINCIPALE
+    // SAUVEGARDE
     // ============================================
     
     async function saveCampaign(event) {
@@ -595,7 +637,7 @@ const SupplierCampaigns = (function() {
             
             log('API Response:', response);
             
-            if (response.success) {
+            if (response && response.success) {
                 showNotification(
                     state.currentEditId ? 'Campagne mise à jour avec succès' : 'Campagne créée avec succès',
                     'success'
@@ -603,11 +645,11 @@ const SupplierCampaigns = (function() {
                 closeModal();
                 await loadCampaigns();
             } else {
-                showNotification(response.message || 'Erreur lors de la sauvegarde', 'error');
+                showNotification(response?.message || 'Erreur lors de la sauvegarde', 'error');
             }
         } catch (error) {
             console.error('[Campaigns] Save error:', error);
-            showNotification('Erreur lors de la sauvegarde de la campagne', 'error');
+            showNotification('Erreur lors de la sauvegarde: ' + error.message, 'error');
         }
     }
     
@@ -618,24 +660,24 @@ const SupplierCampaigns = (function() {
     async function pauseCampaign(id) {
         try {
             const response = await apiCall('put', `/supplier/campaigns/${id}`, { status: 'paused' });
-            if (response.success) {
+            if (response && response.success) {
                 showNotification('Campagne mise en pause', 'success');
                 await loadCampaigns();
             }
         } catch (error) {
-            showNotification('Erreur lors de la mise en pause', 'error');
+            showNotification('Erreur lors de la mise en pause: ' + error.message, 'error');
         }
     }
     
     async function resumeCampaign(id) {
         try {
             const response = await apiCall('put', `/supplier/campaigns/${id}`, { status: 'active' });
-            if (response.success) {
+            if (response && response.success) {
                 showNotification('Campagne reprise', 'success');
                 await loadCampaigns();
             }
         } catch (error) {
-            showNotification('Erreur lors de la reprise', 'error');
+            showNotification('Erreur lors de la reprise: ' + error.message, 'error');
         }
     }
     
@@ -644,12 +686,12 @@ const SupplierCampaigns = (function() {
         
         try {
             const response = await apiCall('delete', `/supplier/campaigns/${id}`);
-            if (response.success) {
+            if (response && response.success) {
                 showNotification('Campagne supprimée avec succès', 'success');
                 await loadCampaigns();
             }
         } catch (error) {
-            showNotification('Erreur lors de la suppression', 'error');
+            showNotification('Erreur lors de la suppression: ' + error.message, 'error');
         }
     }
     
@@ -670,7 +712,7 @@ const SupplierCampaigns = (function() {
         // Validation
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4'];
         if (!allowedTypes.includes(file.type)) {
-            showNotification('Format de fichier non supporté', 'error');
+            showNotification('Format de fichier non supporté (JPEG, PNG, GIF, MP4 uniquement)', 'error');
             return;
         }
         
@@ -691,6 +733,9 @@ const SupplierCampaigns = (function() {
             
             updateCreativePreview();
         };
+        reader.onerror = () => {
+            showNotification('Erreur lors de la lecture du fichier', 'error');
+        };
         reader.readAsDataURL(file);
     }
     
@@ -703,7 +748,7 @@ const SupplierCampaigns = (function() {
         if (type === 'video') {
             previewContainer.innerHTML = `<video src="${preview}" controls class="max-h-48 rounded-lg"></video>`;
         } else {
-            previewContainer.innerHTML = `<img src="${preview}" class="max-h-48 rounded-lg object-cover">`;
+            previewContainer.innerHTML = `<img src="${preview}" class="max-h-48 rounded-lg object-cover" alt="Preview">`;
         }
     }
     
@@ -718,7 +763,7 @@ const SupplierCampaigns = (function() {
             return;
         }
         
-        // Fallback
+        // Fallback simple
         const colors = {
             success: 'bg-green-500',
             error: 'bg-red-500',
@@ -727,15 +772,25 @@ const SupplierCampaigns = (function() {
         };
         
         const notification = document.createElement('div');
-        notification.className = `fixed bottom-4 right-4 ${colors[type] || colors.info} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-0`;
-        notification.textContent = message;
+        notification.className = `fixed bottom-4 right-4 ${colors[type] || colors.info} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+        notification.style.maxWidth = '400px';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <span class="mr-2">${type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️'}</span>
+                <span>${message}</span>
+            </div>
+        `;
         
         document.body.appendChild(notification);
         
         setTimeout(() => {
             notification.classList.add('translate-y-20', 'opacity-0');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 4000);
     }
     
     // ============================================
@@ -747,12 +802,16 @@ const SupplierCampaigns = (function() {
         const form = document.querySelector(CONFIG.selectors.form);
         if (form) {
             form.addEventListener('submit', saveCampaign);
+            log('Form submit bound');
+        } else {
+            log('Form not found:', CONFIG.selectors.form);
         }
         
         // File input
         const fileInput = document.getElementById('creative-file');
         if (fileInput) {
             fileInput.addEventListener('change', handleFileSelect);
+            log('File input bound');
         }
         
         // Close modal on backdrop click
@@ -761,6 +820,7 @@ const SupplierCampaigns = (function() {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closeModal();
             });
+            log('Modal backdrop click bound');
         }
         
         log('Events bound');
@@ -779,8 +839,11 @@ const SupplierCampaigns = (function() {
         resumeCampaign,
         deleteCampaign,
         editCampaign,
-        saveCampaign, // Exposé pour le form onsubmit
-        handleFileSelect
+        saveCampaign,
+        handleFileSelect,
+        // Exposer pour debug
+        _apiCall: apiCall,
+        _state: () => state
     };
     
 })();
@@ -794,14 +857,16 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
     window.SupplierCampaigns = SupplierCampaigns;
     
-    // Auto-initialize si le DOM est prêt
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            // Delay to ensure BrandiaAPI is loaded
-            setTimeout(SupplierCampaigns.init, 100);
-        });
-    } else {
-        // Delay to ensure BrandiaAPI is loaded
-        setTimeout(SupplierCampaigns.init, 100);
-    }
+    // Auto-initialize avec délai pour s'assurer que BrandiaAPI est chargé
+    const doInit = () => {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(SupplierCampaigns.init, 200);
+            });
+        } else {
+            setTimeout(SupplierCampaigns.init, 200);
+        }
+    };
+    
+    doInit();
 }
