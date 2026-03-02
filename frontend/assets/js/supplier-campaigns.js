@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v8.5 FIX
-// Corrections: Gestion erreur 500, affichage message si table inexistante
+// SUPPLIER CAMPAIGNS MODULE - v8.6 FIX
+// Correction: Erreur de syntaxe ligne 369, fonction loadProducts mal formée
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -35,8 +35,8 @@ window.SupplierCampaigns = {
     ctaType: 'shop',
     isLoading: false,
     campaignLimit: { current: 0, max: 5, can_create: true },
-    campaignsAvailable: true, // 🔥 Nouveau: indique si le module est disponible
-    campaignsMessage: null // 🔥 Nouveau: message si indisponible
+    campaignsAvailable: true,
+    campaignsMessage: null
   },
   
   MAX_CAMPAIGNS: 5,
@@ -48,7 +48,7 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v8.5...');
+    console.log('[Campaigns] Initializing v8.6...');
     try {
       this.state.campaignLimit = { 
         current: 0, 
@@ -82,6 +82,7 @@ window.SupplierCampaigns = {
     }
   },
 
+  // 🔥 CORRECTION: Fonction complète avec async
   loadProducts: async function() {
     try {
       console.log('[Campaigns] Loading products...');
@@ -112,7 +113,6 @@ window.SupplierCampaigns = {
       const response = await BrandiaAPI.Supplier.getCampaigns();
       
       if (response?.success) {
-        // 🔥 Gestion du message si module en configuration
         if (response.message && response.data?.length === 0) {
           this.state.campaignsAvailable = false;
           this.state.campaignsMessage = response.message;
@@ -129,7 +129,6 @@ window.SupplierCampaigns = {
         if (this.state.chart) this.updateChart();
         this.updateCampaignCounter();
       } else {
-        // 🔥 Si erreur 500 ou autre, afficher message d'indisponibilité
         console.error('[Campaigns] API Error:', response?.message || 'Unknown error');
         this.state.campaignsAvailable = false;
         this.state.campaignsMessage = response?.message || 'Module temporairement indisponible';
@@ -153,7 +152,6 @@ window.SupplierCampaigns = {
     const container = document.getElementById('campaigns-list');
     if (!container) return;
     
-    // 🔥 Afficher message si module non disponible
     if (!this.state.campaignsAvailable) {
       container.innerHTML = `
         <div class="p-8 text-center">
@@ -190,7 +188,6 @@ window.SupplierCampaigns = {
       const mediaUrl = c.media_url || c.ad_creative?.image_url || this.FALLBACK_IMAGE;
       const mediaType = c.media_type || c.ad_creative?.type || 'image';
       
-      // Gestion du nom du produit
       let targetText = 'Tous les produits';
       if (c.product_name) {
         targetText = c.product_name;
@@ -344,7 +341,6 @@ window.SupplierCampaigns = {
   openModal: async function(campaignId = null) {
     console.log('[Campaigns] Opening modal, editing:', campaignId);
     
-    // 🔥 Vérifier si le module est disponible
     if (!this.state.campaignsAvailable && !campaignId) {
       this.showToast('Module campagnes temporairement indisponible', 'warning');
       return;
@@ -366,7 +362,7 @@ window.SupplierCampaigns = {
     const modal = document.getElementById('campaign-modal');
     if (!modal) return;
     
-    if (this.state.products.length === 0) await this    loadProducts();
+    if (this.state.products.length === 0) await this.loadProducts();
     
     const form = document.getElementById('campaign-form');
     if (form) form.reset();
@@ -562,7 +558,6 @@ window.SupplierCampaigns = {
     if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
     if (ctaLinkField && campaign.cta_link) ctaLinkField.value = campaign.cta_link;
     
-    // Gestion target_products
     if (campaign.target_products && Array.isArray(campaign.target_products) && campaign.target_products.length > 0) {
       this.state.targetMode = 'selected';
       this.state.selectedProducts = [...campaign.target_products];
@@ -570,7 +565,6 @@ window.SupplierCampaigns = {
       if (radio) radio.checked = true;
       this.toggleTargetMode('selected');
     } else if (campaign.product_id) {
-      // Si product_id existe (ancien format), le convertir en target_products
       this.state.targetMode = 'selected';
       this.state.selectedProducts = [campaign.product_id];
       const radio = document.querySelector('input[name="target_mode"][value="selected"]');
@@ -785,7 +779,6 @@ window.SupplierCampaigns = {
     const file = this.state.uploadedMedia.file;
     const type = this.state.uploadedMedia.type;
     
-    // Utiliser 'media' comme nom de champ pour correspondre au middleware multer
     const formData = new FormData();
     formData.append('media', file);
     
@@ -827,7 +820,6 @@ window.SupplierCampaigns = {
       const ctaText = document.getElementById('camp-cta-text')?.value?.trim() || "Voir l'offre";
       const ctaLink = document.getElementById('camp-cta-link')?.value?.trim();
       
-      // Validation
       if (!name) {
         this.showToast('Le nom de la campagne est requis', 'error');
         document.getElementById('camp-name')?.focus();
@@ -852,7 +844,6 @@ window.SupplierCampaigns = {
         return;
       }
       
-      // Upload média
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
       
@@ -877,20 +868,16 @@ window.SupplierCampaigns = {
         return;
       }
       
-      // Gestion correcte du product_id
       let productId = null;
       if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
-        // Prendre le premier produit sélectionné
         productId = this.state.selectedProducts[0];
       }
       
-      // Si pas de produit sélectionné, on ne peut pas créer la campagne
       if (!productId && !this.state.editingCampaignId) {
         this.showToast('Veuillez sélectionner un produit cible', 'error');
         return;
       }
       
-      // Construction du ad_creative JSON
       const adCreative = {
         headline: headline,
         description: description,
@@ -901,7 +888,6 @@ window.SupplierCampaigns = {
         target_mode: this.state.targetMode
       };
       
-      // Données pour l'API
       const campaignData = {
         name: name,
         product_id: productId,
@@ -933,7 +919,6 @@ window.SupplierCampaigns = {
         this.closeModal();
         await this.loadCampaigns();
       } else {
-        // 🔥 Gestion spécifique du code CAMPAIGNS_NOT_READY
         if (response?.code === 'CAMPAIGNS_NOT_READY') {
           this.state.campaignsAvailable = false;
           this.state.campaignsMessage = response.message;
@@ -1028,4 +1013,4 @@ window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v8.5 FIX READY chargé');
+console.log('[SupplierCampaigns] Module v8.6 SYNTAX FIX READY chargé');
