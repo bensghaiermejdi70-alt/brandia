@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v8.3 PRODUCTION
-// Corrections: Fixed product_id field for database compatibility, fixed media upload field name
+// SUPPLIER CAMPAIGNS MODULE - v8.4 FIX
+// Corrections: Gestion correcte du product_id, upload avec champ 'media'
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -46,7 +46,7 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v8.3...');
+    console.log('[Campaigns] Initializing v8.4...');
     try {
       this.state.campaignLimit = { 
         current: 0, 
@@ -185,13 +185,13 @@ window.SupplierCampaigns = {
               <div class="text-center"><p class="text-base font-bold text-emerald-400">${ctr}%</p><p class="text-xs text-slate-500">CTR</p></div>
             </div>
             <div class="flex gap-2 justify-end">
-              <button onclick="event.stopPropagation(); SupplierCampaigns.editCampaign(${c.id})" class="px-2 py-1 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors">
+              <button onclick="event.stopPropagation(); SupplierCampaigns.editCampaign('${c.id}')" class="px-2 py-1 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors">
                 <i class="fas fa-edit"></i>
               </button>
-              <button onclick="event.stopPropagation(); SupplierCampaigns.toggleStatus(${c.id}, '${c.status === 'active' ? 'paused' : 'active'}')" class="px-2 py-1 rounded-lg text-xs font-medium ${c.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'} transition-colors">
+              <button onclick="event.stopPropagation(); SupplierCampaigns.toggleStatus('${c.id}', '${c.status === 'active' ? 'paused' : 'active'}')" class="px-2 py-1 rounded-lg text-xs font-medium ${c.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'} transition-colors">
                 <i class="fas fa-${c.status === 'active' ? 'pause' : 'play'}"></i>
               </button>
-              <button onclick="event.stopPropagation(); SupplierCampaigns.deleteCampaign(${c.id})" class="px-2 py-1 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+              <button onclick="event.stopPropagation(); SupplierCampaigns.deleteCampaign('${c.id}')" class="px-2 py-1 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -393,7 +393,7 @@ window.SupplierCampaigns = {
         <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-500/10 border border-indigo-500/30' : 'border border-transparent'}">
           <input type="checkbox" value="${product.id}" 
                  ${isSelected ? 'checked' : ''} 
-                 onchange="SupplierCampaigns.toggleProductSelection(${product.id})"
+                 onchange="SupplierCampaigns.toggleProductSelection('${product.id}')"
                  class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500 bg-slate-700">
           <img src="${imageUrl}" class="w-10 h-10 rounded object-cover bg-slate-800" onerror="this.src='${this.FALLBACK_IMAGE}'">
           <div class="flex-1 min-w-0">
@@ -737,19 +737,23 @@ window.SupplierCampaigns = {
     const file = this.state.uploadedMedia.file;
     const type = this.state.uploadedMedia.type;
     
-    // 🔥 CORRECTION: Utiliser 'media' comme nom de champ pour correspondre au middleware multer
+    // 🔥 CORRECTION v8.4: Utiliser 'media' comme nom de champ pour correspondre au middleware multer
     const formData = new FormData();
-    formData.append('media', file);  // Changé de 'file' à 'media'
+    formData.append('media', file);
     
     try {
       this.showLoading(true);
+      console.log('[Upload] Uploading file:', file.name, 'type:', type);
+      
       const result = type === 'video' 
         ? await BrandiaAPI.Upload.uploadVideo(formData)
         : await BrandiaAPI.Upload.uploadImage(formData);
       
+      console.log('[Upload] Result:', result);
+      
       if (result?.success) {
         const mediaUrl = result.data?.url || result.data?.secure_url;
-        if (!mediaUrl) throw new Error('URL média non trouvée');
+        if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
         return { url: mediaUrl, type: type };
       } else {
         throw new Error(result?.message || 'Erreur upload inconnue');
@@ -825,41 +829,47 @@ window.SupplierCampaigns = {
         return;
       }
       
-      // 🔥 CORRECTION: Adapter les données au schéma de la base de données
-      // Le backend attend product_id (integer), pas target_products (array)
+      // 🔥 CORRECTION v8.4: Gestion correcte du product_id
+      // Le backend attend product_id comme string (UUID) ou integer
       let productId = null;
       if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
-        // Prendre le premier produit sélectionné comme produit principal
-        productId = parseInt(this.state.selectedProducts[0]);
+        // Prendre le premier produit sélectionné
+        productId = this.state.selectedProducts[0];
       }
       
-      // Construction du ad_creative JSON pour stocker les données supplémentaires
+      // Si pas de produit sélectionné, on ne peut pas créer la campagne
+      if (!productId && !this.state.editingCampaignId) {
+        this.showToast('Veuillez sélectionner un produit cible', 'error');
+        return;
+      }
+      
+      // Construction du ad_creative JSON
       const adCreative = {
         headline: headline,
         description: description,
         cta_text: ctaText,
         image_url: mediaUrl,
         type: mediaType,
-        target_products: this.state.targetProducts || [],
+        target_products: this.state.selectedProducts,
         target_mode: this.state.targetMode
       };
       
-      // Données compatibles avec le schéma de la base
+      // Données pour l'API - product_id est requis et doit être string
       const campaignData = {
         name: name,
-        product_id: productId,  // 🔥 Champ obligatoire pour la DB
-        budget: 100,  // Valeur par défaut requise
+        product_id: productId,  // 🔥 String ou null
+        budget: 100,
         daily_budget: null,
         start_date: startDate,
         end_date: endDate,
-        targeting: JSON.stringify({ mode: this.state.targetMode, products: this.state.selectedProducts }),
-        ad_creative: JSON.stringify(adCreative),
+        targeting: { mode: this.state.targetMode, products: this.state.selectedProducts },
+        ad_creative: adCreative,
         ad_format: 'overlay',
         cta_link: ctaLink,
         status: 'active'
       };
       
-      console.log('[Campaigns] Saving:', campaignData);
+      console.log('[Campaigns] Saving data:', JSON.stringify(campaignData, null, 2));
       this.showLoading(true);
       
       let response;
@@ -876,6 +886,7 @@ window.SupplierCampaigns = {
         this.closeModal();
         await this.loadCampaigns();
       } else {
+        console.error('[Campaigns] Save failed:', response);
         throw new Error(response?.message || 'Erreur serveur');
       }
       
@@ -964,4 +975,4 @@ window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v8.3 PRODUCTION READY chargé');
+console.log('[SupplierCampaigns] Module v8.4 FIX READY chargé');

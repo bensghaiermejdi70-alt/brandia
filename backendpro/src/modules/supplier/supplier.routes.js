@@ -1,12 +1,12 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v6.6 UPLOAD FIELD FIX
-// Fix: Consistent field name 'media' for multer upload
+// SUPPLIER ROUTES - v6.7 FIX
+// Fix: Ordre des routes campaigns/limit corrigé
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v6.6...');
+console.log('[Supplier Routes] Loading v6.7...');
 
 const supplierController = require('./supplier.controller');
 
@@ -40,7 +40,7 @@ const asyncHandler = (fn) => (req, res, next) => {
 };
 
 // ============================================
-// ROUTES PUBLIQUES
+// ROUTES PUBLIQUES (sans auth)
 // ============================================
 
 router.get('/public/campaigns', asyncHandler(supplierController.getActiveCampaignForProduct));
@@ -48,10 +48,16 @@ router.post('/public/campaigns/view', asyncHandler(supplierController.trackCampa
 router.post('/public/campaigns/click', asyncHandler(supplierController.trackCampaignClick));
 
 // ============================================
-// AUTH REQUIRED
+// AUTH REQUIRED - Toutes les routes suivantes
 // ============================================
 router.use(authenticate);
 router.use(requireRole('supplier'));
+
+// ============================================
+// STATS & INFOS
+// ============================================
+
+router.get('/stats', asyncHandler(supplierController.getStats));
 
 // ============================================
 // UPLOAD ROUTES - CORRECTION CHAMP 'media'
@@ -88,37 +94,61 @@ if (supplierController.uploadVideoMiddleware) {
 }
 
 // ============================================
-// OTHER ROUTES
+// PRODUCTS
 // ============================================
 
-router.get('/stats', asyncHandler(supplierController.getStats));
 router.get('/products', asyncHandler(supplierController.getProducts));
 router.post('/products', asyncHandler(supplierController.createProduct));
 router.put('/products/:id', asyncHandler(supplierController.updateProduct));
 router.delete('/products/:id', asyncHandler(supplierController.deleteProduct));
 
+// ============================================
+// ORDERS
+// ============================================
+
 router.get('/orders', asyncHandler(supplierController.getOrders));
 router.get('/orders/:id', asyncHandler(supplierController.getOrderById));
 router.put('/orders/:id/status', asyncHandler(supplierController.updateOrderStatus));
 
-router.get('/campaigns', asyncHandler(supplierController.getCampaigns));
+// ============================================
+// CAMPAIGNS - 🔥 ORDRE CRITIQUE: /limit AVANT /:id
+// ============================================
+
+// 🔥 CETTE ROUTE DOIT ÊTRE AVANT /campaigns/:id
 router.get('/campaigns/limit', asyncHandler(supplierController.getCampaignLimit));
+
+// Route liste principale
+router.get('/campaigns', asyncHandler(supplierController.getCampaigns));
+
+// Routes avec paramètres ID en dernier
 router.post('/campaigns', asyncHandler(supplierController.createCampaign));
 router.put('/campaigns/:id', asyncHandler(supplierController.updateCampaign));
 router.delete('/campaigns/:id', asyncHandler(supplierController.deleteCampaign));
 router.put('/campaigns/:id/status', asyncHandler(supplierController.toggleCampaignStatus));
 
+// ============================================
+// PAYMENTS
+// ============================================
+
 router.get('/payments', asyncHandler(supplierController.getPayments));
 router.post('/payouts', asyncHandler(supplierController.requestPayout));
 router.get('/payouts', asyncHandler(supplierController.getPayouts));
+
+// ============================================
+// PROMOTIONS
+// ============================================
 
 router.get('/promotions', asyncHandler(supplierController.getPromotions));
 router.post('/promotions', asyncHandler(supplierController.createPromotion));
 router.put('/promotions/:id', asyncHandler(supplierController.updatePromotion));
 router.delete('/promotions/:id', asyncHandler(supplierController.deletePromotion));
 
+// ============================================
+// AD SETTINGS
+// ============================================
+
 router.get('/ad-settings', asyncHandler(supplierController.getAdSettings));
 
-console.log('[Supplier Routes] ✅ v6.6 loaded successfully');
+console.log('[Supplier Routes] ✅ v6.7 loaded successfully');
 
 module.exports = router;

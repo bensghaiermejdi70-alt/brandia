@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v6.7 EMERGENCY FIX
-// Fix: Multer field name consistency, SQL query fixes for campaigns, better error handling
+// SUPPLIER.CONTROLLER.JS - v6.8 FIX
+// Fix: SQL INSERT avec bon types, gestion product_id
 // ============================================
 
 const crypto = require('crypto');
@@ -77,7 +77,7 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
     if (error.code === '42P01' || error.message?.includes('does not exist')) {
         return res.status(500).json({
             success: false,
-            message: 'Erreur de configuration base de données. Contactez l\\'administrateur.',
+            message: 'Erreur de configuration base de données. Contactez l\'administrateur.',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Table not found',
             code: 'DB_CONFIG_ERROR'
         });
@@ -88,6 +88,15 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
         return res.status(400).json({
             success: false,
             message: 'Erreur de type de données. Vérifiez les IDs envoyés.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+    
+    // Erreur colonne manquante
+    if (error.code === '42703' || error.message?.includes('column') && error.message?.includes('does not exist')) {
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur de schéma base de données.',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
@@ -398,7 +407,7 @@ const updateOrderStatus = async (req, res) => {
 };
 
 // ============================================
-// CAMPAIGNS - CORRECTIONS MAJEURES
+// CAMPAIGNS - CORRECTIONS MAJEURES v6.8
 // ============================================
 
 const getCampaigns = async (req, res) => {
@@ -406,8 +415,7 @@ const getCampaigns = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 CORRECTION: Cast explicite de supplier_id en texte pour PostgreSQL
-        // ou utilisation de requête paramétrée correcte
+        // Cast explicite pour PostgreSQL
         const result = await db.query(`
             SELECT c.*, p.name as product_name, p.images as product_images 
             FROM campaigns c 
@@ -477,7 +485,7 @@ const createCampaign = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Limite de 5 campagnes atteinte' });
         }
 
-        // Vérifier produit - 🔥 CORRECTION: Comparaison de types cohérents
+        // Vérifier produit
         let productCheckQuery;
         if (DB_TYPE === 'postgres') {
             productCheckQuery = `SELECT id FROM products WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`;
@@ -494,22 +502,40 @@ const createCampaign = async (req, res) => {
         const id = generateUUID();
         const now = new Date().toISOString();
 
-        // 🔥 CORRECTION: Gestion correcte des types pour PostgreSQL
-        const query = DB_TYPE === 'postgres' 
-            ? `INSERT INTO campaigns (id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
-                targeting, ad_creative, ad_format, status, spent, impressions, clicks, conversions, created_at, cta_link)
-            VALUES (${ph(1)}, ${ph(2)}::text, ${ph(3)}, ${ph(4)}::integer, ${ph(5)}, ${ph(6)}, ${ph(7)}, ${ph(8)},
-                ${ph(9)}::jsonb, ${ph(10)}::jsonb, ${ph(11)}, ${ph(12)}, 0, 0, 0, 0, ${ph(13)}, ${ph(14)})`
-            : `INSERT INTO campaigns (id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
-                targeting, ad_creative, ad_format, status, spent, impressions, clicks, conversions, created_at, cta_link)
-            VALUES (${ph(1)}, ${ph(2)}, ${ph(3)}, ${ph(4)}, ${ph(5)}, ${ph(6)}, ${ph(7)}, ${ph(8)},
-                ${ph(9)}, ${ph(10)}, ${ph(11)}, ${ph(12)}, 0, 0, 0, 0, ${ph(13)}, ${ph(14)})`;
+        // 🔥 CORRECTION v6.8: Requête INSERT simplifiée et compatible
+        // On utilise text pour tous les IDs et JSONB pour les objets JSON
+        let query;
+        let params;
 
-        await db.query(query, [
+        if (DB_TYPE === 'postgres') {
+            // PostgreSQL - utilisation de ::text et ::jsonb
+            query = `
+                INSERT INTO campaigns (
+                    id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
+                    targeting, ad_creative, ad_format, status, spent, impressions, clicks, conversions, created_at, cta_link
+                ) VALUES (
+                    ${ph(1)}, ${ph(2)}::text, ${ph(3)}, ${ph(4)}::text, ${ph(5)}, ${ph(6)}, ${ph(7)}, ${ph(8)},
+                    ${ph(9)}::jsonb, ${ph(10)}::jsonb, ${ph(11)}, ${ph(12)}, 0, 0, 0, 0, ${ph(13)}, ${ph(14)}
+                )
+            `;
+        } else {
+            // MySQL - sans cast de type
+            query = `
+                INSERT INTO campaigns (
+                    id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
+                    targeting, ad_creative, ad_format, status, spent, impressions, clicks, conversions, created_at, cta_link
+                ) VALUES (
+                    ${ph(1)}, ${ph(2)}, ${ph(3)}, ${ph(4)}, ${ph(5)}, ${ph(6)}, ${ph(7)}, ${ph(8)},
+                    ${ph(9)}, ${ph(10)}, ${ph(11)}, ${ph(12)}, 0, 0, 0, 0, ${ph(13)}, ${ph(14)}
+                )
+            `;
+        }
+
+        params = [
             id, 
             supplierId.toString(), 
             name, 
-            parseInt(product_id) || product_id, 
+            product_id.toString(),  // 🔥 Toujours string pour product_id
             parseFloat(budget) || 100, 
             req.body.daily_budget || null,
             start_date, 
@@ -520,11 +546,17 @@ const createCampaign = async (req, res) => {
             status || 'pending',
             now,
             cta_link || null
-        ]);
+        ];
+
+        console.log('[Campaign Create] Query:', query);
+        console.log('[Campaign Create] Params:', params);
+
+        await db.query(query, params);
 
         const result = await db.query(`SELECT * FROM campaigns WHERE id = ${ph(1)}`, [id]);
         res.status(201).json({ success: true, message: 'Campagne créée', data: first(result) });
     } catch (error) {
+        console.error('[Campaign Create] Error:', error);
         return handleError(res, error, 'Erreur lors de la création de la campagne');
     }
 };
@@ -535,7 +567,6 @@ const updateCampaign = async (req, res) => {
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 CORRECTION: Vérification avec cast de type
         const existingQuery = DB_TYPE === 'postgres'
             ? `SELECT id FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
             : `SELECT id FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
@@ -552,7 +583,6 @@ const updateCampaign = async (req, res) => {
 
         allowed.forEach(field => {
             if (req.body[field] !== undefined) {
-                // 🔥 CORRECTION: Gestion JSON pour PostgreSQL
                 if (DB_TYPE === 'postgres' && ['targeting', 'ad_creative'].includes(field)) {
                     updates.push(`${field} = ${ph(values.length + 1)}::jsonb`);
                     values.push(safeJsonStringify(req.body[field]));
@@ -810,7 +840,7 @@ const uploadImage = async (req, res) => {
             data: { url, filename: req.file.originalname }
         });
     } catch (error) {
-        return handleError(res, error, 'Erreur lors de l\\'upload de l\\'image');
+        return handleError(res, error, 'Erreur lors de l\'upload de l\'image');
     }
 };
 
@@ -832,7 +862,7 @@ const uploadVideo = async (req, res) => {
             data: { url, filename: req.file.originalname }
         });
     } catch (error) {
-        return handleError(res, error, 'Erreur lors de l\\'upload de la vidéo');
+        return handleError(res, error, 'Erreur lors de l\'upload de la vidéo');
     }
 };
 
@@ -1115,7 +1145,7 @@ module.exports = {
     trackCampaignView,
     trackCampaignClick,
     
-    // Upload - 🔥 CORRECTION: Utiliser 'media' comme nom de champ pour correspondre au frontend
+    // Upload - Utiliser 'media' comme nom de champ pour correspondre au frontend
     uploadImageMiddleware: uploadMiddleware?.single('media') || null,
     uploadVideoMiddleware: uploadMiddleware?.single('media') || null,
     uploadImage,
