@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v8.2 PRODUCTION
-// Corrections: Removed max_campaigns API call, removed target_mode field
+// SUPPLIER CAMPAIGNS MODULE - v8.3 PRODUCTION
+// Corrections: Fixed product_id field for database compatibility, fixed media upload field name
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -42,13 +42,12 @@ window.SupplierCampaigns = {
   FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWduPC90ZXh0Pjwvc3ZnPg==',
 
   SHOP_URLS: {
-    base: 'https://brandia-marketplace.netlify.app  '
+    base: 'https://brandia-marketplace.netlify.app'
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v8.2...');
+    console.log('[Campaigns] Initializing v8.3...');
     try {
-      // Utilisation limite côté client uniquement (max_campaigns n'existe pas en base)
       this.state.campaignLimit = { 
         current: 0, 
         max: this.MAX_CAMPAIGNS, 
@@ -143,13 +142,17 @@ window.SupplierCampaigns = {
     
     let html = '';
     for (const c of this.state.campaigns) {
-      const views = parseInt(c.views_count) || 0;
-      const clicks = parseInt(c.clicks_count) || 0;
+      const views = parseInt(c.views_count || c.impressions || 0);
+      const clicks = parseInt(c.clicks_count || c.clicks || 0);
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
-      const mediaUrl = c.media_url || this.FALLBACK_IMAGE;
+      const mediaUrl = c.media_url || c.ad_creative?.image_url || this.FALLBACK_IMAGE;
+      const mediaType = c.media_type || c.ad_creative?.type || 'image';
       
+      // Gestion du nom du produit
       let targetText = 'Tous les produits';
-      if (c.target_products && Array.isArray(c.target_products)) {
+      if (c.product_name) {
+        targetText = c.product_name;
+      } else if (c.target_products && Array.isArray(c.target_products)) {
         if (c.target_products.length === 1) targetText = '1 produit';
         else if (c.target_products.length > 1) targetText = `${c.target_products.length} produits`;
       }
@@ -157,7 +160,7 @@ window.SupplierCampaigns = {
       html += `
         <div class="campaign-row p-4 flex items-center gap-4 hover:bg-slate-800/30 transition-colors border-b border-slate-800 last:border-0 group">
           <div class="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
-            ${c.media_type === 'video' 
+            ${mediaType === 'video' 
               ? `<div class="absolute inset-0 flex items-center justify-center bg-black/50 z-10"><i class="fas fa-play-circle text-white text-xl"></i></div><video src="${mediaUrl}" class="w-full h-full object-cover" muted></video>`
               : `<img src="${mediaUrl}" class="w-full h-full object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'">`
             }
@@ -169,7 +172,7 @@ window.SupplierCampaigns = {
               <span class="badge badge-${c.status || 'active'} text-xs capitalize">${c.status || 'active'}</span>
               ${c.status === 'active' ? '<span class="text-xs text-emerald-400">• En ligne</span>' : ''}
             </div>
-            <p class="text-sm text-slate-400 mb-1 truncate text-xs">${c.headline || ''}</p>
+            <p class="text-sm text-slate-400 mb-1 truncate text-xs">${c.headline || c.ad_creative?.headline || ''}</p>
             <div class="flex items-center gap-3 text-xs text-slate-500">
               <span><i class="fas fa-bullseye mr-1"></i>${targetText}</span>
               <span><i class="fas fa-calendar mr-1"></i>${this.formatDate(c.start_date)} - ${this.formatDate(c.end_date)}</span>
@@ -199,8 +202,8 @@ window.SupplierCampaigns = {
   },
 
   updateStats: function() {
-    const totalViews = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count) || 0), 0);
-    const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count) || 0), 0);
+    const totalViews = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count || c.impressions || 0)), 0);
+    const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count || c.clicks || 0)), 0);
     const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : 0;
     
     const viewsEl = document.getElementById('ad-views');
@@ -283,8 +286,8 @@ window.SupplierCampaigns = {
       date.setDate(date.getDate() - i);
       labels.push(date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
       
-      const dayViews = Math.floor((this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count) || 0), 0) / 30) * (0.5 + Math.random()));
-      const dayClicks = Math.floor((this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count) || 0), 0) / 30) * (0.5 + Math.random()));
+      const dayViews = Math.floor((this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count || c.impressions || 0)), 0) / 30) * (0.5 + Math.random()));
+      const dayClicks = Math.floor((this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count || c.clicks || 0)), 0) / 30) * (0.5 + Math.random()));
       
       viewsData.push(dayViews);
       clicksData.push(dayClicks);
@@ -504,17 +507,24 @@ window.SupplierCampaigns = {
     const ctaLinkField = document.getElementById('camp-cta-link');
     
     if (nameField && campaign.name) nameField.value = campaign.name;
-    if (headlineField && campaign.headline) headlineField.value = campaign.headline;
-    if (descField && campaign.description) descField.value = campaign.description;
-    if (ctaTextField && campaign.cta_text) ctaTextField.value = campaign.cta_text;
+    if (headlineField) headlineField.value = campaign.headline || campaign.ad_creative?.headline || '';
+    if (descField) descField.value = campaign.description || campaign.ad_creative?.description || '';
+    if (ctaTextField) ctaTextField.value = campaign.cta_text || campaign.ad_creative?.cta_text || "Voir l'offre";
     if (startDateField && campaign.start_date) startDateField.value = campaign.start_date.split('T')[0];
     if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
     if (ctaLinkField && campaign.cta_link) ctaLinkField.value = campaign.cta_link;
     
-    // Gestion target_products uniquement (pas target_mode en base)
+    // Gestion target_products
     if (campaign.target_products && Array.isArray(campaign.target_products) && campaign.target_products.length > 0) {
       this.state.targetMode = 'selected';
       this.state.selectedProducts = [...campaign.target_products];
+      const radio = document.querySelector('input[name="target_mode"][value="selected"]');
+      if (radio) radio.checked = true;
+      this.toggleTargetMode('selected');
+    } else if (campaign.product_id) {
+      // Si product_id existe (ancien format), le convertir en target_products
+      this.state.targetMode = 'selected';
+      this.state.selectedProducts = [campaign.product_id];
       const radio = document.querySelector('input[name="target_mode"][value="selected"]');
       if (radio) radio.checked = true;
       this.toggleTargetMode('selected');
@@ -526,19 +536,19 @@ window.SupplierCampaigns = {
       this.toggleTargetMode('all');
     }
     
-    if (campaign.media_type) {
-      this.state.currentMediaType = campaign.media_type;
-      const radio = document.querySelector(`input[name="media_type"][value="${campaign.media_type}"]`);
+    if (campaign.media_type || campaign.ad_creative?.type) {
+      this.state.currentMediaType = campaign.media_type || campaign.ad_creative?.type;
+      const radio = document.querySelector(`input[name="media_type"][value="${this.state.currentMediaType}"]`);
       if (radio) radio.checked = true;
     }
     
-    if (campaign.media_url) {
+    if (campaign.media_url || campaign.ad_creative?.image_url) {
       this.state.uploadedMedia = {
         isNew: false,
-        existingUrl: campaign.media_url,
-        existingType: campaign.media_type
+        existingUrl: campaign.media_url || campaign.ad_creative?.image_url,
+        existingType: campaign.media_type || campaign.ad_creative?.type || 'image'
       };
-      this.showMediaPreview(campaign.media_url, campaign.media_type);
+      this.showMediaPreview(campaign.media_url || campaign.ad_creative?.image_url, this.state.currentMediaType);
     }
     
     this.renderProductChecklist();
@@ -553,8 +563,8 @@ window.SupplierCampaigns = {
     const clicksEl = document.getElementById('modal-ad-clicks');
     const ctrEl = document.getElementById('modal-ad-ctr');
     
-    const views = parseInt(campaign.views_count) || 0;
-    const clicks = parseInt(campaign.clicks_count) || 0;
+    const views = parseInt(campaign.views_count || campaign.impressions || 0);
+    const clicks = parseInt(campaign.clicks_count || campaign.clicks || 0);
     const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
     
     if (viewsEl) viewsEl.textContent = views.toLocaleString();
@@ -727,8 +737,9 @@ window.SupplierCampaigns = {
     const file = this.state.uploadedMedia.file;
     const type = this.state.uploadedMedia.type;
     
+    // 🔥 CORRECTION: Utiliser 'media' comme nom de champ pour correspondre au middleware multer
     const formData = new FormData();
-    formData.append('media', file);
+    formData.append('media', file);  // Changé de 'file' à 'media'
     
     try {
       this.showLoading(true);
@@ -814,20 +825,37 @@ window.SupplierCampaigns = {
         return;
       }
       
-      // DONNÉES SIMPLIFIÉES - sans target_mode qui n'existe pas en base
-      const campaignData = {
-        name: name,
-        type: 'overlay',
-        media_url: mediaUrl,
-        media_type: mediaType,
+      // 🔥 CORRECTION: Adapter les données au schéma de la base de données
+      // Le backend attend product_id (integer), pas target_products (array)
+      let productId = null;
+      if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
+        // Prendre le premier produit sélectionné comme produit principal
+        productId = parseInt(this.state.selectedProducts[0]);
+      }
+      
+      // Construction du ad_creative JSON pour stocker les données supplémentaires
+      const adCreative = {
         headline: headline,
         description: description,
         cta_text: ctaText,
-        cta_link: ctaLink,
-        target_products: this.state.targetMode === 'all' ? null : this.state.selectedProducts,
-        // PAS de target_mode ici - n'existe pas en base de données
+        image_url: mediaUrl,
+        type: mediaType,
+        target_products: this.state.targetProducts || [],
+        target_mode: this.state.targetMode
+      };
+      
+      // Données compatibles avec le schéma de la base
+      const campaignData = {
+        name: name,
+        product_id: productId,  // 🔥 Champ obligatoire pour la DB
+        budget: 100,  // Valeur par défaut requise
+        daily_budget: null,
         start_date: startDate,
         end_date: endDate,
+        targeting: JSON.stringify({ mode: this.state.targetMode, products: this.state.selectedProducts }),
+        ad_creative: JSON.stringify(adCreative),
+        ad_format: 'overlay',
+        cta_link: ctaLink,
         status: 'active'
       };
       
@@ -936,4 +964,4 @@ window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v8.2 PRODUCTION READY chargé'); 
+console.log('[SupplierCampaigns] Module v8.3 PRODUCTION READY chargé');

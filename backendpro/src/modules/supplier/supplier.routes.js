@@ -1,11 +1,12 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v6.5 UPLOAD FIX
+// SUPPLIER ROUTES - v6.6 UPLOAD FIELD FIX
+// Fix: Consistent field name 'media' for multer upload
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v6.5...');
+console.log('[Supplier Routes] Loading v6.6...');
 
 const supplierController = require('./supplier.controller');
 
@@ -53,7 +54,7 @@ router.use(authenticate);
 router.use(requireRole('supplier'));
 
 // ============================================
-// UPLOAD ROUTES (NOUVEAU)
+// UPLOAD ROUTES - CORRECTION CHAMP 'media'
 // ============================================
 
 if (supplierController.uploadImageMiddleware) {
@@ -61,7 +62,7 @@ if (supplierController.uploadImageMiddleware) {
         supplierController.uploadImageMiddleware, 
         asyncHandler(supplierController.uploadImage)
     );
-    console.log('[Supplier Routes] ✅ Upload image route enabled');
+    console.log('[Supplier Routes] ✅ Upload image route enabled (field: media)');
 } else {
     router.post('/upload-image', (req, res) => {
         res.status(501).json({ 
@@ -76,7 +77,7 @@ if (supplierController.uploadVideoMiddleware) {
         supplierController.uploadVideoMiddleware,
         asyncHandler(supplierController.uploadVideo)
     );
-    console.log('[Supplier Routes] ✅ Upload video route enabled');
+    console.log('[Supplier Routes] ✅ Upload video route enabled (field: media)');
 } else {
     router.post('/upload-video', (req, res) => {
         res.status(501).json({ 
@@ -118,6 +119,6 @@ router.delete('/promotions/:id', asyncHandler(supplierController.deletePromotion
 
 router.get('/ad-settings', asyncHandler(supplierController.getAdSettings));
 
-console.log('[Supplier Routes] ✅ v6.5 loaded successfully');
+console.log('[Supplier Routes] ✅ v6.6 loaded successfully');
 
 module.exports = router;

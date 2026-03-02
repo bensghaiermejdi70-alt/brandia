@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v6.6 EMERGENCY FIX
-// Fix: Added upload endpoints, graceful handling of missing tables, better error messages
+// SUPPLIER.CONTROLLER.JS - v6.7 EMERGENCY FIX
+// Fix: Multer field name consistency, SQL query fixes for campaigns, better error handling
 // ============================================
 
 const crypto = require('crypto');
@@ -77,9 +77,18 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
     if (error.code === '42P01' || error.message?.includes('does not exist')) {
         return res.status(500).json({
             success: false,
-            message: 'Erreur de configuration base de données. Contactez l\'administrateur.',
+            message: 'Erreur de configuration base de données. Contactez l\\'administrateur.',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Table not found',
             code: 'DB_CONFIG_ERROR'
+        });
+    }
+    
+    // Erreur opérateur PostgreSQL (text = integer)
+    if (error.code === '42883' || error.message?.includes('operator does not exist')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Erreur de type de données. Vérifiez les IDs envoyés.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
     
@@ -98,6 +107,12 @@ const safeJsonParse = (str) => {
     if (!str) return {};
     if (typeof str === 'object') return str;
     try { return JSON.parse(str); } catch (e) { return {}; }
+};
+
+const safeJsonStringify = (obj) => {
+    if (!obj) return '{}';
+    if (typeof obj === 'string') return obj;
+    try { return JSON.stringify(obj); } catch (e) { return '{}'; }
 };
 
 // ============================================
@@ -168,7 +183,9 @@ const getProducts = async (req, res) => {
         let countParams = [supplierId];
 
         if (search) {
-            const searchClause = ` AND (name ILIKE ${ph(2)} OR sku ILIKE ${ph(3)})`;
+            const searchClause = DB_TYPE === 'postgres' 
+                ? ` AND (name ILIKE ${ph(2)} OR sku ILIKE ${ph(3)})`
+                : ` AND (name LIKE ${ph(2)} OR sku LIKE ${ph(3)})`;
             query += searchClause;
             countQuery += searchClause;
             const pattern = `%${search}%`;
@@ -381,7 +398,7 @@ const updateOrderStatus = async (req, res) => {
 };
 
 // ============================================
-// CAMPAIGNS
+// CAMPAIGNS - CORRECTIONS MAJEURES
 // ============================================
 
 const getCampaigns = async (req, res) => {
@@ -389,13 +406,15 @@ const getCampaigns = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
+        // 🔥 CORRECTION: Cast explicite de supplier_id en texte pour PostgreSQL
+        // ou utilisation de requête paramétrée correcte
         const result = await db.query(`
             SELECT c.*, p.name as product_name, p.images as product_images 
             FROM campaigns c 
-            LEFT JOIN products p ON c.product_id = p.id 
-            WHERE c.supplier_id = ${ph(1)} 
+            LEFT JOIN products p ON c.product_id::text = p.id::text 
+            WHERE c.supplier_id::text = ${ph(1)}::text
             ORDER BY c.created_at DESC
-        `, [supplierId]);
+        `, [supplierId.toString()]);
 
         const campaigns = normalizeResult(result).map(c => ({
             ...c,
@@ -416,8 +435,8 @@ const getCampaignLimit = async (req, res) => {
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
         const result = await db.query(`
-            SELECT COUNT(*) as count FROM campaigns WHERE supplier_id = ${ph(1)} AND status != 'ended'
-        `, [supplierId]);
+            SELECT COUNT(*) as count FROM campaigns WHERE supplier_id::text = ${ph(1)}::text AND status != 'ended'
+        `, [supplierId.toString()]);
 
         const count = first(result)?.count || 0;
         
@@ -440,7 +459,9 @@ const createCampaign = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        const { name, product_id, budget, start_date, end_date } = req.body;
+        const { name, product_id, budget, start_date, end_date, targeting, ad_creative, ad_format, cta_link, status } = req.body;
+        
+        // Validation des champs requis
         const missing = validateRequired(['name', 'product_id', 'budget', 'start_date', 'end_date'], req.body);
         
         if (missing.length > 0) {
@@ -449,16 +470,22 @@ const createCampaign = async (req, res) => {
 
         // Vérifier limite
         const countResult = await db.query(`
-            SELECT COUNT(*) as count FROM campaigns WHERE supplier_id = ${ph(1)} AND status != 'ended'
-        `, [supplierId]);
+            SELECT COUNT(*) as count FROM campaigns WHERE supplier_id::text = ${ph(1)}::text AND status != 'ended'
+        `, [supplierId.toString()]);
 
         if (first(countResult)?.count >= 5) {
             return res.status(400).json({ success: false, message: 'Limite de 5 campagnes atteinte' });
         }
 
-        // Vérifier produit
-        const product = await db.query(`SELECT id FROM products WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`, 
-            [product_id, supplierId]);
+        // Vérifier produit - 🔥 CORRECTION: Comparaison de types cohérents
+        let productCheckQuery;
+        if (DB_TYPE === 'postgres') {
+            productCheckQuery = `SELECT id FROM products WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`;
+        } else {
+            productCheckQuery = `SELECT id FROM products WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
+        }
+        
+        const product = await db.query(productCheckQuery, [product_id.toString(), supplierId.toString()]);
         
         if (normalizeResult(product).length === 0) {
             return res.status(404).json({ success: false, message: 'Produit non trouvé' });
@@ -467,18 +494,32 @@ const createCampaign = async (req, res) => {
         const id = generateUUID();
         const now = new Date().toISOString();
 
-        await db.query(`
-            INSERT INTO campaigns (id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
-                targeting, ad_creative, ad_format, status, spent, impressions, clicks, conversions, created_at)
+        // 🔥 CORRECTION: Gestion correcte des types pour PostgreSQL
+        const query = DB_TYPE === 'postgres' 
+            ? `INSERT INTO campaigns (id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
+                targeting, ad_creative, ad_format, status, spent, impressions, clicks, conversions, created_at, cta_link)
+            VALUES (${ph(1)}, ${ph(2)}::text, ${ph(3)}, ${ph(4)}::integer, ${ph(5)}, ${ph(6)}, ${ph(7)}, ${ph(8)},
+                ${ph(9)}::jsonb, ${ph(10)}::jsonb, ${ph(11)}, ${ph(12)}, 0, 0, 0, 0, ${ph(13)}, ${ph(14)})`
+            : `INSERT INTO campaigns (id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
+                targeting, ad_creative, ad_format, status, spent, impressions, clicks, conversions, created_at, cta_link)
             VALUES (${ph(1)}, ${ph(2)}, ${ph(3)}, ${ph(4)}, ${ph(5)}, ${ph(6)}, ${ph(7)}, ${ph(8)},
-                ${ph(9)}, ${ph(10)}, ${ph(11)}, 'pending', 0, 0, 0, 0, ${ph(12)})
-        `, [
-            id, supplierId, name, product_id, parseFloat(budget) || 100, req.body.daily_budget || null,
-            start_date, end_date,
-            JSON.stringify(req.body.targeting || {}),
-            JSON.stringify(req.body.ad_creative || {}),
-            req.body.ad_format || 'carousel',
-            now
+                ${ph(9)}, ${ph(10)}, ${ph(11)}, ${ph(12)}, 0, 0, 0, 0, ${ph(13)}, ${ph(14)})`;
+
+        await db.query(query, [
+            id, 
+            supplierId.toString(), 
+            name, 
+            parseInt(product_id) || product_id, 
+            parseFloat(budget) || 100, 
+            req.body.daily_budget || null,
+            start_date, 
+            end_date,
+            safeJsonStringify(targeting || {}),
+            safeJsonStringify(ad_creative || {}),
+            ad_format || 'overlay',
+            status || 'pending',
+            now,
+            cta_link || null
         ]);
 
         const result = await db.query(`SELECT * FROM campaigns WHERE id = ${ph(1)}`, [id]);
@@ -494,21 +535,31 @@ const updateCampaign = async (req, res) => {
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        const existing = await db.query(`SELECT id FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`, 
-            [id, supplierId]);
+        // 🔥 CORRECTION: Vérification avec cast de type
+        const existingQuery = DB_TYPE === 'postgres'
+            ? `SELECT id FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
+            : `SELECT id FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
+            
+        const existing = await db.query(existingQuery, [id.toString(), supplierId.toString()]);
         
         if (normalizeResult(existing).length === 0) {
             return res.status(404).json({ success: false, message: 'Campagne non trouvée' });
         }
 
-        const allowed = ['name', 'budget', 'daily_budget', 'start_date', 'end_date', 'targeting', 'ad_creative', 'ad_format', 'status'];
+        const allowed = ['name', 'budget', 'daily_budget', 'start_date', 'end_date', 'targeting', 'ad_creative', 'ad_format', 'status', 'cta_link'];
         const updates = [];
         const values = [];
 
         allowed.forEach(field => {
             if (req.body[field] !== undefined) {
-                updates.push(`${field} = ${ph(values.length + 1)}`);
-                values.push(['targeting', 'ad_creative'].includes(field) ? JSON.stringify(req.body[field]) : req.body[field]);
+                // 🔥 CORRECTION: Gestion JSON pour PostgreSQL
+                if (DB_TYPE === 'postgres' && ['targeting', 'ad_creative'].includes(field)) {
+                    updates.push(`${field} = ${ph(values.length + 1)}::jsonb`);
+                    values.push(safeJsonStringify(req.body[field]));
+                } else {
+                    updates.push(`${field} = ${ph(values.length + 1)}`);
+                    values.push(req.body[field]);
+                }
             }
         });
 
@@ -517,7 +568,12 @@ const updateCampaign = async (req, res) => {
         }
 
         values.push(id);
-        await db.query(`UPDATE campaigns SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ${ph(values.length)}`, values);
+        
+        const updateQuery = DB_TYPE === 'postgres'
+            ? `UPDATE campaigns SET ${updates.join(', ')}, updated_at = NOW() WHERE id::text = ${ph(values.length)}::text`
+            : `UPDATE campaigns SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ${ph(values.length)}`;
+            
+        await db.query(updateQuery, values);
 
         const result = await db.query(`SELECT * FROM campaigns WHERE id = ${ph(1)}`, [id]);
         res.json({ success: true, message: 'Campagne mise à jour', data: first(result) });
@@ -532,8 +588,11 @@ const deleteCampaign = async (req, res) => {
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        const campaign = await db.query(`SELECT spent FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`, 
-            [id, supplierId]);
+        const query = DB_TYPE === 'postgres'
+            ? `SELECT spent FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
+            : `SELECT spent FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
+            
+        const campaign = await db.query(query, [id.toString(), supplierId.toString()]);
         
         const data = first(campaign);
         if (!data) {
@@ -541,10 +600,14 @@ const deleteCampaign = async (req, res) => {
         }
 
         if (parseFloat(data.spent) > 0) {
-            return res.status(400).json({ success: false, message: 'Impossible de supprimer une campagne active' });
+            return res.status(400).json({ success: false, message: 'Impossible de supprimer une campagne avec dépenses' });
         }
 
-        await db.query(`DELETE FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`, [id, supplierId]);
+        const deleteQuery = DB_TYPE === 'postgres'
+            ? `DELETE FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
+            : `DELETE FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
+            
+        await db.query(deleteQuery, [id.toString(), supplierId.toString()]);
         res.json({ success: true, message: 'Campagne supprimée' });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la suppression de la campagne');
@@ -564,14 +627,21 @@ const toggleCampaignStatus = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Statut invalide' });
         }
 
-        const existing = await db.query(`SELECT id FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`, 
-            [id, supplierId]);
+        const query = DB_TYPE === 'postgres'
+            ? `SELECT id FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
+            : `SELECT id FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
+            
+        const existing = await db.query(query, [id.toString(), supplierId.toString()]);
         
         if (normalizeResult(existing).length === 0) {
             return res.status(404).json({ success: false, message: 'Campagne non trouvée' });
         }
 
-        await db.query(`UPDATE campaigns SET status = ${ph(1)}, updated_at = NOW() WHERE id = ${ph(2)}`, [status, id]);
+        const updateQuery = DB_TYPE === 'postgres'
+            ? `UPDATE campaigns SET status = ${ph(1)}, updated_at = NOW() WHERE id::text = ${ph(2)}::text`
+            : `UPDATE campaigns SET status = ${ph(1)}, updated_at = NOW() WHERE id = ${ph(2)}`;
+            
+        await db.query(updateQuery, [status, id]);
         res.json({ success: true, message: `Campagne ${status === 'active' ? 'activée' : 'mise en pause'}` });
     } catch (error) {
         return handleError(res, error, 'Erreur lors du changement de statut');
@@ -586,16 +656,23 @@ const getActiveCampaignForProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'supplier et product requis' });
         }
 
-        const result = await db.query(`
-            SELECT c.*, p.name as product_name, p.images as product_images, p.price
+        const query = DB_TYPE === 'postgres'
+            ? `SELECT c.*, p.name as product_name, p.images as product_images, p.price
+            FROM campaigns c
+            JOIN products p ON c.product_id::text = p.id::text
+            WHERE c.supplier_id::text = ${ph(1)}::text AND c.product_id::text = ${ph(2)}::text
+                AND c.status = 'active' AND c.start_date <= NOW() AND c.end_date >= NOW()
+            ORDER BY c.created_at DESC LIMIT 1`
+            : `SELECT c.*, p.name as product_name, p.images as product_images, p.price
             FROM campaigns c
             JOIN products p ON c.product_id = p.id
             WHERE c.supplier_id = ${ph(1)} AND c.product_id = ${ph(2)}
                 AND c.status = 'active' AND c.start_date <= NOW() AND c.end_date >= NOW()
-            ORDER BY c.created_at DESC LIMIT 1
-        `, [supplier, product]);
+            ORDER BY c.created_at DESC LIMIT 1`;
 
+        const result = await db.query(query, [supplier.toString(), product.toString()]);
         const campaigns = normalizeResult(result);
+        
         if (campaigns.length === 0) {
             return res.json({ success: true, data: null });
         }
@@ -619,7 +696,11 @@ const trackCampaignView = async (req, res) => {
         const { campaign_id } = req.body;
         if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
 
-        await db.query(`UPDATE campaigns SET impressions = impressions + 1 WHERE id = ${ph(1)}`, [campaign_id]);
+        const query = DB_TYPE === 'postgres'
+            ? `UPDATE campaigns SET impressions = impressions + 1 WHERE id::text = ${ph(1)}::text`
+            : `UPDATE campaigns SET impressions = impressions + 1 WHERE id = ${ph(1)}`;
+            
+        await db.query(query, [campaign_id.toString()]);
         res.json({ success: true, message: 'View tracked' });
     } catch (error) {
         return handleError(res, error, 'Erreur tracking');
@@ -631,7 +712,11 @@ const trackCampaignClick = async (req, res) => {
         const { campaign_id } = req.body;
         if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
 
-        await db.query(`UPDATE campaigns SET clicks = clicks + 1 WHERE id = ${ph(1)}`, [campaign_id]);
+        const query = DB_TYPE === 'postgres'
+            ? `UPDATE campaigns SET clicks = clicks + 1 WHERE id::text = ${ph(1)}::text`
+            : `UPDATE campaigns SET clicks = clicks + 1 WHERE id = ${ph(1)}`;
+            
+        await db.query(query, [campaign_id.toString()]);
         res.json({ success: true, message: 'Click tracked' });
     } catch (error) {
         return handleError(res, error, 'Erreur tracking');
@@ -639,7 +724,7 @@ const trackCampaignClick = async (req, res) => {
 };
 
 // ============================================
-// UPLOAD (NOUVEAU)
+// UPLOAD - CORRECTIONS MULTER
 // ============================================
 
 // Configuration multer pour upload
@@ -725,7 +810,7 @@ const uploadImage = async (req, res) => {
             data: { url, filename: req.file.originalname }
         });
     } catch (error) {
-        return handleError(res, error, 'Erreur lors de l\'upload de l\'image');
+        return handleError(res, error, 'Erreur lors de l\\'upload de l\\'image');
     }
 };
 
@@ -747,7 +832,7 @@ const uploadVideo = async (req, res) => {
             data: { url, filename: req.file.originalname }
         });
     } catch (error) {
-        return handleError(res, error, 'Erreur lors de l\'upload de la vidéo');
+        return handleError(res, error, 'Erreur lors de l\\'upload de la vidéo');
     }
 };
 
@@ -768,8 +853,8 @@ const getPayments = async (req, res) => {
         try {
             const balanceResult = await db.query(`
                 SELECT COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0) as balance
-                FROM transactions WHERE supplier_id = ${ph(1)}
-            `, [supplierId]);
+                FROM transactions WHERE supplier_id::text = ${ph(1)}::text
+            `, [supplierId.toString()]);
             balance = parseFloat(first(balanceResult)?.balance || 0);
         } catch (e) {
             console.log('[Payments] transactions table not available');
@@ -778,8 +863,8 @@ const getPayments = async (req, res) => {
         try {
             const pendingResult = await db.query(`
                 SELECT COALESCE(SUM(amount), 0) as pending 
-                FROM payouts WHERE supplier_id = ${ph(1)} AND status = 'pending'
-            `, [supplierId]);
+                FROM payouts WHERE supplier_id::text = ${ph(1)}::text AND status = 'pending'
+            `, [supplierId.toString()]);
             pending = parseFloat(first(pendingResult)?.pending || 0);
         } catch (e) {
             console.log('[Payments] payouts table not available');
@@ -787,8 +872,8 @@ const getPayments = async (req, res) => {
 
         try {
             const transResult = await db.query(`
-                SELECT * FROM transactions WHERE supplier_id = ${ph(1)} ORDER BY created_at DESC LIMIT 50
-            `, [supplierId]);
+                SELECT * FROM transactions WHERE supplier_id::text = ${ph(1)}::text ORDER BY created_at DESC LIMIT 50
+            `, [supplierId.toString()]);
             transactions = normalizeResult(transResult);
         } catch (e) {
             console.log('[Payments] transactions table not available for list');
@@ -821,8 +906,8 @@ const requestPayout = async (req, res) => {
         // Vérifier solde
         const balanceResult = await db.query(`
             SELECT COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0) as balance
-            FROM transactions WHERE supplier_id = ${ph(1)}
-        `, [supplierId]);
+            FROM transactions WHERE supplier_id::text = ${ph(1)}::text
+        `, [supplierId.toString()]);
 
         const balance = parseFloat(first(balanceResult)?.balance || 0);
         if (parseFloat(amount) > balance) {
@@ -834,13 +919,13 @@ const requestPayout = async (req, res) => {
 
         await db.query(`
             INSERT INTO payouts (id, supplier_id, amount, method, status, created_at) 
-            VALUES (${ph(1)}, ${ph(2)}, ${ph(3)}, ${ph(4)}, 'pending', ${ph(5)})
-        `, [id, supplierId, parseFloat(amount), method || 'bank_transfer', now]);
+            VALUES (${ph(1)}, ${ph(2)}::text, ${ph(3)}, ${ph(4)}, 'pending', ${ph(5)})
+        `, [id, supplierId.toString(), parseFloat(amount), method || 'bank_transfer', now]);
 
         await db.query(`
             INSERT INTO transactions (id, supplier_id, type, amount, description, created_at) 
-            VALUES (${ph(1)}, ${ph(2)}, 'debit', ${ph(3)}, ${ph(4)}, ${ph(5)})
-        `, [generateUUID(), supplierId, parseFloat(amount), `Retrait #${id}`, now]);
+            VALUES (${ph(1)}, ${ph(2)}::text, 'debit', ${ph(3)}, ${ph(4)}, ${ph(5)})
+        `, [generateUUID(), supplierId.toString(), parseFloat(amount), `Retrait #${id}`, now]);
 
         res.json({ success: true, message: 'Demande de retrait créée', data: { payout_id: id } });
     } catch (error) {
@@ -854,8 +939,8 @@ const getPayouts = async (req, res) => {
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
         const result = await db.query(`
-            SELECT * FROM payouts WHERE supplier_id = ${ph(1)} ORDER BY created_at DESC
-        `, [supplierId]);
+            SELECT * FROM payouts WHERE supplier_id::text = ${ph(1)}::text ORDER BY created_at DESC
+        `, [supplierId.toString()]);
 
         res.json({ success: true, data: normalizeResult(result) });
     } catch (error) {
@@ -873,8 +958,8 @@ const getPromotions = async (req, res) => {
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
         const result = await db.query(`
-            SELECT * FROM promotions WHERE supplier_id = ${ph(1)} ORDER BY created_at DESC
-        `, [supplierId]);
+            SELECT * FROM promotions WHERE supplier_id::text = ${ph(1)}::text ORDER BY created_at DESC
+        `, [supplierId.toString()]);
 
         res.json({ success: true, data: normalizeResult(result) });
     } catch (error) {
@@ -900,10 +985,10 @@ const createPromotion = async (req, res) => {
         await db.query(`
             INSERT INTO promotions (id, supplier_id, code, discount_type, discount_value,
                 minimum_order, start_date, end_date, usage_limit, usage_count, status, created_at)
-            VALUES (${ph(1)}, ${ph(2)}, ${ph(3)}, ${ph(4)}, ${ph(5)},
+            VALUES (${ph(1)}, ${ph(2)}::text, ${ph(3)}, ${ph(4)}, ${ph(5)},
                 ${ph(6)}, ${ph(7)}, ${ph(8)}, ${ph(9)}, 0, 'active', ${ph(10)})
         `, [
-            id, supplierId, code, discount_type, parseFloat(discount_value) || 0,
+            id, supplierId.toString(), code, discount_type, parseFloat(discount_value) || 0,
             req.body.minimum_order || 0, req.body.start_date || now, req.body.end_date || null,
             req.body.usage_limit || null, now
         ]);
@@ -939,10 +1024,13 @@ const updatePromotion = async (req, res) => {
         values.push(id);
         values.push(supplierId);
 
-        await db.query(`
-            UPDATE promotions SET ${updates.join(', ')}, updated_at = NOW() 
-            WHERE id = ${ph(values.length - 1)} AND supplier_id = ${ph(values.length)}
-        `, values);
+        const query = DB_TYPE === 'postgres'
+            ? `UPDATE promotions SET ${updates.join(', ')}, updated_at = NOW() 
+               WHERE id::text = ${ph(values.length - 1)}::text AND supplier_id::text = ${ph(values.length)}::text`
+            : `UPDATE promotions SET ${updates.join(', ')}, updated_at = NOW() 
+               WHERE id = ${ph(values.length - 1)} AND supplier_id = ${ph(values.length)}`;
+
+        await db.query(query, values);
 
         const result = await db.query(`SELECT * FROM promotions WHERE id = ${ph(1)}`, [id]);
         res.json({ success: true, message: 'Promotion mise à jour', data: first(result) });
@@ -957,7 +1045,11 @@ const deletePromotion = async (req, res) => {
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        await db.query(`DELETE FROM promotions WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`, [id, supplierId]);
+        const query = DB_TYPE === 'postgres'
+            ? `DELETE FROM promotions WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
+            : `DELETE FROM promotions WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
+
+        await db.query(query, [id.toString(), supplierId.toString()]);
         res.json({ success: true, message: 'Promotion supprimée' });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la suppression de la promotion');
@@ -973,7 +1065,7 @@ const getAdSettings = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        const result = await db.query(`SELECT * FROM supplier_ad_settings WHERE supplier_id = ${ph(1)}`, [supplierId]);
+        const result = await db.query(`SELECT * FROM supplier_ad_settings WHERE supplier_id::text = ${ph(1)}::text`, [supplierId.toString()]);
         const settings = normalizeResult(result);
 
         if (settings.length === 0) {
@@ -1023,9 +1115,9 @@ module.exports = {
     trackCampaignView,
     trackCampaignClick,
     
-    // Upload (NOUVEAU)
-    uploadImageMiddleware: uploadMiddleware?.single('file') || null,
-    uploadVideoMiddleware: uploadMiddleware?.single('file') || null,
+    // Upload - 🔥 CORRECTION: Utiliser 'media' comme nom de champ pour correspondre au frontend
+    uploadImageMiddleware: uploadMiddleware?.single('media') || null,
+    uploadVideoMiddleware: uploadMiddleware?.single('media') || null,
     uploadImage,
     uploadVideo,
     
