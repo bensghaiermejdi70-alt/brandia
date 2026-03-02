@@ -1,769 +1,939 @@
 // ============================================
-// SUPPLIER-CAMPAIGNS.JS - v9.4 EMERGENCY FIX
-// Fix: Direct fetch fallback when BrandiaAPI methods not available
+// SUPPLIER CAMPAIGNS MODULE - v8.2 PRODUCTION
+// Corrections: Removed max_campaigns API call, removed target_mode field
 // ============================================
 
-const SupplierCampaigns = (function() {
-    'use strict';
-    
-    const CONFIG = {
-        version: '9.4',
-        debug: true,
-        apiBaseURL: window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000/api' 
-            : 'https://brandia-1.onrender.com/api',
-        selectors: {
-            modal: '#campaign-modal',
-            form: '#campaign-form',
-            productsGrid: '#products-grid',
-            campaignsList: '#campaigns-list',
-            chartCanvas: '#campaigns-chart'
-        }
+if (typeof BrandiaAPI === 'undefined') {
+    console.error('[Campaigns] CRITICAL: BrandiaAPI is not defined');
+    window.BrandiaAPI = window.BrandiaAPI || {
+        Supplier: {
+            getProducts: async () => ({ success: false, message: 'API not loaded', data: [] }),
+            getCampaigns: async () => ({ success: false, message: 'API not loaded', data: [] }),
+            createCampaign: async () => ({ success: false, message: 'API not loaded' }),
+            updateCampaign: async () => ({ success: false, message: 'API not loaded' }),
+            deleteCampaign: async () => ({ success: false, message: 'API not loaded' }),
+            getCampaignLimit: async () => ({ success: true, data: { current: 0, max: 5, can_create: true } })
+        },
+        Upload: {
+            uploadImage: async () => ({ success: false, message: 'API not loaded' }),
+            uploadVideo: async () => ({ success: false, message: 'API not loaded' })
+        },
+        getSupplierId: () => null
     };
-    
-    let state = {
-        campaigns: [],
-        products: [],
-        currentEditId: null,
-        chart: null,
-        selectedProduct: null,
-        uploadedCreative: null
-    };
-    
-    const log = (msg, data) => {
-        if (CONFIG.debug) console.log(`[Campaigns] ${msg}`, data || '');
-    };
-    
-    // ============================================
-    // API HELPER avec fallback direct fetch
-    // ============================================
-    
-    const apiRequest = async (method, endpoint, data = null) => {
-        // Essayer d'abord BrandiaAPI si disponible et fonctionnel
-        if (window.BrandiaAPI && typeof window.BrandiaAPI[method] === 'function') {
-            try {
-                log(`Using BrandiaAPI.${method}`);
-                return await window.BrandiaAPI[method](endpoint, data);
-            } catch (e) {
-                log(`BrandiaAPI.${method} failed, using fallback`, e.message);
-            }
-        }
-        
-        // Fallback: fetch direct
-        const url = `${CONFIG.apiBaseURL}${endpoint}`;
-        const token = localStorage.getItem('brandia_token') || sessionStorage.getItem('brandia_token');
-        
-        const options = {
-            method: method.toUpperCase(),
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : ''
-            }
-        };
-        
-        if (data && method !== 'get') {
-            options.headers['Content-Type'] = 'application/json';
-            options.body = JSON.stringify(data);
-        }
-        
-        log(`Direct fetch: ${method.toUpperCase()} ${url}`);
-        
-        const response = await fetch(url, options);
-        const result = await response.json().catch(() => ({
-            success: false,
-            message: 'Réponse invalide'
-        }));
-        
-        if (!response.ok) {
-            throw new Error(result.message || `HTTP ${response.status}`);
-        }
-        
-        return result;
-    };
-    
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: 'EUR'
-        }).format(amount || 0);
-    };
-    
-    const formatDate = (dateStr) => {
-        if (!dateStr) return 'N/A';
-        return new Date(dateStr).toLocaleDateString('fr-FR');
-    };
-    
-    // ============================================
-    // INITIALISATION
-    // ============================================
-    
-    function init() {
-        log(`Initializing v${CONFIG.version}...`);
-        log(`API Base URL: ${CONFIG.apiBaseURL}`);
-        
-        // Vérifier l'API
-        if (window.BrandiaAPI) {
-            const methods = Object.keys(window.BrandiaAPI).filter(k => typeof window.BrandiaAPI[k] === 'function');
-            log(`BrandiaAPI found with methods:`, methods);
-        } else {
-            log('BrandiaAPI not found, using direct fetch fallback');
-        }
-        
-        loadProducts();
-        loadCampaigns();
-        initChart();
-        bindEvents();
-    }
-    
-    // ============================================
-    // DATA LOADING
-    // ============================================
-    
-    async function loadProducts() {
-        try {
-            log('Loading products...');
-            const response = await apiRequest('get', '/supplier/products');
-            
-            if (response.success) {
-                state.products = response.data || [];
-                renderProductsGrid();
-                log(`Loaded ${state.products.length} products`);
-            } else {
-                throw new Error(response.message || 'Failed to load products');
-            }
-        } catch (error) {
-            console.error('[Campaigns] Error loading products:', error);
-            showNotification('Erreur chargement produits: ' + error.message, 'error');
-            state.products = [];
-            renderProductsGrid();
-        }
-    }
-    
-    async function loadCampaigns() {
-        try {
-            log('Loading campaigns...');
-            const response = await apiRequest('get', '/supplier/campaigns');
-            
-            if (response.success) {
-                state.campaigns = response.data || [];
-                renderCampaignsList();
-                updateChart();
-                log(`Loaded ${state.campaigns.length} campaigns`);
-            } else {
-                throw new Error(response.message || 'Failed to load campaigns');
-            }
-        } catch (error) {
-            console.error('[Campaigns] Error loading campaigns:', error);
-            showNotification('Erreur chargement campagnes: ' + error.message, 'error');
-            state.campaigns = [];
-            renderCampaignsList();
-        }
-    }
-    
-    // ============================================
-    // RENDERING (même code que avant)
-    // ============================================
-    
-    function renderProductsGrid() {
-        const grid = document.querySelector(CONFIG.selectors.productsGrid);
-        if (!grid) return;
-        
-        if (state.products.length === 0) {
-            grid.innerHTML = `
-                <div class="col-span-full text-center py-8 text-gray-500">
-                    <i class="fas fa-box-open text-4xl mb-4"></i>
-                    <p>Aucun produit disponible</p>
-                    <button onclick="window.SupplierProducts && window.SupplierProducts.openModal()" 
-                            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Ajouter un produit
-                    </button>
-                </div>
-            `;
-            return;
-        }
-        
-        grid.innerHTML = state.products.map(product => {
-            const image = product.images?.[0] || '/assets/images/placeholder.png';
-            return `
-                <div class="product-card bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                     onclick="SupplierCampaigns.selectProduct('${product.id}')"
-                     data-product-id="${product.id}">
-                    <img src="${image}" alt="${escapeHtml(product.name)}" 
-                         class="w-full h-32 object-cover" 
-                         onerror="this.src='/assets/images/placeholder.png'">
-                    <div class="p-3">
-                        <h4 class="font-semibold text-sm truncate">${escapeHtml(product.name)}</h4>
-                        <p class="text-blue-600 font-bold">${formatCurrency(product.price)}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-    
-    function renderCampaignsList() {
-        const list = document.querySelector(CONFIG.selectors.campaignsList);
-        if (!list) return;
-        
-        if (state.campaigns.length === 0) {
-            list.innerHTML = `
-                <div class="text-center py-12 text-gray-500">
-                    <i class="fas fa-bullhorn text-4xl mb-4"></i>
-                    <p>Aucune campagne active</p>
-                    <button onclick="SupplierCampaigns.openModal()" 
-                            class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Créer ma première campagne
-                    </button>
-                </div>
-            `;
-            return;
-        }
-        
-        const statusConfig = {
-            active: { color: 'bg-green-100 text-green-800', label: 'Active' },
-            pending: { color: 'bg-yellow-100 text-yellow-800', label: 'En attente' },
-            paused: { color: 'bg-gray-100 text-gray-800', label: 'En pause' },
-            ended: { color: 'bg-red-100 text-red-800', label: 'Terminée' }
-        };
-        
-        list.innerHTML = state.campaigns.map(campaign => {
-            const status = statusConfig[campaign.status] || { color: 'bg-gray-100', label: campaign.status };
-            const progress = campaign.budget > 0 ? Math.min((campaign.spent / campaign.budget) * 100, 100) : 0;
-            
-            return `
-                <div class="campaign-card bg-white rounded-lg shadow-md p-6 mb-4 border-l-4 ${campaign.status === 'active' ? 'border-green-500' : 'border-gray-300'}">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="font-bold text-lg">${escapeHtml(campaign.name)}</h3>
-                            <p class="text-sm text-gray-500">
-                                Produit: ${escapeHtml(campaign.product_name || 'N/A')} | 
-                                Du ${formatDate(campaign.start_date)} au ${formatDate(campaign.end_date)}
-                            </p>
-                        </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${status.color}">
-                            ${status.label}
-                        </span>
-                    </div>
-                    
-                    <div class="grid grid-cols-4 gap-4 mb-4 text-center">
-                        <div class="bg-gray-50 rounded p-2">
-                            <p class="text-2xl font-bold text-blue-600">${campaign.impressions || 0}</p>
-                            <p class="text-xs text-gray-500">Impressions</p>
-                        </div>
-                        <div class="bg-gray-50 rounded p-2">
-                            <p class="text-2xl font-bold text-green-600">${campaign.clicks || 0}</p>
-                            <p class="text-xs text-gray-500">Clics</p>
-                        </div>
-                        <div class="bg-gray-50 rounded p-2">
-                            <p class="text-2xl font-bold text-purple-600">${campaign.conversions || 0}</p>
-                            <p class="text-xs text-gray-500">Conversions</p>
-                        </div>
-                        <div class="bg-gray-50 rounded p-2">
-                            <p class="text-2xl font-bold text-orange-600">${formatCurrency(campaign.spent)}</p>
-                            <p class="text-xs text-gray-500">Dépensé</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <div class="flex justify-between text-sm mb-1">
-                            <span>Budget utilisé</span>
-                            <span>${progress.toFixed(1)}% (${formatCurrency(campaign.spent)} / ${formatCurrency(campaign.budget)})</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: ${progress}%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end gap-2">
-                        ${campaign.status === 'active' ? `
-                            <button onclick="SupplierCampaigns.pauseCampaign('${campaign.id}')" 
-                                    class="px-4 py-2 text-yellow-600 hover:bg-yellow-50 rounded-lg">
-                                <i class="fas fa-pause mr-2"></i>Pause
-                            </button>
-                        ` : campaign.status === 'paused' ? `
-                            <button onclick="SupplierCampaigns.resumeCampaign('${campaign.id}')" 
-                                    class="px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg">
-                                <i class="fas fa-play mr-2"></i>Reprendre
-                            </button>
-                        ` : ''}
-                        <button onclick="SupplierCampaigns.editCampaign('${campaign.id}')" 
-                                class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg">
-                            <i class="fas fa-edit mr-2"></i>Modifier
-                        </button>
-                        <button onclick="SupplierCampaigns.deleteCampaign('${campaign.id}')" 
-                                class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg">
-                            <i class="fas fa-trash mr-2"></i>Supprimer
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-    
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    function initChart() {
-        const canvas = document.querySelector(CONFIG.selectors.chartCanvas);
-        if (!canvas || typeof Chart === 'undefined') {
-            log('Chart.js not available');
-            return;
-        }
-        
-        try {
-            const ctx = canvas.getContext('2d');
-            state.chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Impressions',
-                        data: [],
-                        borderColor: 'rgb(59, 130, 246)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Clics',
-                        data: [],
-                        borderColor: 'rgb(16, 185, 129)',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'top' } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-            log('Chart initialized');
-        } catch (e) {
-            console.error('Chart init error:', e);
-        }
-    }
-    
-    function updateChart() {
-        if (!state.chart || state.campaigns.length === 0) return;
-        
-        const labels = [];
-        const impressions = [];
-        const clicks = [];
-        
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            labels.push(d.toLocaleDateString('fr-FR', { weekday: 'short' }));
-            
-            const active = state.campaigns.filter(c => {
-                const start = new Date(c.start_date);
-                const end = new Date(c.end_date);
-                return c.status === 'active' && d >= start && d <= end;
-            }).length;
-            
-            impressions.push(active * (100 + Math.floor(Math.random() * 400)));
-            clicks.push(active * (10 + Math.floor(Math.random() * 40)));
-        }
-        
-        state.chart.data.labels = labels;
-        state.chart.data.datasets[0].data = impressions;
-        state.chart.data.datasets[1].data = clicks;
-        state.chart.update();
-    }
-    
-    // ============================================
-    // MODAL & FORM
-    // ============================================
-    
-    function openModal(campaignId = null) {
-        log(`Opening modal, editing: ${campaignId}`);
-        
-        const modal = document.querySelector(CONFIG.selectors.modal);
-        const form = document.querySelector(CONFIG.selectors.form);
-        
-        if (!modal || !form) {
-            console.error('Modal or form not found');
-            return;
-        }
-        
-        form.reset();
-        state.currentEditId = campaignId;
-        state.selectedProduct = null;
-        state.uploadedCreative = null;
-        
-        // Reset selection visuelle
-        document.querySelectorAll('.product-card').forEach(c => c.classList.remove('ring-2', 'ring-blue-500'));
-        
-        // Cacher section custom link (demandé)
-        const customLink = document.getElementById('custom-link-section');
-        if (customLink) customLink.style.display = 'none';
-        
-        if (campaignId) {
-            const campaign = state.campaigns.find(c => c.id === campaignId);
-            if (campaign) fillForm(campaign);
-        }
-        
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        
-        setTimeout(() => {
-            const content = modal.querySelector('.modal-content');
-            if (content) {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }
-        }, 10);
-    }
-    
-    function closeModal() {
-        const modal = document.querySelector(CONFIG.selectors.modal);
-        if (!modal) return;
-        
-        const content = modal.querySelector('.modal-content');
-        if (content) {
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-        }
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }, 200);
-    }
-    
-    function fillForm(campaign) {
-        const form = document.querySelector(CONFIG.selectors.form);
-        if (!form) return;
-        
-        const fields = ['name', 'budget', 'daily_budget'];
-        fields.forEach(f => {
-            const input = form.querySelector(`[name="${f}"]`);
-            if (input && campaign[f] !== undefined) input.value = campaign[f];
-        });
-        
-        if (campaign.start_date) {
-            const input = form.querySelector('[name="start_date"]');
-            if (input) input.value = campaign.start_date.split('T')[0];
-        }
-        if (campaign.end_date) {
-            const input = form.querySelector('[name="end_date"]');
-            if (input) input.value = campaign.end_date.split('T')[0];
-        }
-        
-        if (campaign.product_id) selectProduct(campaign.product_id);
-        
-        // Targeting
-        if (campaign.targeting) {
-            const t = typeof campaign.targeting === 'string' ? JSON.parse(campaign.targeting) : campaign.targeting;
-            if (t.countries) form.querySelector('[name="targeting_countries"]').value = t.countries.join(',');
-            if (t.interests) form.querySelector('[name="targeting_interests"]').value = t.interests.join(',');
-            if (t.age_min) form.querySelector('[name="age_min"]').value = t.age_min;
-            if (t.age_max) form.querySelector('[name="age_max"]').value = t.age_max;
-        }
-    }
-    
-    function selectProduct(productId) {
-        state.selectedProduct = productId;
-        document.querySelectorAll('.product-card').forEach(card => {
-            card.classList.toggle('ring-2', card.dataset.productId === productId);
-            card.classList.toggle('ring-blue-500', card.dataset.productId === productId);
-        });
-        log(`Product selected: ${productId}`);
-    }
-    
-    // ============================================
-    // UPLOAD HANDLING
-    // ============================================
-    
-    function handleFileSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        log('File selected:', file.name, file.type, file.size);
-        
-        // Validation
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
-        if (!allowedTypes.includes(file.type)) {
-            showNotification('Format non supporté. Utilisez: JPG, PNG, GIF, WEBP, MP4, WEBM', 'error');
-            return;
-        }
-        
-        const maxSize = 50 * 1024 * 1024; // 50MB
-        if (file.size > maxSize) {
-            showNotification('Fichier trop volumineux (max 50MB)', 'error');
-            return;
-        }
-        
-        // Preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            state.uploadedCreative = {
-                file: file,
-                preview: e.target.result,
-                type: file.type.startsWith('video/') ? 'video' : 'image'
-            };
-            updatePreview();
-        };
-        reader.readAsDataURL(file);
-    }
-    
-    function updatePreview() {
-        const container = document.getElementById('creative-preview');
-        if (!container || !state.uploadedCreative) return;
-        
-        const { preview, type } = state.uploadedCreative;
-        
-        if (type === 'video') {
-            container.innerHTML = `<video src="${preview}" controls class="max-h-48 rounded-lg"></video>`;
-        } else {
-            container.innerHTML = `<img src="${preview}" class="max-h-48 rounded-lg object-cover">`;
-        }
-    }
-    
-    async function uploadCreative() {
-        if (!state.uploadedCreative) return null;
-        
-        const { file } = state.uploadedCreative;
-        const isVideo = file.type.startsWith('video/');
-        const endpoint = isVideo ? '/supplier/upload-video' : '/supplier/upload-image';
-        
-        try {
-            // Essayer BrandiaAPI.upload d'abord
-            if (window.BrandiaAPI && typeof window.BrandiaAPI.upload === 'function') {
-                log('Using BrandiaAPI.upload');
-                const result = await window.BrandiaAPI.upload(endpoint.replace('/supplier', ''), file);
-                return result.data?.url || result.url;
-            }
-            
-            // Fallback: fetch avec FormData
-            log('Using direct fetch upload');
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            const token = localStorage.getItem('brandia_token') || sessionStorage.getItem('brandia_token');
-            const response = await fetch(`${CONFIG.apiBaseURL}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': token ? `Bearer ${token}` : ''
-                },
-                body: formData
-            });
-            
-            const result = await response.json();
-            if (!result.success) throw new Error(result.message);
-            
-            return result.data?.url || result.url;
-        } catch (error) {
-            console.error('Upload error:', error);
-            showNotification('Erreur upload: ' + error.message, 'error');
-            return null;
-        }
-    }
-    
-    // ============================================
-    // SAVE CAMPAIGN
-    // ============================================
-    
-    async function saveCampaign(event) {
-        event.preventDefault();
-        
-        if (!state.selectedProduct) {
-            showNotification('Veuillez sélectionner un produit', 'error');
-            return;
-        }
-        
-        const form = event.target;
-        const formData = new FormData(form);
-        
-        // Upload creative si présent
-        let creativeUrl = null;
-        if (state.uploadedCreative) {
-            showNotification('Upload en cours...', 'info');
-            creativeUrl = await uploadCreative();
-            if (!creativeUrl && state.uploadedCreative) {
-                showNotification('Échec de l\'upload, mais campagne sera créée sans média', 'warning');
-            }
-        }
-        
-        const campaignData = {
-            name: formData.get('name'),
-            product_id: state.selectedProduct,
-            budget: parseFloat(formData.get('budget')),
-            daily_budget: parseFloat(formData.get('daily_budget')) || null,
-            start_date: formData.get('start_date'),
-            end_date: formData.get('end_date'),
-            ad_format: formData.get('ad_format') || 'carousel',
-            targeting: {
-                countries: formData.get('targeting_countries')?.split(',').map(s => s.trim()).filter(Boolean) || [],
-                interests: formData.get('targeting_interests')?.split(',').map(s => s.trim()).filter(Boolean) || [],
-                age_min: parseInt(formData.get('age_min')) || null,
-                age_max: parseInt(formData.get('age_max')) || null
-            },
-            ad_creative: {
-                headline: formData.get('ad_headline') || '',
-                description: formData.get('ad_description') || '',
-                call_to_action: formData.get('call_to_action') || 'Acheter maintenant',
-                media_url: creativeUrl
-            }
-        };
-        
-        // Validation
-        if (!campaignData.name || !campaignData.budget || !campaignData.start_date || !campaignData.end_date) {
-            showNotification('Veuillez remplir tous les champs obligatoires', 'error');
-            return;
-        }
-        
-        if (new Date(campaignData.start_date) >= new Date(campaignData.end_date)) {
-            showNotification('La date de fin doit être après la date de début', 'error');
-            return;
-        }
-        
-        try {
-            let response;
-            if (state.currentEditId) {
-                response = await apiRequest('put', `/supplier/campaigns/${state.currentEditId}`, campaignData);
-            } else {
-                response = await apiRequest('post', '/supplier/campaigns', campaignData);
-            }
-            
-            if (response.success) {
-                showNotification(state.currentEditId ? 'Campagne mise à jour' : 'Campagne créée', 'success');
-                closeModal();
-                await loadCampaigns();
-            } else {
-                throw new Error(response.message);
-            }
-        } catch (error) {
-            console.error('Save error:', error);
-            showNotification('Erreur: ' + error.message, 'error');
-        }
-    }
-    
-    // ============================================
-    // ACTIONS
-    // ============================================
-    
-    async function pauseCampaign(id) {
-        try {
-            const response = await apiRequest('put', `/supplier/campaigns/${id}`, { status: 'paused' });
-            if (response.success) {
-                showNotification('Campagne mise en pause', 'success');
-                await loadCampaigns();
-            }
-        } catch (error) {
-            showNotification('Erreur: ' + error.message, 'error');
-        }
-    }
-    
-    async function resumeCampaign(id) {
-        try {
-            const response = await apiRequest('put', `/supplier/campaigns/${id}`, { status: 'active' });
-            if (response.success) {
-                showNotification('Campagne reprise', 'success');
-                await loadCampaigns();
-            }
-        } catch (error) {
-            showNotification('Erreur: ' + error.message, 'error');
-        }
-    }
-    
-    async function deleteCampaign(id) {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
-        
-        try {
-            const response = await apiRequest('delete', `/supplier/campaigns/${id}`);
-            if (response.success) {
-                showNotification('Campagne supprimée', 'success');
-                await loadCampaigns();
-            }
-        } catch (error) {
-            showNotification('Erreur: ' + error.message, 'error');
-        }
-    }
-    
-    function editCampaign(id) {
-        openModal(id);
-    }
-    
-    // ============================================
-    // NOTIFICATIONS
-    // ============================================
-    
-    function showNotification(message, type = 'info') {
-        if (window.showNotification) {
-            window.showNotification(message, type);
-            return;
-        }
-        
-        const colors = {
-            success: 'bg-green-500',
-            error: 'bg-red-500',
-            warning: 'bg-yellow-500',
-            info: 'bg-blue-500'
-        };
-        
-        const notif = document.createElement('div');
-        notif.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-        notif.textContent = message;
-        document.body.appendChild(notif);
-        
-        setTimeout(() => {
-            notif.remove();
-        }, 4000);
-    }
-    
-    // ============================================
-    // EVENTS
-    // ============================================
-    
-    function bindEvents() {
-        const form = document.querySelector(CONFIG.selectors.form);
-        if (form) form.addEventListener('submit', saveCampaign);
-        
-        const fileInput = document.getElementById('creative-file');
-        if (fileInput) fileInput.addEventListener('change', handleFileSelect);
-        
-        const modal = document.querySelector(CONFIG.selectors.modal);
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal();
-            });
-        }
-        
-        log('Events bound');
-    }
-    
-    // ============================================
-    // PUBLIC API
-    // ============================================
-    
-    return {
-        init,
-        openModal,
-        closeModal,
-        selectProduct,
-        pauseCampaign,
-        resumeCampaign,
-        deleteCampaign,
-        editCampaign,
-        saveCampaign,
-        handleFileSelect
-    };
-    
-})();
-
-// Auto-init
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SupplierCampaigns;
-} else {
-    window.SupplierCampaigns = SupplierCampaigns;
-    
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(SupplierCampaigns.init, 100));
-    } else {
-        setTimeout(SupplierCampaigns.init, 100);
-    }
 }
+
+window.SupplierCampaigns = {
+  state: {
+    campaigns: [],
+    products: [],
+    selectedProducts: [],
+    chart: null,
+    currentMediaType: 'image',
+    uploadedMedia: null,
+    editingCampaignId: null,
+    targetMode: 'all',
+    ctaType: 'shop',
+    isLoading: false,
+    campaignLimit: { current: 0, max: 5, can_create: true }
+  },
+  
+  MAX_CAMPAIGNS: 5,
+  
+  FALLBACK_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzMzNDE1NSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DYW1wYWduPC90ZXh0Pjwvc3ZnPg==',
+
+  SHOP_URLS: {
+    base: 'https://brandia-marketplace.netlify.app  '
+  },
+
+  init: async function() {
+    console.log('[Campaigns] Initializing v8.2...');
+    try {
+      // Utilisation limite côté client uniquement (max_campaigns n'existe pas en base)
+      this.state.campaignLimit = { 
+        current: 0, 
+        max: this.MAX_CAMPAIGNS, 
+        can_create: true 
+      };
+      await this.loadProducts();
+      await this.loadCampaigns();
+      this.initChart();
+      this.updateCampaignCounter();
+    } catch (error) {
+      console.error('[Campaigns] Init error:', error);
+      this.showToast('Erreur initialisation module campagnes', 'error');
+    }
+  },
+
+  updateCampaignCounter: function() {
+    const counterEl = document.getElementById('campaign-counter');
+    if (counterEl) {
+      const current = this.state.campaigns.filter(c => c.status === 'active').length;
+      this.state.campaignLimit.current = current;
+      counterEl.innerHTML = `
+        <span class="${current >= this.MAX_CAMPAIGNS ? 'text-red-400' : 'text-emerald-400'}">
+          ${current}/${this.MAX_CAMPAIGNS}
+        </span> actives
+      `;
+    }
+  },
+
+  loadProducts: async function() {
+    try {
+      console.log('[Campaigns] Loading products...');
+      const response = await BrandiaAPI.Supplier.getProducts();
+      
+      let productsArray = [];
+      if (response?.success && response.data) {
+        if (Array.isArray(response.data)) {
+          productsArray = response.data;
+        } else if (response.data.products && Array.isArray(response.data.products)) {
+          productsArray = response.data.products;
+        }
+      }
+      
+      this.state.products = productsArray;
+      console.log('[Campaigns] Products loaded:', this.state.products.length);
+      return this.state.products;
+    } catch (error) {
+      console.error('[Campaigns] Error loading products:', error);
+      this.state.products = [];
+      return [];
+    }
+  },
+
+  loadCampaigns: async function() {
+    try {
+      console.log('[Campaigns] Loading campaigns...');
+      const response = await BrandiaAPI.Supplier.getCampaigns();
+      
+      if (response?.success) {
+        this.state.campaigns = response.data || [];
+        console.log('[Campaigns] Loaded:', this.state.campaigns.length);
+        this.renderList();
+        this.updateStats();
+        if (this.state.chart) this.updateChart();
+        this.updateCampaignCounter();
+      } else {
+        this.showToast('Erreur chargement campagnes', 'error');
+      }
+    } catch (error) {
+      console.error('[Campaigns] Load error:', error);
+      this.renderList();
+      this.updateStats();
+      this.updateCampaignCounter();
+    }
+  },
+
+  renderList: function() {
+    const container = document.getElementById('campaigns-list');
+    if (!container) return;
+    
+    if (this.state.campaigns.length === 0) {
+      container.innerHTML = `
+        <div class="p-8 text-center text-slate-500">
+          <i class="fas fa-bullhorn text-4xl mb-4 opacity-50"></i>
+          <p class="text-lg mb-2">Aucune campagne active</p>
+          <p class="text-sm mb-4">Créez votre première publicité</p>
+          <button onclick="SupplierCampaigns.openModal()" class="btn-primary px-6 py-3 rounded-lg text-sm bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 transition-all">
+            <i class="fas fa-plus mr-2"></i>Créer une campagne
+          </button>
+        </div>`;
+      return;
+    }
+    
+    let html = '';
+    for (const c of this.state.campaigns) {
+      const views = parseInt(c.views_count) || 0;
+      const clicks = parseInt(c.clicks_count) || 0;
+      const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
+      const mediaUrl = c.media_url || this.FALLBACK_IMAGE;
+      
+      let targetText = 'Tous les produits';
+      if (c.target_products && Array.isArray(c.target_products)) {
+        if (c.target_products.length === 1) targetText = '1 produit';
+        else if (c.target_products.length > 1) targetText = `${c.target_products.length} produits`;
+      }
+      
+      html += `
+        <div class="campaign-row p-4 flex items-center gap-4 hover:bg-slate-800/30 transition-colors border-b border-slate-800 last:border-0 group">
+          <div class="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+            ${c.media_type === 'video' 
+              ? `<div class="absolute inset-0 flex items-center justify-center bg-black/50 z-10"><i class="fas fa-play-circle text-white text-xl"></i></div><video src="${mediaUrl}" class="w-full h-full object-cover" muted></video>`
+              : `<img src="${mediaUrl}" class="w-full h-full object-cover" onerror="this.src='${this.FALLBACK_IMAGE}'">`
+            }
+            ${c.status === 'active' ? '<span class="absolute top-1 left-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse z-20"></span>' : ''}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h4 class="font-semibold text-white truncate text-sm">${c.name || 'Sans nom'}</h4>
+              <span class="badge badge-${c.status || 'active'} text-xs capitalize">${c.status || 'active'}</span>
+              ${c.status === 'active' ? '<span class="text-xs text-emerald-400">• En ligne</span>' : ''}
+            </div>
+            <p class="text-sm text-slate-400 mb-1 truncate text-xs">${c.headline || ''}</p>
+            <div class="flex items-center gap-3 text-xs text-slate-500">
+              <span><i class="fas fa-bullseye mr-1"></i>${targetText}</span>
+              <span><i class="fas fa-calendar mr-1"></i>${this.formatDate(c.start_date)} - ${this.formatDate(c.end_date)}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="text-center"><p class="text-base font-bold text-white">${views.toLocaleString()}</p><p class="text-xs text-slate-500">Vues</p></div>
+              <div class="text-center"><p class="text-base font-bold text-indigo-400">${clicks.toLocaleString()}</p><p class="text-xs text-slate-500">Clics</p></div>
+              <div class="text-center"><p class="text-base font-bold text-emerald-400">${ctr}%</p><p class="text-xs text-slate-500">CTR</p></div>
+            </div>
+            <div class="flex gap-2 justify-end">
+              <button onclick="event.stopPropagation(); SupplierCampaigns.editCampaign(${c.id})" class="px-2 py-1 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button onclick="event.stopPropagation(); SupplierCampaigns.toggleStatus(${c.id}, '${c.status === 'active' ? 'paused' : 'active'}')" class="px-2 py-1 rounded-lg text-xs font-medium ${c.status === 'active' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'} transition-colors">
+                <i class="fas fa-${c.status === 'active' ? 'pause' : 'play'}"></i>
+              </button>
+              <button onclick="event.stopPropagation(); SupplierCampaigns.deleteCampaign(${c.id})" class="px-2 py-1 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+    container.innerHTML = html;
+  },
+
+  updateStats: function() {
+    const totalViews = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count) || 0), 0);
+    const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count) || 0), 0);
+    const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : 0;
+    
+    const viewsEl = document.getElementById('ad-views');
+    const clicksEl = document.getElementById('ad-clicks');
+    const ctrEl = document.getElementById('ad-ctr');
+    const convEl = document.getElementById('ad-conversions');
+    
+    if (viewsEl) viewsEl.textContent = totalViews.toLocaleString();
+    if (clicksEl) clicksEl.textContent = totalClicks.toLocaleString();
+    if (ctrEl) ctrEl.textContent = ctr + '%';
+    if (convEl) convEl.textContent = Math.floor(totalClicks * 0.1).toLocaleString();
+  },
+
+  initChart: function() {
+    const ctx = document.getElementById('campaignChart');
+    if (!ctx) {
+      console.log('[Campaigns] Chart canvas not found');
+      return;
+    }
+    
+    if (this.state.chart) {
+      this.state.chart.destroy();
+      this.state.chart = null;
+    }
+
+    this.state.chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { 
+            label: 'Vues', 
+            data: [], 
+            borderColor: '#6366f1', 
+            backgroundColor: 'rgba(99, 102, 241, 0.1)', 
+            fill: true, 
+            tension: 0.4 
+          },
+          { 
+            label: 'Clics', 
+            data: [], 
+            borderColor: '#ec4899', 
+            backgroundColor: 'rgba(236, 72, 153, 0.1)', 
+            fill: true, 
+            tension: 0.4 
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { display: true, labels: { color: '#94a3b8' } } 
+        },
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
+            ticks: { color: '#94a3b8' } 
+          },
+          x: { 
+            grid: { display: false }, 
+            ticks: { color: '#94a3b8' } 
+          }
+        }
+      }
+    });
+    
+    this.updateChart();
+    console.log('[Campaigns] Chart initialized');
+  },
+
+  updateChart: function() {
+    if (!this.state.chart) return;
+    
+    const labels = [], viewsData = [], clicksData = [];
+    
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      labels.push(date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
+      
+      const dayViews = Math.floor((this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count) || 0), 0) / 30) * (0.5 + Math.random()));
+      const dayClicks = Math.floor((this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count) || 0), 0) / 30) * (0.5 + Math.random()));
+      
+      viewsData.push(dayViews);
+      clicksData.push(dayClicks);
+    }
+    
+    this.state.chart.data.labels = labels;
+    this.state.chart.data.datasets[0].data = viewsData;
+    this.state.chart.data.datasets[1].data = clicksData;
+    this.state.chart.update();
+  },
+
+  openModal: async function(campaignId = null) {
+    console.log('[Campaigns] Opening modal, editing:', campaignId);
+    
+    const activeCount = this.state.campaigns.filter(c => c.status === 'active').length;
+    if (!campaignId && activeCount >= this.MAX_CAMPAIGNS) {
+      this.showToast(`Limite atteinte: ${this.MAX_CAMPAIGNS} campagnes actives maximum.`, 'error');
+      return;
+    }
+    
+    this.state.editingCampaignId = campaignId;
+    this.state.uploadedMedia = null;
+    this.state.currentMediaType = 'image';
+    this.state.targetMode = 'all';
+    this.state.selectedProducts = [];
+    this.state.ctaType = 'shop';
+    
+    const modal = document.getElementById('campaign-modal');
+    if (!modal) return;
+    
+    if (this.state.products.length === 0) await this.loadProducts();
+    
+    const form = document.getElementById('campaign-form');
+    if (form) form.reset();
+    
+    this.resetUploadUI();
+    this.renderProductChecklist();
+    this.updateCtaLink();
+    
+    if (campaignId) {
+      const campaign = this.state.campaigns.find(c => c.id === campaignId);
+      if (!campaign) {
+        this.showToast('Campagne non trouvée', 'error');
+        return;
+      }
+      this.fillFormForEdit(campaign);
+      this.showModalStats(campaign);
+    } else {
+      this.hideModalStats();
+      const today = new Date().toISOString().split('T')[0];
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      
+      const startInput = document.getElementById('camp-start-date');
+      const endInput = document.getElementById('camp-end-date');
+      if (startInput) startInput.value = today;
+      if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
+      
+      this.updateCtaLink();
+    }
+    
+    this.attachPreviewListeners();
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    this.updatePreview();
+  },
+
+  resetUploadUI: function() {
+    const dropzone = document.getElementById('campaign-dropzone');
+    const fileInput = document.getElementById('campaign-media');
+    
+    if (fileInput) fileInput.value = '';
+    
+    if (dropzone) {
+      dropzone.innerHTML = `
+        <input type="file" id="campaign-media" class="hidden" accept="image/*" onchange="handleCampaignMedia(event)">
+        <div id="campaign-media-placeholder">
+          <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 mb-2"></i>
+          <p class="text-slate-400 text-xs">Cliquez ou glissez votre fichier ici</p>
+          <p class="text-slate-600 text-xs mt-1">Max 5MB (image) ou 50MB (vidéo)</p>
+        </div>
+      `;
+      dropzone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+      dropzone.classList.add('border-slate-700');
+    }
+  },
+
+  renderProductChecklist: function() {
+    const container = document.getElementById('products-checklist');
+    if (!container) return;
+    
+    if (this.state.products.length === 0) {
+      container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Aucun produit disponible</p>';
+      return;
+    }
+    
+    let html = '';
+    this.state.products.forEach(product => {
+      const isSelected = this.state.selectedProducts.includes(product.id);
+      const imageUrl = product.main_image_url || this.FALLBACK_IMAGE;
+      
+      html += `
+        <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-500/10 border border-indigo-500/30' : 'border border-transparent'}">
+          <input type="checkbox" value="${product.id}" 
+                 ${isSelected ? 'checked' : ''} 
+                 onchange="SupplierCampaigns.toggleProductSelection(${product.id})"
+                 class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500 bg-slate-700">
+          <img src="${imageUrl}" class="w-10 h-10 rounded object-cover bg-slate-800" onerror="this.src='${this.FALLBACK_IMAGE}'">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-white truncate">${product.name || 'Sans nom'}</p>
+            <p class="text-xs text-slate-400">${parseFloat(product.price || 0).toFixed(2)} €</p>
+          </div>
+        </label>
+      `;
+    });
+    
+    container.innerHTML = html;
+    this.updateSelectedCount();
+  },
+
+  toggleProductSelection: function(productId) {
+    const index = this.state.selectedProducts.indexOf(productId);
+    if (index > -1) {
+      this.state.selectedProducts.splice(index, 1);
+    } else {
+      this.state.selectedProducts.push(productId);
+    }
+    this.updateSelectedCount();
+    this.renderProductChecklist();
+    this.updatePreview();
+  },
+
+  toggleAllProducts: function() {
+    if (this.state.selectedProducts.length === this.state.products.length) {
+      this.state.selectedProducts = [];
+    } else {
+      this.state.selectedProducts = this.state.products.map(p => p.id);
+    }
+    this.renderProductChecklist();
+    this.updatePreview();
+  },
+
+  updateSelectedCount: function() {
+    const el = document.getElementById('selected-count');
+    if (el) el.textContent = this.state.selectedProducts.length;
+  },
+
+  toggleTargetMode: function(mode) {
+    this.state.targetMode = mode;
+    const panel = document.getElementById('product-selection-panel');
+    if (panel) panel.classList.toggle('hidden', mode === 'all');
+    this.updatePreview();
+  },
+
+  updateCtaOptions: function() {
+    const radios = document.getElementsByName('cta_type');
+    for (const radio of radios) {
+      if (radio.checked) {
+        this.state.ctaType = radio.value;
+        break;
+      }
+    }
+    this.updateCtaLink();
+  },
+
+  updateCtaLink: function() {
+    const linkInput = document.getElementById('camp-cta-link');
+    const helpText = document.getElementById('cta-link-help');
+    if (!linkInput) return;
+    
+    let url = '';
+    let help = '';
+    
+    switch(this.state.ctaType) {
+      case 'shop':
+        url = this.SHOP_URLS.base;
+        help = 'Redirige vers votre boutique principale';
+        break;
+      case 'category':
+        if (this.state.selectedProducts.length > 0 && this.state.products.length > 0) {
+          const firstProduct = this.state.products.find(p => p.id === this.state.selectedProducts[0]);
+          if (firstProduct?.category_id) {
+            url = `${this.SHOP_URLS.base}/category.html?id=${firstProduct.category_id}`;
+          } else {
+            url = this.SHOP_URLS.base;
+          }
+        } else {
+          url = this.SHOP_URLS.base;
+        }
+        help = 'Redirige vers la catégorie des produits sélectionnés';
+        break;
+      case 'custom':
+        url = linkInput.value || 'https://';
+        help = 'Saisissez votre propre URL de destination';
+        break;
+    }
+    
+    if (this.state.ctaType !== 'custom') {
+      linkInput.value = url;
+      linkInput.readOnly = true;
+      linkInput.classList.add('bg-slate-900', 'text-slate-400');
+    } else {
+      linkInput.readOnly = false;
+      linkInput.classList.remove('bg-slate-900', 'text-slate-400');
+    }
+    
+    if (helpText) helpText.textContent = help;
+  },
+
+  fillFormForEdit: function(campaign) {
+    const nameField = document.getElementById('camp-name');
+    const headlineField = document.getElementById('camp-headline');
+    const descField = document.getElementById('camp-description');
+    const ctaTextField = document.getElementById('camp-cta-text');
+    const startDateField = document.getElementById('camp-start-date');
+    const endDateField = document.getElementById('camp-end-date');
+    const ctaLinkField = document.getElementById('camp-cta-link');
+    
+    if (nameField && campaign.name) nameField.value = campaign.name;
+    if (headlineField && campaign.headline) headlineField.value = campaign.headline;
+    if (descField && campaign.description) descField.value = campaign.description;
+    if (ctaTextField && campaign.cta_text) ctaTextField.value = campaign.cta_text;
+    if (startDateField && campaign.start_date) startDateField.value = campaign.start_date.split('T')[0];
+    if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
+    if (ctaLinkField && campaign.cta_link) ctaLinkField.value = campaign.cta_link;
+    
+    // Gestion target_products uniquement (pas target_mode en base)
+    if (campaign.target_products && Array.isArray(campaign.target_products) && campaign.target_products.length > 0) {
+      this.state.targetMode = 'selected';
+      this.state.selectedProducts = [...campaign.target_products];
+      const radio = document.querySelector('input[name="target_mode"][value="selected"]');
+      if (radio) radio.checked = true;
+      this.toggleTargetMode('selected');
+    } else {
+      this.state.targetMode = 'all';
+      this.state.selectedProducts = [];
+      const radio = document.querySelector('input[name="target_mode"][value="all"]');
+      if (radio) radio.checked = true;
+      this.toggleTargetMode('all');
+    }
+    
+    if (campaign.media_type) {
+      this.state.currentMediaType = campaign.media_type;
+      const radio = document.querySelector(`input[name="media_type"][value="${campaign.media_type}"]`);
+      if (radio) radio.checked = true;
+    }
+    
+    if (campaign.media_url) {
+      this.state.uploadedMedia = {
+        isNew: false,
+        existingUrl: campaign.media_url,
+        existingType: campaign.media_type
+      };
+      this.showMediaPreview(campaign.media_url, campaign.media_type);
+    }
+    
+    this.renderProductChecklist();
+  },
+
+  showModalStats: function(campaign) {
+    const statsContainer = document.getElementById('campaign-quick-stats');
+    if (!statsContainer) return;
+    statsContainer.classList.remove('hidden');
+    
+    const viewsEl = document.getElementById('modal-ad-views');
+    const clicksEl = document.getElementById('modal-ad-clicks');
+    const ctrEl = document.getElementById('modal-ad-ctr');
+    
+    const views = parseInt(campaign.views_count) || 0;
+    const clicks = parseInt(campaign.clicks_count) || 0;
+    const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
+    
+    if (viewsEl) viewsEl.textContent = views.toLocaleString();
+    if (clicksEl) clicksEl.textContent = clicks.toLocaleString();
+    if (ctrEl) ctrEl.textContent = ctr + '%';
+  },
+
+  hideModalStats: function() {
+    const statsContainer = document.getElementById('campaign-quick-stats');
+    if (statsContainer) statsContainer.classList.add('hidden');
+  },
+
+  attachPreviewListeners: function() {
+    const fields = ['camp-name', 'camp-headline', 'camp-description', 'camp-cta-text'];
+    fields.forEach(fieldId => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        element.addEventListener('input', () => this.updatePreview());
+      }
+    });
+  },
+
+  updatePreview: function() {
+    try {
+      const headline = document.getElementById('camp-headline')?.value || 'Votre titre';
+      const description = document.getElementById('camp-description')?.value || 'Description...';
+      const ctaText = document.getElementById('camp-cta-text')?.value || "Voir l'offre";
+      
+      const headlineEl = document.getElementById('ad-preview-headline');
+      const descEl = document.getElementById('ad-preview-desc');
+      const ctaEl = document.getElementById('ad-preview-cta');
+      const mediaEl = document.getElementById('ad-preview-media');
+      const targetEl = document.getElementById('ad-preview-target');
+      
+      if (headlineEl) headlineEl.textContent = headline;
+      if (descEl) descEl.textContent = description;
+      if (ctaEl) ctaEl.textContent = ctaText;
+      
+      if (targetEl) {
+        targetEl.textContent = this.state.targetMode === 'all' 
+          ? 'Tous les produits' 
+          : `${this.state.selectedProducts.length} produit(s)`;
+      }
+      
+      if (mediaEl && this.state.uploadedMedia) {
+        const url = this.state.uploadedMedia.localUrl || this.state.uploadedMedia.existingUrl;
+        if (this.state.currentMediaType === 'video') {
+          mediaEl.innerHTML = `<video src="${url}" class="w-full h-full object-cover" muted autoplay loop></video>`;
+        } else {
+          mediaEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+        }
+      } else if (mediaEl) {
+        mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-xl"></i>';
+      }
+    } catch (error) {
+      console.error('[Campaigns] updatePreview error:', error);
+    }
+  },
+
+  handleMediaSelect: function(event) {
+    console.log('[Campaigns] File selected:', event);
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const maxSize = this.state.currentMediaType === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      this.showToast(`Fichier trop grand (max ${this.state.currentMediaType === 'video' ? '50' : '5'}MB)`, 'error');
+      return;
+    }
+    
+    if (this.state.currentMediaType === 'image' && !file.type.startsWith('image/')) {
+      this.showToast('Veuillez sélectionner une image', 'error');
+      return;
+    }
+    if (this.state.currentMediaType === 'video' && !file.type.startsWith('video/')) {
+      this.showToast('Veuillez sélectionner une vidéo', 'error');
+      return;
+    }
+    
+    if (this.state.currentMediaType === 'video') {
+      this.checkVideoDuration(file).then(isValid => {
+        if (!isValid) {
+          this.showToast('La vidéo ne doit pas dépasser 15 secondes', 'error');
+          return;
+        }
+        this.processSelectedFile(file);
+      });
+    } else {
+      this.processSelectedFile(file);
+    }
+  },
+
+  checkVideoDuration: function(file) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(video.duration <= 15);
+      };
+      video.onerror = () => resolve(false);
+      video.src = URL.createObjectURL(file);
+    });
+  },
+
+  processSelectedFile: function(file) {
+    const url = URL.createObjectURL(file);
+    this.showMediaPreview(url, this.state.currentMediaType);
+    this.state.uploadedMedia = {
+      isNew: true,
+      file: file,
+      type: this.state.currentMediaType,
+      localUrl: url
+    };
+    this.updatePreview();
+  },
+
+  showMediaPreview: function(url, type) {
+    const dropzone = document.getElementById('campaign-dropzone');
+    if (!dropzone) return;
+    
+    dropzone.classList.remove('border-slate-700');
+    dropzone.classList.add('border-indigo-500', 'bg-indigo-500/10');
+    
+    if (type === 'video') {
+      dropzone.innerHTML = `
+        <div class="relative w-full">
+          <video src="${url}" class="w-full h-32 object-cover rounded-lg" controls muted></video>
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+            <i class="fas fa-times text-xs"></i>
+          </button>
+        </div>`;
+    } else {
+      dropzone.innerHTML = `
+        <div class="relative w-full">
+          <img src="${url}" class="w-full h-32 object-cover rounded-lg">
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+            <i class="fas fa-times text-xs"></i>
+          </button>
+        </div>`;
+    }
+  },
+
+  removeMedia: function() {
+    this.state.uploadedMedia = null;
+    this.resetUploadUI();
+    this.updatePreview();
+  },
+
+  toggleMediaType: function(type) {
+    this.state.currentMediaType = type;
+    this.removeMedia();
+    const fileInput = document.getElementById('campaign-media');
+    if (fileInput) {
+      fileInput.accept = type === 'video' ? 'video/mp4,video/mov,video/webm' : 'image/*';
+    }
+  },
+
+  uploadMediaToCloudinary: async function() {
+    if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
+      if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
+        return { 
+          url: this.state.uploadedMedia.existingUrl, 
+          type: this.state.uploadedMedia.existingType 
+        };
+      }
+      return null;
+    }
+    
+    const file = this.state.uploadedMedia.file;
+    const type = this.state.uploadedMedia.type;
+    
+    const formData = new FormData();
+    formData.append('media', file);
+    
+    try {
+      this.showLoading(true);
+      const result = type === 'video' 
+        ? await BrandiaAPI.Upload.uploadVideo(formData)
+        : await BrandiaAPI.Upload.uploadImage(formData);
+      
+      if (result?.success) {
+        const mediaUrl = result.data?.url || result.data?.secure_url;
+        if (!mediaUrl) throw new Error('URL média non trouvée');
+        return { url: mediaUrl, type: type };
+      } else {
+        throw new Error(result?.message || 'Erreur upload inconnue');
+      }
+    } catch (error) {
+      console.error('[Campaigns Upload] Error:', error);
+      throw error;
+    } finally {
+      this.showLoading(false);
+    }
+  },
+
+  save: async function() {
+    console.log('[Campaigns] ========== SAVE STARTED ==========');
+    if (this.state.isLoading) return;
+    
+    try {
+      const name = document.getElementById('camp-name')?.value?.trim();
+      const headline = document.getElementById('camp-headline')?.value?.trim();
+      const description = document.getElementById('camp-description')?.value?.trim() || '';
+      const startDate = document.getElementById('camp-start-date')?.value;
+      const endDate = document.getElementById('camp-end-date')?.value;
+      const ctaText = document.getElementById('camp-cta-text')?.value?.trim() || "Voir l'offre";
+      const ctaLink = document.getElementById('camp-cta-link')?.value?.trim();
+      
+      // Validation
+      if (!name) {
+        this.showToast('Le nom de la campagne est requis', 'error');
+        document.getElementById('camp-name')?.focus();
+        return;
+      }
+      if (!headline) {
+        this.showToast('Le titre publicitaire est requis', 'error');
+        document.getElementById('camp-headline')?.focus();
+        return;
+      }
+      if (!startDate || !endDate) {
+        this.showToast('Les dates de début et fin sont requises', 'error');
+        return;
+      }
+      if (new Date(endDate) <= new Date(startDate)) {
+        this.showToast('La date de fin doit être après la date de début', 'error');
+        return;
+      }
+      
+      if (this.state.targetMode === 'selected' && this.state.selectedProducts.length === 0) {
+        this.showToast('Veuillez sélectionner au moins un produit', 'error');
+        return;
+      }
+      
+      // Upload média
+      let mediaUrl = null;
+      let mediaType = this.state.currentMediaType;
+      
+      if (this.state.uploadedMedia?.isNew) {
+        try {
+          const uploadResult = await this.uploadMediaToCloudinary();
+          if (uploadResult) {
+            mediaUrl = uploadResult.url;
+            mediaType = uploadResult.type;
+          }
+        } catch (err) {
+          this.showToast('Erreur upload: ' + err.message, 'error');
+          return;
+        }
+      } else if (this.state.uploadedMedia?.existingUrl) {
+        mediaUrl = this.state.uploadedMedia.existingUrl;
+        mediaType = this.state.uploadedMedia.existingType;
+      }
+      
+      if (!mediaUrl && !this.state.editingCampaignId) {
+        this.showToast('Une image ou vidéo est requise', 'error');
+        return;
+      }
+      
+      // DONNÉES SIMPLIFIÉES - sans target_mode qui n'existe pas en base
+      const campaignData = {
+        name: name,
+        type: 'overlay',
+        media_url: mediaUrl,
+        media_type: mediaType,
+        headline: headline,
+        description: description,
+        cta_text: ctaText,
+        cta_link: ctaLink,
+        target_products: this.state.targetMode === 'all' ? null : this.state.selectedProducts,
+        // PAS de target_mode ici - n'existe pas en base de données
+        start_date: startDate,
+        end_date: endDate,
+        status: 'active'
+      };
+      
+      console.log('[Campaigns] Saving:', campaignData);
+      this.showLoading(true);
+      
+      let response;
+      if (this.state.editingCampaignId) {
+        response = await BrandiaAPI.Supplier.updateCampaign(this.state.editingCampaignId, campaignData);
+      } else {
+        response = await BrandiaAPI.Supplier.createCampaign(campaignData);
+      }
+      
+      this.showLoading(false);
+      
+      if (response?.success) {
+        this.showToast(this.state.editingCampaignId ? 'Campagne mise à jour ✓' : 'Campagne créée avec succès !', 'success');
+        this.closeModal();
+        await this.loadCampaigns();
+      } else {
+        throw new Error(response?.message || 'Erreur serveur');
+      }
+      
+    } catch (error) {
+      console.error('[Campaigns] Save error:', error);
+      this.showLoading(false);
+      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
+    }
+  },
+
+  editCampaign: function(id) {
+    this.openModal(id);
+  },
+
+  toggleStatus: async function(id, newStatus) {
+    try {
+      const response = await BrandiaAPI.Supplier.updateCampaign(id, { status: newStatus });
+      if (response?.success) {
+        this.showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
+        await this.loadCampaigns();
+      } else {
+        throw new Error(response?.message || 'Erreur inconnue');
+      }
+    } catch (error) {
+      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
+    }
+  },
+
+  deleteCampaign: async function(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
+    try {
+      const response = await BrandiaAPI.Supplier.deleteCampaign(id);
+      if (response?.success) {
+        this.showToast('Campagne supprimée', 'success');
+        await this.loadCampaigns();
+      } else {
+        throw new Error(response?.message || 'Erreur inconnue');
+      }
+    } catch (error) {
+      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
+    }
+  },
+
+  closeModal: function() {
+    const modal = document.getElementById('campaign-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+    this.state.editingCampaignId = null;
+    this.state.uploadedMedia = null;
+    this.state.selectedProducts = [];
+  },
+
+  showLoading: function(show) {
+    this.state.isLoading = show;
+    if (window.showLoading) window.showLoading(show);
+  },
+
+  showToast: function(message, type) {
+    if (window.showToast) window.showToast(message, type);
+    else console.log(`[${type}] ${message}`);
+  },
+
+  formatDate: function(dateString) {
+    if (!dateString) return '--';
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    } catch (e) { return '--'; }
+  }
+};
+
+// ==========================================
+// FONCTIONS GLOBALES
+// ==========================================
+window.openCampaignModal = () => SupplierCampaigns.openModal();
+window.closeCampaignModal = () => SupplierCampaigns.closeModal();
+window.saveCampaignForm = () => SupplierCampaigns.save();
+window.handleCampaignMedia = (e) => SupplierCampaigns.handleMediaSelect(e);
+window.toggleMediaType = (type) => SupplierCampaigns.toggleMediaType(type);
+window.toggleTargetMode = (mode) => SupplierCampaigns.toggleTargetMode(mode);
+window.toggleProductSelection = (id) => SupplierCampaigns.toggleProductSelection(id);
+window.toggleAllProducts = () => SupplierCampaigns.toggleAllProducts();
+window.updateCtaOptions = () => SupplierCampaigns.updateCtaOptions();
+window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
+window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
+window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
+
+console.log('[SupplierCampaigns] Module v8.2 PRODUCTION READY chargé'); 
