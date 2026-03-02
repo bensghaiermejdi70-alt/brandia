@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v8.4 FIX
-// Corrections: Gestion correcte du product_id, upload avec champ 'media'
+// SUPPLIER CAMPAIGNS MODULE - v8.5 FIX
+// Corrections: Gestion erreur 500, affichage message si table inexistante
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -34,7 +34,9 @@ window.SupplierCampaigns = {
     targetMode: 'all',
     ctaType: 'shop',
     isLoading: false,
-    campaignLimit: { current: 0, max: 5, can_create: true }
+    campaignLimit: { current: 0, max: 5, can_create: true },
+    campaignsAvailable: true, // 🔥 Nouveau: indique si le module est disponible
+    campaignsMessage: null // 🔥 Nouveau: message si indisponible
   },
   
   MAX_CAMPAIGNS: 5,
@@ -46,7 +48,7 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v8.4...');
+    console.log('[Campaigns] Initializing v8.5...');
     try {
       this.state.campaignLimit = { 
         current: 0, 
@@ -66,6 +68,10 @@ window.SupplierCampaigns = {
   updateCampaignCounter: function() {
     const counterEl = document.getElementById('campaign-counter');
     if (counterEl) {
+      if (!this.state.campaignsAvailable) {
+        counterEl.innerHTML = `<span class="text-amber-400">Configuration requise</span>`;
+        return;
+      }
       const current = this.state.campaigns.filter(c => c.status === 'active').length;
       this.state.campaignLimit.current = current;
       counterEl.innerHTML = `
@@ -106,6 +112,16 @@ window.SupplierCampaigns = {
       const response = await BrandiaAPI.Supplier.getCampaigns();
       
       if (response?.success) {
+        // 🔥 Gestion du message si module en configuration
+        if (response.message && response.data?.length === 0) {
+          this.state.campaignsAvailable = false;
+          this.state.campaignsMessage = response.message;
+          console.log('[Campaigns]', response.message);
+        } else {
+          this.state.campaignsAvailable = true;
+          this.state.campaignsMessage = null;
+        }
+        
         this.state.campaigns = response.data || [];
         console.log('[Campaigns] Loaded:', this.state.campaigns.length);
         this.renderList();
@@ -113,10 +129,20 @@ window.SupplierCampaigns = {
         if (this.state.chart) this.updateChart();
         this.updateCampaignCounter();
       } else {
-        this.showToast('Erreur chargement campagnes', 'error');
+        // 🔥 Si erreur 500 ou autre, afficher message d'indisponibilité
+        console.error('[Campaigns] API Error:', response?.message || 'Unknown error');
+        this.state.campaignsAvailable = false;
+        this.state.campaignsMessage = response?.message || 'Module temporairement indisponible';
+        this.state.campaigns = [];
+        this.renderList();
+        this.updateStats();
+        this.updateCampaignCounter();
       }
     } catch (error) {
       console.error('[Campaigns] Load error:', error);
+      this.state.campaignsAvailable = false;
+      this.state.campaignsMessage = 'Erreur de connexion';
+      this.state.campaigns = [];
       this.renderList();
       this.updateStats();
       this.updateCampaignCounter();
@@ -126,6 +152,22 @@ window.SupplierCampaigns = {
   renderList: function() {
     const container = document.getElementById('campaigns-list');
     if (!container) return;
+    
+    // 🔥 Afficher message si module non disponible
+    if (!this.state.campaignsAvailable) {
+      container.innerHTML = `
+        <div class="p-8 text-center">
+          <div class="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-tools text-amber-400 text-2xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Module en cours de configuration</h3>
+          <p class="text-slate-400 text-sm mb-4">${this.state.campaignsMessage || 'Le système de campagnes publicitaires est temporairement indisponible.'}</p>
+          <button onclick="location.reload()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white transition-colors">
+            <i class="fas fa-sync-alt mr-2"></i>Réessayer
+          </button>
+        </div>`;
+      return;
+    }
     
     if (this.state.campaigns.length === 0) {
       container.innerHTML = `
@@ -302,6 +344,12 @@ window.SupplierCampaigns = {
   openModal: async function(campaignId = null) {
     console.log('[Campaigns] Opening modal, editing:', campaignId);
     
+    // 🔥 Vérifier si le module est disponible
+    if (!this.state.campaignsAvailable && !campaignId) {
+      this.showToast('Module campagnes temporairement indisponible', 'warning');
+      return;
+    }
+    
     const activeCount = this.state.campaigns.filter(c => c.status === 'active').length;
     if (!campaignId && activeCount >= this.MAX_CAMPAIGNS) {
       this.showToast(`Limite atteinte: ${this.MAX_CAMPAIGNS} campagnes actives maximum.`, 'error');
@@ -318,7 +366,7 @@ window.SupplierCampaigns = {
     const modal = document.getElementById('campaign-modal');
     if (!modal) return;
     
-    if (this.state.products.length === 0) await this.loadProducts();
+    if (this.state.products.length === 0) await this    loadProducts();
     
     const form = document.getElementById('campaign-form');
     if (form) form.reset();
@@ -737,7 +785,7 @@ window.SupplierCampaigns = {
     const file = this.state.uploadedMedia.file;
     const type = this.state.uploadedMedia.type;
     
-    // 🔥 CORRECTION v8.4: Utiliser 'media' comme nom de champ pour correspondre au middleware multer
+    // Utiliser 'media' comme nom de champ pour correspondre au middleware multer
     const formData = new FormData();
     formData.append('media', file);
     
@@ -829,8 +877,7 @@ window.SupplierCampaigns = {
         return;
       }
       
-      // 🔥 CORRECTION v8.4: Gestion correcte du product_id
-      // Le backend attend product_id comme string (UUID) ou integer
+      // Gestion correcte du product_id
       let productId = null;
       if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
         // Prendre le premier produit sélectionné
@@ -854,10 +901,10 @@ window.SupplierCampaigns = {
         target_mode: this.state.targetMode
       };
       
-      // Données pour l'API - product_id est requis et doit être string
+      // Données pour l'API
       const campaignData = {
         name: name,
-        product_id: productId,  // 🔥 String ou null
+        product_id: productId,
         budget: 100,
         daily_budget: null,
         start_date: startDate,
@@ -886,6 +933,12 @@ window.SupplierCampaigns = {
         this.closeModal();
         await this.loadCampaigns();
       } else {
+        // 🔥 Gestion spécifique du code CAMPAIGNS_NOT_READY
+        if (response?.code === 'CAMPAIGNS_NOT_READY') {
+          this.state.campaignsAvailable = false;
+          this.state.campaignsMessage = response.message;
+          this.renderList();
+        }
         console.error('[Campaigns] Save failed:', response);
         throw new Error(response?.message || 'Erreur serveur');
       }
@@ -975,4 +1028,4 @@ window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v8.4 FIX READY chargé');
+console.log('[SupplierCampaigns] Module v8.5 FIX READY chargé');

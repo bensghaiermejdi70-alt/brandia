@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v6.8 FIX
-// Fix: SQL INSERT avec bon types, gestion product_id
+// SUPPLIER.CONTROLLER.JS - v6.9 FIX
+// Fix: Gestion gracieuse si table campaigns n'existe pas
 // ============================================
 
 const crypto = require('crypto');
@@ -93,7 +93,7 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
     }
     
     // Erreur colonne manquante
-    if (error.code === '42703' || error.message?.includes('column') && error.message?.includes('does not exist')) {
+    if (error.code === '42703' || (error.message?.includes('column') && error.message?.includes('does not exist'))) {
         return res.status(500).json({
             success: false,
             message: 'Erreur de schéma base de données.',
@@ -407,13 +407,46 @@ const updateOrderStatus = async (req, res) => {
 };
 
 // ============================================
-// CAMPAIGNS - CORRECTIONS MAJEURES v6.8
+// CAMPAIGNS - CORRECTIONS v6.9
 // ============================================
+
+// 🔥 FONCTION UTILITAIRE: Vérifier si la table campaigns existe
+const checkCampaignsTable = async () => {
+    try {
+        if (DB_TYPE === 'postgres') {
+            const result = await db.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'campaigns'
+                );
+            `);
+            return first(result)?.exists || false;
+        } else {
+            const result = await db.query(`SHOW TABLES LIKE 'campaigns'`);
+            return normalizeResult(result).length > 0;
+        }
+    } catch (e) {
+        console.error('[Campaigns] Error checking table:', e.message);
+        return false;
+    }
+};
 
 const getCampaigns = async (req, res) => {
     try {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
+
+        // 🔥 Vérifier si la table existe
+        const tableExists = await checkCampaignsTable();
+        if (!tableExists) {
+            console.log('[Campaigns] Table does not exist, returning empty array');
+            return res.json({ 
+                success: true, 
+                data: [],
+                message: 'Module campagnes en cours de configuration'
+            });
+        }
 
         // Cast explicite pour PostgreSQL
         const result = await db.query(`
@@ -433,6 +466,15 @@ const getCampaigns = async (req, res) => {
 
         res.json({ success: true, data: campaigns });
     } catch (error) {
+        // Si erreur 42P01 (table n'existe pas), retourner tableau vide
+        if (error.code === '42P01' || error.message?.includes('does not exist')) {
+            console.log('[Campaigns] Table missing, returning empty array');
+            return res.json({ 
+                success: true, 
+                data: [],
+                message: 'Module campagnes en cours de configuration'
+            });
+        }
         return handleError(res, error, 'Erreur lors de la récupération des campagnes');
     }
 };
@@ -441,6 +483,20 @@ const getCampaignLimit = async (req, res) => {
     try {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
+
+        // 🔥 Vérifier si la table existe
+        const tableExists = await checkCampaignsTable();
+        if (!tableExists) {
+            return res.json({
+                success: true,
+                data: {
+                    max_campaigns: 5,
+                    current_campaigns: 0,
+                    can_create: true,
+                    remaining: 5
+                }
+            });
+        }
 
         const result = await db.query(`
             SELECT COUNT(*) as count FROM campaigns WHERE supplier_id::text = ${ph(1)}::text AND status != 'ended'
@@ -458,6 +514,17 @@ const getCampaignLimit = async (req, res) => {
             }
         });
     } catch (error) {
+        if (error.code === '42P01') {
+            return res.json({
+                success: true,
+                data: {
+                    max_campaigns: 5,
+                    current_campaigns: 0,
+                    can_create: true,
+                    remaining: 5
+                }
+            });
+        }
         return handleError(res, error, 'Erreur lors de la récupération de la limite');
     }
 };
@@ -466,6 +533,16 @@ const createCampaign = async (req, res) => {
     try {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
+
+        // 🔥 Vérifier si la table existe
+        const tableExists = await checkCampaignsTable();
+        if (!tableExists) {
+            return res.status(503).json({
+                success: false,
+                message: 'Module campagnes temporairement indisponible. Veuillez réessayer plus tard.',
+                code: 'CAMPAIGNS_NOT_READY'
+            });
+        }
 
         const { name, product_id, budget, start_date, end_date, targeting, ad_creative, ad_format, cta_link, status } = req.body;
         
@@ -502,8 +579,7 @@ const createCampaign = async (req, res) => {
         const id = generateUUID();
         const now = new Date().toISOString();
 
-        // 🔥 CORRECTION v6.8: Requête INSERT simplifiée et compatible
-        // On utilise text pour tous les IDs et JSONB pour les objets JSON
+        // Requête INSERT simplifiée et compatible
         let query;
         let params;
 
@@ -535,7 +611,7 @@ const createCampaign = async (req, res) => {
             id, 
             supplierId.toString(), 
             name, 
-            product_id.toString(),  // 🔥 Toujours string pour product_id
+            product_id.toString(),
             parseFloat(budget) || 100, 
             req.body.daily_budget || null,
             start_date, 
@@ -686,6 +762,12 @@ const getActiveCampaignForProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'supplier et product requis' });
         }
 
+        // 🔥 Vérifier si la table existe
+        const tableExists = await checkCampaignsTable();
+        if (!tableExists) {
+            return res.json({ success: true, data: null });
+        }
+
         const query = DB_TYPE === 'postgres'
             ? `SELECT c.*, p.name as product_name, p.images as product_images, p.price
             FROM campaigns c
@@ -717,6 +799,9 @@ const getActiveCampaignForProduct = async (req, res) => {
             }
         });
     } catch (error) {
+        if (error.code === '42P01') {
+            return res.json({ success: true, data: null });
+        }
         return handleError(res, error, 'Erreur lors de la récupération de la campagne');
     }
 };
