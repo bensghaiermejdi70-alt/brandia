@@ -101,6 +101,7 @@
     .badge-delivered { background: #059669; color: white; }
     .badge-active { background: #10b981; color: white; }
     .badge-paused { background: #f59e0b; color: black; }
+    .badge-ended { background: #ef4444; color: white; }
     
     .btn-primary {
       background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
@@ -190,6 +191,194 @@
     .loading-disabled {
       pointer-events: none;
       opacity: 0.6;
+    }
+
+    /* Styles spécifiques pour les campagnes publicitaires */
+    .campaign-card {
+      background: var(--bg-secondary);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1.5rem;
+      align-items: center;
+      transition: all 0.3s;
+    }
+    .campaign-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateX(4px);
+      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
+    }
+
+    .campaign-thumbnail {
+      width: 120px;
+      height: 68px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg-primary);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .campaign-thumbnail img,
+    .campaign-thumbnail video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .campaign-thumbnail .play-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.4);
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .campaign-thumbnail .play-icon:hover {
+      background: rgba(0,0,0,0.6);
+    }
+
+    .campaign-stats-mini {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 0.75rem;
+    }
+    .stat-mini {
+      text-align: center;
+    }
+    .stat-mini .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #6366f1;
+    }
+    .stat-mini .label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+
+    .upload-zone {
+      border: 2px dashed #334155;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      background: rgba(30, 41, 59, 0.5);
+    }
+    .upload-zone:hover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.05);
+    }
+    .upload-zone.has-file {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.05);
+    }
+    .upload-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #334155;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .preview-ad-overlay {
+      position: relative;
+      background: rgba(0,0,0,0.9);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+    }
+    .preview-ad-container {
+      max-width: 600px;
+      width: 100%;
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    .brandia-ad-header {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brandia-ad-badge {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .brandia-ad-video-wrapper {
+      position: relative;
+      background: #000;
+    }
+    .brandia-ad-content {
+      padding: 1.5rem;
+    }
+    .brandia-ad-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: white;
+    }
+    .brandia-ad-desc {
+      color: #94a3b8;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+    .brandia-ad-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .brandia-ad-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+    }
+
+    @media (max-width: 768px) {
+      .campaign-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+      .campaign-thumbnail {
+        width: 100%;
+        height: 150px;
+      }
+      .campaign-actions {
+        justify-content: center;
+      }
     }
   </style>
 </head>
@@ -528,12 +717,12 @@
       </div>
     </section>
 
-    <!-- ADVERTISING SECTION -->
+    <!-- ADVERTISING SECTION - VERSION INTÉGRÉE AVEC STATS -->
     <section id="advertising" class="section space-y-6">
       <div class="flex justify-between items-start">
         <div>
-          <h2 class="text-2xl font-bold text-white">Publicité Contextuelle</h2>
-          <p class="text-slate-400 text-sm mt-1">Promouvez vos produits quand les clients vous consultent</p>
+          <h2 class="text-2xl font-bold text-white">Campagnes Publicitaires</h2>
+          <p class="text-slate-400 text-sm mt-1">Promouvez vos produits avec des publicités vidéo</p>
         </div>
         <button onclick="openCampaignModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
           <i class="fas fa-plus"></i>
@@ -541,6 +730,39 @@
         </button>
       </div>
 
+      <!-- Stats des campagnes -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="campaign-stats">
+        <div class="card rounded-xl p-6 text-center">
+          <div class="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-eye text-pink-400 text-xl"></i>
+          </div>
+          <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Vues totales</p>
+          <p class="text-2xl font-bold text-white" id="total-views">0</p>
+        </div>
+        <div class="card rounded-xl p-6 text-center">
+          <div class="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-mouse-pointer text-indigo-400 text-xl"></i>
+          </div>
+          <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Clics totaux</p>
+          <p class="text-2xl font-bold text-white" id="total-clicks">0</p>
+        </div>
+        <div class="card rounded-xl p-6 text-center">
+          <div class="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-percentage text-emerald-400 text-xl"></i>
+          </div>
+          <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Taux de clic</p>
+          <p class="text-2xl font-bold text-white" id="ctr-rate">0%</p>
+        </div>
+        <div class="card rounded-xl p-6 text-center">
+          <div class="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-coins text-amber-400 text-xl"></i>
+          </div>
+          <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Budget dépensé</p>
+          <p class="text-2xl font-bold text-white" id="ad-spend">0€</p>
+        </div>
+      </div>
+
+      <!-- Info contextuelle -->
       <div class="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 rounded-xl p-6">
         <div class="flex items-start gap-4">
           <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -559,48 +781,18 @@
               </div>
               <div class="flex items-start gap-2">
                 <i class="fas fa-check-circle text-emerald-400 mt-0.5"></i>
-                <span>Format overlay 40% écran, fermeture immédiate possible</span>
+                <span>Format vidéo 15s avec image de fallback</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-eye text-pink-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Vues ce mois</p>
-          <p class="text-2xl font-bold text-white" id="ad-views">0</p>
-        </div>
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-mouse-pointer text-indigo-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Clics</p>
-          <p class="text-2xl font-bold text-white" id="ad-clicks">0</p>
-        </div>
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-percentage text-emerald-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Taux de clic</p>
-          <p class="text-2xl font-bold text-white" id="ad-ctr">0%</p>
-        </div>
-        <div class="card rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-shopping-cart text-amber-400 text-xl"></i>
-          </div>
-          <p class="text-slate-400 text-xs mb-1">Conversions</p>
-          <p class="text-2xl font-bold text-white" id="ad-conversions">0</p>
-        </div>
-      </div>
-
+      <!-- Liste des campagnes -->
       <div class="card rounded-xl overflow-hidden">
         <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-          <h3 class="font-semibold text-lg">Campagnes actives</h3>
-          <span class="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full">1 max par marque</span>
+          <h3 class="font-semibold text-lg">Mes campagnes</h3>
+          <span class="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full" id="campaign-counter">0 campagne(s)</span>
         </div>
         <div id="campaigns-list" class="divide-y divide-slate-800">
           <div class="p-8 text-center text-slate-500">
@@ -610,6 +802,7 @@
         </div>
       </div>
 
+      <!-- Graphique de performance -->
       <div class="card rounded-xl p-6">
         <h3 class="font-semibold text-lg mb-6">Performance des campagnes (30 derniers jours)</h3>
         <div class="chart-container">
@@ -904,275 +1097,217 @@
   </div>
 </div>
 
-<!-- Campaign Modal - Version Sélection Produits -->
+<!-- Campaign Modal - Version complète avec upload vidéo -->
 <div id="campaign-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
   <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
     
     <!-- Header -->
-    <div class="flex items-center justify-between p-4 border-b border-slate-800">
+    <div class="flex items-center justify-between p-6 border-b border-slate-800 sticky top-0 bg-slate-900 z-10">
       <div>
-        <h3 class="text-lg font-bold text-white" id="modal-title">Nouvelle campagne</h3>
-        <p class="text-xs text-slate-400 mt-1">Configurez votre publicité</p>
+        <h3 class="text-xl font-bold text-white" id="campaign-modal-title">Nouvelle campagne</h3>
+        <p class="text-sm text-slate-400 mt-1">Créez une publicité vidéo pour vos produits</p>
       </div>
       <div class="flex items-center gap-3">
-        <span id="campaign-counter" class="text-xs bg-slate-800 px-3 py-1 rounded-full">
+        <span id="modal-campaign-counter" class="text-xs bg-slate-800 px-3 py-1 rounded-full text-slate-400">
           <span class="text-emerald-400">0/5</span> campagnes
         </span>
-        <button onclick="closeCampaignModal()" class="text-slate-400 hover:text-white transition-colors">
+        <button onclick="closeCampaignModal()" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
     </div>
 
-    <form id="campaign-form" onsubmit="event.preventDefault(); return false;" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <form id="campaign-form" onsubmit="event.preventDefault();" class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
       
       <!-- COLONNE GAUCHE : Configuration -->
       <div class="space-y-4">
         
         <!-- Nom campagne -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Nom de la campagne *</label>
-          <input type="text" name="name" id="camp-name" required
-                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" 
+          <label class="block text-sm font-medium text-slate-400 mb-2">Nom de la campagne *</label>
+          <input type="text" id="campaign-name" required
+                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none" 
                  placeholder="Soldes été 2026">
         </div>
 
-        <!-- Titre publicitaire -->
+        <!-- Produit associé -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Titre publicitaire *</label>
-          <input type="text" name="headline" id="camp-headline" required
-                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none" 
-                 placeholder="-20% sur les produits sélectionnés">
+          <label class="block text-sm font-medium text-slate-400 mb-2">Produit associé *</label>
+          <select id="campaign-product" required
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none">
+            <option value="">Choisir un produit...</option>
+          </select>
+        </div>
+
+        <!-- Headline -->
+        <div>
+          <label class="block text-sm font-medium text-slate-400 mb-2">Titre publicitaire *</label>
+          <input type="text" id="campaign-headline" required
+                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none" 
+                 placeholder="-20% sur tous nos produits">
         </div>
 
         <!-- Description -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Description courte</label>
-          <textarea name="description" id="camp-description" rows="2" 
-                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none resize-none" 
-                    placeholder="Profitez de nos offres exclusives sur ces produits..."></textarea>
+          <label class="block text-sm font-medium text-slate-400 mb-2">Description</label>
+          <textarea id="campaign-description" rows="3" 
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none resize-none" 
+                    placeholder="Profitez de nos offres exclusives..."></textarea>
         </div>
 
-        <!-- Type média -->
+        <!-- Upload Vidéo -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-2">Type de média</label>
-          <div class="flex gap-2">
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="media_type" value="image" checked onchange="toggleMediaType('image')" class="hidden peer">
-              <div class="text-center py-2 rounded-lg border border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 text-xs text-slate-400 peer-checked:text-indigo-400 transition-all">
-                <i class="fas fa-image mr-1"></i>Image
-              </div>
-            </label>
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="media_type" value="video" onchange="toggleMediaType('video')" class="hidden peer">
-              <div class="text-center py-2 rounded-lg border border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 text-xs text-slate-400 peer-checked:text-indigo-400 transition-all">
-                <i class="fas fa-video mr-1"></i>Vidéo (15s max)
-              </div>
-            </label>
+          <label class="block text-sm font-medium text-slate-400 mb-2">Vidéo publicitaire (15s max) *</label>
+          <div class="upload-zone" id="video-upload-zone">
+            <input type="file" id="campaign-video" accept="video/mp4,video/webm" onchange="handleVideoUpload(this)">
+            <div id="video-preview-content">
+              <i class="fas fa-video text-3xl text-slate-500 mb-2"></i>
+              <p class="text-slate-300 font-medium">Glissez une vidéo ou cliquez pour parcourir</p>
+              <p class="text-slate-500 text-sm mt-1">MP4/WebM, max 20Mo, 15 secondes</p>
+            </div>
           </div>
+          <div class="progress-bar hidden" id="video-progress">
+            <div class="progress-fill" id="video-progress-fill"></div>
+          </div>
+          <p class="text-xs text-slate-500 mt-1 text-center hidden" id="video-progress-text">0%</p>
         </div>
 
-        <!-- Upload média -->
+        <!-- Upload Image fallback -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Visuel publicitaire *</label>
-          <div id="campaign-dropzone" onclick="document.getElementById('campaign-media').click()" 
-               class="border-2 border-dashed border-slate-700 rounded-lg p-4 cursor-pointer hover:border-slate-600 transition-colors text-center">
-            <input type="file" id="campaign-media" class="hidden" accept="image/*" onchange="handleCampaignMedia(event)">
-            <div id="campaign-media-placeholder">
-              <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 mb-2"></i>
-              <p class="text-slate-400 text-xs">Cliquez ou glissez votre fichier ici</p>
-              <p class="text-slate-600 text-xs mt-1">Max 5MB (image) ou 50MB (vidéo)</p>
+          <label class="block text-sm font-medium text-slate-400 mb-2">Image de fallback</label>
+          <div class="upload-zone" id="image-upload-zone">
+            <input type="file" id="campaign-image" accept="image/*" onchange="handleImageUpload(this)">
+            <div id="image-preview-content">
+              <i class="fas fa-image text-3xl text-slate-500 mb-2"></i>
+              <p class="text-slate-300 font-medium">Image si vidéo bloquée</p>
+              <p class="text-slate-500 text-sm mt-1">JPG/PNG, 800x450px recommandé</p>
             </div>
           </div>
         </div>
 
         <!-- Dates -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Début *</label>
-            <input type="date" name="start_date" id="camp-start-date" required
-                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
+            <label class="block text-sm font-medium text-slate-400 mb-2">Date de début *</label>
+            <input type="datetime-local" id="campaign-start" required
+                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Fin *</label>
-            <input type="date" name="end_date" id="camp-end-date" required
-                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
+            <label class="block text-sm font-medium text-slate-400 mb-2">Date de fin *</label>
+            <input type="datetime-local" id="campaign-end" required
+                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none">
           </div>
         </div>
 
-        <!-- CTA Texte -->
+        <!-- Lien CTA -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Texte du bouton</label>
-          <input type="text" name="cta_text" id="camp-cta-text" value="Voir l'offre"
-                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none">
+          <label class="block text-sm font-medium text-slate-400 mb-2">Lien bouton "Voir l'offre"</label>
+          <input type="url" id="campaign-cta-link" 
+                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none"
+                 placeholder="https://votresite.com/promo">
+        </div>
+
+        <!-- Statut actif -->
+        <div class="flex items-center gap-3 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+          <input type="checkbox" id="campaign-active" checked class="toggle">
+          <div>
+            <p class="text-sm font-medium text-white">Campagne active immédiatement</p>
+            <p class="text-xs text-slate-400">Désactivez pour planifier plus tard</p>
+          </div>
         </div>
 
       </div>
 
-      <!-- COLONNE DROITE : Sélection Produits + Preview -->
+      <!-- COLONNE DROITE : Preview + Stats -->
       <div class="space-y-4">
         
-        <!-- MODE DE CIBLAGE -->
-        <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-          <h4 class="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">Ciblage des produits</h4>
+        <!-- Preview -->
+        <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+          <h4 class="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">Aperçu de la publicité</h4>
           
-          <!-- Option 1 : Tous les produits -->
-          <label class="flex items-center gap-3 p-3 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer hover:border-indigo-500/50 transition-colors mb-2">
-            <input type="radio" name="target_mode" value="all" checked onchange="toggleTargetMode('all')" class="w-4 h-4 text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
-            <div class="flex-1">
-              <p class="text-sm font-medium text-white">Tous mes produits</p>
-              <p class="text-xs text-slate-400">La publicité s'affichera sur tous vos produits</p>
-            </div>
-            <i class="fas fa-globe text-indigo-400"></i>
-          </label>
-
-          <!-- Option 2 : Produits sélectionnés -->
-          <label class="flex items-center gap-3 p-3 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer hover:border-indigo-500/50 transition-colors">
-            <input type="radio" name="target_mode" value="selected" onchange="toggleTargetMode('selected')" class="w-4 h-4 text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
-            <div class="flex-1">
-              <p class="text-sm font-medium text-white">Produits sélectionnés</p>
-              <p class="text-xs text-slate-400">Choisissez les produits spécifiques à promouvoir</p>
-            </div>
-            <i class="fas fa-list-check text-indigo-400"></i>
-          </label>
-        </div>
-
-        <!-- LISTE DES PRODUITS (visible seulement si mode "selected") -->
-        <div id="product-selection-panel" class="hidden bg-slate-800/30 rounded-lg p-3 border border-slate-700 max-h-64 overflow-y-auto">
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-xs font-medium text-slate-300">Sélectionnez les produits</p>
-            <button type="button" onclick="toggleAllProducts()" class="text-xs text-indigo-400 hover:text-indigo-300">
-              <i class="fas fa-check-square mr-1"></i>Tout sélectionner
-            </button>
-          </div>
-          <div id="products-checklist" class="space-y-2">
-            <!-- Rempli dynamiquement par JS -->
-            <p class="text-xs text-slate-500 text-center py-4">Chargement des produits...</p>
-          </div>
-          <p class="text-xs text-slate-500 mt-2 text-center">
-            <span id="selected-count">0</span> produit(s) sélectionné(s)
-          </p>
-        </div>
-
-        <!-- Section CTA - SIMPLIFIÉE (pas de lien personnalisé) -->
-        <div class="space-y-4">
-          <h4 class="text-sm font-medium text-white flex items-center gap-2">
-            <i class="fas fa-link text-indigo-400"></i>
-            Destination du lien
-          </h4>
-          
-          <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-            <div class="flex items-center gap-3 mb-3">
-              <i class="fas fa-info-circle text-indigo-400"></i>
-              <span class="text-sm text-slate-300">Redirection automatique</span>
-            </div>
-            
-            <div class="space-y-3">
-              <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700">
-                <input type="radio" name="target_mode" value="all" checked 
-                       onchange="toggleTargetMode('all')"
-                       class="w-4 h-4 text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
-                <div class="flex-1">
-                  <p class="text-sm font-medium text-white">Ma boutique</p>
-                  <p class="text-xs text-slate-400">Redirige vers la page d'accueil</p>
-                </div>
-              </div>
-              
-              <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700">
-                <input type="radio" name="target_mode" value="selected" 
-                       onchange="toggleTargetMode('selected')"
-                       class="w-4 h-4 text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
-                <div class="flex-1">
-                  <p class="text-sm font-medium text-white">Une catégorie</p>
-                  <p class="text-xs text-slate-400">Redirige vers la catégorie des produits sélectionnés</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Panneau de sélection des produits (caché par défaut) -->
-            <div id="product-selection-panel" class="hidden mt-4 p-3 bg-slate-900/30 rounded-lg border border-slate-700/50">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-slate-400">Produits sélectionnés: <span id="selected-count" class="text-indigo-400 font-bold">0</span></span>
-                <button type="button" onclick="toggleAllProducts()" class="text-xs text-indigo-400 hover:text-indigo-300">
-                  Tout sélectionner
+          <div class="preview-ad-overlay" style="padding: 1rem;">
+            <div class="preview-ad-container" style="max-width: 100%;">
+              <div class="brandia-ad-header">
+                <span class="brandia-ad-badge">
+                  <i class="fas fa-sparkles"></i> Sponsorisé • 15s
+                </span>
+                <button class="text-white/60 hover:text-white">
+                  <i class="fas fa-times"></i>
                 </button>
               </div>
-              <div id="products-checklist" class="max-h-40 overflow-y-auto space-y-1">
-                <!-- Rempli dynamiquement -->
+              <div class="brandia-ad-video-wrapper" style="aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; background: #0f172a;">
+                <div id="ad-preview-media">
+                  <i class="fas fa-play-circle text-4xl text-slate-600"></i>
+                </div>
+              </div>
+              <div class="brandia-ad-content">
+                <h4 class="brandia-ad-title" id="ad-preview-headline">Votre titre ici</h4>
+                <p class="brandia-ad-desc" id="ad-preview-desc">Description de votre offre...</p>
+                <a href="#" class="brandia-ad-cta" id="ad-preview-cta">
+                  Voir l'offre <i class="fas fa-arrow-right"></i>
+                </a>
               </div>
             </div>
-            
-            <!-- Champ caché pour le lien (auto-généré) -->
-            <input type="hidden" id="camp-cta-link" value="https://brandia-marketplace.netlify.app">
-            <p id="cta-link-help" class="mt-2 text-xs text-slate-500">
-              Redirige vers votre boutique principale
-            </p>
           </div>
         </div>
 
-        <!-- Preview -->
-        <div class="bg-slate-800/30 rounded-lg p-3 border border-slate-700">
-          <h4 class="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Aperçu</h4>
-          
-          <div class="relative bg-slate-900 rounded-lg overflow-hidden border border-slate-700" style="max-width: 280px; margin: 0 auto;">
-            <div class="relative h-40 bg-slate-800 flex items-center justify-center" id="ad-preview-media">
-              <i class="fas fa-image text-slate-500 text-xl"></i>
-            </div>
-            <div class="p-3">
-              <h5 class="font-semibold text-white text-sm mb-1" id="ad-preview-headline">Votre titre</h5>
-              <p class="text-xs text-slate-400 mb-2 line-clamp-2" id="ad-preview-desc">Description...</p>
-              <div class="flex items-center gap-2 text-xs text-indigo-400 mb-2">
-                <i class="fas fa-tag"></i>
-                <span id="ad-preview-target">Tous les produits</span>
-              </div>
-              <button class="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xs py-2 rounded transition-colors" id="ad-preview-cta">
-                Voir l'offre
-              </button>
-            </div>
-            <div class="absolute top-2 left-2 bg-black/50 backdrop-blur px-2 py-1 rounded text-[10px] text-white/80">
-              <i class="fas fa-ad mr-1"></i>Publicité
-            </div>
-            <button class="absolute top-2 right-2 w-6 h-6 bg-black/50 backdrop-blur rounded-full flex items-center justify-center text-white/80 hover:text-white">
-              <i class="fas fa-times text-xs"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Stats (mode édit) -->
-        <div id="campaign-quick-stats" class="hidden bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-          <h4 class="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Performance</h4>
-          <div class="grid grid-cols-3 gap-2 text-center">
+        <!-- Stats rapides (mode édit) -->
+        <div id="campaign-quick-stats" class="hidden bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <h4 class="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">Performance</h4>
+          <div class="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p class="text-lg font-bold text-white" id="modal-ad-views">0</p>
+              <p class="text-2xl font-bold text-white" id="modal-ad-views">0</p>
               <p class="text-xs text-slate-500">Vues</p>
             </div>
             <div>
-              <p class="text-lg font-bold text-indigo-400" id="modal-ad-clicks">0</p>
+              <p class="text-2xl font-bold text-indigo-400" id="modal-ad-clicks">0</p>
               <p class="text-xs text-slate-500">Clics</p>
             </div>
             <div>
-              <p class="text-lg font-bold text-emerald-400" id="modal-ad-ctr">0%</p>
+              <p class="text-2xl font-bold text-emerald-400" id="modal-ad-ctr">0%</p>
               <p class="text-xs text-slate-500">CTR</p>
             </div>
           </div>
+        </div>
+
+        <!-- Conseils -->
+        <div class="bg-indigo-900/20 border border-indigo-500/30 rounded-xl p-4">
+          <h4 class="text-sm font-semibold text-indigo-400 mb-2">
+            <i class="fas fa-lightbulb mr-2"></i>Conseils
+          </h4>
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li class="flex items-start gap-2">
+              <i class="fas fa-check text-emerald-400 mt-0.5"></i>
+              <span>Gardez votre vidéo sous 15 secondes pour maximiser l'engagement</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fas fa-check text-emerald-400 mt-0.5"></i>
+              <span>Utilisez un titre accrocheur avec une offre claire</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fas fa-check text-emerald-400 mt-0.5"></i>
+              <span>Assurez-vous que votre vidéo est de bonne qualité (1080p recommandé)</span>
+            </li>
+          </ul>
         </div>
 
       </div>
     </form>
 
     <!-- Footer -->
-    <div class="flex items-center justify-between p-4 border-t border-slate-800 bg-slate-900">
+    <div class="flex items-center justify-between p-6 border-t border-slate-800 bg-slate-900 sticky bottom-0">
       <div class="text-xs text-slate-500">
         <i class="fas fa-info-circle mr-1"></i>
-        Max 5 campagnes actives simultanément
+        Les campagnes sont facturées au CPC (coût par clic)
       </div>
       <div class="flex items-center gap-3">
-        <button type="button" onclick="closeCampaignModal()" class="px-4 py-2 rounded-lg text-sm text-slate-400 hover:text-white transition-colors">
+        <button type="button" onclick="closeCampaignModal()" class="px-6 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
           Annuler
         </button>
         <button type="button" onclick="saveCampaignForm()" id="btn-save-campaign" 
-                class="px-6 py-2 rounded-lg text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-medium transition-all">
-          <i class="fas fa-save mr-2"></i>Enregistrer
+                class="px-6 py-2.5 rounded-lg text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-medium transition-all flex items-center gap-2">
+          <i class="fas fa-save"></i>
+          <span>Enregistrer</span>
         </button>
       </div>
     </div>
@@ -1180,11 +1315,26 @@
   </div>
 </div>
 
+<!-- Preview Modal -->
+<div id="preview-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl shadow-2xl">
+    <div class="flex items-center justify-between p-6 border-b border-slate-800">
+      <h3 class="text-lg font-bold text-white">Prévisualisation</h3>
+      <button onclick="closePreviewModal()" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+    <div class="p-6" id="preview-modal-content">
+      <!-- Injection dynamique -->
+    </div>
+  </div>
+</div>
+
 <!-- Toast Container -->
 <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 
 <!-- Loading Overlay -->
-<div id="loading-overlay" class="fixed inset-0 z-[60] bg-slate-900/80 backdrop-blur flex items-center justify-center hidden">
+<div id="loading-overlay" class="fixed inset-0 z-[70] bg-slate-900/80 backdrop-blur flex items-center justify-center hidden">
   <div class="text-center">
     <i class="fas fa-spinner fa-spin text-4xl text-indigo-400 mb-4"></i>
     <p class="text-slate-300">Chargement...</p>
@@ -1305,7 +1455,7 @@
       'overview': ['Tableau de bord', 'Vue d\'ensemble de votre activité'],
       'products': ['Mes produits', 'Gérez votre catalogue produits'],
       'promotions': ['Promotions', 'Créez des offres pour booster vos ventes'],
-      'advertising': ['Publicité Contextuelle', 'Promouvez vos produits'],
+      'advertising': ['Campagnes Publicitaires', 'Promouvez vos produits avec des vidéos'],
       'orders': ['Commandes', 'Suivez et gérez vos commandes clients'],
       'payments': ['Paiements & Revenus', 'Suivez vos revenus et demandez des virements'],
       'analytics': ['Statistiques', 'Analysez votre performance commerciale'],
@@ -1316,343 +1466,671 @@
     
     const [title, subtitle] = titles[section] || ['Dashboard', ''];
     const titleEl = document.getElementById('page-title');
-    const subtitleEl = document.getElementById('page-subtitle');
-    if (titleEl) titleEl.textContent = title;
-    if (subtitleEl) subtitleEl.textContent = subtitle;
-    
-    // Sauvegarder section active
-    localStorage.setItem('dashboard_last_section', section);
-  };
+    const subtitleEl = document.getElementById('page
+    // ==========================================
+    // FONCTIONS DE MODAL CAMPAGNES AMÉLIORÉES
+    // ==========================================
 
-  window.logout = function() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    window.location.href = '../login.html';
-  };
-
-  // ==========================================
-  // FONCTIONS DE MODAL CORRIGÉES
-  // ==========================================
-
-  // Ouvrir modal campagne (fonction globale sécurisée)
-  window.openCampaignModal = function() {
-    console.log('[Dashboard] openCampaignModal called');
-    if (window.SupplierCampaigns && SupplierCampaigns.openModal) {
-      SupplierCampaigns.openModal();
-    } else {
-      console.error('[Dashboard] SupplierCampaigns non disponible');
-      showToast('Erreur: Module campagnes non chargé', 'error');
-    }
-  };
-
-  // Fermer modal campagne
-  window.closeCampaignModal = function() {
-    const modal = document.getElementById('campaign-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-    if (window.SupplierCampaigns) {
-      SupplierCampaigns.state.editingCampaignId = null;
-      SupplierCampaigns.state.uploadedMedia = null;
-    }
-  };
-
-  // Fermer modal produit
-  window.closeProductModal = function() {
-    const modal = document.getElementById('product-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-  };
-
-  // Sauvegarder campagne (wrapper pour le formulaire)
-  window.saveCampaignForm = function() {
-    console.log('[Dashboard] saveCampaignForm called');
-    if (window.SupplierCampaigns && SupplierCampaigns.save) {
-      SupplierCampaigns.save();
-    } else {
-      console.error('[Dashboard] SupplierCampaigns.save non disponible');
-      showToast('Erreur: Module campagnes non chargé', 'error');
-    }
-  };
-
-  // Gérer média campagne
-  window.handleCampaignMedia = function(event) {
-    if (window.SupplierCampaigns && SupplierCampaigns.handleMediaSelect) {
-      SupplierCampaigns.handleMediaSelect(event);
-    }
-  };
-
-  // Toggle type média
-  window.toggleMediaType = function(type) {
-    if (window.SupplierCampaigns && SupplierCampaigns.toggleMediaType) {
-      SupplierCampaigns.toggleMediaType(type);
-    }
-  };
-
-  // ==========================================
-  // AUTRES FONCTIONS GLOBALES
-  // ==========================================
-
-  window.showLoading = function(show) {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.classList.toggle('hidden', !show);
-  };
-
-  window.openProductModal = function() {
-    if (window.SupplierProducts && SupplierProducts.openModal) {
-      SupplierProducts.openModal();
-    } else {
-      const modal = document.getElementById('product-modal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-      }
-    }
-  };
-
-  window.filterOrders = function(filter) {
-    if (window.SupplierOrders && SupplierOrders.setFilter) {
-      SupplierOrders.setFilter(filter);
-    } else {
-      console.error('[Dashboard] SupplierOrders non disponible');
-      showToast('Erreur: Module commandes non chargé', 'error');
-    }
-  };
-
-  window.requestPayout = function() {
-    if (window.SupplierPayments && SupplierPayments.requestPayout) {
-      SupplierPayments.requestPayout();
-    } else {
-      showToast('Module paiements non chargé', 'error');
-    }
-  };
-
-  window.exportTransactions = function() {
-    showToast('Fonctionnalité en développement', 'info');
-  };
-
-  window.importProducts = function() {
-    if (window.SupplierProducts && SupplierProducts.importCSV) {
-      SupplierProducts.importCSV();
-    } else {
-      showToast('Fonctionnalité en développement', 'info');
-    }
-  };
-
-  window.quickAction = function() {
-    const actions = ['products', 'orders', 'advertising'];
-    const current = localStorage.getItem('dashboard_last_section') || 'overview';
-    const next = actions[(actions.indexOf(current) + 1) % actions.length] || 'products';
-    navigate(next);
-  };
-
-  window.showNotifications = function() {
-    showToast('Pas de nouvelles notifications', 'info');
-  };
-
-  window.editBrand = function() {
-    showToast('Fonctionnalité en développement', 'info');
-  };
-
-  window.viewPublicProfile = function() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.id) {
-      window.open(`../brand.html?id=${user.id}`, '_blank');
-    }
-  };
-
-  window.handleLogoUpload = function(event) {
-    showToast('Upload logo en développement', 'info');
-  };
-
-  window.handleImageSelect = function(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const preview = document.getElementById('image-preview');
-        const container = document.getElementById('image-preview-container');
-        if (preview && container) {
-          preview.src = e.target.result;
-          container.classList.remove('hidden');
+    // Ouvrir modal campagne (fonction globale sécurisée)
+    window.openCampaignModal = function(campaignId = null) {
+      console.log('[Dashboard] openCampaignModal called', campaignId);
+      
+      const modal = document.getElementById('campaign-modal');
+      const form = document.getElementById('campaign-form');
+      const title = document.getElementById('campaign-modal-title');
+      const counter = document.getElementById('modal-campaign-counter');
+      const quickStats = document.getElementById('campaign-quick-stats');
+      
+      // Reset form
+      form.reset();
+      document.getElementById('video-upload-zone').classList.remove('has-file');
+      document.getElementById('image-upload-zone').classList.remove('has-file');
+      document.getElementById('video-preview-content').innerHTML = `
+        <i class="fas fa-video text-3xl text-slate-500 mb-2"></i>
+        <p class="text-slate-300 font-medium">Glissez une vidéo ou cliquez pour parcourir</p>
+        <p class="text-slate-500 text-sm mt-1">MP4/WebM, max 20Mo, 15 secondes</p>
+      `;
+      document.getElementById('image-preview-content').innerHTML = `
+        <i class="fas fa-image text-3xl text-slate-500 mb-2"></i>
+        <p class="text-slate-300 font-medium">Image si vidéo bloquée</p>
+        <p class="text-slate-500 text-sm mt-1">JPG/PNG, 800x450px recommandé</p>
+      `;
+      
+      // Cacher la barre de progression
+      document.getElementById('video-progress').classList.add('hidden');
+      document.getElementById('video-progress-text').classList.add('hidden');
+      
+      if (campaignId && window.SupplierCampaigns) {
+        // Mode édition
+        const campaign = SupplierCampaigns.state.campaigns.find(c => c.id === campaignId);
+        if (campaign) {
+          title.textContent = 'Modifier la campagne';
+          document.getElementById('campaign-name').value = campaign.name;
+          document.getElementById('campaign-headline').value = campaign.headline;
+          document.getElementById('campaign-description').value = campaign.description || '';
+          document.getElementById('campaign-product').value = campaign.product_id;
+          document.getElementById('campaign-cta-link').value = campaign.cta_link || '';
+          document.getElementById('campaign-start').value = campaign.start_date.slice(0, 16);
+          document.getElementById('campaign-end').value = campaign.end_date.slice(0, 16);
+          document.getElementById('campaign-active').checked = campaign.status === 'active';
+          
+          // Afficher stats
+          quickStats.classList.remove('hidden');
+          document.getElementById('modal-ad-views').textContent = campaign.views_count || 0;
+          document.getElementById('modal-ad-clicks').textContent = campaign.clicks_count || 0;
+          const ctr = campaign.views_count > 0 ? ((campaign.clicks_count / campaign.views_count) * 100).toFixed(2) : 0;
+          document.getElementById('modal-ad-ctr').textContent = ctr + '%';
+          
+          // Prévisualisation média existant
+          if (campaign.media_url) {
+            if (campaign.media_type === 'video') {
+              document.getElementById('video-upload-zone').classList.add('has-file');
+              document.getElementById('video-preview-content').innerHTML = `
+                <video src="${campaign.media_url}" class="max-h-32 rounded-lg" controls></video>
+                <p class="text-emerald-400 text-sm mt-2">Vidéo existante</p>
+              `;
+            } else {
+              document.getElementById('image-upload-zone').classList.add('has-file');
+              document.getElementById('image-preview-content').innerHTML = `
+                <img src="${campaign.media_url}" class="max-h-32 rounded-lg">
+                <p class="text-emerald-400 text-sm mt-2">Image existante</p>
+              `;
+            }
+            document.getElementById('ad-preview-media').innerHTML = `
+              ${campaign.media_type === 'video' 
+                ? `<video src="${campaign.media_url}" class="w-full h-full object-cover" controls></video>`
+                : `<img src="${campaign.media_url}" class="w-full h-full object-cover">`
+              }
+            `;
+          }
+          
+          // Stocker l'ID en édition
+          if (window.SupplierCampaigns) {
+            SupplierCampaigns.state.editingId = campaignId;
+          }
         }
-      };
-      reader.readAsDataURL(file);
+      } else {
+        // Mode création
+        title.textContent = 'Nouvelle campagne';
+        quickStats.classList.add('hidden');
+        
+        // Dates par défaut
+        const now = new Date();
+        const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        document.getElementById('campaign-start').value = now.toISOString().slice(0, 16);
+        document.getElementById('campaign-end').value = nextWeek.toISOString().slice(0, 16);
+        
+        if (window.SupplierCampaigns) {
+          SupplierCampaigns.state.editingId = null;
+        }
+      }
+      
+      // Mettre à jour le compteur
+      const campaignCount = window.SupplierCampaigns ? SupplierCampaigns.state.campaigns.length : 0;
+      counter.innerHTML = `<span class="${campaignCount >= 5 ? 'text-red-400' : 'text-emerald-400'}">${campaignCount}/5</span> campagnes`;
+      
+      // Mettre à jour la prévisualisation en temps réel
+      updatePreview();
+      
+      // Afficher modal
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      
+      // Charger les produits si pas déjà fait
+      if (window.SupplierCampaigns && SupplierCampaigns.state.products.length === 0) {
+        SupplierCampaigns.loadProducts();
+      }
+    };
+
+    // Fermer modal campagne
+    window.closeCampaignModal = function() {
+      const modal = document.getElementById('campaign-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+      if (window.SupplierCampaigns) {
+        SupplierCampaigns.state.editingId = null;
+        SupplierCampaigns.state.videoUrl = null;
+        SupplierCampaigns.state.imageUrl = null;
+      }
+    };
+
+    // Fermer modal preview
+    window.closePreviewModal = function() {
+      const modal = document.getElementById('preview-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    };
+
+    // Mettre à jour la prévisualisation
+    function updatePreview() {
+      const headline = document.getElementById('campaign-headline')?.value || 'Votre titre ici';
+      const description = document.getElementById('campaign-description')?.value || 'Description de votre offre...';
+      const ctaText = document.getElementById('campaign-cta-link')?.value ? 'Voir l\'offre' : 'Découvrir';
+      
+      const previewHeadline = document.getElementById('ad-preview-headline');
+      const previewDesc = document.getElementById('ad-preview-desc');
+      const previewCta = document.getElementById('ad-preview-cta');
+      
+      if (previewHeadline) previewHeadline.textContent = headline;
+      if (previewDesc) previewDesc.textContent = description;
+      if (previewCta) previewCta.innerHTML = `${ctaText} <i class="fas fa-arrow-right"></i>`;
     }
-  };
 
-  window.updateAnalyticsPeriod = function(period) {
-    document.querySelectorAll('.analytics-period').forEach(btn => {
-      btn.classList.remove('bg-indigo-600', 'text-white');
-      btn.classList.add('bg-slate-800', 'text-slate-300');
-    });
-    const activeBtn = document.querySelector(`[data-period="${period}"]`);
-    if (activeBtn) {
-      activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
-      activeBtn.classList.add('bg-indigo-600', 'text-white');
-    }
-    showToast(`Période: ${period} jours`, 'info');
-  };
+    // Écouteurs pour mise à jour preview
+    document.getElementById('campaign-headline')?.addEventListener('input', updatePreview);
+    document.getElementById('campaign-description')?.addEventListener('input', updatePreview);
 
-  window.updateSalesChart = function() {
-    const period = document.getElementById('sales-period')?.value || '7';
-    showToast(`Mise à jour graphique: ${period} jours`, 'info');
-  };
+    // Gestion upload vidéo
+    window.handleVideoUpload = function(input) {
+      const file = input.files[0];
+      if (!file) return;
 
-  window.changeProductPage = function(direction) {
-    if (window.SupplierProducts && SupplierProducts.changePage) {
-      SupplierProducts.changePage(direction);
-    }
-  };
-
-  window.filterProducts = function() {
-    if (window.SupplierProducts && SupplierProducts.filter) {
-      SupplierProducts.filter();
-    }
-  };
-
-  window.openPromotionModal = function() {
-    if (window.SupplierPromotions && SupplierPromotions.openModal) {
-      SupplierPromotions.openModal();
-    } else {
-      showToast('Module promotions non chargé', 'error');
-    }
-  };
-
-  // ==========================================
-  // CHARGEMENT STATS & CHART
-  // ==========================================
-
-  async function loadOverviewStats() {
-    try {
-      if (typeof BrandiaAPI === 'undefined') {
-        console.warn('[Dashboard] BrandiaAPI non disponible');
+      // Validation
+      if (file.size > 20 * 1024 * 1024) {
+        showToast('Vidéo trop lourde (max 20Mo)', 'error');
+        input.value = '';
         return;
       }
-      
-      const response = await BrandiaAPI.Supplier.getStats();
-      console.log('[Dashboard] Stats:', response);
-      
-      if (response?.success && response.data) {
-        const data = response.data;
-        
-        updateElement('kpi-revenue', formatPrice(data.totalSales || 0));
-        updateElement('kpi-orders', data.totalOrders || 0);
-        updateElement('kpi-products', data.activeProducts || 0);
-        updateElement('kpi-total-products', data.totalProducts || 0);
-        updateElement('kpi-balance', formatPrice(data.balance || 0));
-        
-        if (typeof Chart !== 'undefined') {
-          initSalesChart(data.salesData || []);
+
+      // Vérifier durée (approximation)
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = function() {
+        window.URL.revokeObjectURL(video.src);
+        if (video.duration > 15) {
+          showToast('Vidéo trop longue (max 15s)', 'error');
+          input.value = '';
+          return;
         }
-      }
-    } catch (error) {
-      console.error('[Dashboard] Erreur stats:', error);
-    }
-  }
+        
+        // Afficher preview
+        const zone = document.getElementById('video-upload-zone');
+        zone.classList.add('has-file');
+        
+        const url = URL.createObjectURL(file);
+        document.getElementById('video-preview-content').innerHTML = `
+          <video src="${url}" class="max-h-32 rounded-lg" controls></video>
+          <p class="text-emerald-400 text-sm mt-2">${file.name}</p>
+          <p class="text-slate-500 text-xs">${(file.size / 1024 / 1024).toFixed(2)} Mo</p>
+        `;
+        
+        // Mettre à jour preview
+        document.getElementById('ad-preview-media').innerHTML = `
+          <video src="${url}" class="w-full h-full object-cover" muted loop></video>
+        `;
+        
+        // Upload avec progression
+        uploadMedia(file, 'video');
+      };
+      video.src = URL.createObjectURL(file);
+    };
 
-  function updateElement(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
-  }
+    // Gestion upload image
+    window.handleImageUpload = function(input) {
+      const file = input.files[0];
+      if (!file) return;
 
-  function formatPrice(amount) {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
-  }
-
-  function initSalesChart(data) {
-    const ctx = document.getElementById('salesChart');
-    if (!ctx) return;
-
-    if (window.salesChartInstance) {
-      window.salesChartInstance.destroy();
-      window.salesChartInstance = null;
-    }
-
-    const parent = ctx.parentElement;
-    const newCanvas = document.createElement('canvas');
-    newCanvas.id = 'salesChart';
-    parent.innerHTML = '';
-    parent.appendChild(newCanvas);
-
-    window.salesChartInstance = new Chart(newCanvas, {
-      type: 'line',
-      data: {
-        labels: (data && data.length) ? data.map(d => d.date) : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-        datasets: [{
-          label: 'Ventes (€)',
-          data: (data && data.length) ? data.map(d => d.amount) : [0, 0, 0, 0, 0, 0, 0],
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#94a3b8' } },
-          x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+      const zone = document.getElementById('image-upload-zone');
+      zone.classList.add('has-file');
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('image-preview-content').innerHTML = `
+          <img src="${e.target.result}" class="max-h-32 rounded-lg">
+          <p class="text-emerald-400 text-sm mt-2">${file.name}</p>
+        `;
+        
+        // Si pas de vidéo, utiliser l'image pour la preview
+        const videoZone = document.getElementById('video-upload-zone');
+        if (!videoZone.classList.contains('has-file')) {
+          document.getElementById('ad-preview-media').innerHTML = `
+            <img src="${e.target.result}" class="w-full h-full object-cover">
+          `;
         }
+        
+        uploadMedia(file, 'image');
+      };
+      reader.readAsDataURL(file);
+    };
+
+    // Upload média avec progression
+    async function uploadMedia(file, type) {
+      const progressBar = document.getElementById('video-progress');
+      const progressFill = document.getElementById('video-progress-fill');
+      const progressText = document.getElementById('video-progress-text');
+      
+      if (type === 'video') {
+        progressBar.classList.remove('hidden');
+        progressText.classList.remove('hidden');
       }
-    });
-  }
 
-  // ==========================================
-  // DÉMARRAGE
-  // ==========================================
-
-  if (!checkAuth()) return;
-
-  const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
-  
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('[Dashboard] Initialisation...');
-    
-    navigate(lastSection);
-    
-    setTimeout(() => {
       try {
-        if (window.SupplierProducts) {
-          console.log('[Dashboard] Init SupplierProducts');
-          SupplierProducts.init();
-        }
-        if (window.SupplierOrders) {
-          console.log('[Dashboard] Init SupplierOrders');
-          SupplierOrders.init();
-        }
-        if (window.SupplierCampaigns) {
-          console.log('[Dashboard] Init SupplierCampaigns');
-          SupplierCampaigns.init();
-        }
-        if (window.SupplierPayments) {
-          console.log('[Dashboard] Init SupplierPayments');
-          SupplierPayments.init();
-        }
-        if (window.SupplierPromotions) {
-          console.log('[Dashboard] Init SupplierPromotions');
-          SupplierPromotions.init();
-        }
-        
-        loadOverviewStats();
-        
-      } catch (error) {
-        console.error('[Dashboard] Erreur init modules:', error);
-        showToast('Erreur de chargement des modules', 'error');
-      }
-    }, 100);
-  });
+        const formData = new FormData();
+        formData.append('media', file);
 
-})();
+        // Simulation progression
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += Math.random() * 15;
+          if (progress > 90) progress = 90;
+          if (progressFill) progressFill.style.width = progress + '%';
+          if (progressText) progressText.textContent = Math.round(progress) + '%';
+        }, 300);
+
+        const endpoint = type === 'video' ? '/supplier/upload-video' : '/supplier/upload-image';
+        const response = await fetch(`${BrandiaAPI?.config?.apiURL || 'https://api.brandia.com'}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
+        });
+
+        clearInterval(interval);
+
+        if (!response.ok) throw new Error('Upload failed');
+
+        const result = await response.json();
+        
+        if (result.success) {
+          if (progressFill) progressFill.style.width = '100%';
+          if (progressText) progressText.textContent = '100%';
+          
+          // Stocker l'URL
+          if (window.SupplierCampaigns) {
+            SupplierCampaigns.state[`${type}Url`] = result.data.url;
+          }
+          
+          setTimeout(() => {
+            progressBar.classList.add('hidden');
+            progressText.classList.add('hidden');
+          }, 1000);
+          
+          showToast(`${type === 'video' ? 'Vidéo' : 'Image'} uploadée avec succès`, 'success');
+        } else {
+          throw new Error(result.message);
+        }
+
+      } catch (error) {
+        console.error('[Dashboard] Upload error:', error);
+        showToast('Erreur upload: ' + error.message, 'error');
+        progressBar.classList.add('hidden');
+        progressText.classList.add('hidden');
+      }
+    }
+
+    // Sauvegarder campagne
+    window.saveCampaignForm = async function() {
+      console.log('[Dashboard] saveCampaignForm called');
+      
+      const btn = document.getElementById('btn-save-campaign');
+      const originalContent = btn.innerHTML;
+      
+      try {
+        // Validation
+        const name = document.getElementById('campaign-name').value;
+        const headline = document.getElementById('campaign-headline').value;
+        const productId = document.getElementById('campaign-product').value;
+        const startDate = document.getElementById('campaign-start').value;
+        const endDate = document.getElementById('campaign-end').value;
+        
+        if (!name || !headline || !productId || !startDate || !endDate) {
+          showToast('Veuillez remplir tous les champs obligatoires', 'error');
+          return;
+        }
+
+        // Vérifier dates
+        if (new Date(endDate) <= new Date(startDate)) {
+          showToast('La date de fin doit être après la date de début', 'error');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+
+        const formData = {
+          name: name,
+          headline: headline,
+          description: document.getElementById('campaign-description').value,
+          product_id: parseInt(productId),
+          media_url: window.SupplierCampaigns?.state?.videoUrl || null,
+          media_type: 'video',
+          fallback_image_url: window.SupplierCampaigns?.state?.imageUrl || null,
+          cta_link: document.getElementById('campaign-cta-link').value,
+          start_date: startDate,
+          end_date: endDate,
+          status: document.getElementById('campaign-active').checked ? 'active' : 'paused'
+        };
+
+        let response;
+        if (window.SupplierCampaigns?.state?.editingId) {
+          response = await BrandiaAPI.Supplier.updateCampaign(SupplierCampaigns.state.editingId, formData);
+        } else {
+          // Vérifier limite de 5 campagnes
+          if (window.SupplierCampaigns?.state?.campaigns?.length >= 5) {
+            showToast('Limite de 5 campagnes atteinte', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+            return;
+          }
+          response = await BrandiaAPI.Supplier.createCampaign(formData);
+        }
+
+        if (response.success) {
+          closeCampaignModal();
+          if (window.SupplierCampaigns) {
+            await SupplierCampaigns.loadCampaigns();
+          }
+          showToast(window.SupplierCampaigns?.state?.editingId ? 'Campagne mise à jour' : 'Campagne créée', 'success');
+        } else {
+          throw new Error(response.message);
+        }
+
+      } catch (error) {
+        console.error('[Dashboard] Save error:', error);
+        showToast('Erreur: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    };
+
+    // ==========================================
+    // AUTRES FONCTIONS GLOBALES
+    // ==========================================
+
+    window.showLoading = function(show) {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.toggle('hidden', !show);
+    };
+
+    window.openProductModal = function() {
+      if (window.SupplierProducts && SupplierProducts.openModal) {
+        SupplierProducts.openModal();
+      } else {
+        const modal = document.getElementById('product-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        }
+      }
+    };
+
+    window.closeProductModal = function() {
+      const modal = document.getElementById('product-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    };
+
+    window.filterOrders = function(filter) {
+      if (window.SupplierOrders && SupplierOrders.setFilter) {
+        SupplierOrders.setFilter(filter);
+      } else {
+        console.error('[Dashboard] SupplierOrders non disponible');
+        showToast('Erreur: Module commandes non chargé', 'error');
+      }
+    };
+
+    window.requestPayout = function() {
+      if (window.SupplierPayments && SupplierPayments.requestPayout) {
+        SupplierPayments.requestPayout();
+      } else {
+        showToast('Module paiements non chargé', 'error');
+      }
+    };
+
+    window.exportTransactions = function() {
+      showToast('Fonctionnalité en développement', 'info');
+    };
+
+    window.importProducts = function() {
+      if (window.SupplierProducts && SupplierProducts.importCSV) {
+        SupplierProducts.importCSV();
+      } else {
+        showToast('Fonctionnalité en développement', 'info');
+      }
+    };
+
+    window.quickAction = function() {
+      const actions = ['products', 'orders', 'advertising'];
+      const current = localStorage.getItem('dashboard_last_section') || 'overview';
+      const next = actions[(actions.indexOf(current) + 1) % actions.length] || 'products';
+      navigate(next);
+    };
+
+    window.showNotifications = function() {
+      showToast('Pas de nouvelles notifications', 'info');
+    };
+
+    window.logout = function() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '../login.html';
+    };
+
+    window.editBrand = function() {
+      showToast('Fonctionnalité en développement', 'info');
+    };
+
+    window.viewPublicProfile = function() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.id) {
+        window.open(`../brand.html?id=${user.id}`, '_blank');
+      }
+    };
+
+    window.handleLogoUpload = function(event) {
+      showToast('Upload logo en développement', 'info');
+    };
+
+    window.handleImageSelect = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const preview = document.getElementById('image-preview');
+          const container = document.getElementById('image-preview-container');
+          if (preview && container) {
+            preview.src = e.target.result;
+            container.classList.remove('hidden');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    window.updateAnalyticsPeriod = function(period) {
+      document.querySelectorAll('.analytics-period').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      const activeBtn = document.querySelector(`[data-period="${period}"]`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+        activeBtn.classList.add('bg-indigo-600', 'text-white');
+      }
+      showToast(`Période: ${period} jours`, 'info');
+    };
+
+    window.updateSalesChart = function() {
+      const period = document.getElementById('sales-period')?.value || '7';
+      showToast(`Mise à jour graphique: ${period} jours`, 'info');
+    };
+
+    window.changeProductPage = function(direction) {
+      if (window.SupplierProducts && SupplierProducts.changePage) {
+        SupplierProducts.changePage(direction);
+      }
+    };
+
+    window.filterProducts = function() {
+      if (window.SupplierProducts && SupplierProducts.filter) {
+        SupplierProducts.filter();
+      }
+    };
+
+    window.openPromotionModal = function() {
+      if (window.SupplierPromotions && SupplierPromotions.openModal) {
+        SupplierPromotions.openModal();
+      } else {
+        showToast('Module promotions non chargé', 'error');
+      }
+    };
+
+    // ==========================================
+    // CHARGEMENT STATS & CHARTS
+    // ==========================================
+
+    async function loadOverviewStats() {
+      try {
+        if (typeof BrandiaAPI === 'undefined') {
+          console.warn('[Dashboard] BrandiaAPI non disponible');
+          return;
+        }
+        
+        const response = await BrandiaAPI.Supplier.getStats();
+        console.log('[Dashboard] Stats:', response);
+        
+        if (response?.success && response.data) {
+          const data = response.data;
+          
+          updateElement('kpi-revenue', formatPrice(data.totalSales || 0));
+          updateElement('kpi-orders', data.totalOrders || 0);
+          updateElement('kpi-products', data.activeProducts || 0);
+          updateElement('kpi-total-products', data.totalProducts || 0);
+          updateElement('kpi-balance', formatPrice(data.balance || 0));
+          
+          if (typeof Chart !== 'undefined') {
+            initSalesChart(data.salesData || []);
+          }
+        }
+      } catch (error) {
+        console.error('[Dashboard] Erreur stats:', error);
+      }
+    }
+
+    function updateElement(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function formatPrice(amount) {
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR'
+      }).format(amount || 0);
+    }
+
+    function initSalesChart(data) {
+      const ctx = document.getElementById('salesChart');
+      if (!ctx) return;
+
+      if (window.salesChartInstance) {
+        window.salesChartInstance.destroy();
+      }
+
+      window.salesChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: (data && data.length) ? data.map(d => d.date) : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+          datasets: [{
+            label: 'Ventes (€)',
+            data: (data && data.length) ? data.map(d => d.amount) : [0, 0, 0, 0, 0, 0, 0],
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
+              ticks: { color: '#94a3b8' } 
+            },
+            x: { 
+              grid: { display: false }, 
+              ticks: { color: '#94a3b8' } 
+            }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // DÉMARRAGE
+    // ==========================================
+
+    if (!checkAuth()) return;
+
+    const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('[Dashboard] Initialisation...');
+      
+      navigate(lastSection);
+      
+      // Fermer modals au clic extérieur
+      document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.addEventListener('click', function(e) {
+          if (e.target === this) {
+            closeProductModal();
+          }
+        });
+      });
+      
+      // Fermer modals avec Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          closeCampaignModal();
+          closeProductModal();
+          closePreviewModal();
+        }
+      });
+      
+      setTimeout(() => {
+        try {
+          if (window.SupplierProducts) {
+            console.log('[Dashboard] Init SupplierProducts');
+            SupplierProducts.init();
+          }
+          if (window.SupplierOrders) {
+            console.log('[Dashboard] Init SupplierOrders');
+            SupplierOrders.init();
+          }
+          if (window.SupplierCampaigns) {
+            console.log('[Dashboard] Init SupplierCampaigns');
+            SupplierCampaigns.init();
+          }
+          if (window.SupplierPayments) {
+            console.log('[Dashboard] Init SupplierPayments');
+            SupplierPayments.init();
+          }
+          if (window.SupplierPromotions) {
+            console.log('[Dashboard] Init SupplierPromotions');
+            SupplierPromotions.init();
+          }
+          
+          loadOverviewStats();
+          
+        } catch (error) {
+          console.error('[Dashboard] Erreur init modules:', error);
+          showToast('Erreur de chargement des modules', 'error');
+        }
+      }, 100);
+    });
+
+  })();
 </script>
 
 </body>
