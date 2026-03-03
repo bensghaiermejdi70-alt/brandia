@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v9.1 FIX
-// Correction: Utilisation correcte de main_image_url au lieu de product_images
+// SUPPLIER CAMPAIGNS MODULE - v9.2 FIX
+// Correction: Sélection de produits individuels qui ne fonctionnait pas
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -31,7 +31,7 @@ window.SupplierCampaigns = {
     currentMediaType: 'image',
     uploadedMedia: null,
     editingCampaignId: null,
-    targetMode: 'all',
+    targetMode: 'all', // 'all' ou 'selected'
     ctaType: 'shop',
     isLoading: false,
     campaignLimit: { current: 0, max: 5, can_create: true }
@@ -46,7 +46,7 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v9.1...');
+    console.log('[Campaigns] Initializing v9.2...');
     try {
       this.state.campaignLimit = { 
         current: 0, 
@@ -92,6 +92,7 @@ window.SupplierCampaigns = {
       
       this.state.products = productsArray;
       console.log('[Campaigns] Products loaded:', this.state.products.length);
+      console.log('[Campaigns] Products details:', this.state.products.map(p => ({ id: p.id, name: p.name })));
       return this.state.products;
     } catch (error) {
       console.error('[Campaigns] Error loading products:', error);
@@ -118,9 +119,6 @@ window.SupplierCampaigns = {
         this.renderList();
         this.updateStats();
         this.updateCampaignCounter();
-        if (response?.message) {
-          console.log('[Campaigns] Server message:', response.message);
-        }
       }
     } catch (error) {
       console.error('[Campaigns] Load error:', error);
@@ -154,19 +152,16 @@ window.SupplierCampaigns = {
       const clicks = parseInt(c.clicks_count || c.clicks || 0);
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
       
-      // 🔥 v9.1: Correction - utiliser le bon champ pour l'image média
       const mediaUrl = c.media_url || c.ad_creative?.image_url || this.FALLBACK_IMAGE;
       const mediaType = c.media_type || c.ad_creative?.type || 'image';
-      
-      // 🔥 v9.1: Correction - utiliser product_image au lieu de product_images
       const productImage = c.product_image || this.FALLBACK_IMAGE;
       
       let targetText = 'Tous les produits';
       if (c.product_name) {
         targetText = c.product_name;
-      } else if (c.target_products && Array.isArray(c.target_products)) {
+      } else if (c.target_products && Array.isArray(c.target_products) && c.target_products.length > 0) {
         if (c.target_products.length === 1) targetText = '1 produit';
-        else if (c.target_products.length > 1) targetText = `${c.target_products.length} produits`;
+        else targetText = `${c.target_products.length} produits`;
       }
       
       html += `
@@ -323,6 +318,7 @@ window.SupplierCampaigns = {
       return;
     }
     
+    // Reset state
     this.state.editingCampaignId = campaignId;
     this.state.uploadedMedia = null;
     this.state.currentMediaType = 'image';
@@ -331,43 +327,65 @@ window.SupplierCampaigns = {
     this.state.ctaType = 'shop';
     
     const modal = document.getElementById('campaign-modal');
-    if (!modal) return;
+    if (!modal) {
+      console.error('[Campaigns] Modal not found');
+      return;
+    }
     
-    if (this.state.products.length === 0) await this.loadProducts();
+    // Load products if needed
+    if (this.state.products.length === 0) {
+      console.log('[Campaigns] Loading products for modal...');
+      await this.loadProducts();
+    }
     
+    // Reset form
     const form = document.getElementById('campaign-form');
     if (form) form.reset();
     
+    // Reset UI
     this.resetUploadUI();
     this.renderProductChecklist();
     this.updateCtaLink();
     
+    // Setup for edit or create
     if (campaignId) {
       const campaign = this.state.campaigns.find(c => c.id === campaignId);
       if (!campaign) {
         this.showToast('Campagne non trouvée', 'error');
         return;
       }
+      console.log('[Campaigns] Editing campaign:', campaign);
       this.fillFormForEdit(campaign);
       this.showModalStats(campaign);
     } else {
+      console.log('[Campaigns] Creating new campaign');
       this.hideModalStats();
       const today = new Date().toISOString().split('T')[0];
       const nextMonth = new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       
       const startInput = document.getElementById('camp-start-date');
-            const endInput = document.getElementById('camp-end-date');
+      const endInput = document.getElementById('camp-end-date');
       if (startInput) startInput.value = today;
       if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
       
-      this.updateCtaLink();
+      // 🔥 v9.2: Assurer que le mode "all" est sélectionné par défaut
+      this.state.targetMode = 'all';
+      this.state.selectedProducts = [];
+      const allRadio = document.querySelector('input[name="target_mode"][value="all"]');
+      if (allRadio) {
+        allRadio.checked = true;
+        console.log('[Campaigns] Default target mode: all');
+      }
+      this.toggleTargetMode('all');
     }
     
     this.attachPreviewListeners();
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     this.updatePreview();
+    
+    console.log('[Campaigns] Modal opened, targetMode:', this.state.targetMode, 'selectedProducts:', this.state.selectedProducts);
   },
 
   resetUploadUI: function() {
@@ -391,9 +409,15 @@ window.SupplierCampaigns = {
     }
   },
 
+  // 🔥 v9.2: CORRECTION CRITIQUE - Gestion améliorée des checkbox
   renderProductChecklist: function() {
     const container = document.getElementById('products-checklist');
-    if (!container) return;
+    if (!container) {
+      console.error('[Campaigns] products-checklist container not found');
+      return;
+    }
+    
+    console.log('[Campaigns] Rendering checklist, products:', this.state.products.length, 'selected:', this.state.selectedProducts);
     
     if (this.state.products.length === 0) {
       container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Aucun produit disponible</p>';
@@ -401,23 +425,26 @@ window.SupplierCampaigns = {
     }
     
     let html = '';
-    this.state.products.forEach(product => {
+    this.state.products.forEach((product, index) => {
       const isSelected = this.state.selectedProducts.includes(product.id);
-      // 🔥 v9.1: Utiliser main_image_url qui est le champ correct
-      const imageUrl = product.main_image_url || product.image_url || product.images?.[0] || this.FALLBACK_IMAGE;
+      const imageUrl = product.main_image_url || product.image_url || (product.images && product.images[0]) || this.FALLBACK_IMAGE;
       
+      // 🔥 v9.2: Utilisation d'un ID unique et gestion d'événement inline fiable
       html += `
-        <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-500/10 border border-indigo-500/30' : 'border border-transparent'}">
-          <input type="checkbox" value="${product.id}" 
+        <div class="product-check-item flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-500/10 border border-indigo-500/30' : 'border border-transparent'}" 
+             onclick="SupplierCampaigns.handleProductClick('${product.id}', event)"
+             data-product-id="${product.id}">
+          <input type="checkbox" 
+                 id="prod-check-${index}" 
+                 value="${product.id}" 
                  ${isSelected ? 'checked' : ''} 
-                 onchange="SupplierCampaigns.toggleProductSelection('${product.id}')"
-                 class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500 bg-slate-700">
-          <img src="${imageUrl}" class="w-10 h-10 rounded object-cover bg-slate-800" onerror="this.src='${this.FALLBACK_IMAGE}'">
-          <div class="flex-1 min-w-0">
+                 class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500 bg-slate-700 pointer-events-none">
+          <img src="${imageUrl}" class="w-10 h-10 rounded object-cover bg-slate-800 pointer-events-none" onerror="this.src='${this.FALLBACK_IMAGE}'">
+          <div class="flex-1 min-w-0 pointer-events-none">
             <p class="text-sm text-white truncate">${product.name || 'Sans nom'}</p>
             <p class="text-xs text-slate-400">${parseFloat(product.price || 0).toFixed(2)} €</p>
           </div>
-        </label>
+        </div>
       `;
     });
     
@@ -425,38 +452,95 @@ window.SupplierCampaigns = {
     this.updateSelectedCount();
   },
 
+  // 🔥 v9.2: NOUVELLE MÉTHODE - Gestion du clic sur produit
+  handleProductClick: function(productId, event) {
+    console.log('[Campaigns] Product clicked:', productId);
+    
+    // Empêcher la propagation pour éviter les conflits
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // Toggle la sélection
+    this.toggleProductSelection(productId);
+  },
+
   toggleProductSelection: function(productId) {
+    console.log('[Campaigns] Toggling selection for:', productId);
+    console.log('[Campaigns] Current selected:', this.state.selectedProducts);
+    
     const index = this.state.selectedProducts.indexOf(productId);
     if (index > -1) {
+      // Déjà sélectionné -> retirer
       this.state.selectedProducts.splice(index, 1);
+      console.log('[Campaigns] Removed:', productId);
     } else {
+      // Non sélectionné -> ajouter
       this.state.selectedProducts.push(productId);
+      console.log('[Campaigns] Added:', productId);
     }
+    
+    console.log('[Campaigns] New selected:', this.state.selectedProducts);
+    
+    // Si on sélectionne un produit, passer automatiquement en mode "selected"
+    if (this.state.selectedProducts.length > 0 && this.state.targetMode === 'all') {
+      console.log('[Campaigns] Auto-switching to selected mode');
+      this.state.targetMode = 'selected';
+      const radio = document.querySelector('input[name="target_mode"][value="selected"]');
+      if (radio) radio.checked = true;
+    }
+    
     this.updateSelectedCount();
     this.renderProductChecklist();
     this.updatePreview();
+    this.updateCtaLink();
   },
 
   toggleAllProducts: function() {
+    console.log('[Campaigns] Toggle all products');
     if (this.state.selectedProducts.length === this.state.products.length) {
+      // Tout désélectionner
       this.state.selectedProducts = [];
     } else {
+      // Tout sélectionner
       this.state.selectedProducts = this.state.products.map(p => p.id);
     }
     this.renderProductChecklist();
     this.updatePreview();
+    this.updateCtaLink();
   },
 
   updateSelectedCount: function() {
     const el = document.getElementById('selected-count');
-    if (el) el.textContent = this.state.selectedProducts.length;
+    if (el) {
+      el.textContent = this.state.selectedProducts.length;
+      console.log('[Campaigns] Updated selected count:', this.state.selectedProducts.length);
+    }
   },
 
+  // 🔥 v9.2: CORRECTION - Toggle mode ciblage amélioré
   toggleTargetMode: function(mode) {
+    console.log('[Campaigns] Toggling target mode to:', mode);
     this.state.targetMode = mode;
+    
     const panel = document.getElementById('product-selection-panel');
-    if (panel) panel.classList.toggle('hidden', mode === 'all');
+    if (panel) {
+      if (mode === 'selected') {
+        panel.classList.remove('hidden');
+        console.log('[Campaigns] Showing product panel');
+      } else {
+        panel.classList.add('hidden');
+        console.log('[Campaigns] Hiding product panel');
+        // En mode "all", vider la sélection
+        this.state.selectedProducts = [];
+        this.updateSelectedCount();
+        this.renderProductChecklist();
+      }
+    }
+    
     this.updatePreview();
+    this.updateCtaLink();
   },
 
   updateCtaOptions: function() {
@@ -515,6 +599,8 @@ window.SupplierCampaigns = {
   },
 
   fillFormForEdit: function(campaign) {
+    console.log('[Campaigns] Filling form for edit:', campaign);
+    
     const nameField = document.getElementById('camp-name');
     const headlineField = document.getElementById('camp-headline');
     const descField = document.getElementById('camp-description');
@@ -531,19 +617,23 @@ window.SupplierCampaigns = {
     if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
     if (ctaLinkField && campaign.cta_link) ctaLinkField.value = campaign.cta_link;
     
+    // 🔥 v9.2: Gestion correcte du mode ciblage en édition
     if (campaign.target_products && Array.isArray(campaign.target_products) && campaign.target_products.length > 0) {
+      console.log('[Campaigns] Edit mode: has target_products', campaign.target_products);
       this.state.targetMode = 'selected';
       this.state.selectedProducts = [...campaign.target_products];
       const radio = document.querySelector('input[name="target_mode"][value="selected"]');
       if (radio) radio.checked = true;
       this.toggleTargetMode('selected');
     } else if (campaign.product_id) {
+      console.log('[Campaigns] Edit mode: has product_id', campaign.product_id);
       this.state.targetMode = 'selected';
       this.state.selectedProducts = [campaign.product_id];
       const radio = document.querySelector('input[name="target_mode"][value="selected"]');
       if (radio) radio.checked = true;
       this.toggleTargetMode('selected');
     } else {
+      console.log('[Campaigns] Edit mode: default to all');
       this.state.targetMode = 'all';
       this.state.selectedProducts = [];
       const radio = document.querySelector('input[name="target_mode"][value="all"]');
@@ -639,7 +729,6 @@ window.SupplierCampaigns = {
     }
   },
 
-  // 🔥 v9.1: Gestion améliorée du média avec meilleure détection type
   handleMediaSelect: function(event) {
     console.log('[Campaigns] File selected:', event);
     const file = event.target.files[0];
@@ -767,7 +856,6 @@ window.SupplierCampaigns = {
     }
   },
 
-  // 🔥 v9.1: Upload amélioré avec meilleure gestion d'erreurs
   uploadMediaToCloudinary: async function() {
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
       if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
@@ -794,7 +882,6 @@ window.SupplierCampaigns = {
     try {
       this.showLoading(true);
       
-      // 🔥 v9.1: Utiliser la bonne API selon le type
       const uploadFn = type === 'video' 
         ? BrandiaAPI.Upload.uploadVideo 
         : BrandiaAPI.Upload.uploadImage;
@@ -822,8 +909,15 @@ window.SupplierCampaigns = {
     }
   },
 
+  // 🔥 v9.2: CORRECTION - Validation améliorée avant sauvegarde
   save: async function() {
     console.log('[Campaigns] ========== SAVE STARTED ==========');
+    console.log('[Campaigns] Current state:', {
+      targetMode: this.state.targetMode,
+      selectedProducts: this.state.selectedProducts,
+      productsAvailable: this.state.products.length
+    });
+    
     if (this.state.isLoading) return;
     
     try {
@@ -854,15 +948,20 @@ window.SupplierCampaigns = {
         return;
       }
       
-      if (this.state.targetMode === 'selected' && this.state.selectedProducts.length === 0) {
-        this.showToast('Veuillez sélectionner au moins un produit', 'error');
-        return;
+      // 🔥 v9.2: Validation stricte du mode "selected"
+      if (this.state.targetMode === 'selected') {
+        if (this.state.selectedProducts.length === 0) {
+          this.showToast('Veuillez sélectionner au moins un produit', 'error');
+          // Ouvrir le panneau de sélection
+          const panel = document.getElementById('product-selection-panel');
+          if (panel) panel.classList.remove('hidden');
+          return;
+        }
       }
       
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
       
-      // 🔥 v9.1: Upload du média si nouveau
       if (this.state.uploadedMedia?.isNew) {
         try {
           console.log('[Campaigns] Uploading new media...');
@@ -888,9 +987,26 @@ window.SupplierCampaigns = {
         return;
       }
       
+      // 🔥 v9.2: Détermination correcte du product_id
       let productId = null;
+      let targetProducts = [];
+      
       if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
-        productId = this.state.selectedProducts[0];
+        productId = this.state.selectedProducts[0]; // Premier produit comme principal
+        targetProducts = [...this.state.selectedProducts]; // Tous les produits cibles
+      }
+      
+      // Validation: si mode selected, doit avoir un productId
+      if (this.state.targetMode === 'selected' && !productId) {
+        this.showToast('Erreur: aucun produit sélectionné', 'error');
+        return;
+      }
+      
+      // Si mode "all", on prend le premier produit disponible comme fallback
+      // ou on peut envoyer null selon la logique métier
+      if (this.state.targetMode === 'all' && this.state.products.length > 0) {
+        productId = this.state.products[0].id; // Fallback sur premier produit
+        targetProducts = this.state.products.map(p => p.id);
       }
       
       if (!productId && !this.state.editingCampaignId) {
@@ -904,7 +1020,7 @@ window.SupplierCampaigns = {
         cta_text: ctaText,
         image_url: mediaUrl,
         type: mediaType,
-        target_products: this.state.selectedProducts,
+        target_products: targetProducts,
         target_mode: this.state.targetMode
       };
       
@@ -915,7 +1031,10 @@ window.SupplierCampaigns = {
         daily_budget: null,
         start_date: startDate,
         end_date: endDate,
-        targeting: { mode: this.state.targetMode, products: this.state.selectedProducts },
+        targeting: { 
+          mode: this.state.targetMode, 
+          products: targetProducts 
+        },
         ad_creative: adCreative,
         ad_format: 'overlay',
         cta_link: ctaLink,
@@ -994,6 +1113,7 @@ window.SupplierCampaigns = {
     this.state.editingCampaignId = null;
     this.state.uploadedMedia = null;
     this.state.selectedProducts = [];
+    this.state.targetMode = 'all';
   },
 
   showLoading: function(show) {
@@ -1029,5 +1149,6 @@ window.updateCtaOptions = () => SupplierCampaigns.updateCtaOptions();
 window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
+window.handleProductClick = (id, e) => SupplierCampaigns.handleProductClick(id, e);
 
-console.log('[SupplierCampaigns] Module v9.1 UPLOAD FIX READY chargé');
+console.log('[SupplierCampaigns] Module v9.2 PRODUCT SELECTION FIX READY chargé');
