@@ -172,6 +172,13 @@ margin-bottom: 1rem;
 display: flex;
 align-items: center;
 justify-content: center;
+cursor: pointer; /* 🔥 Indique que c'est cliquable */
+transition: all 0.3s;
+}
+
+.main-image:hover {
+border-color: var(--brandia-primary);
+box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
 }
 
 .main-image img {
@@ -378,11 +385,37 @@ display: flex;
 align-items: center;
 justify-content: center;
 gap: 0.5rem;
+position: relative;
+overflow: hidden;
 }
 
 .btn-primary:hover {
 transform: translateY(-3px);
 box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+}
+
+/* 🔥 Animation de brillance au hover */
+.btn-primary::after {
+content: '';
+position: absolute;
+top: -50%;
+left: -50%;
+width: 200%;
+height: 200%;
+background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+transform: rotate(45deg);
+transition: all 0.5s;
+opacity: 0;
+}
+
+.btn-primary:hover::after {
+animation: shine 0.5s ease-in-out;
+opacity: 1;
+}
+
+@keyframes shine {
+0% { transform: translateX(-100%) rotate(45deg); }
+100% { transform: translateX(100%) rotate(45deg); }
 }
 
 .btn-primary:disabled {
@@ -638,7 +671,8 @@ to { transform: translateX(0); opacity: 1; }
 }
 
 /* ============================================
-🔥 VRAI SYSTÈME VIDÉO v5.1 - PRODUCTION
+🔥 BRANDIA AD OVERLAY v6.0 - PRODUCTION
+Système de publicité 15 secondes avec Round-Robin
 ============================================ */
 .brandia-ad-overlay {
 position: fixed;
@@ -892,6 +926,115 @@ border: 1px solid rgba(255,255,255,0.2);
 .brandia-ad-download:hover {
 background: rgba(255,255,255,0.2);
 }
+
+/* 🔥 Skip Button (apparaît après 5s) */
+.brandia-ad-skip {
+position: absolute;
+bottom: 20px;
+right: 20px;
+background: rgba(255,255,255,0.1);
+border: 1px solid rgba(255,255,255,0.2);
+color: white;
+padding: 10px 20px;
+border-radius: 8px;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+opacity: 0;
+visibility: hidden;
+transition: all 0.3s;
+backdrop-filter: blur(10px);
+z-index: 20;
+}
+
+.brandia-ad-skip.visible {
+opacity: 1;
+visibility: visible;
+}
+
+.brandia-ad-skip:hover {
+background: rgba(255,255,255,0.2);
+}
+
+/* 🔥 Compteur de vues/clicks */
+.brandia-ad-stats {
+position: absolute;
+bottom: 16px;
+left: 16px;
+background: rgba(0,0,0,0.7);
+padding: 6px 12px;
+border-radius: 20px;
+font-size: 11px;
+color: #94a3b8;
+display: flex;
+gap: 12px;
+z-index: 10;
+}
+
+.brandia-ad-stat {
+display: flex;
+align-items: center;
+gap: 4px;
+}
+
+.brandia-ad-stat i {
+color: #ec4899;
+}
+
+/* 🔥 Notification "Sponsorisé" */
+.brandia-ad-sponsor-notif {
+position: fixed;
+top: 80px;
+right: 20px;
+background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+color: white;
+padding: 12px 20px;
+border-radius: 12px;
+font-size: 14px;
+font-weight: 600;
+display: flex;
+align-items: center;
+gap: 8px;
+box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+transform: translateX(150%);
+transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+z-index: 9998;
+}
+
+.brandia-ad-sponsor-notif.show {
+transform: translateX(0);
+}
+
+/* 🔥 Loading animation pour la pub */
+.brandia-ad-loading {
+position: absolute;
+inset: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+background: rgba(15, 23, 42, 0.95);
+z-index: 5;
+}
+
+.brandia-ad-loading.hidden {
+display: none;
+}
+
+.brandia-ad-loading-spinner {
+width: 60px;
+height: 60px;
+border: 4px solid rgba(99, 102, 241, 0.2);
+border-top-color: #6366f1;
+border-radius: 50%;
+animation: spin 1s linear infinite;
+margin-bottom: 16px;
+}
+
+.brandia-ad-loading-text {
+color: #94a3b8;
+font-size: 14px;
+}
 </style>
 </head>
 <body>
@@ -987,7 +1130,7 @@ background: rgba(255,255,255,0.2);
 </main>
 
 <!-- ============================================
-🔥 VRAI SYSTÈME VIDÉO v5.1 - AVEC PROXY
+🔥 BRANDIA AD OVERLAY v6.0 - ROUND ROBIN SYSTEM
 ============================================ -->
 <div class="brandia-ad-overlay" id="brandia-ad-overlay">
 <div class="brandia-ad-container">
@@ -996,14 +1139,20 @@ background: rgba(255,255,255,0.2);
 <span class="brandia-ad-badge">
 <i class="fas fa-sparkles" style="color: #ec4899;"></i> Sponsorisé • <span id="brandia-ad-timer-text">15</span>s
 </span>
-<button class="brandia-ad-close" onclick="BrandiaVideoAd.close()">
+<button class="brandia-ad-close" onclick="BrandiaAdEngine.skipAd()">
 <i class="fas fa-times"></i>
 </button>
 </div>
 
+<!-- Loading State -->
+<div class="brandia-ad-loading" id="brandia-ad-loading">
+<div class="brandia-ad-loading-spinner"></div>
+<div class="brandia-ad-loading-text">Chargement de la publicité...</div>
+</div>
+
 <!-- Video Container -->
 <div class="brandia-ad-video-wrapper">
-<!-- 🔥 VIDÉO RÉELLE via proxy -->
+<!-- 🔥 VIDÉO RÉELLE -->
 <video 
 id="brandia-ad-video" 
 class="brandia-ad-video" 
@@ -1016,7 +1165,7 @@ crossorigin="anonymous">
 <!-- Fallback si vidéo bloquée -->
 <div class="brandia-ad-fallback" id="brandia-ad-fallback">
 <img id="brandia-ad-fallback-img" src="" alt="Publicité">
-<div class="brandia-ad-play-btn" onclick="BrandiaVideoAd.retryVideo()">
+<div class="brandia-ad-play-btn" onclick="BrandiaAdEngine.retryVideo()">
 <i class="fas fa-play"></i>
 </div>
 </div>
@@ -1025,6 +1174,17 @@ crossorigin="anonymous">
 <div class="brandia-ad-timer">
 <i class="fas fa-clock" style="color: #ec4899;"></i> <span id="brandia-ad-timer-display">15</span>s
 </div>
+
+<!-- Stats -->
+<div class="brandia-ad-stats" id="brandia-ad-stats">
+<span class="brandia-ad-stat"><i class="fas fa-eye"></i> <span id="ad-views">0</span></span>
+<span class="brandia-ad-stat"><i class="fas fa-mouse-pointer"></i> <span id="ad-clicks">0</span></span>
+</div>
+
+<!-- Skip Button -->
+<button class="brandia-ad-skip" id="brandia-ad-skip" onclick="BrandiaAdEngine.skipAd()">
+Passer la pub <span id="skip-timer">(5)</span>
+</button>
 </div>
 
 <!-- Progress -->
@@ -1037,7 +1197,7 @@ crossorigin="anonymous">
 <h4 id="brandia-ad-title" class="brandia-ad-title"></h4>
 <p id="brandia-ad-desc" class="brandia-ad-desc"></p>
 <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-<a href="#" id="brandia-ad-cta" class="brandia-ad-cta" onclick="BrandiaVideoAd.handleClick(event)">
+<a href="#" id="brandia-ad-cta" class="brandia-ad-cta" onclick="BrandiaAdEngine.handleClick(event)">
 Voir l'offre <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
 </a>
 <a href="#" id="brandia-ad-download" class="brandia-ad-download" download target="_blank">
@@ -1045,14 +1205,22 @@ Voir l'offre <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
 </a>
 </div>
 <p class="brandia-ad-footer">
-<i class="fas fa-info-circle" style="margin-right: 6px;"></i> Contenu proposé par la marque
+<i class="fas fa-info-circle" style="margin-right: 6px;"></i> Contenu proposé par la marque • Rotation <span id="ad-rotation-info">1/1</span>
 </p>
 </div>
 </div>
 </div>
 
+<!-- Notification Sponsorisé -->
+<div class="brandia-ad-sponsor-notif" id="brandia-ad-sponsor-notif">
+<i class="fas fa-ad"></i> Publicité sponsorisée
+</div>
+
 <!-- Toast Container -->
 <div id="toast-container"></div>
+
+<!-- 🔥 SCRIPT: BRANDIA AD ENGINE v6.0 -->
+<script src="assets/js/brandia-ad-engine.js"></script>
 
 <script>
 // ============================================
@@ -1063,7 +1231,7 @@ const PROXY_URL = 'https://brandia-1.onrender.com/api/proxy/video';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&auto=format&fit=crop&q=80';
 
 // ============================================
-// ÉTAT GLOBAL
+// ÉTAT GLOBAL PRODUIT
 // ============================================
 let currentProduct = null;
 let currentProductId = null;
@@ -1092,257 +1260,10 @@ img.onerror = null;
 }
 
 // ============================================
-// 🔥 VRAI SYSTÈME VIDÉO v5.1 - AVEC PROXY
-// ============================================
-const BrandiaVideoAd = {
-SESSION_KEY: 'brandia_video_ad_seen_v51',
-campaign: null,
-timer: null,
-progressTimer: null,
-countdown: 15,
-videoBlobUrl: null,
-isFallback: false,
-
-canShow() {
-return !sessionStorage.getItem(this.SESSION_KEY);
-},
-
-markAsSeen() {
-sessionStorage.setItem(this.SESSION_KEY, 'true');
-},
-
-async check(product) {
-if (!this.canShow()) {
-console.log('[BrandiaVideoAd] Already seen this session');
-return;
-}
-
-if (!product || !product.supplier_id) {
-console.log('[BrandiaVideoAd] No supplier_id');
-return;
-}
-
-try {
-console.log('[BrandiaVideoAd] Checking for campaigns...');
-const response = await fetch(`${API_URL}/supplier/public/campaigns?supplier=${product.supplier_id}&product=${product.id}`);
-const data = await response.json();
-
-if (data.success && data.data) {
-console.log('[BrandiaVideoAd] Campaign found:', data.data.id, 'Type:', data.data.media_type);
-this.show(data.data);
-} else {
-console.log('[BrandiaVideoAd] No active campaign');
-}
-} catch (error) {
-console.error('[BrandiaVideoAd] Error:', error);
-}
-},
-
-// 🔥 CHARGER VIDÉO VIA PROXY (contourne Tracking Prevention)
-async loadVideoViaProxy(videoUrl) {
-try {
-console.log('[BrandiaVideoAd] Loading via proxy:', PROXY_URL);
-const proxyFullUrl = `${PROXY_URL}?url=${encodeURIComponent(videoUrl)}`;
-console.log('[BrandiaVideoAd] Full proxy URL:', proxyFullUrl);
-	
-const response = await fetch(proxyFullUrl);
-if (!response.ok) throw new Error(`Proxy error: ${response.status}`);
-	
-const blob = await response.blob();
-return URL.createObjectURL(blob);
-} catch (error) {
-console.error('[BrandiaVideoAd] Proxy failed:', error);
-return null;
-}
-},
-
-async show(campaign) {
-this.campaign = campaign;
-this.isFallback = false;
-
-const overlay = document.getElementById('brandia-ad-overlay');
-const video = document.getElementById('brandia-ad-video');
-const fallback = document.getElementById('brandia-ad-fallback');
-const fallbackImg = document.getElementById('brandia-ad-fallback-img');
-const title = document.getElementById('brandia-ad-title');
-const desc = document.getElementById('brandia-ad-desc');
-const cta = document.getElementById('brandia-ad-cta');
-const downloadBtn = document.getElementById('brandia-ad-download');
-
-if (!overlay) return;
-
-// Préparer fallback (image poster de la vidéo)
-const posterUrl = campaign.media_url.replace('.mp4', '.jpg').replace('/upload/', '/upload/so_0/');
-fallbackImg.src = posterUrl;
-fallbackImg.onerror = () => { fallbackImg.src = FALLBACK_IMAGE; };
-
-// Remplir contenu
-title.textContent = campaign.headline || 'Offre spéciale';
-desc.textContent = campaign.description || 'Découvrez cette offre exclusive';
-cta.href = campaign.cta_link || '#';
-downloadBtn.href = campaign.media_url;
-
-// Afficher overlay
-overlay.classList.add('active');
-this.markAsSeen();
-
-// 🔥 ESSAYER CHARGEMENT VIDÉO VIA PROXY
-console.log('[BrandiaVideoAd] Attempting video load...');
-this.videoBlobUrl = await this.loadVideoViaProxy(campaign.media_url);
-
-if (this.videoBlobUrl) {
-console.log('[BrandiaVideoAd] Proxy success, playing video...');
-const success = await this.playVideo(this.videoBlobUrl);
-if (success) {
-this.startTimer();
-this.trackView(campaign.id);
-return;
-}
-}
-
-// Si échec → fallback image
-console.log('[BrandiaVideoAd] Video failed, using fallback');
-this.showFallback();
-},
-
-playVideo(src) {
-return new Promise((resolve) => {
-const video = document.getElementById('brandia-ad-video');
-const fallback = document.getElementById('brandia-ad-fallback');
-
-video.src = src;
-video.onloadeddata = () => {
-console.log('[BrandiaVideoAd] Video data loaded');
-fallback.classList.remove('active');
-video.play().then(() => {
-console.log('[BrandiaVideoAd] Video playing');
-resolve(true);
-}).catch((err) => {
-console.log('[BrandiaVideoAd] Autoplay blocked:', err);
-// Essayer avec son désactivé
-video.muted = true;
-video.play().then(() => resolve(true)).catch(() => resolve(false));
-});
-};
-
-video.onerror = (e) => {
-console.error('[BrandiaVideoAd] Video error:', e);
-resolve(false);
-};
-
-setTimeout(() => resolve(false), 10000); // Timeout 10s
-});
-},
-
-showFallback() {
-this.isFallback = true;
-const video = document.getElementById('brandia-ad-video');
-const fallback = document.getElementById('brandia-ad-fallback');
-
-video.style.display = 'none';
-fallback.classList.add('active');
-
-this.startTimer();
-if (this.campaign) this.trackView(this.campaign.id);
-},
-
-retryVideo() {
-if (!this.campaign) return;
-console.log('[BrandiaVideoAd] Retrying...');
-const fallback = document.getElementById('brandia-ad-fallback');
-const video = document.getElementById('brandia-ad-video');
-
-fallback.classList.remove('active');
-video.style.display = 'block';
-this.playVideo(this.campaign.media_url);
-},
-
-startTimer() {
-this.countdown = 15;
-const timerText = document.getElementById('brandia-ad-timer-text');
-const timerDisplay = document.getElementById('brandia-ad-timer-display');
-const progressBar = document.getElementById('brandia-ad-progress-bar');
-
-const totalDuration = 15000;
-const startTime = Date.now();
-
-this.progressTimer = setInterval(() => {
-const elapsed = Date.now() - startTime;
-const remaining = Math.max(0, Math.ceil((totalDuration - elapsed) / 1000));
-const percent = Math.max(0, ((totalDuration - elapsed) / totalDuration) * 100);
-
-this.countdown = remaining;
-if (timerText) timerText.textContent = remaining;
-if (timerDisplay) timerDisplay.textContent = remaining;
-if (progressBar) progressBar.style.width = percent + '%';
-
-if (elapsed >= totalDuration) {
-this.close();
-}
-}, 50);
-},
-
-close() {
-if (this.progressTimer) {
-clearInterval(this.progressTimer);
-this.progressTimer = null;
-}
-
-const video = document.getElementById('brandia-ad-video');
-if (video) {
-video.pause();
-video.src = '';
-}
-
-if (this.videoBlobUrl) {
-URL.revokeObjectURL(this.videoBlobUrl);
-this.videoBlobUrl = null;
-}
-
-const overlay = document.getElementById('brandia-ad-overlay');
-if (overlay) overlay.classList.remove('active');
-
-this.campaign = null;
-},
-
-handleClick(e) {
-e.preventDefault();
-if (this.campaign) {
-this.trackClick(this.campaign.id);
-setTimeout(() => {
-const link = this.campaign.cta_link || '#';
-this.close();
-if (link !== '#') window.location.href = link;
-}, 100);
-}
-},
-
-async trackView(campaignId) {
-try {
-await fetch(`${API_URL}/supplier/public/campaigns/view`, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ campaign_id: campaignId })
-});
-} catch (e) {}
-},
-
-async trackClick(campaignId) {
-try {
-await fetch(`${API_URL}/supplier/public/campaigns/click`, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ campaign_id: campaignId })
-});
-} catch (e) {}
-}
-};
-
-// ============================================
 // INITIALISATION
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-console.log('[Product] Initializing v5.1...');
+console.log('[Product] Initializing v6.0 with Ad Engine...');
 
 const urlParams = new URLSearchParams(window.location.search);
 currentProductId = urlParams.get('id');
@@ -1373,10 +1294,10 @@ if (currentProduct.category_id) {
 loadRelatedProducts(currentProduct.category_id);
 }
 
-// Délai avant publicité vidéo
-setTimeout(() => {
-BrandiaVideoAd.check(currentProduct);
-}, 2000);
+// 🔥 Initialiser le Ad Engine après chargement produit
+if (window.BrandiaAdEngine) {
+BrandiaAdEngine.init(currentProduct);
+}
 
 } catch (error) {
 console.error('[Product] Error:', error);
@@ -1396,9 +1317,10 @@ const imageUrl = getProductImageUrl(product);
 const hasDiscount = product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price);
 const discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
 
+// 🔥 AJOUT: data-supplier-id pour le tracking
 document.getElementById('product-section').innerHTML = `
 <div class="product-gallery">
-<div class="main-image">
+<div class="main-image" id="product-main-image" data-product-id="${product.id}" data-supplier-id="${product.supplier_id}">
 <img src="${imageUrl}" alt="${product.name}" onerror="handleImageError(this)">
 </div>
 </div>
@@ -1414,8 +1336,8 @@ ${hasDiscount ? `<span class="original-price">${parseFloat(product.compare_price
 </div>
 <div class="product-actions">
 <div class="action-buttons">
-<button class="btn-primary" onclick="addToCart()">
-<i class="fas fa-shopping-cart"></i> Ajouter
+<button class="btn-primary" onclick="addToCart()" id="btn-add-cart">
+<i class="fas fa-shopping-cart"></i> Ajouter au panier
 </button>
 </div>
 </div>
@@ -1426,6 +1348,15 @@ document.getElementById('breadcrumb-category').textContent = product.category_na
 document.getElementById('breadcrumb-product').textContent = product.name;
 document.getElementById('tab-description').textContent = product.description || 'Aucune description';
 document.title = `${product.name} - Brandia`;
+
+// 🔥 AJOUT: Event listener sur l'image pour déclencher la pub
+const mainImage = document.getElementById('product-main-image');
+if (mainImage && window.BrandiaAdEngine) {
+mainImage.addEventListener('click', function(e) {
+// Vérifier si une campagne est active avant de déclencher
+BrandiaAdEngine.checkAndTrigger(product);
+});
+}
 }
 
 async function loadRelatedProducts(categoryId) {
@@ -1498,7 +1429,7 @@ document.body.appendChild(toast);
 setTimeout(() => toast.remove(), 3000);
 }
 
-console.log('[Product] v5.1 loaded - Real Video System');
+console.log('[Product] v6.0 loaded - Brandia Ad Engine Ready');
 </script>
 </body>
 </html>

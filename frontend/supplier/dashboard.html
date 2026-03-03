@@ -445,6 +445,805 @@
         </div>
       </div>
     </section>
+    <!-- Section Campagnes Publicitaires ajoutée -->
+    <!-- Section Campagnes Publicitaires dans le Dashboard Fournisseur -->
+    <section class="dashboard-section" id="campaigns-section">
+      <div class="section-header">
+        <h2><i class="fas fa-bullhorn"></i> Campagnes Publicitaires</h2>
+        <button onclick="openCampaignModal()" class="btn-primary">
+          <i class="fas fa-plus"></i> Nouvelle campagne
+        </button>
+      </div>
+        
+      <div class="stats-grid" id="campaign-stats">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-eye"></i></div>
+          <div class="stat-value" id="total-views">0</div>
+          <div class="stat-label">Vues totales</div>
+        </div>
+        <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div>
+          <div class="stat-value" id="total-clicks">0</div>
+          <div class="stat-label">Clics totaux</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+          <div class="stat-value" id="ctr-rate">0%</div>
+          <div class="stat-label">Taux de clic</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-coins"></i></div>
+          <div class="stat-value" id="ad-spend">0€</div>
+          <div class="stat-label">Budget dépensé</div>
+        </div>
+      </div>
+
+      <!-- Liste des campagnes -->
+      <div class="campaigns-list" id="campaigns-list">
+        <div class="loading-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Chargement des campagnes...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal Création/Édition Campagne -->
+    <div class="modal" id="campaign-modal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h3 id="campaign-modal-title">Nouvelle campagne</h3>
+          <button onclick="closeCampaignModal()" class="btn-close"><i class="fas fa-times"></i></button>
+        </div>
+            
+        <form id="campaign-form" onsubmit="saveCampaign(event)">
+          <input type="hidden" id="campaign-id">
+                
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nom de la campagne *</label>
+              <input type="text" id="campaign-name" required 
+                   placeholder="Ex: Promo Été 2025" maxlength="100">
+            </div>
+                    
+            <div class="form-group">
+              <label>Produit associé *</label>
+              <select id="campaign-product" required>
+                <option value="">Choisir un produit...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Headline (titre de la pub) *</label>
+            <input type="text" id="campaign-headline" required 
+                 placeholder="Ex: -30% sur tous nos produits" maxlength="150">
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="campaign-description" rows="3" 
+                  placeholder="Description de l'offre..."></textarea>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Vidéo publicitaire (15s max) *</label>
+              <div class="upload-zone" id="video-upload-zone">
+                <input type="file" id="campaign-video" accept="video/mp4,video/webm" 
+                     onchange="handleVideoUpload(this)" required>
+                <div class="upload-preview" id="video-preview">
+                  <i class="fas fa-video"></i>
+                  <p>Glissez une vidéo ou cliquez pour parcourir</p>
+                  <small>MP4/WebM, max 20Mo, 15 secondes</small>
+                </div>
+              </div>
+              <div class="upload-progress" id="video-progress" style="display:none;">
+                <div class="progress-bar">
+                  <div class="progress-fill" id="video-progress-fill"></div>
+                </div>
+                <span id="video-progress-text">0%</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Image de fallback</label>
+              <div class="upload-zone" id="image-upload-zone">
+                <input type="file" id="campaign-image" accept="image/*" 
+                     onchange="handleImageUpload(this)">
+                <div class="upload-preview" id="image-preview">
+                  <i class="fas fa-image"></i>
+                  <p>Image si vidéo bloquée</p>
+                  <small>JPG/PNG, 800x450px recommandé</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Lien CTA (bouton "Voir l'offre")</label>
+            <input type="url" id="campaign-cta-link" 
+                 placeholder="https://votresite.com/promo">
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Date de début *</label>
+              <input type="datetime-local" id="campaign-start" required>
+            </div>
+            <div class="form-group">
+              <label>Date de fin *</label>
+              <input type="datetime-local" id="campaign-end" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="campaign-active" checked>
+              <span>Campagne active immédiatement</span>
+            </label>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" onclick="closeCampaignModal()" class="btn-secondary">Annuler</button>
+            <button type="submit" class="btn-primary" id="campaign-save-btn">
+              <i class="fas fa-save"></i> Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Prévisualisation -->
+    <div class="modal" id="preview-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Prévisualisation de la pub</h3>
+          <button onclick="closePreviewModal()" class="btn-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="preview-container" id="ad-preview-container">
+          <!-- Injection dynamique de la preview -->
+        </div>
+      </div>
+    </div>
+
+    <style>
+    /* Styles spécifiques section campagnes */
+    .campaigns-list {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .campaign-card {
+      background: var(--brandia-card);
+      border: 1px solid var(--brandia-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1.5rem;
+      align-items: center;
+      transition: all 0.3s;
+    }
+
+    .campaign-card:hover {
+      border-color: var(--brandia-primary);
+      transform: translateX(4px);
+    }
+
+    .campaign-thumbnail {
+      width: 120px;
+      height: 68px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--brandia-darker);
+      position: relative;
+    }
+
+    .campaign-thumbnail img,
+    .campaign-thumbnail video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .campaign-thumbnail .play-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.4);
+      color: white;
+      font-size: 1.5rem;
+    }
+
+    .campaign-info h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--brandia-text);
+    }
+
+    .campaign-meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.875rem;
+      color: var(--brandia-text-muted);
+    }
+
+    .campaign-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .campaign-stats-mini {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .stat-mini {
+      text-align: center;
+    }
+
+    .stat-mini .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--brandia-primary);
+    }
+
+    .stat-mini .label {
+      font-size: 0.75rem;
+      color: var(--brandia-text-muted);
+      text-transform: uppercase;
+    }
+
+    .campaign-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .campaign-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .campaign-status.active {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--brandia-success);
+    }
+
+    .campaign-status.paused {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--brandia-warning);
+    }
+
+    .campaign-status.ended {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--brandia-danger);
+    }
+
+    /* Upload zones */
+    .upload-zone {
+      border: 2px dashed var(--brandia-border);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--brandia-primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .upload-zone.has-file {
+      border-color: var(--brandia-success);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .upload-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-preview i {
+      font-size: 2rem;
+      color: var(--brandia-text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-preview p {
+      color: var(--brandia-text);
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .upload-preview small {
+      color: var(--brandia-text-muted);
+    }
+
+    .upload-progress {
+      margin-top: 1rem;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--brandia-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--brandia-gradient);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    /* Preview modal */
+    .preview-container {
+      background: var(--brandia-darker);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .preview-ad-overlay {
+      position: relative;
+      background: rgba(0,0,0,0.9);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-ad-container {
+      max-width: 600px;
+      width: 100%;
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--brandia-border);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--brandia-text-muted);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .campaign-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+        
+      .campaign-thumbnail {
+        width: 100%;
+        height: 150px;
+      }
+        
+      .campaign-actions {
+        justify-content: center;
+      }
+    }
+    </style>
+
+    <script>
+    // ============================================
+    // SUPPLIER CAMPAIGNS MODULE
+    // ============================================
+
+    const SupplierCampaigns = {
+      state: {
+        campaigns: [],
+        products: [],
+        editingId: null,
+        uploadProgress: 0
+      },
+
+      init: async function() {
+        console.log('[Campaigns] Initialisation...');
+        await this.loadProducts();
+        await this.loadCampaigns();
+        this.setupEventListeners();
+      },
+
+      loadProducts: async function() {
+        try {
+          const response = await BrandiaAPI.Supplier.getProducts();
+          if (response.success) {
+            this.state.products = response.data.products || [];
+            this.populateProductSelect();
+          }
+        } catch (error) {
+          console.error('[Campaigns] Erreur chargement produits:', error);
+        }
+      },
+
+      loadCampaigns: async function() {
+        try {
+          const container = document.getElementById('campaigns-list');
+          container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Chargement...</p></div>';
+
+          const response = await BrandiaAPI.Supplier.getCampaigns();
+                
+          if (response.success) {
+            this.state.campaigns = response.data || [];
+            this.renderCampaigns();
+            this.updateStats();
+          } else {
+            throw new Error(response.message);
+          }
+        } catch (error) {
+          console.error('[Campaigns] Erreur:', error);
+          document.getElementById('campaigns-list').innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>Erreur de chargement</p>
+              <button onclick="SupplierCampaigns.loadCampaigns()" class="btn-primary">Réessayer</button>
+            </div>
+          `;
+        }
+      },
+
+      populateProductSelect: function() {
+        const select = document.getElementById('campaign-product');
+        if (!select) return;
+            
+        const options = this.state.products.map(p => 
+          `<option value="${p.id}">${p.name} (ID: ${p.id})</option>`
+        ).join('');
+            
+        select.innerHTML = '<option value="">Choisir un produit...</option>' + options;
+      },
+
+      renderCampaigns: function() {
+        const container = document.getElementById('campaigns-list');
+            
+        if (this.state.campaigns.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-bullhorn"></i>
+              <h4>Aucune campagne</h4>
+              <p>Créez votre première campagne publicitaire</p>
+            </div>
+          `;
+          return;
+        }
+
+        const now = new Date();
+            
+        container.innerHTML = this.state.campaigns.map(c => {
+          const startDate = new Date(c.start_date);
+          const endDate = new Date(c.end_date);
+                
+          let status = 'paused';
+          if (c.status === 'active' && now >= startDate && now <= endDate) {
+            status = 'active';
+          } else if (now > endDate) {
+            status = 'ended';
+          }
+
+          const statusLabels = {
+            active: 'Active',
+            paused: 'En pause',
+            ended: 'Terminée'
+          };
+
+          return `
+            <div class="campaign-card" data-id="${c.id}">
+              <div class="campaign-thumbnail" onclick="SupplierCampaigns.previewCampaign(${c.id})">
+                ${c.media_type === 'video' ? `
+                  <video src="${c.media_url}" muted loop></video>
+                  <div class="play-icon"><i class="fas fa-play"></i></div>
+                ` : `
+                  <img src="${c.media_url}" alt="">
+                `}
+              </div>
+                        
+              <div class="campaign-info">
+                <h4>${c.name}</h4>
+                <div class="campaign-meta">
+                  <span class="campaign-status ${status}">
+                    <i class="fas fa-circle"></i> ${statusLabels[status]}
+                  </span>
+                  <span><i class="fas fa-calendar"></i> ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</span>
+                  <span><i class="fas fa-box"></i> Produit #${c.product_id}</span>
+                </div>
+                <div class="campaign-stats-mini">
+                  <div class="stat-mini">
+                    <div class="value">${c.views_count || 0}</div>
+                    <div class="label">Vues</div>
+                  </div>
+                  <div class="stat-mini">
+                    <div class="value">${c.clicks_count || 0}</div>
+                    <div class="label">Clics</div>
+                  </div>
+                  <div class="stat-mini">
+                    <div class="value">${c.ctr || 0}%</div>
+                    <div class="label">CTR</div>
+                  </div>
+                </div>
+              </div>
+                        
+              <div class="campaign-actions">
+                <button onclick="SupplierCampaigns.editCampaign(${c.id})" class="btn-icon" title="Modifier">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="SupplierCampaigns.toggleStatus(${c.id})" class="btn-icon" title="${status === 'active' ? 'Pause' : 'Activer'}">
+                  <i class="fas ${status === 'active' ? 'fa-pause' : 'fa-play'}"></i>
+                </button>
+                <button onclick="SupplierCampaigns.deleteCampaign(${c.id})" class="btn-icon danger" title="Supprimer">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      updateStats: function() {
+        const totalViews = this.state.campaigns.reduce((sum, c) => sum + (c.views_count || 0), 0);
+        const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (c.clicks_count || 0), 0);
+        const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : 0;
+            
+        // Estimation coût (0.05€ par vue)
+        const spend = (totalViews * 0.05).toFixed(2);
+
+        document.getElementById('total-views').textContent = totalViews.toLocaleString();
+        document.getElementById('total-clicks').textContent = totalClicks.toLocaleString();
+        document.getElementById('ctr-rate').textContent = ctr + '%';
+        document.getElementById('ad-spend').textContent = spend + '€';
+      },
+
+      // Modal handlers
+      openModal: function(campaignId = null) {
+        this.state.editingId = campaignId;
+        const modal = document.getElementById('campaign-modal');
+        const title = document.getElementById('campaign-modal-title');
+        const form = document.getElementById('campaign-form');
+            
+        form.reset();
+            
+        if (campaignId) {
+          const campaign = this.state.campaigns.find(c => c.id === campaignId);
+          if (campaign) {
+            title.textContent = 'Modifier la campagne';
+            document.getElementById('campaign-id').value = campaign.id;
+            document.getElementById('campaign-name').value = campaign.name;
+            document.getElementById('campaign-headline').value = campaign.headline;
+            document.getElementById('campaign-description').value = campaign.description || '';
+            document.getElementById('campaign-product').value = campaign.product_id;
+            document.getElementById('campaign-cta-link').value = campaign.cta_link || '';
+            document.getElementById('campaign-start').value = campaign.start_date.slice(0, 16);
+            document.getElementById('campaign-end').value = campaign.end_date.slice(0, 16);
+            document.getElementById('campaign-active').checked = campaign.status === 'active';
+                    
+            // Prévisualisation média existant
+            if (campaign.media_url) {
+              this.showMediaPreview(campaign.media_type, campaign.media_url);
+            }
+          }
+        } else {
+          title.textContent = 'Nouvelle campagne';
+          // Dates par défaut: maintenant + 7 jours
+          const now = new Date();
+          const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          document.getElementById('campaign-start').value = now.toISOString().slice(0, 16);
+          document.getElementById('campaign-end').value = nextWeek.toISOString().slice(0, 16);
+        }
+            
+        modal.classList.add('active');
+      },
+
+      closeModal: function() {
+        document.getElementById('campaign-modal').classList.remove('active');
+        this.state.editingId = null;
+        this.clearMediaPreviews();
+      },
+
+      // Upload handlers
+      handleVideoUpload: function(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        // Validation
+        if (file.size > 20 * 1024 * 1024) {
+          alert('Vidéo trop lourde (max 20Mo)');
+          input.value = '';
+          return;
+        }
+
+        const zone = document.getElementById('video-upload-zone');
+        zone.classList.add('has-file');
+            
+        const preview = document.getElementById('video-preview');
+        preview.innerHTML = `
+          <i class="fas fa-check-circle" style="color: var(--brandia-success);"></i>
+          <p>${file.name}</p>
+          <small>${(file.size / 1024 / 1024).toFixed(2)} Mo</small>
+        `;
+
+        // Upload avec progression
+        this.uploadMedia(file, 'video');
+      },
+
+      handleImageUpload: function(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const zone = document.getElementById('image-upload-zone');
+        zone.classList.add('has-file');
+            
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById('image-preview').innerHTML = `
+            <img src="${e.target.result}" style="max-height: 100px; border-radius: 8px;">
+            <p>${file.name}</p>
+          `;
+        };
+        reader.readAsDataURL(file);
+
+        this.uploadMedia(file, 'image');
+      },
+
+      uploadMedia: async function(file, type) {
+        const progressBar = document.getElementById('video-progress-fill');
+        const progressText = document.getElementById('video-progress-text');
+        const progressContainer = document.getElementById('video-progress');
+            
+        progressContainer.style.display = 'block';
+
+        try {
+          const formData = new FormData();
+          formData.append('media', file);
+
+          // Simulation progression (l'API réelle gérera l'upload)
+          let progress = 0;
+          const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+                    
+            if (progressBar) progressBar.style.width = progress + '%';
+            if (progressText) progressText.textContent = Math.round(progress) + '%';
+          }, 300);
+
+          const endpoint = type === 'video' ? '/supplier/upload-video' : '/supplier/upload-image';
+          const response = await fetch(`${BrandiaAPI.config.apiURL}${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+          });
+
+          clearInterval(interval);
+
+          if (!response.ok) throw new Error('Upload failed');
+
+          const result = await response.json();
+                
+          if (result.success) {
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressText) progressText.textContent = '100%';
+                    
+            // Stocker l'URL pour la soumission du formulaire
+            this.state[`${type}Url`] = result.data.url;
+                    
+            setTimeout(() => {
+              progressContainer.style.display = 'none';
+            }, 1000);
+          } else {
+            throw new Error(result.message);
+          }
+
+        } catch (error) {
+          console.error('[Campaigns] Upload error:', error);
+          alert('Erreur upload: ' + error.message);
+          progressContainer.style.display = 'none';
+        }
+      },
+
+      showMediaPreview: function(type, url) {
+        const zoneId = type === 'video' ? 'video-upload-zone' : 'image-upload-zone';
+        const previewId = type === 'video' ? 'video-preview' : 'image-preview';
+            
+        document.getElementById(zoneId).classList.add('has-file');
+        document.getElementById(previewId).innerHTML = type === 'video' 
+          ? `<video src="${url}" controls style="max-height: 100px;"></video><p>Média existant</p>`
+          : `<img src="${url}" style="max-height: 100px; border-radius: 8px;"><p>Image existante</p>`;
+      },
+
+      clearMediaPreviews: function() {
+        ['video', 'image'].forEach(type => {
+          const zone = document.getElementById(`${type}-upload-zone`);
+          const preview = document.getElementById(`${type}-preview`);
+          if (zone) zone.classList.remove('has-file');
+          if (preview) {
+            preview.innerHTML = type === 'video' 
+              ? `<i class="fas fa-video"></i><p>Glissez une vidéo ou cliquez pour parcourir</p><small>MP4/WebM, max 20Mo, 15 secondes</small>`
+              : `<i class="fas fa-image"></i><p>Image si vidéo bloquée</p><small>JPG/PNG, 800x450px recommandé</small>`;
+          }
+        });
+        this.state.videoUrl = null;
+        this.state.imageUrl = null;
+      },
+
+      // CRUD operations
+      saveCampaign: async function(event) {
+        event.preventDefault();
+            
+        const formData = {
+          name: document.getElementById('campaign-name').value,
+          headline: document.getElementById('campaign-headline').value,
+          description: document.getElementById('campaign-description').value,
+          product_id: parseInt(document.getElementById('campaign-product').value),
+          media_url: this.state.videoUrl || document.getElementById('campaign-video').dataset.existingUrl,
+          media_type: 'video',
+          cta_link: document.getElementById('campaign-cta-link').value,
+          start_date: document.getElementById('campaign-start').value,
+          end_date: document.getElementById('campaign-end').value,
+          status: document.getElementById('campaign-active').checked ? 'active' : 'paused'
+        };
+
+        // Validation
+        if (!formData.media_url && !document.getElementById('campaign-video').files[0]) {
+          alert('Veuillez uploader une vidéo');
+          return;
+        }
+
+        try {
+          const btn = document.getElementById('campaign-save-btn');
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+
+          let response;
+          if (this.state.editingId) {
+            response = await BrandiaAPI.Supplier.updateCampaign(this.state.editingId, formData);
+          } else {
+            response = await BrandiaAPI.Supplier.createCampaign(formData);
+          }
+
+          if (response.success) {
+            this.closeModal();
+            await this.loadCampaigns();
+            DashboardApp.showToast(this.state.editingId ? 'Campagne mise à jour' : 'Campagne créée', 'success');
+          } else {
+            throw new Error(response.message);
+          }
+
+        } catch (error) {
+          console.error('[Campaigns] Save error:', error);
+          DashboardApp.showToast('Erreur: ' + error.message, 'error');
+        } finally {
+          const btn = document.getElementById('campaign-save-btn');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+        }
+      },
+  *** End Patch
 
     <!-- PRODUCTS SECTION -->
     <section id="products" class="section space-y-6">

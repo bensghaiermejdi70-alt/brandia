@@ -2059,4 +2059,134 @@ CatalogueApp.init();
 });
 </script>
 </body>
+<!-- ============================================
+// 🔥 BRANDIA AD INTEGRATION pour Catalogue
+// Déclenchement publicité sur clic produit fournisseur
+// ============================================ -->
+<script>
+(function() {
+    'use strict';
+
+    // Attendre que le DOM et l'API soient prêts
+    const initAdIntegration = () => {
+        if (typeof BrandiaAPI === 'undefined' || typeof BrandiaAdEngine === 'undefined') {
+            setTimeout(initAdIntegration, 500);
+            return;
+        }
+
+        console.log('[Catalogue Ad] Intégration démarrée');
+
+        // Intercepter les clics sur les cartes produit
+        const setupProductClicks = () => {
+            const productsGrid = document.getElementById('products-container');
+            if (!productsGrid) return;
+
+            // Détection dynamique des cartes produit
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && node.classList.contains('product-card')) {
+                            attachAdHandler(node);
+                        }
+                    });
+                });
+            });
+
+            observer.observe(productsGrid, { childList: true, subtree: true });
+
+            // Attacher aux cartes existantes
+            productsGrid.querySelectorAll('.product-card').forEach(card => {
+                attachAdHandler(card);
+            });
+        };
+
+        const attachAdHandler = (card) => {
+            // Éviter double attachement
+            if (card.dataset.adHandlerAttached) return;
+            card.dataset.adHandlerAttached = 'true';
+
+            // Extraire l'ID produit du onclick ou du href
+            const onclickAttr = card.getAttribute('onclick') || '';
+            const href = card.getAttribute('href') || '';
+            
+            let productId = null;
+            let supplierId = card.dataset.supplierId || null;
+
+            // Parser l'ID depuis onclick="location.href='product.html?id=123'"
+            const idMatch = onclickAttr.match(/id=(\d+)/) || href.match(/id=(\d+)/);
+            if (idMatch) {
+                productId = idMatch[1];
+            }
+
+            if (!productId) return;
+
+            // Récupérer les données produit pour vérifier le fournisseur
+            card.addEventListener('click', async (e) => {
+                // Ne pas intercepter si clic sur bouton panier
+                if (e.target.closest('.btn-add-cart') || e.target.closest('.btn-view')) {
+                    return;
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log(`[Catalogue Ad] Clic produit ${productId}`);
+
+                try {
+                    // Récupérer détails produit
+                    const response = await BrandiaAPI.Products.getById(productId);
+                    
+                    if (!response.success || !response.data) {
+                        // Fallback: redirection directe
+                        window.location.href = `product.html?id=${productId}`;
+                        return;
+                    }
+
+                    const product = response.data.product || response.data;
+                    
+                    // Vérifier si c'est un produit fournisseur avec campagnes
+                    if (product.supplier_id) {
+                        // Vérifier s'il y a des campagnes actives
+                        const campaignCheck = await fetch(
+                            `${BrandiaAPI.config.apiURL}/supplier/public/campaigns?supplier=${product.supplier_id}&product=${product.id}`,
+                            { headers: { 'Accept': 'application/json' } }
+                        ).then(r => r.json()).catch(() => ({ success: false }));
+
+                        if (campaignCheck.success && campaignCheck.data && 
+                            (Array.isArray(campaignCheck.data) ? campaignCheck.data.length > 0 : true)) {
+                            
+                            console.log('[Catalogue Ad] Campagnes trouvées, déclenchement pub');
+                            
+                            // Initialiser AdEngine avec ce produit
+                            BrandiaAdEngine.init(product);
+                            
+                            // Déclencher la publicité
+                            BrandiaAdEngine.checkAndTrigger(product);
+                            
+                            return;
+                        }
+                    }
+
+                    // Pas de pub, redirection normale
+                    window.location.href = `product.html?id=${productId}`;
+
+                } catch (error) {
+                    console.error('[Catalogue Ad] Erreur:', error);
+                    window.location.href = `product.html?id=${productId}`;
+                }
+            }, true); // Use capture pour intercepter avant
+        };
+
+        // Démarrer
+        setupProductClicks();
+    };
+
+    // Lancer quand DOM prêt
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAdIntegration);
+    } else {
+        initAdIntegration();
+    }
+})();
+</script>
 </html>
