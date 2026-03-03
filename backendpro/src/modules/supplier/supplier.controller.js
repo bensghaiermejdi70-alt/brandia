@@ -1,6 +1,8 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v7.0 FIX
-// Fix: Création automatique de la table campaigns si elle n'existe pas
+// SUPPLIER.CONTROLLER.JS - v7.1 FIX
+// Fix: 
+// 1. Colonne images inexistante dans products - utilisation main_image_url
+// 2. Upload vidéo qui retourne undefined
 // ============================================
 
 const crypto = require('crypto');
@@ -71,9 +73,9 @@ const affected = (r) => r?.rowCount ?? r?.affectedRows ?? (Array.isArray(r) ? r[
 // ============================================
 
 const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
-    console.error(`[SupplierController] ${msg}:`, error.message);
+    console.error(`[SupplierController] ${msg}:`, error?.message || error);
     
-    if (error.code === '42P01' || error.message?.includes('does not exist')) {
+    if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
         return res.status(500).json({
             success: false,
             message: 'Erreur de configuration base de données. Contactez l\'administrateur.',
@@ -82,7 +84,7 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
         });
     }
     
-    if (error.code === '42883' || error.message?.includes('operator does not exist')) {
+    if (error?.code === '42883' || error?.message?.includes('operator does not exist')) {
         return res.status(400).json({
             success: false,
             message: 'Erreur de type de données. Vérifiez les IDs envoyés.',
@@ -90,7 +92,7 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
         });
     }
     
-    if (error.code === '42703' || (error.message?.includes('column') && error.message?.includes('does not exist'))) {
+    if (error?.code === '42703' || (error?.message?.includes('column') && error?.message?.includes('does not exist'))) {
         return res.status(500).json({
             success: false,
             message: 'Erreur de schéma base de données.',
@@ -101,7 +103,7 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
     return res.status(status).json({
         success: false,
         message: msg,
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? (error?.message || String(error)) : undefined
     });
 };
 
@@ -128,7 +130,6 @@ const safeJsonStringify = (obj) => {
 const ensureCampaignsTable = async () => {
     try {
         if (DB_TYPE === 'postgres') {
-            // Vérifier si la table existe
             const checkResult = await db.query(`
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables 
@@ -174,7 +175,6 @@ const ensureCampaignsTable = async () => {
             }
             return true;
         } else {
-            // MySQL version
             await db.query(`
                 CREATE TABLE IF NOT EXISTS campaigns (
                     id VARCHAR(36) PRIMARY KEY,
@@ -491,7 +491,7 @@ const updateOrderStatus = async (req, res) => {
 };
 
 // ============================================
-// CAMPAIGNS - v7.0 AVEC CRÉATION AUTO TABLE
+// CAMPAIGNS - v7.1 AVEC CORRECTIONS
 // ============================================
 
 const getCampaigns = async (req, res) => {
@@ -499,11 +499,11 @@ const getCampaigns = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
+        // 🔥 v7.1: Correction - utiliser main_image_url au lieu de images qui n'existe pas
         const result = await db.query(`
-            SELECT c.*, p.name as product_name, p.images as product_images 
+            SELECT c.*, p.name as product_name, p.main_image_url as product_image 
             FROM campaigns c 
             LEFT JOIN products p ON c.product_id::text = p.id::text 
             WHERE c.supplier_id::text = ${ph(1)}::text
@@ -514,7 +514,7 @@ const getCampaigns = async (req, res) => {
             ...c,
             targeting: safeJsonParse(c.targeting),
             ad_creative: safeJsonParse(c.ad_creative),
-            product_images: safeJsonParse(c.product_images)
+            product_image: c.product_image // 🔥 Changé de product_images à product_image
         }));
 
         res.json({ success: true, data: campaigns });
@@ -528,7 +528,6 @@ const getCampaignLimit = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
         const result = await db.query(`
@@ -556,7 +555,6 @@ const createCampaign = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
         const { name, product_id, budget, start_date, end_date, targeting, ad_creative, ad_format, cta_link, status } = req.body;
@@ -567,7 +565,6 @@ const createCampaign = async (req, res) => {
             return res.status(400).json({ success: false, message: `Champs requis: ${missing.join(', ')}` });
         }
 
-        // Vérifier limite
         const countResult = await db.query(`
             SELECT COUNT(*) as count FROM campaigns WHERE supplier_id::text = ${ph(1)}::text AND status != 'ended'
         `, [supplierId.toString()]);
@@ -576,7 +573,6 @@ const createCampaign = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Limite de 5 campagnes atteinte' });
         }
 
-        // Vérifier produit
         let productCheckQuery;
         if (DB_TYPE === 'postgres') {
             productCheckQuery = `SELECT id FROM products WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`;
@@ -652,7 +648,6 @@ const updateCampaign = async (req, res) => {
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
         const existingQuery = DB_TYPE === 'postgres'
@@ -706,7 +701,6 @@ const deleteCampaign = async (req, res) => {
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
         const query = DB_TYPE === 'postgres'
@@ -748,7 +742,6 @@ const toggleCampaignStatus = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Statut invalide' });
         }
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
         const query = DB_TYPE === 'postgres'
@@ -780,17 +773,17 @@ const getActiveCampaignForProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'supplier et product requis' });
         }
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
+        // 🔥 v7.1: Correction - utiliser main_image_url au lieu de images
         const query = DB_TYPE === 'postgres'
-            ? `SELECT c.*, p.name as product_name, p.images as product_images, p.price
+            ? `SELECT c.*, p.name as product_name, p.main_image_url as product_image, p.price
             FROM campaigns c
             JOIN products p ON c.product_id::text = p.id::text
             WHERE c.supplier_id::text = ${ph(1)}::text AND c.product_id::text = ${ph(2)}::text
                 AND c.status = 'active' AND c.start_date <= NOW() AND c.end_date >= NOW()
             ORDER BY c.created_at DESC LIMIT 1`
-            : `SELECT c.*, p.name as product_name, p.images as product_images, p.price
+            : `SELECT c.*, p.name as product_name, p.main_image_url as product_image, p.price
             FROM campaigns c
             JOIN products p ON c.product_id = p.id
             WHERE c.supplier_id = ${ph(1)} AND c.product_id = ${ph(2)}
@@ -810,7 +803,7 @@ const getActiveCampaignForProduct = async (req, res) => {
                 ...campaigns[0],
                 targeting: safeJsonParse(campaigns[0].targeting),
                 ad_creative: safeJsonParse(campaigns[0].ad_creative),
-                product_images: safeJsonParse(campaigns[0].product_images)
+                product_image: campaigns[0].product_image
             }
         });
     } catch (error) {
@@ -823,7 +816,6 @@ const trackCampaignView = async (req, res) => {
         const { campaign_id } = req.body;
         if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
         const query = DB_TYPE === 'postgres'
@@ -842,7 +834,6 @@ const trackCampaignClick = async (req, res) => {
         const { campaign_id } = req.body;
         if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
 
-        // 🔥 Créer la table si elle n'existe pas
         await ensureCampaignsTable();
 
         const query = DB_TYPE === 'postgres'
@@ -857,7 +848,7 @@ const trackCampaignClick = async (req, res) => {
 };
 
 // ============================================
-// UPLOAD
+// UPLOAD - v7.1 FIX UPLOAD VIDÉO
 // ============================================
 
 let uploadMiddleware;
@@ -866,28 +857,48 @@ try {
     const storage = multer.memoryStorage();
     uploadMiddleware = multer({ 
         storage,
-        limits: { fileSize: 50 * 1024 * 1024 },
+        limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
         fileFilter: (req, file, cb) => {
             const allowedImages = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            const allowedVideos = ['video/mp4', 'video/webm', 'video/quicktime'];
+            const allowedVideos = ['video/mp4', 'video/webm', 'video/quicktime', 'video/mov'];
             
             if (allowedImages.includes(file.mimetype) || allowedVideos.includes(file.mimetype)) {
                 cb(null, true);
             } else {
-                cb(new Error('Type de fichier non supporté. Utilisez: JPEG, PNG, GIF, WEBP, MP4, WEBM'), false);
+                cb(new Error('Type de fichier non supporté. Utilisez: JPEG, PNG, GIF, WEBP, MP4, WEBM, MOV'), false);
             }
         }
     });
+    console.log('[SupplierController] ✅ Multer initialized successfully');
 } catch (e) {
-    console.log('[SupplierController] Multer not available, upload disabled');
+    console.error('[SupplierController] ❌ Multer not available:', e.message);
     uploadMiddleware = null;
+}
+
+// 🔥 v7.1: Configuration Cloudinary avec meilleure gestion d'erreurs
+let cloudinary;
+try {
+    cloudinary = require('cloudinary').v2;
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET,
+            secure: true
+        });
+        console.log('[SupplierController] ✅ Cloudinary configured');
+    } else {
+        console.log('[SupplierController] ⚠️ Cloudinary not configured - using local fallback');
+        cloudinary = null;
+    }
+} catch (e) {
+    console.error('[SupplierController] ❌ Cloudinary not available:', e.message);
+    cloudinary = null;
 }
 
 const uploadToCloudinary = async (fileBuffer, filename, resourceType = 'image') => {
     try {
-        const cloudinary = require('cloudinary').v2;
-        
-        if (!process.env.CLOUDINARY_CLOUD_NAME) {
+        if (!cloudinary) {
             throw new Error('Cloudinary not configured');
         }
 
@@ -896,73 +907,88 @@ const uploadToCloudinary = async (fileBuffer, filename, resourceType = 'image') 
                 {
                     resource_type: resourceType,
                     folder: 'brandia/campaigns',
-                    public_id: `${Date.now()}_${filename.replace(/\.[^/.]+$/, '')}`
+                    public_id: `${Date.now()}_${filename.replace(/\.[^/.]+$/, '')}`,
+                    overwrite: false
                 },
                 (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result.secure_url);
+                    if (error) {
+                        console.error('[Cloudinary] Upload error:', error);
+                        reject(error);
+                    } else {
+                        console.log('[Cloudinary] Upload success:', result.secure_url);
+                        resolve(result.secure_url);
+                    }
                 }
             );
             stream.end(fileBuffer);
         });
     } catch (e) {
-        if (process.env.NODE_ENV === 'development') {
-            const fs = require('fs').promises;
-            const path = require('path');
-            const uploadDir = path.join(__dirname, '../../../uploads');
-            
-            await fs.mkdir(uploadDir, { recursive: true });
-            const localPath = path.join(uploadDir, `${Date.now()}_${filename}`);
-            await fs.writeFile(localPath, fileBuffer);
-            
-            return `/uploads/${path.basename(localPath)}`;
+        // Fallback: sauvegarder localement
+        console.log('[Upload] Falling back to local storage...');
+        const fs = require('fs').promises;
+        const path = require('path');
+        const uploadDir = path.join(__dirname, '../../../uploads');
+        
+        await fs.mkdir(uploadDir, { recursive: true });
+        const localPath = path.join(uploadDir, `${Date.now()}_${filename}`);
+        await fs.writeFile(localPath, fileBuffer);
+        
+        const localUrl = `/uploads/${path.basename(localPath)}`;
+        console.log('[Upload] Saved locally:', localUrl);
+        return localUrl;
+    }
+};
+
+// 🔥 v7.1: Fonction upload générique pour éviter la duplication
+const handleUpload = async (req, res, resourceType) => {
+    try {
+        console.log(`[Upload] ${resourceType.toUpperCase()} upload started`);
+        
+        if (!uploadMiddleware) {
+            return res.status(501).json({ 
+                success: false, 
+                message: 'Upload non configuré. Installez multer: npm install multer' 
+            });
         }
-        throw e;
+
+        if (!req.file) {
+            console.error('[Upload] No file received in request');
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Aucun fichier reçu' 
+            });
+        }
+
+        console.log(`[Upload] File received:`, {
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+            buffer: req.file.buffer ? 'Buffer present' : 'No buffer'
+        });
+
+        const url = await uploadToCloudinary(req.file.buffer, req.file.originalname, resourceType);
+
+        res.json({
+            success: true,
+            message: `${resourceType === 'video' ? 'Vidéo' : 'Image'} uploadée avec succès`,
+            data: { 
+                url, 
+                filename: req.file.originalname,
+                type: resourceType
+            }
+        });
+    } catch (error) {
+        console.error(`[Upload] ${resourceType} upload error:`, error);
+        return handleError(res, error, `Erreur lors de l'upload de la ${resourceType === 'video' ? 'vidéo' : 'image'}`);
     }
 };
 
 const uploadImage = async (req, res) => {
-    try {
-        if (!uploadMiddleware) {
-            return res.status(501).json({ success: false, message: 'Upload non configuré' });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: 'Aucun fichier reçu' });
-        }
-
-        const url = await uploadToCloudinary(req.file.buffer, req.file.originalname, 'image');
-
-        res.json({
-            success: true,
-            message: 'Image uploadée',
-            data: { url, filename: req.file.originalname }
-        });
-    } catch (error) {
-        return handleError(res, error, 'Erreur lors de l\'upload de l\'image');
-    }
+    return handleUpload(req, res, 'image');
 };
 
 const uploadVideo = async (req, res) => {
-    try {
-        if (!uploadMiddleware) {
-            return res.status(501).json({ success: false, message: 'Upload non configuré' });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: 'Aucun fichier reçu' });
-        }
-
-        const url = await uploadToCloudinary(req.file.buffer, req.file.originalname, 'video');
-
-        res.json({
-            success: true,
-            message: 'Vidéo uploadée',
-            data: { url, filename: req.file.originalname }
-        });
-    } catch (error) {
-        return handleError(res, error, 'Erreur lors de l\'upload de la vidéo');
-    }
+    return handleUpload(req, res, 'video');
 };
 
 // ============================================
@@ -1234,8 +1260,13 @@ module.exports = {
     getActiveCampaignForProduct,
     trackCampaignView,
     trackCampaignClick,
-    uploadImageMiddleware: uploadMiddleware?.single('media') || null,
-    uploadVideoMiddleware: uploadMiddleware?.single('media') || null,
+    // 🔥 v7.1: Export des middlewares multer correctement configurés
+    uploadImageMiddleware: uploadMiddleware ? uploadMiddleware.single('media') : (req, res, next) => {
+        res.status(501).json({ success: false, message: 'Upload non disponible' });
+    },
+    uploadVideoMiddleware: uploadMiddleware ? uploadMiddleware.single('media') : (req, res, next) => {
+        res.status(501).json({ success: false, message: 'Upload non disponible' });
+    },
     uploadImage,
     uploadVideo,
     getPayments,

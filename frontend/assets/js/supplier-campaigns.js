@@ -1,7 +1,6 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v9.0 FIX
-// Correction: Suppression du message "Module en cours de configuration"
-// La table est maintenant créée automatiquement côté serveur
+// SUPPLIER CAMPAIGNS MODULE - v9.1 FIX
+// Correction: Utilisation correcte de main_image_url au lieu de product_images
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -47,7 +46,7 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v9.0...');
+    console.log('[Campaigns] Initializing v9.1...');
     try {
       this.state.campaignLimit = { 
         current: 0, 
@@ -107,7 +106,6 @@ window.SupplierCampaigns = {
       const response = await BrandiaAPI.Supplier.getCampaigns();
       
       if (response?.success) {
-        // 🔥 v9.0: Plus de vérification campaignsAvailable, on affiche toujours les données
         this.state.campaigns = response.data || [];
         console.log('[Campaigns] Loaded:', this.state.campaigns.length);
         this.renderList();
@@ -120,7 +118,6 @@ window.SupplierCampaigns = {
         this.renderList();
         this.updateStats();
         this.updateCampaignCounter();
-        // 🔥 Ne pas bloquer l'interface, juste logger l'erreur
         if (response?.message) {
           console.log('[Campaigns] Server message:', response.message);
         }
@@ -137,9 +134,6 @@ window.SupplierCampaigns = {
   renderList: function() {
     const container = document.getElementById('campaigns-list');
     if (!container) return;
-    
-    // 🔥 v9.0: Suppression du bloc "Module en cours de configuration"
-    // On affiche directement la liste ou l'état vide
     
     if (this.state.campaigns.length === 0) {
       container.innerHTML = `
@@ -159,8 +153,13 @@ window.SupplierCampaigns = {
       const views = parseInt(c.views_count || c.impressions || 0);
       const clicks = parseInt(c.clicks_count || c.clicks || 0);
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : 0;
+      
+      // 🔥 v9.1: Correction - utiliser le bon champ pour l'image média
       const mediaUrl = c.media_url || c.ad_creative?.image_url || this.FALLBACK_IMAGE;
       const mediaType = c.media_type || c.ad_creative?.type || 'image';
+      
+      // 🔥 v9.1: Correction - utiliser product_image au lieu de product_images
+      const productImage = c.product_image || this.FALLBACK_IMAGE;
       
       let targetText = 'Tous les produits';
       if (c.product_name) {
@@ -187,7 +186,10 @@ window.SupplierCampaigns = {
             </div>
             <p class="text-sm text-slate-400 mb-1 truncate text-xs">${c.headline || c.ad_creative?.headline || ''}</p>
             <div class="flex items-center gap-3 text-xs text-slate-500">
-              <span><i class="fas fa-bullseye mr-1"></i>${targetText}</span>
+              <span class="flex items-center gap-1">
+                <img src="${productImage}" class="w-4 h-4 rounded object-cover" onerror="this.style.display='none'">
+                ${targetText}
+              </span>
               <span><i class="fas fa-calendar mr-1"></i>${this.formatDate(c.start_date)} - ${this.formatDate(c.end_date)}</span>
             </div>
           </div>
@@ -315,7 +317,6 @@ window.SupplierCampaigns = {
   openModal: async function(campaignId = null) {
     console.log('[Campaigns] Opening modal, editing:', campaignId);
     
-    // 🔥 v9.0: Plus de blocage si "non disponible"
     const activeCount = this.state.campaigns.filter(c => c.status === 'active').length;
     if (!campaignId && activeCount >= this.MAX_CAMPAIGNS) {
       this.showToast(`Limite atteinte: ${this.MAX_CAMPAIGNS} campagnes actives maximum.`, 'error');
@@ -356,7 +357,7 @@ window.SupplierCampaigns = {
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       
       const startInput = document.getElementById('camp-start-date');
-      const endInput = document.getElementById('camp-end-date');
+            const endInput = document.getElementById('camp-end-date');
       if (startInput) startInput.value = today;
       if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
       
@@ -377,19 +378,20 @@ window.SupplierCampaigns = {
     
     if (dropzone) {
       dropzone.innerHTML = `
-        <input type="file" id="campaign-media" class="hidden" accept="image/*" onchange="handleCampaignMedia(event)">
-        <div id="campaign-media-placeholder">
+        <input type="file" id="campaign-media" class="hidden" accept="image/*,video/mp4,video/webm,video/quicktime" onchange="handleCampaignMedia(event)">
+        <div id="campaign-media-placeholder" class="text-center p-4">
           <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 mb-2"></i>
           <p class="text-slate-400 text-xs">Cliquez ou glissez votre fichier ici</p>
           <p class="text-slate-600 text-xs mt-1">Max 5MB (image) ou 50MB (vidéo)</p>
+          <p class="text-slate-600 text-xs">Formats: JPG, PNG, GIF, MP4, WEBM</p>
         </div>
       `;
       dropzone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
-      dropzone.classList.add('border-slate-700');
+      dropzone.classList.add('border-slate-700', 'border-2', 'border-dashed');
     }
   },
 
-   renderProductChecklist: function() {
+  renderProductChecklist: function() {
     const container = document.getElementById('products-checklist');
     if (!container) return;
     
@@ -401,7 +403,8 @@ window.SupplierCampaigns = {
     let html = '';
     this.state.products.forEach(product => {
       const isSelected = this.state.selectedProducts.includes(product.id);
-      const imageUrl = product.main_image_url || this.FALLBACK_IMAGE;
+      // 🔥 v9.1: Utiliser main_image_url qui est le champ correct
+      const imageUrl = product.main_image_url || product.image_url || product.images?.[0] || this.FALLBACK_IMAGE;
       
       html += `
         <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-500/10 border border-indigo-500/30' : 'border border-transparent'}">
@@ -636,10 +639,27 @@ window.SupplierCampaigns = {
     }
   },
 
+  // 🔥 v9.1: Gestion améliorée du média avec meilleure détection type
   handleMediaSelect: function(event) {
     console.log('[Campaigns] File selected:', event);
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+      console.log('[Campaigns] No file selected');
+      return;
+    }
+    
+    console.log('[Campaigns] File details:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+    
+    // Détection auto du type si pas déjà défini
+    if (file.type.startsWith('video/')) {
+      this.state.currentMediaType = 'video';
+    } else if (file.type.startsWith('image/')) {
+      this.state.currentMediaType = 'image';
+    }
     
     const maxSize = this.state.currentMediaType === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -648,11 +668,11 @@ window.SupplierCampaigns = {
     }
     
     if (this.state.currentMediaType === 'image' && !file.type.startsWith('image/')) {
-      this.showToast('Veuillez sélectionner une image', 'error');
+      this.showToast('Veuillez sélectionner une image (JPG, PNG, GIF)', 'error');
       return;
     }
     if (this.state.currentMediaType === 'video' && !file.type.startsWith('video/')) {
-      this.showToast('Veuillez sélectionner une vidéo', 'error');
+      this.showToast('Veuillez sélectionner une vidéo (MP4, WEBM, MOV)', 'error');
       return;
     }
     
@@ -675,9 +695,14 @@ window.SupplierCampaigns = {
       video.preload = 'metadata';
       video.onloadedmetadata = () => {
         window.URL.revokeObjectURL(video.src);
-        resolve(video.duration <= 15);
+        const duration = video.duration;
+        console.log('[Campaigns] Video duration:', duration, 'seconds');
+        resolve(duration <= 15);
       };
-      video.onerror = () => resolve(false);
+      video.onerror = () => {
+        console.error('[Campaigns] Error loading video metadata');
+        resolve(false);
+      };
       video.src = URL.createObjectURL(file);
     });
   },
@@ -692,6 +717,7 @@ window.SupplierCampaigns = {
       localUrl: url
     };
     this.updatePreview();
+    console.log('[Campaigns] File processed, type:', this.state.currentMediaType);
   },
 
   showMediaPreview: function(url, type) {
@@ -705,17 +731,23 @@ window.SupplierCampaigns = {
       dropzone.innerHTML = `
         <div class="relative w-full">
           <video src="${url}" class="w-full h-32 object-cover rounded-lg" controls muted></video>
-          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg z-10">
             <i class="fas fa-times text-xs"></i>
           </button>
+          <div class="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
+            <i class="fas fa-video mr-1"></i>Vidéo
+          </div>
         </div>`;
     } else {
       dropzone.innerHTML = `
         <div class="relative w-full">
           <img src="${url}" class="w-full h-32 object-cover rounded-lg">
-          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg">
+          <button type="button" onclick="event.stopPropagation(); SupplierCampaigns.removeMedia()" class="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-lg z-10">
             <i class="fas fa-times text-xs"></i>
           </button>
+          <div class="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
+            <i class="fas fa-image mr-1"></i>Image
+          </div>
         </div>`;
     }
   },
@@ -735,6 +767,7 @@ window.SupplierCampaigns = {
     }
   },
 
+  // 🔥 v9.1: Upload amélioré avec meilleure gestion d'erreurs
   uploadMediaToCloudinary: async function() {
     if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
       if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
@@ -752,19 +785,31 @@ window.SupplierCampaigns = {
     const formData = new FormData();
     formData.append('media', file);
     
+    console.log('[Upload] Starting upload:', {
+      filename: file.name,
+      type: type,
+      size: file.size
+    });
+    
     try {
       this.showLoading(true);
-      console.log('[Upload] Uploading file:', file.name, 'type:', type);
       
-      const result = type === 'video' 
-        ? await BrandiaAPI.Upload.uploadVideo(formData)
-        : await BrandiaAPI.Upload.uploadImage(formData);
+      // 🔥 v9.1: Utiliser la bonne API selon le type
+      const uploadFn = type === 'video' 
+        ? BrandiaAPI.Upload.uploadVideo 
+        : BrandiaAPI.Upload.uploadImage;
       
-      console.log('[Upload] Result:', result);
+      console.log('[Upload] Calling API:', type === 'video' ? 'uploadVideo' : 'uploadImage');
+      
+      const result = await uploadFn(formData);
+      
+      console.log('[Upload] API result:', result);
       
       if (result?.success) {
         const mediaUrl = result.data?.url || result.data?.secure_url;
-        if (!mediaUrl) throw new Error('URL média non trouvée dans la réponse');
+        if (!mediaUrl) {
+          throw new Error('URL média non trouvée dans la réponse');
+        }
         return { url: mediaUrl, type: type };
       } else {
         throw new Error(result?.message || 'Erreur upload inconnue');
@@ -817,20 +862,25 @@ window.SupplierCampaigns = {
       let mediaUrl = null;
       let mediaType = this.state.currentMediaType;
       
+      // 🔥 v9.1: Upload du média si nouveau
       if (this.state.uploadedMedia?.isNew) {
         try {
+          console.log('[Campaigns] Uploading new media...');
           const uploadResult = await this.uploadMediaToCloudinary();
           if (uploadResult) {
             mediaUrl = uploadResult.url;
             mediaType = uploadResult.type;
+            console.log('[Campaigns] Media uploaded:', mediaUrl);
           }
         } catch (err) {
+          console.error('[Campaigns] Upload failed:', err);
           this.showToast('Erreur upload: ' + err.message, 'error');
           return;
         }
       } else if (this.state.uploadedMedia?.existingUrl) {
         mediaUrl = this.state.uploadedMedia.existingUrl;
         mediaType = this.state.uploadedMedia.existingType;
+        console.log('[Campaigns] Using existing media:', mediaUrl);
       }
       
       if (!mediaUrl && !this.state.editingCampaignId) {
@@ -869,7 +919,9 @@ window.SupplierCampaigns = {
         ad_creative: adCreative,
         ad_format: 'overlay',
         cta_link: ctaLink,
-        status: 'active'
+        status: 'active',
+        media_url: mediaUrl,
+        media_type: mediaType
       };
       
       console.log('[Campaigns] Saving data:', JSON.stringify(campaignData, null, 2));
@@ -978,4 +1030,4 @@ window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v9.0 AUTO-TABLE READY chargé');
+console.log('[SupplierCampaigns] Module v9.1 UPLOAD FIX READY chargé');
