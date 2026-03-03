@@ -1,713 +1,467 @@
 // ============================================
-// BRANDIA AD ENGINE v6.0
-// Système de publicité vidéo 15 secondes avec Round-Robin
-// Fichier: assets/js/brandia-ad-engine.js
+// BRANDIA AD ENGINE v6.1 - ROUND ROBIN SYSTEM
+// Système de publicité avec rotation équitable
 // ============================================
 
-(function() {
-    'use strict';
-
-    // ============================================
-    // CONFIGURATION
-    // ============================================
-    const CONFIG = {
-        API_URL: 'https://brandia-1.onrender.com/api',
-        PROXY_URL: 'https://brandia-1.onrender.com/api/proxy/video',
-        AD_DURATION: 15000, // 15 secondes en ms
-        SKIP_DELAY: 5000,   // 5 secondes avant skip possible
-        SESSION_KEY: 'brandia_ad_session_v6',
-        ROTATION_KEY: 'brandia_ad_rotation_v6',
-        CAMPAIGNS_CACHE_KEY: 'brandia_campaigns_cache',
-        CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
-        MAX_ADS_PER_SESSION: 1,
-        FALLBACK_IMAGE: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&auto=format&fit=crop&q=80'
-    };
-
-    // ============================================
-    // ÉTAT DU SYSTÈME
-    // ============================================
-    const state = {
-        currentProduct: null,
-        campaigns: [],
-        activeCampaign: null,
+const BrandiaAdEngine = {
+    // Configuration
+    API_URL: 'https://brandia-1.onrender.com/api',
+    AD_DURATION: 15, // secondes
+    SKIP_DELAY: 5,   // secondes avant pouvoir passer
+    SESSION_DURATION: 30 * 60 * 1000, // 30 minutes en ms
+    
+    // État
+    state: {
         isPlaying: false,
-        isSkipped: false,
-        timer: null,
-        progressTimer: null,
-        skipTimer: null,
-        countdown: 15,
-        videoBlobUrl: null,
+        currentCampaign: null,
+        campaigns: [],
         sessionId: null,
+        lastAdTime: null,
         rotationIndex: 0,
-        totalCampaigns: 0,
-        viewsTracked: false,
-        clickTracked: false
-    };
+        viewCounted: false
+    },
 
     // ============================================
-    // UTILITAIRES
+    // INITIALISATION
     // ============================================
-    const utils = {
-        generateSessionId: () => {
-            return 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        },
+    init: function() {
+        console.log('[AdEngine] Initializing v6.1...');
+        this.initSession();
+        this.loadCampaigns();
+        
+        // Écouter les messages de la vidéo
+        this.attachVideoListeners();
+    },
 
-        getSessionData: () => {
-            try {
-                const data = sessionStorage.getItem(CONFIG.SESSION_KEY);
-                return data ? JSON.parse(data) : null;
-            } catch (e) {
-                return null;
-            }
-        },
-
-        setSessionData: (data) => {
-            try {
-                sessionStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(data));
-            } catch (e) {
-                console.warn('[AdEngine] SessionStorage non disponible');
-            }
-        },
-
-        clearSession: () => {
-            sessionStorage.removeItem(CONFIG.SESSION_KEY);
-            sessionStorage.removeItem(CONFIG.ROTATION_KEY);
-        },
-
-        getRotationState: () => {
-            try {
-                const data = sessionStorage.getItem(CONFIG.ROTATION_KEY);
-                return data ? JSON.parse(data) : { index: 0, campaigns: [], lastShown: null };
-            } catch (e) {
-                return { index: 0, campaigns: [], lastShown: null };
-            }
-        },
-
-        setRotationState: (data) => {
-            try {
-                sessionStorage.setItem(CONFIG.ROTATION_KEY, JSON.stringify(data));
-            } catch (e) {
-                console.warn('[AdEngine] Rotation state non sauvegardé');
-            }
-        },
-
-        isNewSession: () => {
-            const session = utils.getSessionData();
-            if (!session) return true;
-            
-            // Vérifier si la session a expiré (plus de 30 minutes)
-            const now = Date.now();
-            const lastActivity = session.lastActivity || 0;
-            return (now - lastActivity) > (30 * 60 * 1000);
-        },
-
-        updateActivity: () => {
-            const session = utils.getSessionData() || { id: utils.generateSessionId(), adsShown: 0 };
-            session.lastActivity = Date.now();
-            utils.setSessionData(session);
-        },
-
-        canShowAd: () => {
-            if (utils.isNewSession()) {
-                // Nouvelle session, reset
-                const newSession = {
-                    id: utils.generateSessionId(),
-                    adsShown: 0,
-                    lastActivity: Date.now()
-                };
-                utils.setSessionData(newSession);
-                return true;
-            }
-
-            const session = utils.getSessionData();
-            return session.adsShown < CONFIG.MAX_ADS_PER_SESSION;
-        },
-
-        markAdShown: () => {
-            const session = utils.getSessionData();
-            if (session) {
-                session.adsShown++;
-                session.lastActivity = Date.now();
-                utils.setSessionData(session);
-            }
-        },
-
-        // 🔥 ROUND ROBIN: Sélection équitable des campagnes
-        selectNextCampaign: (campaigns) => {
-            if (!campaigns || campaigns.length === 0) return null;
-            
-            let rotation = utils.getRotationState();
-            
-            // Si nouvelle session ou campagnes changées, reset
-            if (!rotation.campaigns || rotation.campaigns.length !== campaigns.length) {
-                rotation = {
-                    index: 0,
-                    campaigns: campaigns.map(c => c.id),
-                    lastShown: null
-                };
-            }
-
-            // Sélection Round-Robin
-            const selectedIndex = rotation.index % campaigns.length;
-            const selectedCampaign = campaigns[selectedIndex];
-            
-            // Mise à jour pour la prochaine fois
-            rotation.index = (rotation.index + 1) % campaigns.length;
-            rotation.lastShown = selectedCampaign.id;
-            utils.setRotationState(rotation);
-
-            console.log(`[AdEngine] Round-Robin: Campagne ${selectedIndex + 1}/${campaigns.length} (ID: ${selectedCampaign.id})`);
-            
-            return selectedCampaign;
-        },
-
-        formatTime: (seconds) => {
-            return Math.ceil(seconds);
-        },
-
-        debounce: (func, wait) => {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
+    initSession: function() {
+        const now = Date.now();
+        const sessionData = JSON.parse(sessionStorage.getItem('brandia_ad_session') || '{}');
+        
+        // Vérifier si la session est encore valide (30 min)
+        if (sessionData.id && sessionData.timestamp && (now - sessionData.timestamp < this.SESSION_DURATION)) {
+            this.state.sessionId = sessionData.id;
+            this.state.rotationIndex = sessionData.rotationIndex || 0;
+            this.state.lastAdTime = sessionData.lastAdTime;
+            console.log('[AdEngine] Session restored:', this.state.sessionId, 'Rotation:', this.state.rotationIndex);
+        } else {
+            // Nouvelle session
+            this.state.sessionId = 'session_' + now + '_' + Math.random().toString(36).substr(2, 9);
+            this.state.rotationIndex = 0;
+            this.state.lastAdTime = null;
+            this.saveSession();
+            console.log('[AdEngine] New session:', this.state.sessionId);
         }
-    };
+    },
+
+    saveSession: function() {
+        sessionStorage.setItem('brandia_ad_session', JSON.stringify({
+            id: this.state.sessionId,
+            timestamp: Date.now(),
+            rotationIndex: this.state.rotationIndex,
+            lastAdTime: this.state.lastAdTime
+        }));
+    },
 
     // ============================================
-    // API & DATA
+    // CHARGEMENT DES CAMPAGNES
     // ============================================
-    const api = {
-        // Récupérer les campagnes actives pour un fournisseur
-        fetchCampaigns: async (supplierId, productId) => {
-            try {
-                const cacheKey = `${CONFIG.CAMPAIGNS_CACHE_KEY}_${supplierId}`;
-                const cached = localStorage.getItem(cacheKey);
-                
-                if (cached) {
-                    const { data, timestamp } = JSON.parse(cached);
-                    if (Date.now() - timestamp < CONFIG.CACHE_DURATION) {
-                        console.log('[AdEngine] Campagnes récupérées du cache');
-                        return { success: true, data };
-                    }
-                }
-
-                const response = await fetch(
-                    `${CONFIG.API_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`,
-                    { headers: { 'Accept': 'application/json' } }
-                );
-
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    // Mettre en cache
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        data: Array.isArray(result.data) ? result.data : [result.data],
-                        timestamp: Date.now()
-                    }));
-                }
-
-                return result;
-            } catch (error) {
-                console.error('[AdEngine] Erreur fetch campaigns:', error);
-                return { success: false, error: error.message };
+    loadCampaigns: async function() {
+        try {
+            // Récupérer toutes les campagnes actives
+            const response = await fetch(`${this.API_URL}/supplier/campaigns/public`);
+            
+            if (!response.ok) {
+                console.log('[AdEngine] No public campaigns endpoint, using fallback');
+                return;
             }
-        },
-
-        // Charger vidéo via proxy (contourne ad blockers)
-        loadVideoViaProxy: async (videoUrl) => {
-            try {
-                console.log('[AdEngine] Chargement vidéo via proxy...');
-                const proxyFullUrl = `${CONFIG.PROXY_URL}?url=${encodeURIComponent(videoUrl)}`;
-                
-                const response = await fetch(proxyFullUrl);
-                if (!response.ok) throw new Error(`Proxy error: ${response.status}`);
-                
-                const blob = await response.blob();
-                return URL.createObjectURL(blob);
-            } catch (error) {
-                console.error('[AdEngine] Proxy failed:', error);
-                return null;
+            
+            const data = await response.json();
+            if (data.success && data.data) {
+                this.state.campaigns = data.data.filter(c => c.status === 'active');
+                console.log('[AdEngine] Loaded', this.state.campaigns.length, 'active campaigns');
             }
-        },
+        } catch (error) {
+            console.log('[AdEngine] Could not load campaigns:', error.message);
+        }
+    },
 
-        // Tracking
-        trackView: async (campaignId) => {
-            try {
-                await fetch(`${CONFIG.API_URL}/supplier/public/campaigns/view`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ campaign_id: campaignId })
-                });
-                console.log('[AdEngine] View tracked:', campaignId);
-            } catch (e) {
-                console.warn('[AdEngine] Track view failed:', e);
-            }
-        },
+    // ============================================
+    // VÉRIFICATION & DÉCLENCHEMENT
+    // ============================================
+    checkAndTrigger: async function(productData) {
+        console.log('[AdEngine] Checking ad for product:', productData);
+        
+        // Vérifier si déjà une pub en cours
+        if (this.state.isPlaying) {
+            console.log('[AdEngine] Ad already playing');
+            return false;
+        }
 
-        trackClick: async (campaignId) => {
-            try {
-                await fetch(`${CONFIG.API_URL}/supplier/public/campaigns/click`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ campaign_id: campaignId })
-                });
-                console.log('[AdEngine] Click tracked:', campaignId);
-            } catch (e) {
-                console.warn('[AdEngine] Track click failed:', e);
+        // Vérifier limite de session (1 pub par session)
+        if (this.state.lastAdTime) {
+            const timeSinceLastAd = Date.now() - this.state.lastAdTime;
+            if (timeSinceLastAd < this.SESSION_DURATION) {
+                console.log('[AdEngine] Ad already shown in this session');
+                return false;
             }
         }
-    };
 
-    // ============================================
-    // UI CONTROLLERS
-    // ============================================
-    const ui = {
-        elements: {
-            overlay: null,
-            video: null,
-            fallback: null,
-            fallbackImg: null,
-            timerText: null,
-            timerDisplay: null,
-            progressBar: null,
-            title: null,
-            desc: null,
-            cta: null,
-            download: null,
-            closeBtn: null,
-            skipBtn: null,
-            skipTimer: null,
-            loading: null,
-            stats: null,
-            views: null,
-            clicks: null,
-            rotationInfo: null,
-            sponsorNotif: null
-        },
-
-        init: () => {
-            ui.elements.overlay = document.getElementById('brandia-ad-overlay');
-            ui.elements.video = document.getElementById('brandia-ad-video');
-            ui.elements.fallback = document.getElementById('brandia-ad-fallback');
-            ui.elements.fallbackImg = document.getElementById('brandia-ad-fallback-img');
-            ui.elements.timerText = document.getElementById('brandia-ad-timer-text');
-            ui.elements.timerDisplay = document.getElementById('brandia-ad-timer-display');
-            ui.elements.progressBar = document.getElementById('brandia-ad-progress-bar');
-            ui.elements.title = document.getElementById('brandia-ad-title');
-            ui.elements.desc = document.getElementById('brandia-ad-desc');
-            ui.elements.cta = document.getElementById('brandia-ad-cta');
-            ui.elements.download = document.getElementById('brandia-ad-download');
-            ui.elements.closeBtn = document.querySelector('.brandia-ad-close');
-            ui.elements.skipBtn = document.getElementById('brandia-ad-skip');
-            ui.elements.skipTimer = document.getElementById('skip-timer');
-            ui.elements.loading = document.getElementById('brandia-ad-loading');
-            ui.elements.stats = document.getElementById('brandia-ad-stats');
-            ui.elements.views = document.getElementById('ad-views');
-            ui.elements.clicks = document.getElementById('ad-clicks');
-            ui.elements.rotationInfo = document.getElementById('ad-rotation-info');
-            ui.elements.sponsorNotif = document.getElementById('brandia-ad-sponsor-notif');
-        },
-
-        showLoading: () => {
-            if (ui.elements.loading) ui.elements.loading.classList.remove('hidden');
-        },
-
-        hideLoading: () => {
-            if (ui.elements.loading) ui.elements.loading.classList.add('hidden');
-        },
-
-        showOverlay: () => {
-            if (ui.elements.overlay) {
-                ui.elements.overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-        },
-
-        hideOverlay: () => {
-            if (ui.elements.overlay) {
-                ui.elements.overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        },
-
-        showSkipButton: () => {
-            if (ui.elements.skipBtn) {
-                ui.elements.skipBtn.classList.add('visible');
-                ui.elements.skipBtn.innerHTML = 'Passer la pub';
-            }
-        },
-
-        updateTimer: (seconds) => {
-            const text = utils.formatTime(seconds);
-            if (ui.elements.timerText) ui.elements.timerText.textContent = text;
-            if (ui.elements.timerDisplay) ui.elements.timerDisplay.textContent = text;
-        },
-
-        updateProgress: (percent) => {
-            if (ui.elements.progressBar) {
-                ui.elements.progressBar.style.width = `${Math.max(0, percent)}%`;
-            }
-        },
-
-        updateStats: (views, clicks) => {
-            if (ui.elements.views) ui.elements.views.textContent = views || 0;
-            if (ui.elements.clicks) ui.elements.clicks.textContent = clicks || 0;
-        },
-
-        updateRotationInfo: (current, total) => {
-            if (ui.elements.rotationInfo) {
-                ui.elements.rotationInfo.textContent = `${current}/${total}`;
-            }
-        },
-
-        showSponsorNotification: () => {
-            if (ui.elements.sponsorNotif) {
-                ui.elements.sponsorNotif.classList.add('show');
-                setTimeout(() => {
-                    ui.elements.sponsorNotif.classList.remove('show');
-                }, 3000);
-            }
-        },
-
-        setCampaignData: (campaign) => {
-            if (ui.elements.title) ui.elements.title.textContent = campaign.headline || 'Offre spéciale';
-            if (ui.elements.desc) ui.elements.desc.textContent = campaign.description || 'Découvrez cette offre exclusive';
-            if (ui.elements.cta) ui.elements.cta.href = campaign.cta_link || '#';
-            if (ui.elements.download) ui.elements.download.href = campaign.media_url || '#';
-            
-            // Fallback image
-            if (ui.elements.fallbackImg && campaign.media_url) {
-                const posterUrl = campaign.media_url.replace('.mp4', '.jpg').replace('/upload/', '/upload/so_0/');
-                ui.elements.fallbackImg.src = posterUrl;
-                ui.elements.fallbackImg.onerror = () => {
-                    ui.elements.fallbackImg.src = CONFIG.FALLBACK_IMAGE;
-                };
-            }
-        },
-
-        showFallback: () => {
-            if (ui.elements.video) ui.elements.video.style.display = 'none';
-            if (ui.elements.fallback) ui.elements.fallback.classList.add('active');
-        },
-
-        showVideo: () => {
-            if (ui.elements.fallback) ui.elements.fallback.classList.remove('active');
-            if (ui.elements.video) ui.elements.video.style.display = 'block';
+        // Vérifier si le produit a un fournisseur
+        if (!productData.supplier_id) {
+            console.log('[AdEngine] No supplier_id for this product');
+            return false;
         }
-    };
 
-    // ============================================
-    // MOTEUR VIDÉO
-    // ============================================
-    const videoEngine = {
-        play: async (videoUrl) => {
-            return new Promise(async (resolve) => {
-                const video = ui.elements.video;
-                if (!video) return resolve(false);
+        try {
+            // 🔥 Vérifier si une campagne active existe pour ce fournisseur ET ce produit
+            const campaign = await this.getCampaignForProduct(productData.supplier_id, productData.id);
+            
+            if (!campaign) {
+                console.log('[AdEngine] No active campaign for this supplier/product');
+                return false;
+            }
 
-                // Charger via proxy
-                const blobUrl = await api.loadVideoViaProxy(videoUrl);
-                
-                if (!blobUrl) {
-                    console.log('[AdEngine] Fallback vers image');
-                    ui.showFallback();
-                    return resolve(true); // On continue avec fallback
+            // Vérifier si c'est au tour de cette campagne (round-robin)
+            if (this.state.campaigns.length > 0) {
+                const expectedCampaign = this.state.campaigns[this.state.rotationIndex % this.state.campaigns.length];
+                if (expectedCampaign.id !== campaign.id) {
+                    console.log('[AdEngine] Not this campaign\'s turn (round-robin)');
+                    // Mettre à jour l'index pour la prochaine fois
+                    this.state.rotationIndex = this.findCampaignIndex(campaign.id);
                 }
+            }
 
-                state.videoBlobUrl = blobUrl;
-                video.src = blobUrl;
+            // 🎬 Lancer la publicité
+            this.playAd(campaign, productData);
+            return true;
 
-                video.onloadeddata = () => {
-                    console.log('[AdEngine] Vidéo chargée');
-                    ui.hideLoading();
-                    ui.showVideo();
-                    
-                    video.play().then(() => {
-                        console.log('[AdEngine] Lecture démarrée');
-                        resolve(true);
-                    }).catch(err => {
-                        console.warn('[AdEngine] Autoplay bloqué:', err);
-                        video.muted = true;
-                        video.play().then(() => resolve(true)).catch(() => {
-                            ui.showFallback();
-                            resolve(true);
-                        });
-                    });
-                };
+        } catch (error) {
+            console.error('[AdEngine] Error checking campaign:', error);
+            return false;
+        }
+    },
 
-                video.onerror = (e) => {
-                    console.error('[AdEngine] Erreur vidéo:', e);
-                    ui.showFallback();
-                    resolve(true);
-                };
+    getCampaignForProduct: async function(supplierId, productId) {
+        try {
+            // Appel API pour vérifier si une campagne existe
+            const response = await fetch(
+                `${this.API_URL}/supplier/campaigns/active?supplier=${supplierId}&product=${productId}`
+            );
+            
+            if (!response.ok) return null;
+            
+            const data = await response.json();
+            if (data.success && data.data) {
+                return data.data;
+            }
+            
+            // Fallback: chercher dans les campagnes chargées
+            return this.state.campaigns.find(c => 
+                c.supplier_id === supplierId && 
+                (c.product_id === productId || 
+                 (c.targeting?.products && c.targeting.products.includes(productId)))
+            );
+        } catch (error) {
+            console.log('[AdEngine] API check failed, using local data');
+            return this.state.campaigns.find(c => 
+                c.supplier_id === supplierId && c.product_id === productId
+            );
+        }
+    },
 
-                // Timeout de sécurité
-                setTimeout(() => {
-                    if (!video.currentTime || video.paused) {
-                        ui.showFallback();
-                        resolve(true);
-                    }
-                }, 10000);
+    findCampaignIndex: function(campaignId) {
+        const index = this.state.campaigns.findIndex(c => c.id === campaignId);
+        return index >= 0 ? index : 0;
+    },
+
+    // ============================================
+    // LECTURE DE LA PUBLICITÉ
+    // ============================================
+    playAd: function(campaign, productData) {
+        console.log('[AdEngine] Playing ad:', campaign.name);
+        this.state.isPlaying = true;
+        this.state.currentCampaign = campaign;
+        this.state.viewCounted = false;
+
+        const overlay = document.getElementById('brandia-ad-overlay');
+        const video = document.getElementById('brandia-ad-video');
+        const loading = document.getElementById('brandia-ad-loading');
+        
+        // Afficher l'overlay
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Afficher le loading
+        loading.classList.remove('hidden');
+        
+        // Configurer le contenu
+        this.setupAdContent(campaign);
+        
+        // Configurer la vidéo
+        if (campaign.media_url && campaign.media_type === 'video') {
+            this.setupVideo(campaign.media_url);
+        } else if (campaign.ad_creative?.image_url) {
+            this.setupFallbackImage(campaign.ad_creative.image_url);
+        } else {
+            this.setupFallbackImage(null);
+        }
+
+        // Démarrer le timer
+        this.startAdTimer();
+        
+        // Notification sponsorisée
+        this.showSponsorNotification();
+        
+        // Tracking: vue après 3 secondes
+        setTimeout(() => {
+            if (this.state.isPlaying && !this.state.viewCounted) {
+                this.trackView(campaign.id);
+                this.state.viewCounted = true;
+            }
+        }, 3000);
+    },
+
+    setupAdContent: function(campaign) {
+        const creative = campaign.ad_creative || {};
+        
+        document.getElementById('brandia-ad-title').textContent = 
+            creative.headline || campaign.name || 'Offre spéciale';
+        document.getElementById('brandia-ad-desc').textContent = 
+            creative.description || 'Découvrez cette offre exclusive';
+        
+        const ctaBtn = document.getElementById('brandia-ad-cta');
+        ctaBtn.innerHTML = `${creative.cta_text || "Voir l'offre"} <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>`;
+        ctaBtn.href = campaign.cta_link || '#';
+        
+        // Info rotation
+        const current = (this.state.rotationIndex % Math.max(this.state.campaigns.length, 1)) + 1;
+        const total = Math.max(this.state.campaigns.length, 1);
+        document.getElementById('ad-rotation-info').textContent = `${current}/${total}`;
+        
+        // Stats
+        document.getElementById('ad-views').textContent = campaign.impressions || 0;
+        document.getElementById('ad-clicks').textContent = campaign.clicks || 0;
+    },
+
+    setupVideo: function(videoUrl) {
+        const video = document.getElementById('brandia-ad-video');
+        const fallback = document.getElementById('brandia-ad-fallback');
+        const loading = document.getElementById('brandia-ad-loading');
+        
+        video.src = videoUrl;
+        video.style.display = 'block';
+        fallback.classList.remove('active');
+        
+        video.onloadeddata = () => {
+            loading.classList.add('hidden');
+            video.play().catch(e => {
+                console.log('[AdEngine] Autoplay blocked, showing fallback');
+                this.showVideoFallback();
             });
-        },
+        };
+        
+        video.onerror = () => {
+            console.log('[AdEngine] Video error, showing fallback');
+            this.showVideoFallback();
+        };
+        
+        // Fin de la vidéo
+        video.onended = () => {
+            this.completeAd();
+        };
+    },
 
-        stop: () => {
-            const video = ui.elements.video;
-            if (video) {
-                video.pause();
-                video.src = '';
-            }
-            
-            if (state.videoBlobUrl) {
-                URL.revokeObjectURL(state.videoBlobUrl);
-                state.videoBlobUrl = null;
-            }
-        },
-
-        retry: () => {
-            if (state.activeCampaign && state.activeCampaign.media_url) {
-                ui.showVideo();
-                videoEngine.play(state.activeCampaign.media_url);
-            }
+    setupFallbackImage: function(imageUrl) {
+        const video = document.getElementById('brandia-ad-video');
+        const fallback = document.getElementById('brandia-ad-fallback');
+        const loading = document.getElementById('brandia-ad-loading');
+        const fallbackImg = document.getElementById('brandia-ad-fallback-img');
+        
+        video.style.display = 'none';
+        fallback.classList.add('active');
+        loading.classList.add('hidden');
+        
+        if (imageUrl) {
+            fallbackImg.src = imageUrl;
         }
-    };
+    },
+
+    showVideoFallback: function() {
+        const video = document.getElementById('brandia-ad-video');
+        const fallback = document.getElementById('brandia-ad-fallback');
+        const loading = document.getElementById('brandia-ad-loading');
+        
+        video.style.display = 'none';
+        fallback.classList.add('active');
+        loading.classList.add('hidden');
+    },
+
+    retryVideo: function() {
+        const video = document.getElementById('brandia-ad-video');
+        if (video.src) {
+            video.play();
+        }
+    },
 
     // ============================================
     // TIMER & PROGRESSION
     // ============================================
-    const timerEngine = {
-        start: () => {
-            const startTime = Date.now();
-            const totalDuration = CONFIG.AD_DURATION;
+    startAdTimer: function() {
+        let remaining = this.AD_DURATION;
+        const timerDisplay = document.getElementById('brandia-ad-timer-display');
+        const timerText = document.getElementById('brandia-ad-timer-text');
+        const progressBar = document.getElementById('brandia-ad-progress-bar');
+        const skipBtn = document.getElementById('brandia-ad-skip');
+        const skipTimer = document.getElementById('skip-timer');
+        
+        // Afficher le bouton skip après 5 secondes
+        let skipRemaining = this.SKIP_DELAY;
+        const skipInterval = setInterval(() => {
+            skipRemaining--;
+            if (skipTimer) skipTimer.textContent = `(${skipRemaining})`;
             
-            // Timer principal (15s)
-            state.timer = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                const remaining = Math.max(0, Math.ceil((totalDuration - elapsed) / 1000));
-                const progress = ((totalDuration - elapsed) / totalDuration) * 100;
-                
-                state.countdown = remaining;
-                ui.updateTimer(remaining);
-                ui.updateProgress(progress);
-                
-                if (elapsed >= totalDuration) {
-                    BrandiaAdEngine.completeAd();
-                }
-            }, 100);
-
-            // Skip timer (5s avant skip possible)
-            let skipCountdown = CONFIG.SKIP_DELAY / 1000;
-            state.skipTimer = setInterval(() => {
-                skipCountdown--;
-                if (ui.elements.skipTimer) {
-                    ui.elements.skipTimer.textContent = `(${skipCountdown})`;
-                }
-                
-                if (skipCountdown <= 0) {
-                    clearInterval(state.skipTimer);
-                    ui.showSkipButton();
-                }
-            }, 1000);
-        },
-
-        stop: () => {
-            if (state.timer) {
-                clearInterval(state.timer);
-                state.timer = null;
+            if (skipRemaining <= 0) {
+                clearInterval(skipInterval);
+                skipBtn.classList.add('visible');
+                skipBtn.innerHTML = 'Passer la pub <i class="fas fa-forward"></i>';
             }
-            if (state.skipTimer) {
-                clearInterval(state.skipTimer);
-                state.skipTimer = null;
+        }, 1000);
+        
+        // Timer principal
+        this.adTimer = setInterval(() => {
+            remaining--;
+            
+            if (timerDisplay) timerDisplay.textContent = remaining;
+            if (timerText) timerText.textContent = remaining;
+            
+            // Progress bar
+            const progress = ((this.AD_DURATION - remaining) / this.AD_DURATION) * 100;
+            if (progressBar) progressBar.style.width = `${progress}%`;
+            
+            if (remaining <= 0) {
+                this.completeAd();
             }
-        }
-    };
+        }, 1000);
+    },
 
     // ============================================
-    // MÉTHODES PUBLIQUES
+    // ACTIONS UTILISATEUR
     // ============================================
-    const BrandiaAdEngine = {
-        // Initialisation
-        init: (product) => {
-            console.log('[AdEngine] Initialisation v6.0...');
-            state.currentProduct = product;
-            ui.init();
-            utils.updateActivity();
-        },
+    skipAd: function() {
+        console.log('[AdEngine] Ad skipped by user');
+        this.completeAd();
+    },
 
-        // Vérifier et déclencher la publicité
-        checkAndTrigger: async (product) => {
-            console.log('[AdEngine] Vérification déclenchement...');
+    handleClick: function(event) {
+        event.preventDefault();
+        
+        if (this.state.currentCampaign) {
+            this.trackClick(this.state.currentCampaign.id);
             
-            // 1. Vérifier si on peut montrer une pub (1 par session)
-            if (!utils.canShowAd()) {
-                console.log('[AdEngine] Limite atteinte pour cette session');
-                // Redirection directe vers le produit
-                window.location.href = `product.html?id=${product.id}`;
-                return;
-            }
-
-            // 2. Vérifier si campagnes existent
-            if (!product.supplier_id) {
-                console.log('[AdEngine] Pas de fournisseur, pas de pub');
-                window.location.href = `product.html?id=${product.id}`;
-                return;
-            }
-
-            // 3. Afficher loading
-            ui.showLoading();
-            ui.showOverlay();
-
-            try {
-                const response = await api.fetchCampaigns(product.supplier_id, product.id);
-                
-                if (!response.success || !response.data || response.data.length === 0) {
-                    console.log('[AdEngine] Pas de campagnes actives');
-                    ui.hideOverlay();
-                    window.location.href = `product.html?id=${product.id}`;
-                    return;
-                }
-
-                // 4. Sélection Round-Robin
-                const campaigns = Array.isArray(response.data) ? response.data : [response.data];
-                const selectedCampaign = utils.selectNextCampaign(campaigns);
-                
-                if (!selectedCampaign) {
-                    ui.hideOverlay();
-                    window.location.href = `product.html?id=${product.id}`;
-                    return;
-                }
-
-                // 5. Lancer la publicité
-                await BrandiaAdEngine.showAd(selectedCampaign, campaigns.length);
-
-            } catch (error) {
-                console.error('[AdEngine] Erreur:', error);
-                ui.hideOverlay();
-                window.location.href = `product.html?id=${product.id}`;
-            }
-        },
-
-        // Afficher la publicité
-        showAd: async (campaign, totalCampaigns) => {
-            console.log('[AdEngine] Affichage campagne:', campaign.id);
-            
-            state.activeCampaign = campaign;
-            state.isPlaying = true;
-            state.isSkipped = false;
-            state.viewsTracked = false;
-            state.clickTracked = false;
-
-            // Mise à jour UI
-            ui.setCampaignData(campaign);
-            ui.updateRotationInfo(
-                (utils.getRotationState().index || 0) + 1, 
-                totalCampaigns
-            );
-            ui.updateStats(campaign.views_count || 0, campaign.clicks_count || 0);
-
-            // Notification sponsorisé
-            setTimeout(() => ui.showSponsorNotification(), 500);
-
-            // Lancer vidéo
-            const videoStarted = await videoEngine.play(campaign.media_url);
-            
-            if (videoStarted) {
-                // Démarrer timers
-                timerEngine.start();
-                
-                // Marquer comme vue après 3 secondes
-                setTimeout(() => {
-                    if (!state.viewsTracked) {
-                        api.trackView(campaign.id);
-                        state.viewsTracked = true;
-                    }
-                }, 3000);
-
-                // Marquer la pub comme montrée dans la session
-                utils.markAdShown();
-            }
-        },
-
-        // Gestion du clic sur CTA
-        handleClick: (event) => {
-            event.preventDefault();
-            
-            if (!state.activeCampaign) return;
-            
-            // Tracker le clic
-            if (!state.clickTracked) {
-                api.trackClick(state.activeCampaign.id);
-                state.clickTracked = true;
-            }
-
-            // Redirection
-            const link = state.activeCampaign.cta_link || '#';
-            if (link !== '#') {
+            // Rediriger vers le lien CTA
+            const link = event.currentTarget.href;
+            if (link && link !== '#') {
                 window.open(link, '_blank');
             }
-        },
-
-        // Passer la publicité
-        skipAd: () => {
-            if (!state.isPlaying) return;
-            
-            console.log('[AdEngine] Skip demandé');
-            state.isSkipped = true;
-            BrandiaAdEngine.completeAd();
-        },
-
-        // Compléter la publicité (naturellement ou skip)
-        completeAd: () => {
-            console.log('[AdEngine] Publicité terminée');
-            
-            timerEngine.stop();
-            videoEngine.stop();
-            ui.hideOverlay();
-            
-            // Reset état
-            state.isPlaying = false;
-            state.activeCampaign = null;
-            
-            // Redirection vers le produit après la pub
-            if (state.currentProduct) {
-                console.log('[AdEngine] Redirection vers produit');
-                // Option: rediriger ou juste fermer l'overlay
-                // window.location.href = `product.html?id=${state.currentProduct.id}`;
-            }
-        },
-
-        // Retry vidéo (bouton play sur fallback)
-        retryVideo: () => {
-            videoEngine.retry();
-        },
-
-        // Reset manuel (pour debug)
-        reset: () => {
-            utils.clearSession();
-            console.log('[AdEngine] Session reset');
-        },
-
-        // Stats pour debug
-        getStats: () => {
-            return {
-                session: utils.getSessionData(),
-                rotation: utils.getRotationState(),
-                state: state
-            };
         }
-    };
+        
+        this.completeAd();
+    },
+
+    completeAd: function() {
+        if (!this.state.isPlaying) return;
+        
+        console.log('[AdEngine] Ad completed');
+        
+        // Arrêter les timers
+        if (this.adTimer) clearInterval(this.adTimer);
+        
+        // Mettre à jour la session
+        this.state.lastAdTime = Date.now();
+        this.state.rotationIndex = (this.state.rotationIndex + 1) % Math.max(this.state.campaigns.length, 1);
+        this.saveSession();
+        
+        // Cacher l'overlay
+        const overlay = document.getElementById('brandia-ad-overlay');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        
+        // Arrêter la vidéo
+        const video = document.getElementById('brandia-ad-video');
+        video.pause();
+        video.src = '';
+        
+        // Reset state
+        this.state.isPlaying = false;
+        this.state.currentCampaign = null;
+        
+        // 🔥 Callback: ajouter au panier après la pub
+        if (window.handleProductClick && typeof addToCart === 'function') {
+            console.log('[AdEngine] Calling addToCart after ad');
+            addToCart();
+        }
+    },
 
     // ============================================
-    // EXPOSITION GLOBALE
+    // TRACKING
     // ============================================
-    window.BrandiaAdEngine = BrandiaAdEngine;
+    trackView: async function(campaignId) {
+        try {
+            await fetch(`${this.API_URL}/supplier/campaigns/track-view`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaign_id: campaignId })
+            });
+            console.log('[AdEngine] View tracked for', campaignId);
+        } catch (e) {
+            console.log('[AdEngine] Failed to track view');
+        }
+    },
 
-    console.log('[Brandia Ad Engine] v6.0 chargé - Round-Robin Ready');
-})();
+    trackClick: async function(campaignId) {
+        try {
+            await fetch(`${this.API_URL}/supplier/campaigns/track-click`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaign_id: campaignId })
+            });
+            console.log('[AdEngine] Click tracked for', campaignId);
+        } catch (e) {
+            console.log('[AdEngine] Failed to track click');
+        }
+    },
+
+    // ============================================
+    // UI HELPERS
+    // ============================================
+    showSponsorNotification: function() {
+        const notif = document.getElementById('brandia-ad-sponsor-notif');
+        notif.classList.add('show');
+        setTimeout(() => {
+            notif.classList.remove('show');
+        }, 3000);
+    },
+
+    attachVideoListeners: function() {
+        // Gestion des erreurs vidéo globales
+        const video = document.getElementById('brandia-ad-video');
+        if (video) {
+            video.addEventListener('error', () => {
+                console.log('[AdEngine] Video error detected');
+                this.showVideoFallback();
+            });
+        }
+    }
+};
+
+// Exposer globalement
+window.BrandiaAdEngine = BrandiaAdEngine;
+
+// Auto-init si DOM prêt
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => BrandiaAdEngine.init());
+} else {
+    BrandiaAdEngine.init();
+}
+
+console.log('[BrandiaAdEngine] v6.1 loaded');

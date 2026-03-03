@@ -1227,11 +1227,10 @@ Voir l'offre <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
 // CONFIGURATION PRODUCTION
 // ============================================
 const API_URL = 'https://brandia-1.onrender.com/api';
-const PROXY_URL = 'https://brandia-1.onrender.com/api/proxy/video';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&auto=format&fit=crop&q=80';
 
 // ============================================
-// ÉTAT GLOBAL PRODUIT
+// ÉTAT GLOBAL
 // ============================================
 let currentProduct = null;
 let currentProductId = null;
@@ -1241,195 +1240,216 @@ let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
 // UTILITAIRES
 // ============================================
 function getProductImageUrl(product) {
-if (!product) return FALLBACK_IMAGE;
-const fields = ['main_image_url', 'image_url', 'image', 'img_url', 'photo_url'];
-for (let field of fields) {
-if (product[field] && typeof product[field] === 'string' && product[field].trim() !== '') {
-if (!product[field].startsWith('http') && !product[field].startsWith('data:')) {
-return API_URL.replace('/api', '') + product[field];
-}
-return product[field];
-}
-}
-return FALLBACK_IMAGE;
+    if (!product) return FALLBACK_IMAGE;
+    const fields = ['main_image_url', 'image_url', 'image', 'img_url', 'photo_url'];
+    for (let field of fields) {
+        if (product[field] && typeof product[field] === 'string' && product[field].trim() !== '') {
+            if (!product[field].startsWith('http') && !product[field].startsWith('data:')) {
+                return API_URL.replace('/api', '') + product[field];
+            }
+            return product[field];
+        }
+    }
+    return FALLBACK_IMAGE;
 }
 
 function handleImageError(img) {
-img.src = FALLBACK_IMAGE;
-img.onerror = null;
+    img.src = FALLBACK_IMAGE;
+    img.onerror = null;
 }
 
 // ============================================
 // INITIALISATION
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-console.log('[Product] Initializing v6.0 with Ad Engine...');
+    console.log('[Product] Initializing v6.1 with Ad Engine...');
 
-const urlParams = new URLSearchParams(window.location.search);
-currentProductId = urlParams.get('id');
+    const urlParams = new URLSearchParams(window.location.search);
+    currentProductId = urlParams.get('id');
 
-if (!currentProductId) {
-showError('Produit non trouvé - ID manquant');
-return;
-}
+    if (!currentProductId) {
+        showError('Produit non trouvé - ID manquant');
+        return;
+    }
 
-loadProductData();
+    loadProductData();
 });
 
 // ============================================
 // CHARGEMENT PRODUIT
 // ============================================
 async function loadProductData() {
-try {
-const response = await fetch(`${API_URL}/products/${currentProductId}`);
-if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    try {
+        const response = await fetch(`${API_URL}/products/${currentProductId}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-const data = await response.json();
-if (!data.success || !data.data) throw new Error('Produit non trouvé');
+        const data = await response.json();
+        if (!data.success || !data.data) throw new Error('Produit non trouvé');
 
-currentProduct = data.data.product || data.data;
-renderProduct(currentProduct);
+        currentProduct = data.data.product || data.data;
+        
+        // 🔥 IMPORTANT: Stocker le supplier_id pour l'Ad Engine
+        window.currentProductData = {
+            id: currentProduct.id,
+            supplier_id: currentProduct.supplier_id,
+            name: currentProduct.name,
+            category_id: currentProduct.category_id
+        };
+        
+        renderProduct(currentProduct);
 
-if (currentProduct.category_id) {
-loadRelatedProducts(currentProduct.category_id);
-}
+        if (currentProduct.category_id) {
+            loadRelatedProducts(currentProduct.category_id);
+        }
 
-// 🔥 Initialiser le Ad Engine après chargement produit
-if (window.BrandiaAdEngine) {
-BrandiaAdEngine.init(currentProduct);
-}
-
-} catch (error) {
-console.error('[Product] Error:', error);
-showError('Impossible de charger le produit: ' + error.message);
-}
+    } catch (error) {
+        console.error('[Product] Error:', error);
+        showError('Impossible de charger le produit: ' + error.message);
+    }
 }
 
 // ============================================
 // RENDU PRODUIT
 // ============================================
 function renderProduct(product) {
-document.getElementById('product-loader').style.display = 'none';
-document.getElementById('tabs-section').style.display = 'block';
-document.getElementById('related-section').style.display = 'block';
+    document.getElementById('product-loader').style.display = 'none';
+    document.getElementById('tabs-section').style.display = 'block';
+    document.getElementById('related-section').style.display = 'block';
 
-const imageUrl = getProductImageUrl(product);
-const hasDiscount = product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price);
-const discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
+    const imageUrl = getProductImageUrl(product);
+    const hasDiscount = product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price);
+    const discount = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0;
 
-// 🔥 AJOUT: data-supplier-id pour le tracking
-document.getElementById('product-section').innerHTML = `
-<div class="product-gallery">
-<div class="main-image" id="product-main-image" data-product-id="${product.id}" data-supplier-id="${product.supplier_id}">
-<img src="${imageUrl}" alt="${product.name}" onerror="handleImageError(this)">
-</div>
-</div>
-<div class="product-info">
-<span class="product-category">${product.category_name || 'Catégorie'}</span>
-<h1 class="product-title">${product.name}</h1>
-<div class="product-price">
-<span class="current-price">${parseFloat(product.price).toFixed(2)} €</span>
-${hasDiscount ? `<span class="original-price">${parseFloat(product.compare_price).toFixed(2)} €</span><span class="discount-badge">-${discount}%</span>` : ''}
-</div>
-<div class="product-description">
-<p>${product.description || 'Aucune description'}</p>
-</div>
-<div class="product-actions">
-<div class="action-buttons">
-<button class="btn-primary" onclick="addToCart()" id="btn-add-cart">
-<i class="fas fa-shopping-cart"></i> Ajouter au panier
-</button>
-</div>
-</div>
-</div>
-`;
+    document.getElementById('product-section').innerHTML = `
+        <div class="product-gallery">
+            <div class="main-image" id="product-main-image">
+                <img src="${imageUrl}" alt="${product.name}" onerror="handleImageError(this)">
+            </div>
+        </div>
+        <div class="product-info">
+            <span class="product-category">${product.category_name || 'Catégorie'}</span>
+            <h1 class="product-title">${product.name}</h1>
+            <div class="product-price">
+                <span class="current-price">${parseFloat(product.price).toFixed(2)} €</span>
+                ${hasDiscount ? `<span class="original-price">${parseFloat(product.compare_price).toFixed(2)} €</span><span class="discount-badge">-${discount}%</span>` : ''}
+            </div>
+            <div class="product-description">
+                <p>${product.description || 'Aucune description'}</p>
+            </div>
+            <div class="product-actions">
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="handleProductClick()" id="btn-add-cart">
+                        <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                    </button>
+                    <button class="btn-secondary" onclick="addToWishlist()">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
 
-document.getElementById('breadcrumb-category').textContent = product.category_name || 'Catégorie';
-document.getElementById('breadcrumb-product').textContent = product.name;
-document.getElementById('tab-description').textContent = product.description || 'Aucune description';
-document.title = `${product.name} - Brandia`;
-
-// 🔥 AJOUT: Event listener sur l'image pour déclencher la pub
-const mainImage = document.getElementById('product-main-image');
-if (mainImage && window.BrandiaAdEngine) {
-mainImage.addEventListener('click', function(e) {
-// Vérifier si une campagne est active avant de déclencher
-BrandiaAdEngine.checkAndTrigger(product);
-});
+    document.getElementById('breadcrumb-category').textContent = product.category_name || 'Catégorie';
+    document.getElementById('breadcrumb-product').textContent = product.name;
+    document.getElementById('tab-description').textContent = product.description || 'Aucune description';
+    document.title = `${product.name} - Brandia`;
 }
+
+// 🔥 NOUVELLE FONCTION: Gestion du clic produit avec pub
+async function handleProductClick() {
+    console.log('[Product] Click detected, checking for ad...');
+    
+    // Vérifier si une campagne existe pour ce fournisseur
+    if (window.BrandiaAdEngine && window.currentProductData) {
+        const hasAd = await BrandiaAdEngine.checkAndTrigger(window.currentProductData);
+        
+        if (hasAd) {
+            // La pub va se lancer, ne pas ajouter au panier tout de suite
+            // Le callback onAdComplete s'en chargera
+            console.log('[Product] Ad will play, deferring add to cart');
+            return;
+        }
+    }
+    
+    // Pas de pub, ajouter directement au panier
+    addToCart();
 }
 
 async function loadRelatedProducts(categoryId) {
-try {
-const response = await fetch(`${API_URL}/products?category=${categoryId}&limit=4`);
-const data = await response.json();
-if (!data.success) return;
+    try {
+        const response = await fetch(`${API_URL}/products?category=${categoryId}&limit=4`);
+        const data = await response.json();
+        if (!data.success) return;
 
-const products = (Array.isArray(data.data) ? data.data : data.data.products || [])
-.filter(p => p.id != currentProductId)
-.slice(0, 4);
+        const products = (Array.isArray(data.data) ? data.data : data.data.products || [])
+            .filter(p => p.id != currentProductId)
+            .slice(0, 4);
 
-document.getElementById('related-products').innerHTML = products.map(p => `
-<div class="product-card" onclick="location.href='product.html?id=${p.id}'">
-<div class="product-image-card">
-<img src="${getProductImageUrl(p)}" alt="${p.name}" onerror="handleImageError(this)">
-</div>
-<div class="product-info-card">
-<div class="product-name-card">${p.name}</div>
-<div class="product-price-card">
-<span class="price-current-card">${parseFloat(p.price).toFixed(2)} €</span>
-</div>
-</div>
-</div>
-`).join('');
-} catch (e) {}
+        document.getElementById('related-products').innerHTML = products.map(p => `
+            <div class="product-card" onclick="location.href='product.html?id=${p.id}'">
+                <div class="product-image-card">
+                    <img src="${getProductImageUrl(p)}" alt="${p.name}" onerror="handleImageError(this)">
+                </div>
+                <div class="product-info-card">
+                    <div class="product-name-card">${p.name}</div>
+                    <div class="product-price-card">
+                        <span class="price-current-card">${parseFloat(p.price).toFixed(2)} €</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {}
 }
 
 function addToCart() {
-if (!currentProduct) return;
-const qty = 1;
-const existing = cart.find(item => item.id === currentProduct.id);
-if (existing) {
-existing.quantity += qty;
-} else {
-cart.push({
-id: currentProduct.id,
-name: currentProduct.name,
-price: parseFloat(currentProduct.price),
-main_image_url: getProductImageUrl(currentProduct),
-quantity: qty
-});
+    if (!currentProduct) return;
+    const qty = 1;
+    const existing = cart.find(item => item.id === currentProduct.id);
+    if (existing) {
+        existing.quantity += qty;
+    } else {
+        cart.push({
+            id: currentProduct.id,
+            name: currentProduct.name,
+            price: parseFloat(currentProduct.price),
+            main_image_url: getProductImageUrl(currentProduct),
+            quantity: qty
+        });
+    }
+    localStorage.setItem('brandia_cart', JSON.stringify(cart));
+    showToast('Ajouté au panier !');
 }
-localStorage.setItem('brandia_cart', JSON.stringify(cart));
-showToast('Ajouté au panier !');
+
+function addToWishlist() {
+    showToast('Ajouté aux favoris !');
 }
 
 function switchTab(tabName) {
-document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-event.target.classList.add('active');
-document.getElementById(tabName).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(tabName).classList.add('active');
 }
 
 function showError(message) {
-document.querySelector('.container').innerHTML = `
-<div class="error-state">
-<i class="fas fa-exclamation-circle"></i>
-<h2>${message}</h2>
-<a href="catalogue.html" style="color: var(--brandia-primary)">Retour au catalogue</a>
-</div>
-`;
+    document.querySelector('.container').innerHTML = `
+        <div class="error-state">
+            <i class="fas fa-exclamation-circle"></i>
+            <h2>${message}</h2>
+            <a href="catalogue.html" style="color: var(--brandia-primary)">Retour au catalogue</a>
+        </div>
+    `;
 }
 
 function showToast(message) {
-const toast = document.createElement('div');
-toast.className = 'toast';
-toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-document.body.appendChild(toast);
-setTimeout(() => toast.remove(), 3000);
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-console.log('[Product] v6.0 loaded - Brandia Ad Engine Ready');
+console.log('[Product] v6.1 loaded - Ready for Ad Engine');
 </script>
 </body>
 </html>

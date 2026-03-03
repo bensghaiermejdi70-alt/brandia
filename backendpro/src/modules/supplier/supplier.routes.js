@@ -1,154 +1,103 @@
 ﻿// ============================================
-// SUPPLIER ROUTES - v6.7 FIX
-// Fix: Ordre des routes campaigns/limit corrigé
+// SUPPLIER.ROUTES.JS - v8.0 PRODUCTION
+// Routes publiques (Ad Engine) + protégées (Dashboard)
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 
-console.log('[Supplier Routes] Loading v6.7...');
-
 const supplierController = require('./supplier.controller');
 
-// Auth middleware
-let authenticate, requireRole;
-try {
-    const auth = require('../../middlewares/auth.middleware');
-    authenticate = auth.authenticate;
-    requireRole = auth.requireRole;
-} catch (e) {
-    try {
-        const auth = require('../../middleware/auth');
-        authenticate = auth.authenticate;
-        requireRole = auth.requireRole;
-    } catch (e2) {
-        console.error('[Supplier Routes] ⚠️ Auth middleware not found, using fallback');
-        authenticate = (req, res, next) => next();
-        requireRole = () => (req, res, next) => next();
-    }
-}
+// ============================================
+// AUTH MIDDLEWARE LOCAL
+// ============================================
 
-const asyncHandler = (fn) => (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(err => {
-        console.error('[Supplier Routes] Error:', err);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur',
-            error: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
-    });
+const authenticate = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader) {
+            return res.status(401).json({ success: false, message: 'Token manquant' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Token invalide' });
+        }
+
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'brandia-secret-key');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ success: false, message: 'Token invalide ou expiré' });
+    }
 };
 
 // ============================================
-// ROUTES PUBLIQUES (sans auth)
+// 🔥 ROUTES PUBLIQUES (Ad Engine - PAS D'AUTH)
 // ============================================
 
-router.get('/public/campaigns', asyncHandler(supplierController.getActiveCampaignForProduct));
-router.post('/public/campaigns/view', asyncHandler(supplierController.trackCampaignView));
-router.post('/public/campaigns/click', asyncHandler(supplierController.trackCampaignClick));
+// Récupérer toutes les campagnes actives (pour round-robin)
+router.get('/public/campaigns', supplierController.getPublicCampaigns);
+
+// Vérifier campagne active pour un produit spécifique
+router.get('/public/campaigns/active', supplierController.getActiveCampaignForProduct);
+
+// Tracking des vues (appelé après 3s de visionnage)
+router.post('/public/campaigns/view', supplierController.trackCampaignView);
+
+// Tracking des clics
+router.post('/public/campaigns/click', supplierController.trackCampaignClick);
+
+// Paramètres publics d'un fournisseur
+router.get('/public/ad-settings', supplierController.getPublicAdSettings);
 
 // ============================================
-// AUTH REQUIRED - Toutes les routes suivantes
+// 🔥 ROUTES PROTÉGÉES (Dashboard Fournisseur)
 // ============================================
+
+// Toutes les routes suivantes nécessitent authentification
 router.use(authenticate);
-router.use(requireRole('supplier'));
 
-// ============================================
-// STATS & INFOS
-// ============================================
+// --- STATS ---
+router.get('/stats', supplierController.getStats);
 
-router.get('/stats', asyncHandler(supplierController.getStats));
+// --- PRODUCTS ---
+router.get('/products', supplierController.getProducts);
+router.post('/products', supplierController.createProduct);
+router.put('/products/:id', supplierController.updateProduct);
+router.delete('/products/:id', supplierController.deleteProduct);
 
-// ============================================
-// UPLOAD ROUTES - CORRECTION CHAMP 'media'
-// ============================================
+// --- ORDERS ---
+router.get('/orders', supplierController.getOrders);
+router.get('/orders/:id', supplierController.getOrderById);
+router.put('/orders/:id/status', supplierController.updateOrderStatus);
 
-if (supplierController.uploadImageMiddleware) {
-    router.post('/upload-image', 
-        supplierController.uploadImageMiddleware, 
-        asyncHandler(supplierController.uploadImage)
-    );
-    console.log('[Supplier Routes] ✅ Upload image route enabled (field: media)');
-} else {
-    router.post('/upload-image', (req, res) => {
-        res.status(501).json({ 
-            success: false, 
-            message: 'Upload non disponible. Installez: npm install multer cloudinary' 
-        });
-    });
-}
+// --- CAMPAIGNS (CRUD) ---
+router.get('/campaigns', supplierController.getCampaigns);
+router.get('/campaigns/limit', supplierController.getCampaignLimit);
+router.post('/campaigns', supplierController.createCampaign);
+router.put('/campaigns/:id', supplierController.updateCampaign);
+router.delete('/campaigns/:id', supplierController.deleteCampaign);
+router.patch('/campaigns/:id/status', supplierController.toggleCampaignStatus);
 
-if (supplierController.uploadVideoMiddleware) {
-    router.post('/upload-video',
-        supplierController.uploadVideoMiddleware,
-        asyncHandler(supplierController.uploadVideo)
-    );
-    console.log('[Supplier Routes] ✅ Upload video route enabled (field: media)');
-} else {
-    router.post('/upload-video', (req, res) => {
-        res.status(501).json({ 
-            success: false, 
-            message: 'Upload non disponible. Installez: npm install multer cloudinary' 
-        });
-    });
-}
+// --- UPLOAD ---
+router.post('/upload/image', supplierController.uploadImageMiddleware, supplierController.uploadImage);
+router.post('/upload/video', supplierController.uploadVideoMiddleware, supplierController.uploadVideo);
 
-// ============================================
-// PRODUCTS
-// ============================================
+// --- PAYMENTS ---
+router.get('/payments', supplierController.getPayments);
+router.get('/payments/payouts', supplierController.getPayouts);
+router.post('/payments/payouts', supplierController.requestPayout);
 
-router.get('/products', asyncHandler(supplierController.getProducts));
-router.post('/products', asyncHandler(supplierController.createProduct));
-router.put('/products/:id', asyncHandler(supplierController.updateProduct));
-router.delete('/products/:id', asyncHandler(supplierController.deleteProduct));
+// --- PROMOTIONS ---
+router.get('/promotions', supplierController.getPromotions);
+router.post('/promotions', supplierController.createPromotion);
+router.put('/promotions/:id', supplierController.updatePromotion);
+router.delete('/promotions/:id', supplierController.deletePromotion);
 
-// ============================================
-// ORDERS
-// ============================================
-
-router.get('/orders', asyncHandler(supplierController.getOrders));
-router.get('/orders/:id', asyncHandler(supplierController.getOrderById));
-router.put('/orders/:id/status', asyncHandler(supplierController.updateOrderStatus));
-
-// ============================================
-// CAMPAIGNS - 🔥 ORDRE CRITIQUE: /limit AVANT /:id
-// ============================================
-
-// 🔥 CETTE ROUTE DOIT ÊTRE AVANT /campaigns/:id
-router.get('/campaigns/limit', asyncHandler(supplierController.getCampaignLimit));
-
-// Route liste principale
-router.get('/campaigns', asyncHandler(supplierController.getCampaigns));
-
-// Routes avec paramètres ID en dernier
-router.post('/campaigns', asyncHandler(supplierController.createCampaign));
-router.put('/campaigns/:id', asyncHandler(supplierController.updateCampaign));
-router.delete('/campaigns/:id', asyncHandler(supplierController.deleteCampaign));
-router.put('/campaigns/:id/status', asyncHandler(supplierController.toggleCampaignStatus));
-
-// ============================================
-// PAYMENTS
-// ============================================
-
-router.get('/payments', asyncHandler(supplierController.getPayments));
-router.post('/payouts', asyncHandler(supplierController.requestPayout));
-router.get('/payouts', asyncHandler(supplierController.getPayouts));
-
-// ============================================
-// PROMOTIONS
-// ============================================
-
-router.get('/promotions', asyncHandler(supplierController.getPromotions));
-router.post('/promotions', asyncHandler(supplierController.createPromotion));
-router.put('/promotions/:id', asyncHandler(supplierController.updatePromotion));
-router.delete('/promotions/:id', asyncHandler(supplierController.deletePromotion));
-
-// ============================================
-// AD SETTINGS
-// ============================================
-
-router.get('/ad-settings', asyncHandler(supplierController.getAdSettings));
-
-console.log('[Supplier Routes] ✅ v6.7 loaded successfully');
+// --- SETTINGS ---
+router.get('/ad-settings', supplierController.getAdSettings);
 
 module.exports = router;

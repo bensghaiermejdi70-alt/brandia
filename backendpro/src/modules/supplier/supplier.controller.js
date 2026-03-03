@@ -1,8 +1,6 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v7.1 FIX
-// Fix: 
-// 1. Colonne images inexistante dans products - utilisation main_image_url
-// 2. Upload vidéo qui retourne undefined
+// SUPPLIER.CONTROLLER.JS - v8.0 PRODUCTION
+// Fix: Routes publiques pour Ad Engine, tracking, round-robin
 // ============================================
 
 const crypto = require('crypto');
@@ -124,7 +122,7 @@ const safeJsonStringify = (obj) => {
 };
 
 // ============================================
-// 🔥 NOUVELLE FONCTION: Création auto table campaigns
+// TABLE CREATION HELPERS
 // ============================================
 
 const ensureCampaignsTable = async () => {
@@ -324,13 +322,13 @@ const createProduct = async (req, res) => {
 
         await db.query(`
             INSERT INTO products (id, supplier_id, name, description, price, compare_price, cost_price, sku, 
-                barcode, inventory_quantity, category, images, variants, seo_title, seo_description, status, created_at)
+                barcode, inventory_quantity, category, main_image_url, images, variants, seo_title, seo_description, status, created_at)
             VALUES (${ph(1)}, ${ph(2)}, ${ph(3)}, ${ph(4)}, ${ph(5)}, ${ph(6)}, ${ph(7)}, ${ph(8)},
-                ${ph(9)}, ${ph(10)}, ${ph(11)}, ${ph(12)}, ${ph(13)}, ${ph(14)}, ${ph(15)}, 'active', ${ph(16)})
+                ${ph(9)}, ${ph(10)}, ${ph(11)}, ${ph(12)}, ${ph(13)}, ${ph(14)}, ${ph(15)}, ${ph(16)}, 'active', ${ph(17)})
         `, [
             id, supplierId, name, req.body.description || '', parseFloat(price) || 0, req.body.compare_price || null,
             req.body.cost_price || null, req.body.sku || null, req.body.barcode || null, 
-            req.body.inventory_quantity || 0, req.body.category || null,
+            req.body.inventory_quantity || 0, req.body.category || null, req.body.main_image_url || null,
             JSON.stringify(req.body.images || []), JSON.stringify(req.body.variants || []),
             req.body.seo_title || null, req.body.seo_description || null, now
         ]);
@@ -354,7 +352,7 @@ const updateProduct = async (req, res) => {
         }
 
         const allowed = ['name', 'description', 'price', 'compare_price', 'cost_price', 'sku', 'barcode', 
-                        'inventory_quantity', 'category', 'images', 'variants', 'seo_title', 'seo_description', 'status'];
+                        'inventory_quantity', 'category', 'main_image_url', 'images', 'variants', 'seo_title', 'seo_description', 'status'];
         
         const updates = [];
         const values = [];
@@ -491,7 +489,7 @@ const updateOrderStatus = async (req, res) => {
 };
 
 // ============================================
-// CAMPAIGNS - v7.1 AVEC CORRECTIONS
+// CAMPAIGNS - v8.0 AVEC ROUTES PUBLIQUES
 // ============================================
 
 const getCampaigns = async (req, res) => {
@@ -501,7 +499,6 @@ const getCampaigns = async (req, res) => {
 
         await ensureCampaignsTable();
 
-        // 🔥 v7.1: Correction - utiliser main_image_url au lieu de images qui n'existe pas
         const result = await db.query(`
             SELECT c.*, p.name as product_name, p.main_image_url as product_image 
             FROM campaigns c 
@@ -514,12 +511,94 @@ const getCampaigns = async (req, res) => {
             ...c,
             targeting: safeJsonParse(c.targeting),
             ad_creative: safeJsonParse(c.ad_creative),
-            product_image: c.product_image // 🔥 Changé de product_images à product_image
+            product_image: c.product_image
         }));
 
         res.json({ success: true, data: campaigns });
     } catch (error) {
         return handleError(res, error, 'Erreur lors de la récupération des campagnes');
+    }
+};
+
+// 🔥 NOUVEAU: Récupérer toutes les campagnes actives (public)
+const getPublicCampaigns = async (req, res) => {
+    try {
+        await ensureCampaignsTable();
+        
+        const result = await db.query(`
+            SELECT c.*, p.name as product_name, p.main_image_url as product_image 
+            FROM campaigns c 
+            LEFT JOIN products p ON c.product_id::text = p.id::text 
+            WHERE c.status = 'active' 
+            AND c.start_date <= CURRENT_DATE 
+            AND c.end_date >= CURRENT_DATE
+            ORDER BY c.created_at DESC
+        `);
+
+        const campaigns = normalizeResult(result).map(c => ({
+            ...c,
+            targeting: safeJsonParse(c.targeting),
+            ad_creative: safeJsonParse(c.ad_creative)
+        }));
+
+        res.json({ success: true, data: campaigns });
+    } catch (error) {
+        return handleError(res, error, 'Erreur récupération campagnes publiques');
+    }
+};
+
+// 🔥 NOUVEAU: Récupérer campagne active pour un produit spécifique (public)
+const getActiveCampaignForProduct = async (req, res) => {
+    try {
+        const { supplier, product } = req.query;
+        
+        if (!supplier || !product) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Paramètres supplier et product requis' 
+            });
+        }
+
+        await ensureCampaignsTable();
+
+        const query = DB_TYPE === 'postgres'
+            ? `SELECT c.*, p.name as product_name, p.main_image_url as product_image, p.price
+               FROM campaigns c
+               JOIN products p ON c.product_id::text = p.id::text
+               WHERE c.supplier_id::text = ${ph(1)}::text 
+               AND (c.product_id::text = ${ph(2)}::text OR c.targeting->'products' ? ${ph(2)})
+               AND c.status = 'active' 
+               AND c.start_date <= CURRENT_DATE 
+               AND c.end_date >= CURRENT_DATE
+               ORDER BY c.created_at DESC LIMIT 1`
+            : `SELECT c.*, p.name as product_name, p.main_image_url as product_image, p.price
+               FROM campaigns c
+               JOIN products p ON c.product_id = p.id
+               WHERE c.supplier_id = ${ph(1)} 
+               AND (c.product_id = ${ph(2)} OR JSON_CONTAINS(c.targeting, JSON_ARRAY(${ph(2)}), '$.products'))
+               AND c.status = 'active' 
+               AND c.start_date <= CURDATE() 
+               AND c.end_date >= CURDATE()
+               ORDER BY c.created_at DESC LIMIT 1`;
+
+        const result = await db.query(query, [supplier.toString(), product.toString()]);
+        const campaigns = normalizeResult(result);
+        
+        if (campaigns.length === 0) {
+            return res.json({ success: true, data: null });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                ...campaigns[0],
+                targeting: safeJsonParse(campaigns[0].targeting),
+                ad_creative: safeJsonParse(campaigns[0].ad_creative),
+                product_image: campaigns[0].product_image
+            }
+        });
+    } catch (error) {
+        return handleError(res, error, 'Erreur lors de la récupération de la campagne');
     }
 };
 
@@ -765,56 +844,13 @@ const toggleCampaignStatus = async (req, res) => {
     }
 };
 
-// Méthodes publiques
-const getActiveCampaignForProduct = async (req, res) => {
-    try {
-        const { supplier, product } = req.query;
-        if (!supplier || !product) {
-            return res.status(400).json({ success: false, message: 'supplier et product requis' });
-        }
-
-        await ensureCampaignsTable();
-
-        // 🔥 v7.1: Correction - utiliser main_image_url au lieu de images
-        const query = DB_TYPE === 'postgres'
-            ? `SELECT c.*, p.name as product_name, p.main_image_url as product_image, p.price
-            FROM campaigns c
-            JOIN products p ON c.product_id::text = p.id::text
-            WHERE c.supplier_id::text = ${ph(1)}::text AND c.product_id::text = ${ph(2)}::text
-                AND c.status = 'active' AND c.start_date <= NOW() AND c.end_date >= NOW()
-            ORDER BY c.created_at DESC LIMIT 1`
-            : `SELECT c.*, p.name as product_name, p.main_image_url as product_image, p.price
-            FROM campaigns c
-            JOIN products p ON c.product_id = p.id
-            WHERE c.supplier_id = ${ph(1)} AND c.product_id = ${ph(2)}
-                AND c.status = 'active' AND c.start_date <= NOW() AND c.end_date >= NOW()
-            ORDER BY c.created_at DESC LIMIT 1`;
-
-        const result = await db.query(query, [supplier.toString(), product.toString()]);
-        const campaigns = normalizeResult(result);
-        
-        if (campaigns.length === 0) {
-            return res.json({ success: true, data: null });
-        }
-
-        res.json({
-            success: true,
-            data: {
-                ...campaigns[0],
-                targeting: safeJsonParse(campaigns[0].targeting),
-                ad_creative: safeJsonParse(campaigns[0].ad_creative),
-                product_image: campaigns[0].product_image
-            }
-        });
-    } catch (error) {
-        return handleError(res, error, 'Erreur lors de la récupération de la campagne');
-    }
-};
-
+// 🔥 NOUVEAU: Tracking des vues (public)
 const trackCampaignView = async (req, res) => {
     try {
         const { campaign_id } = req.body;
-        if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        if (!campaign_id) {
+            return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        }
 
         await ensureCampaignsTable();
 
@@ -823,16 +859,20 @@ const trackCampaignView = async (req, res) => {
             : `UPDATE campaigns SET impressions = impressions + 1 WHERE id = ${ph(1)}`;
             
         await db.query(query, [campaign_id.toString()]);
+        
         res.json({ success: true, message: 'View tracked' });
     } catch (error) {
-        return handleError(res, error, 'Erreur tracking');
+        return handleError(res, error, 'Erreur tracking view');
     }
 };
 
+// 🔥 NOUVEAU: Tracking des clics (public)
 const trackCampaignClick = async (req, res) => {
     try {
         const { campaign_id } = req.body;
-        if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        if (!campaign_id) {
+            return res.status(400).json({ success: false, message: 'campaign_id requis' });
+        }
 
         await ensureCampaignsTable();
 
@@ -841,14 +881,15 @@ const trackCampaignClick = async (req, res) => {
             : `UPDATE campaigns SET clicks = clicks + 1 WHERE id = ${ph(1)}`;
             
         await db.query(query, [campaign_id.toString()]);
+        
         res.json({ success: true, message: 'Click tracked' });
     } catch (error) {
-        return handleError(res, error, 'Erreur tracking');
+        return handleError(res, error, 'Erreur tracking click');
     }
 };
 
 // ============================================
-// UPLOAD - v7.1 FIX UPLOAD VIDÉO
+// UPLOAD - v8.0
 // ============================================
 
 let uploadMiddleware;
@@ -857,7 +898,7 @@ try {
     const storage = multer.memoryStorage();
     uploadMiddleware = multer({ 
         storage,
-        limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+        limits: { fileSize: 50 * 1024 * 1024 },
         fileFilter: (req, file, cb) => {
             const allowedImages = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             const allowedVideos = ['video/mp4', 'video/webm', 'video/quicktime', 'video/mov'];
@@ -875,7 +916,6 @@ try {
     uploadMiddleware = null;
 }
 
-// 🔥 v7.1: Configuration Cloudinary avec meilleure gestion d'erreurs
 let cloudinary;
 try {
     cloudinary = require('cloudinary').v2;
@@ -923,7 +963,6 @@ const uploadToCloudinary = async (fileBuffer, filename, resourceType = 'image') 
             stream.end(fileBuffer);
         });
     } catch (e) {
-        // Fallback: sauvegarder localement
         console.log('[Upload] Falling back to local storage...');
         const fs = require('fs').promises;
         const path = require('path');
@@ -939,7 +978,6 @@ const uploadToCloudinary = async (fileBuffer, filename, resourceType = 'image') 
     }
 };
 
-// 🔥 v7.1: Fonction upload générique pour éviter la duplication
 const handleUpload = async (req, res, resourceType) => {
     try {
         console.log(`[Upload] ${resourceType.toUpperCase()} upload started`);
@@ -962,8 +1000,7 @@ const handleUpload = async (req, res, resourceType) => {
         console.log(`[Upload] File received:`, {
             originalname: req.file.originalname,
             mimetype: req.file.mimetype,
-            size: req.file.size,
-            buffer: req.file.buffer ? 'Buffer present' : 'No buffer'
+            size: req.file.size
         });
 
         const url = await uploadToCloudinary(req.file.buffer, req.file.originalname, resourceType);
@@ -1238,29 +1275,74 @@ const getAdSettings = async (req, res) => {
     }
 };
 
+// 🔥 NOUVEAU: Paramètres publics d'un fournisseur
+const getPublicAdSettings = async (req, res) => {
+    try {
+        const { supplier } = req.query;
+        
+        if (!supplier) {
+            return res.status(400).json({ success: false, message: 'Paramètre supplier requis' });
+        }
+
+        const result = await db.query(`
+            SELECT max_ads_per_session, priority, is_active 
+            FROM supplier_ad_settings 
+            WHERE supplier_id::text = ${ph(1)}::text
+        `, [supplier.toString()]);
+
+        const settings = first(result);
+
+        if (!settings || !settings.is_active) {
+            return res.json({
+                success: true,
+                data: {
+                    max_ads_per_session: 1,
+                    priority: 5,
+                    is_active: true
+                }
+            });
+        }
+
+        res.json({ success: true, data: settings });
+    } catch (error) {
+        return handleError(res, error, 'Erreur lors de la récupération des paramètres publics');
+    }
+};
+
 // ============================================
 // EXPORTS
 // ============================================
 
 module.exports = {
+    // Stats
     getStats,
+    
+    // Products
     getProducts,
     createProduct,
     updateProduct,
     deleteProduct,
+    
+    // Orders
     getOrders,
     getOrderById,
     updateOrderStatus,
+    
+    // Campaigns - Privées (auth requise)
     getCampaigns,
     getCampaignLimit,
     createCampaign,
     updateCampaign,
     deleteCampaign,
     toggleCampaignStatus,
+    
+    // Campaigns - Publiques (pas d'auth)
+    getPublicCampaigns,
     getActiveCampaignForProduct,
     trackCampaignView,
     trackCampaignClick,
-    // 🔥 v7.1: Export des middlewares multer correctement configurés
+    
+    // Upload
     uploadImageMiddleware: uploadMiddleware ? uploadMiddleware.single('media') : (req, res, next) => {
         res.status(501).json({ success: false, message: 'Upload non disponible' });
     },
@@ -1269,12 +1351,19 @@ module.exports = {
     },
     uploadImage,
     uploadVideo,
+    
+    // Payments
     getPayments,
     requestPayout,
     getPayouts,
+    
+    // Promotions
     getPromotions,
     createPromotion,
     updatePromotion,
     deletePromotion,
-    getAdSettings
+    
+    // Settings
+    getAdSettings,
+    getPublicAdSettings
 };
