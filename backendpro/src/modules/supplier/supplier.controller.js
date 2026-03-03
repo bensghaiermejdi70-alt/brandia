@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER.CONTROLLER.JS - v6.9 FIX
-// Fix: Gestion gracieuse si table campaigns n'existe pas
+// SUPPLIER.CONTROLLER.JS - v7.0 FIX
+// Fix: Création automatique de la table campaigns si elle n'existe pas
 // ============================================
 
 const crypto = require('crypto');
@@ -73,7 +73,6 @@ const affected = (r) => r?.rowCount ?? r?.affectedRows ?? (Array.isArray(r) ? r[
 const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
     console.error(`[SupplierController] ${msg}:`, error.message);
     
-    // Détection des erreurs de table manquante
     if (error.code === '42P01' || error.message?.includes('does not exist')) {
         return res.status(500).json({
             success: false,
@@ -83,7 +82,6 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
         });
     }
     
-    // Erreur opérateur PostgreSQL (text = integer)
     if (error.code === '42883' || error.message?.includes('operator does not exist')) {
         return res.status(400).json({
             success: false,
@@ -92,7 +90,6 @@ const handleError = (res, error, msg = 'Erreur serveur', status = 500) => {
         });
     }
     
-    // Erreur colonne manquante
     if (error.code === '42703' || (error.message?.includes('column') && error.message?.includes('does not exist'))) {
         return res.status(500).json({
             success: false,
@@ -125,7 +122,95 @@ const safeJsonStringify = (obj) => {
 };
 
 // ============================================
-// STATS (avec fallback si tables manquantes)
+// 🔥 NOUVELLE FONCTION: Création auto table campaigns
+// ============================================
+
+const ensureCampaignsTable = async () => {
+    try {
+        if (DB_TYPE === 'postgres') {
+            // Vérifier si la table existe
+            const checkResult = await db.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'campaigns'
+                );
+            `);
+            
+            const exists = first(checkResult)?.exists;
+            
+            if (!exists) {
+                console.log('[Campaigns] 🔨 Creating campaigns table...');
+                
+                await db.query(`
+                    CREATE TABLE IF NOT EXISTS campaigns (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        supplier_id VARCHAR(255) NOT NULL,
+                        name VARCHAR(255) NOT NULL,
+                        product_id VARCHAR(255),
+                        budget DECIMAL(10,2) DEFAULT 100,
+                        daily_budget DECIMAL(10,2),
+                        start_date DATE NOT NULL,
+                        end_date DATE NOT NULL,
+                        targeting JSONB DEFAULT '{}',
+                        ad_creative JSONB DEFAULT '{}',
+                        ad_format VARCHAR(50) DEFAULT 'overlay',
+                        status VARCHAR(50) DEFAULT 'pending',
+                        spent DECIMAL(10,2) DEFAULT 0,
+                        impressions INTEGER DEFAULT 0,
+                        clicks INTEGER DEFAULT 0,
+                        conversions INTEGER DEFAULT 0,
+                        cta_link TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                    
+                    CREATE INDEX IF NOT EXISTS idx_campaigns_supplier ON campaigns(supplier_id);
+                    CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
+                    CREATE INDEX IF NOT EXISTS idx_campaigns_product ON campaigns(product_id);
+                `);
+                
+                console.log('[Campaigns] ✅ Table created successfully');
+            }
+            return true;
+        } else {
+            // MySQL version
+            await db.query(`
+                CREATE TABLE IF NOT EXISTS campaigns (
+                    id VARCHAR(36) PRIMARY KEY,
+                    supplier_id VARCHAR(255) NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    product_id VARCHAR(255),
+                    budget DECIMAL(10,2) DEFAULT 100,
+                    daily_budget DECIMAL(10,2),
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    targeting JSON,
+                    ad_creative JSON,
+                    ad_format VARCHAR(50) DEFAULT 'overlay',
+                    status VARCHAR(50) DEFAULT 'pending',
+                    spent DECIMAL(10,2) DEFAULT 0,
+                    impressions INT DEFAULT 0,
+                    clicks INT DEFAULT 0,
+                    conversions INT DEFAULT 0,
+                    cta_link TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_supplier (supplier_id),
+                    INDEX idx_status (status),
+                    INDEX idx_product (product_id)
+                );
+            `);
+            return true;
+        }
+    } catch (error) {
+        console.error('[Campaigns] ❌ Error creating table:', error);
+        return false;
+    }
+};
+
+// ============================================
+// STATS
 // ============================================
 
 const getStats = async (req, res) => {
@@ -133,13 +218,12 @@ const getStats = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // Essayer de récupérer les stats, avec fallback à 0 si erreur
         const safeQuery = async (query, params, defaultValue = 0) => {
             try {
                 const result = await db.query(query, params);
                 return first(result)?.count || first(result)?.total_orders || first(result)?.total_revenue || defaultValue;
             } catch (e) {
-                console.log(`[Stats] Query failed (table may not exist): ${e.message}`);
+                console.log(`[Stats] Query failed: ${e.message}`);
                 return defaultValue;
             }
         };
@@ -407,48 +491,17 @@ const updateOrderStatus = async (req, res) => {
 };
 
 // ============================================
-// CAMPAIGNS - CORRECTIONS v6.9
+// CAMPAIGNS - v7.0 AVEC CRÉATION AUTO TABLE
 // ============================================
-
-// 🔥 FONCTION UTILITAIRE: Vérifier si la table campaigns existe
-const checkCampaignsTable = async () => {
-    try {
-        if (DB_TYPE === 'postgres') {
-            const result = await db.query(`
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'campaigns'
-                );
-            `);
-            return first(result)?.exists || false;
-        } else {
-            const result = await db.query(`SHOW TABLES LIKE 'campaigns'`);
-            return normalizeResult(result).length > 0;
-        }
-    } catch (e) {
-        console.error('[Campaigns] Error checking table:', e.message);
-        return false;
-    }
-};
 
 const getCampaigns = async (req, res) => {
     try {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Vérifier si la table existe
-        const tableExists = await checkCampaignsTable();
-        if (!tableExists) {
-            console.log('[Campaigns] Table does not exist, returning empty array');
-            return res.json({ 
-                success: true, 
-                data: [],
-                message: 'Module campagnes en cours de configuration'
-            });
-        }
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
 
-        // Cast explicite pour PostgreSQL
         const result = await db.query(`
             SELECT c.*, p.name as product_name, p.images as product_images 
             FROM campaigns c 
@@ -466,15 +519,6 @@ const getCampaigns = async (req, res) => {
 
         res.json({ success: true, data: campaigns });
     } catch (error) {
-        // Si erreur 42P01 (table n'existe pas), retourner tableau vide
-        if (error.code === '42P01' || error.message?.includes('does not exist')) {
-            console.log('[Campaigns] Table missing, returning empty array');
-            return res.json({ 
-                success: true, 
-                data: [],
-                message: 'Module campagnes en cours de configuration'
-            });
-        }
         return handleError(res, error, 'Erreur lors de la récupération des campagnes');
     }
 };
@@ -484,19 +528,8 @@ const getCampaignLimit = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Vérifier si la table existe
-        const tableExists = await checkCampaignsTable();
-        if (!tableExists) {
-            return res.json({
-                success: true,
-                data: {
-                    max_campaigns: 5,
-                    current_campaigns: 0,
-                    can_create: true,
-                    remaining: 5
-                }
-            });
-        }
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
 
         const result = await db.query(`
             SELECT COUNT(*) as count FROM campaigns WHERE supplier_id::text = ${ph(1)}::text AND status != 'ended'
@@ -514,17 +547,6 @@ const getCampaignLimit = async (req, res) => {
             }
         });
     } catch (error) {
-        if (error.code === '42P01') {
-            return res.json({
-                success: true,
-                data: {
-                    max_campaigns: 5,
-                    current_campaigns: 0,
-                    can_create: true,
-                    remaining: 5
-                }
-            });
-        }
         return handleError(res, error, 'Erreur lors de la récupération de la limite');
     }
 };
@@ -534,19 +556,11 @@ const createCampaign = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // 🔥 Vérifier si la table existe
-        const tableExists = await checkCampaignsTable();
-        if (!tableExists) {
-            return res.status(503).json({
-                success: false,
-                message: 'Module campagnes temporairement indisponible. Veuillez réessayer plus tard.',
-                code: 'CAMPAIGNS_NOT_READY'
-            });
-        }
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
 
         const { name, product_id, budget, start_date, end_date, targeting, ad_creative, ad_format, cta_link, status } = req.body;
         
-        // Validation des champs requis
         const missing = validateRequired(['name', 'product_id', 'budget', 'start_date', 'end_date'], req.body);
         
         if (missing.length > 0) {
@@ -579,12 +593,10 @@ const createCampaign = async (req, res) => {
         const id = generateUUID();
         const now = new Date().toISOString();
 
-        // Requête INSERT simplifiée et compatible
         let query;
         let params;
 
         if (DB_TYPE === 'postgres') {
-            // PostgreSQL - utilisation de ::text et ::jsonb
             query = `
                 INSERT INTO campaigns (
                     id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
@@ -595,7 +607,6 @@ const createCampaign = async (req, res) => {
                 )
             `;
         } else {
-            // MySQL - sans cast de type
             query = `
                 INSERT INTO campaigns (
                     id, supplier_id, name, product_id, budget, daily_budget, start_date, end_date,
@@ -624,9 +635,7 @@ const createCampaign = async (req, res) => {
             cta_link || null
         ];
 
-        console.log('[Campaign Create] Query:', query);
-        console.log('[Campaign Create] Params:', params);
-
+        console.log('[Campaign Create] Creating campaign:', name);
         await db.query(query, params);
 
         const result = await db.query(`SELECT * FROM campaigns WHERE id = ${ph(1)}`, [id]);
@@ -642,6 +651,9 @@ const updateCampaign = async (req, res) => {
         const supplierId = req.user?.id;
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
+
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
 
         const existingQuery = DB_TYPE === 'postgres'
             ? `SELECT id FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
@@ -694,6 +706,9 @@ const deleteCampaign = async (req, res) => {
         const { id } = req.params;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
+
         const query = DB_TYPE === 'postgres'
             ? `SELECT spent FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
             : `SELECT spent FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
@@ -733,6 +748,9 @@ const toggleCampaignStatus = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Statut invalide' });
         }
 
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
+
         const query = DB_TYPE === 'postgres'
             ? `SELECT id FROM campaigns WHERE id::text = ${ph(1)}::text AND supplier_id::text = ${ph(2)}::text`
             : `SELECT id FROM campaigns WHERE id = ${ph(1)} AND supplier_id = ${ph(2)}`;
@@ -762,11 +780,8 @@ const getActiveCampaignForProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'supplier et product requis' });
         }
 
-        // 🔥 Vérifier si la table existe
-        const tableExists = await checkCampaignsTable();
-        if (!tableExists) {
-            return res.json({ success: true, data: null });
-        }
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
 
         const query = DB_TYPE === 'postgres'
             ? `SELECT c.*, p.name as product_name, p.images as product_images, p.price
@@ -799,9 +814,6 @@ const getActiveCampaignForProduct = async (req, res) => {
             }
         });
     } catch (error) {
-        if (error.code === '42P01') {
-            return res.json({ success: true, data: null });
-        }
         return handleError(res, error, 'Erreur lors de la récupération de la campagne');
     }
 };
@@ -810,6 +822,9 @@ const trackCampaignView = async (req, res) => {
     try {
         const { campaign_id } = req.body;
         if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
+
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
 
         const query = DB_TYPE === 'postgres'
             ? `UPDATE campaigns SET impressions = impressions + 1 WHERE id::text = ${ph(1)}::text`
@@ -827,6 +842,9 @@ const trackCampaignClick = async (req, res) => {
         const { campaign_id } = req.body;
         if (!campaign_id) return res.status(400).json({ success: false, message: 'campaign_id requis' });
 
+        // 🔥 Créer la table si elle n'existe pas
+        await ensureCampaignsTable();
+
         const query = DB_TYPE === 'postgres'
             ? `UPDATE campaigns SET clicks = clicks + 1 WHERE id::text = ${ph(1)}::text`
             : `UPDATE campaigns SET clicks = clicks + 1 WHERE id = ${ph(1)}`;
@@ -839,17 +857,16 @@ const trackCampaignClick = async (req, res) => {
 };
 
 // ============================================
-// UPLOAD - CORRECTIONS MULTER
+// UPLOAD
 // ============================================
 
-// Configuration multer pour upload
 let uploadMiddleware;
 try {
     const multer = require('multer');
     const storage = multer.memoryStorage();
     uploadMiddleware = multer({ 
         storage,
-        limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+        limits: { fileSize: 50 * 1024 * 1024 },
         fileFilter: (req, file, cb) => {
             const allowedImages = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             const allowedVideos = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -866,12 +883,10 @@ try {
     uploadMiddleware = null;
 }
 
-// Upload vers Cloudinary (ou stockage local si Cloudinary non config)
 const uploadToCloudinary = async (fileBuffer, filename, resourceType = 'image') => {
     try {
         const cloudinary = require('cloudinary').v2;
         
-        // Vérifier config Cloudinary
         if (!process.env.CLOUDINARY_CLOUD_NAME) {
             throw new Error('Cloudinary not configured');
         }
@@ -891,7 +906,6 @@ const uploadToCloudinary = async (fileBuffer, filename, resourceType = 'image') 
             stream.end(fileBuffer);
         });
     } catch (e) {
-        // Fallback: sauvegarder localement si Cloudinary non dispo
         if (process.env.NODE_ENV === 'development') {
             const fs = require('fs').promises;
             const path = require('path');
@@ -952,7 +966,7 @@ const uploadVideo = async (req, res) => {
 };
 
 // ============================================
-// PAYMENTS (avec graceful degradation)
+// PAYMENTS
 // ============================================
 
 const getPayments = async (req, res) => {
@@ -960,7 +974,6 @@ const getPayments = async (req, res) => {
         const supplierId = req.user?.id;
         if (!supplierId) return res.status(401).json({ success: false, message: 'Non authentifié' });
 
-        // Essayer de récupérer les paiements, retourner des valeurs par défaut si tables manquantes
         let balance = 0;
         let pending = 0;
         let transactions = [];
@@ -1018,7 +1031,6 @@ const requestPayout = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Montant minimum: 50€' });
         }
 
-        // Vérifier solde
         const balanceResult = await db.query(`
             SELECT COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE -amount END), 0) as balance
             FROM transactions WHERE supplier_id::text = ${ph(1)}::text
@@ -1205,21 +1217,14 @@ const getAdSettings = async (req, res) => {
 // ============================================
 
 module.exports = {
-    // Stats
     getStats,
-    
-    // Products
     getProducts,
     createProduct,
     updateProduct,
     deleteProduct,
-    
-    // Orders
     getOrders,
     getOrderById,
     updateOrderStatus,
-    
-    // Campaigns
     getCampaigns,
     getCampaignLimit,
     createCampaign,
@@ -1229,24 +1234,16 @@ module.exports = {
     getActiveCampaignForProduct,
     trackCampaignView,
     trackCampaignClick,
-    
-    // Upload - Utiliser 'media' comme nom de champ pour correspondre au frontend
     uploadImageMiddleware: uploadMiddleware?.single('media') || null,
     uploadVideoMiddleware: uploadMiddleware?.single('media') || null,
     uploadImage,
     uploadVideo,
-    
-    // Payments
     getPayments,
     requestPayout,
     getPayouts,
-    
-    // Promotions
     getPromotions,
     createPromotion,
     updatePromotion,
     deletePromotion,
-    
-    // Ad Settings
     getAdSettings
 };

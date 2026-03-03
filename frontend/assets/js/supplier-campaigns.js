@@ -1,6 +1,7 @@
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v8.6 FIX
-// Correction: Erreur de syntaxe ligne 369, fonction loadProducts mal formée
+// SUPPLIER CAMPAIGNS MODULE - v9.0 FIX
+// Correction: Suppression du message "Module en cours de configuration"
+// La table est maintenant créée automatiquement côté serveur
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -34,9 +35,7 @@ window.SupplierCampaigns = {
     targetMode: 'all',
     ctaType: 'shop',
     isLoading: false,
-    campaignLimit: { current: 0, max: 5, can_create: true },
-    campaignsAvailable: true,
-    campaignsMessage: null
+    campaignLimit: { current: 0, max: 5, can_create: true }
   },
   
   MAX_CAMPAIGNS: 5,
@@ -48,7 +47,7 @@ window.SupplierCampaigns = {
   },
 
   init: async function() {
-    console.log('[Campaigns] Initializing v8.6...');
+    console.log('[Campaigns] Initializing v9.0...');
     try {
       this.state.campaignLimit = { 
         current: 0, 
@@ -68,10 +67,6 @@ window.SupplierCampaigns = {
   updateCampaignCounter: function() {
     const counterEl = document.getElementById('campaign-counter');
     if (counterEl) {
-      if (!this.state.campaignsAvailable) {
-        counterEl.innerHTML = `<span class="text-amber-400">Configuration requise</span>`;
-        return;
-      }
       const current = this.state.campaigns.filter(c => c.status === 'active').length;
       this.state.campaignLimit.current = current;
       counterEl.innerHTML = `
@@ -82,7 +77,6 @@ window.SupplierCampaigns = {
     }
   },
 
-  // 🔥 CORRECTION: Fonction complète avec async
   loadProducts: async function() {
     try {
       console.log('[Campaigns] Loading products...');
@@ -113,15 +107,7 @@ window.SupplierCampaigns = {
       const response = await BrandiaAPI.Supplier.getCampaigns();
       
       if (response?.success) {
-        if (response.message && response.data?.length === 0) {
-          this.state.campaignsAvailable = false;
-          this.state.campaignsMessage = response.message;
-          console.log('[Campaigns]', response.message);
-        } else {
-          this.state.campaignsAvailable = true;
-          this.state.campaignsMessage = null;
-        }
-        
+        // 🔥 v9.0: Plus de vérification campaignsAvailable, on affiche toujours les données
         this.state.campaigns = response.data || [];
         console.log('[Campaigns] Loaded:', this.state.campaigns.length);
         this.renderList();
@@ -130,17 +116,17 @@ window.SupplierCampaigns = {
         this.updateCampaignCounter();
       } else {
         console.error('[Campaigns] API Error:', response?.message || 'Unknown error');
-        this.state.campaignsAvailable = false;
-        this.state.campaignsMessage = response?.message || 'Module temporairement indisponible';
         this.state.campaigns = [];
         this.renderList();
         this.updateStats();
         this.updateCampaignCounter();
+        // 🔥 Ne pas bloquer l'interface, juste logger l'erreur
+        if (response?.message) {
+          console.log('[Campaigns] Server message:', response.message);
+        }
       }
     } catch (error) {
       console.error('[Campaigns] Load error:', error);
-      this.state.campaignsAvailable = false;
-      this.state.campaignsMessage = 'Erreur de connexion';
       this.state.campaigns = [];
       this.renderList();
       this.updateStats();
@@ -152,27 +138,15 @@ window.SupplierCampaigns = {
     const container = document.getElementById('campaigns-list');
     if (!container) return;
     
-    if (!this.state.campaignsAvailable) {
-      container.innerHTML = `
-        <div class="p-8 text-center">
-          <div class="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-tools text-amber-400 text-2xl"></i>
-          </div>
-          <h3 class="text-lg font-semibold text-white mb-2">Module en cours de configuration</h3>
-          <p class="text-slate-400 text-sm mb-4">${this.state.campaignsMessage || 'Le système de campagnes publicitaires est temporairement indisponible.'}</p>
-          <button onclick="location.reload()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white transition-colors">
-            <i class="fas fa-sync-alt mr-2"></i>Réessayer
-          </button>
-        </div>`;
-      return;
-    }
+    // 🔥 v9.0: Suppression du bloc "Module en cours de configuration"
+    // On affiche directement la liste ou l'état vide
     
     if (this.state.campaigns.length === 0) {
       container.innerHTML = `
         <div class="p-8 text-center text-slate-500">
           <i class="fas fa-bullhorn text-4xl mb-4 opacity-50"></i>
           <p class="text-lg mb-2">Aucune campagne active</p>
-          <p class="text-sm mb-4">Créez votre première publicité</p>
+          <p class="text-sm mb-4">Créez votre première publicité pour promouvoir vos produits</p>
           <button onclick="SupplierCampaigns.openModal()" class="btn-primary px-6 py-3 rounded-lg text-sm bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 transition-all">
             <i class="fas fa-plus mr-2"></i>Créer une campagne
           </button>
@@ -341,11 +315,7 @@ window.SupplierCampaigns = {
   openModal: async function(campaignId = null) {
     console.log('[Campaigns] Opening modal, editing:', campaignId);
     
-    if (!this.state.campaignsAvailable && !campaignId) {
-      this.showToast('Module campagnes temporairement indisponible', 'warning');
-      return;
-    }
-    
+    // 🔥 v9.0: Plus de blocage si "non disponible"
     const activeCount = this.state.campaigns.filter(c => c.status === 'active').length;
     if (!campaignId && activeCount >= this.MAX_CAMPAIGNS) {
       this.showToast(`Limite atteinte: ${this.MAX_CAMPAIGNS} campagnes actives maximum.`, 'error');
@@ -419,7 +389,7 @@ window.SupplierCampaigns = {
     }
   },
 
-  renderProductChecklist: function() {
+   renderProductChecklist: function() {
     const container = document.getElementById('products-checklist');
     if (!container) return;
     
@@ -919,11 +889,6 @@ window.SupplierCampaigns = {
         this.closeModal();
         await this.loadCampaigns();
       } else {
-        if (response?.code === 'CAMPAIGNS_NOT_READY') {
-          this.state.campaignsAvailable = false;
-          this.state.campaignsMessage = response.message;
-          this.renderList();
-        }
         console.error('[Campaigns] Save failed:', response);
         throw new Error(response?.message || 'Erreur serveur');
       }
@@ -1013,4 +978,4 @@ window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
 
-console.log('[SupplierCampaigns] Module v8.6 SYNTAX FIX READY chargé');
+console.log('[SupplierCampaigns] Module v9.0 AUTO-TABLE READY chargé');
