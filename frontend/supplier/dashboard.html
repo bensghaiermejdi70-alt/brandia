@@ -995,7 +995,7 @@
         </div>
         <h3 class="text-lg font-semibold mb-2">Centre d'aide</h3>
         <p class="text-slate-400 mb-6">Une question ? Contactez notre équipe support.</p>
-        <a href="/cdn-cgi/l/email-protection#6c1f191c1c031e182c0e1e0d0208050d420f03011c0d0215" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
+        <a href="/cdn-cgi/l/email-protection#26555356564954526644544748424f470845494b5647485f" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
           Contacter le support
         </a>
       </div>
@@ -1359,14 +1359,13 @@
 (function() {
   'use strict';
   
-  // Vérifier authentification — lit les clés exactes de api.js storage
+  // Vérifier authentification - utilise les mêmes clés que api.js storage
   function checkAuth() {
     try {
-      // api.js storage écrit sous 'token', 'brandia_token', 'accessToken'
+      // Lire token avec toutes les clés possibles (api.js écrit sous token + brandia_token + accessToken)
       const token = localStorage.getItem('token')
                  || localStorage.getItem('brandia_token')
                  || localStorage.getItem('accessToken');
-      
       let user = null;
       try {
         const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
@@ -1374,25 +1373,23 @@
       } catch(e) {}
 
       console.log('[Dashboard] checkAuth — token:', !!token, '| role:', user?.role);
-      
+
       if (!token || !user) {
-        console.warn('[Dashboard] Pas de session valide en localStorage');
+        console.warn('[Dashboard] Pas de session — redirection login');
         window.location.href = '../login.html?redirect=%2Fsupplier%2Fdashboard.html';
         return false;
       }
-      
+
       if (user.role !== 'supplier') {
         console.error('[Dashboard] Accès refusé - rôle:', user.role);
         alert('Accès réservé aux fournisseurs');
         window.location.href = '../index.html';
         return false;
       }
-      
+
       const userNameEl = document.getElementById('user-name');
-      if (userNameEl) {
-        userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
-      }
-      
+      if (userNameEl) userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
+
       return true;
     } catch (error) {
       console.error('[Dashboard] Erreur checkAuth:', error);
@@ -1918,7 +1915,10 @@
 
     window.logout = function() {
       localStorage.removeItem('token');
+      localStorage.removeItem('brandia_token');
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('brandia_user');
       localStorage.removeItem('refreshToken');
       window.location.href = '../login.html';
     };
@@ -2002,32 +2002,30 @@
           console.warn('[Dashboard] BrandiaAPI non disponible');
           return;
         }
-        
-        const response = await BrandiaAPI.Supplier.getStats();
-        console.log('[Dashboard] Stats:', response);
 
-        // FIX: Si 401, le serveur Render se réveille — NE PAS rediriger, réessayer dans 5s
+        const response = await BrandiaAPI.Supplier.getStats();
+        console.log('[Dashboard] Stats response:', response);
+
+        // Si 401 = serveur Render en réveil, retry dans 5s SANS rediriger
         if (response?.status === 401 || (!response?.success && response?.message === 'Session invalide')) {
-          console.warn('[Dashboard] Stats: 401 reçu — serveur en réveil, retry dans 5s...');
+          console.warn('[Dashboard] Stats 401 — Render en réveil, retry dans 5s...');
           setTimeout(loadOverviewStats, 5000);
           return;
         }
-        
+
         if (response?.success && response.data) {
           const data = response.data;
-          
           updateElement('kpi-revenue', formatPrice(data.totalSales || 0));
           updateElement('kpi-orders', data.totalOrders || 0);
           updateElement('kpi-products', data.activeProducts || 0);
           updateElement('kpi-total-products', data.totalProducts || 0);
           updateElement('kpi-balance', formatPrice(data.balance || 0));
-          
           if (typeof Chart !== 'undefined') {
             initSalesChart(data.salesData || []);
           }
         }
       } catch (error) {
-        console.error('[Dashboard] Erreur stats (ignorée):', error);
+        console.error('[Dashboard] Erreur stats (ignorée):', error.message);
       }
     }
 
@@ -2140,7 +2138,7 @@
           loadOverviewStats();
           
         } catch (error) {
-          console.error('[Dashboard] Erreur init modules:', error);
+          console.error('[Dashboard] Erreur init modules:'
           showToast('Erreur lors de l\'initialisation des modules', 'error');
         }
       }, 500);

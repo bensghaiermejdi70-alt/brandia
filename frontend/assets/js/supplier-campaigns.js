@@ -1,7 +1,6 @@
-
 // ============================================
-// SUPPLIER CAMPAIGNS MODULE - v10.0 FIX
-// Correction: Routes API alignées avec le backend
+// SUPPLIER CAMPAIGNS MODULE - v9.2 FIX
+// Correction: Sélection de produits individuels qui ne fonctionnait pas
 // ============================================
 
 if (typeof BrandiaAPI === 'undefined') {
@@ -13,9 +12,7 @@ if (typeof BrandiaAPI === 'undefined') {
             createCampaign: async () => ({ success: false, message: 'API not loaded' }),
             updateCampaign: async () => ({ success: false, message: 'API not loaded' }),
             deleteCampaign: async () => ({ success: false, message: 'API not loaded' }),
-            getCampaignLimit: async () => ({ success: true, data: { current: 0, max: 5, can_create: true } }),
-            uploadImage: async () => ({ success: false, message: 'API not loaded' }),
-            uploadVideo: async () => ({ success: false, message: 'API not loaded' })
+            getCampaignLimit: async () => ({ success: true, data: { current: 0, max: 5, can_create: true } })
         },
         Upload: {
             uploadImage: async () => ({ success: false, message: 'API not loaded' }),
@@ -34,7 +31,7 @@ window.SupplierCampaigns = {
     currentMediaType: 'image',
     uploadedMedia: null,
     editingCampaignId: null,
-    targetMode: 'all',
+    targetMode: 'all', // 'all' ou 'selected'
     ctaType: 'shop',
     isLoading: false,
     campaignLimit: { current: 0, max: 5, can_create: true }
@@ -48,31 +45,37 @@ window.SupplierCampaigns = {
     base: 'https://brandia-marketplace.netlify.app'
   },
 
-  // ==========================================
-  // INITIALISATION
-  // ==========================================
   init: async function() {
-    console.log('[Campaigns] Initializing v10.0...');
+    console.log('[Campaigns] Initializing v9.2...');
     try {
-      // Charger d'abord les produits
+      this.state.campaignLimit = { 
+        current: 0, 
+        max: this.MAX_CAMPAIGNS, 
+        can_create: true 
+      };
       await this.loadProducts();
-      // Puis les campagnes
       await this.loadCampaigns();
-      // Initialiser le graphique
       this.initChart();
-      // Mettre à jour le compteur
       this.updateCampaignCounter();
-      
-      console.log('[Campaigns] Init complete - Products:', this.state.products.length, 'Campaigns:', this.state.campaigns.length);
     } catch (error) {
       console.error('[Campaigns] Init error:', error);
       this.showToast('Erreur initialisation module campagnes', 'error');
     }
   },
 
-  // ==========================================
-  // CHARGEMENT DES PRODUITS
-  // ==========================================
+  updateCampaignCounter: function() {
+    const counterEl = document.getElementById('campaign-counter');
+    if (counterEl) {
+      const current = this.state.campaigns.filter(c => c.status === 'active').length;
+      this.state.campaignLimit.current = current;
+      counterEl.innerHTML = `
+        <span class="${current >= this.MAX_CAMPAIGNS ? 'text-red-400' : 'text-emerald-400'}">
+          ${current}/${this.MAX_CAMPAIGNS}
+        </span> actives
+      `;
+    }
+  },
+
   loadProducts: async function() {
     try {
       console.log('[Campaigns] Loading products...');
@@ -84,17 +87,12 @@ window.SupplierCampaigns = {
           productsArray = response.data;
         } else if (response.data.products && Array.isArray(response.data.products)) {
           productsArray = response.data.products;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          productsArray = response.data.data;
         }
       }
       
       this.state.products = productsArray;
       console.log('[Campaigns] Products loaded:', this.state.products.length);
-      
-      // Remplir le select de produits dans le modal
-      this.populateProductSelect();
-      
+      console.log('[Campaigns] Products details:', this.state.products.map(p => ({ id: p.id, name: p.name })));
       return this.state.products;
     } catch (error) {
       console.error('[Campaigns] Error loading products:', error);
@@ -103,24 +101,6 @@ window.SupplierCampaigns = {
     }
   },
 
-  populateProductSelect: function() {
-    const select = document.getElementById('campaign-product');
-    if (!select) return;
-    
-    // Garder l'option par défaut
-    select.innerHTML = '<option value="">Choisir un produit...</option>';
-    
-    this.state.products.forEach(product => {
-      const option = document.createElement('option');
-      option.value = product.id;
-      option.textContent = product.name;
-      select.appendChild(option);
-    });
-  },
-
-  // ==========================================
-  // CHARGEMENT DES CAMPAGNES
-  // ==========================================
   loadCampaigns: async function() {
     try {
       console.log('[Campaigns] Loading campaigns...');
@@ -149,9 +129,6 @@ window.SupplierCampaigns = {
     }
   },
 
-  // ==========================================
-  // RENDU DE LA LISTE
-  // ==========================================
   renderList: function() {
     const container = document.getElementById('campaigns-list');
     if (!container) return;
@@ -234,42 +211,22 @@ window.SupplierCampaigns = {
     container.innerHTML = html;
   },
 
-  // ==========================================
-  // STATISTIQUES
-  // ==========================================
   updateStats: function() {
     const totalViews = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.views_count || c.impressions || 0)), 0);
     const totalClicks = this.state.campaigns.reduce((sum, c) => sum + (parseInt(c.clicks_count || c.clicks || 0)), 0);
     const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : 0;
-    const totalSpend = this.state.campaigns.reduce((sum, c) => sum + (parseFloat(c.spent || 0)), 0);
     
-    const viewsEl = document.getElementById('total-views');
-    const clicksEl = document.getElementById('total-clicks');
-    const ctrEl = document.getElementById('ctr-rate');
-    const spendEl = document.getElementById('ad-spend');
+    const viewsEl = document.getElementById('ad-views');
+    const clicksEl = document.getElementById('ad-clicks');
+    const ctrEl = document.getElementById('ad-ctr');
+    const convEl = document.getElementById('ad-conversions');
     
     if (viewsEl) viewsEl.textContent = totalViews.toLocaleString();
     if (clicksEl) clicksEl.textContent = totalClicks.toLocaleString();
     if (ctrEl) ctrEl.textContent = ctr + '%';
-    if (spendEl) spendEl.textContent = totalSpend.toFixed(2) + '€';
+    if (convEl) convEl.textContent = Math.floor(totalClicks * 0.1).toLocaleString();
   },
 
-  updateCampaignCounter: function() {
-    const counterEl = document.getElementById('campaign-counter');
-    if (counterEl) {
-      const current = this.state.campaigns.filter(c => c.status === 'active').length;
-      this.state.campaignLimit.current = current;
-      counterEl.innerHTML = `
-        <span class="${current >= this.MAX_CAMPAIGNS ? 'text-red-400' : 'text-emerald-400'}">
-          ${current}/${this.MAX_CAMPAIGNS}
-        </span> actives
-      `;
-    }
-  },
-
-  // ==========================================
-  // GRAPHIQUE
-  // ==========================================
   initChart: function() {
     const ctx = document.getElementById('campaignChart');
     if (!ctx) {
@@ -352,9 +309,6 @@ window.SupplierCampaigns = {
     this.state.chart.update();
   },
 
-  // ==========================================
-  // MODAL - OUVERTURE/FERMETURE
-  // ==========================================
   openModal: async function(campaignId = null) {
     console.log('[Campaigns] Opening modal, editing:', campaignId);
     
@@ -390,6 +344,7 @@ window.SupplierCampaigns = {
     
     // Reset UI
     this.resetUploadUI();
+    this.renderProductChecklist();
     this.updateCtaLink();
     
     // Setup for edit or create
@@ -414,7 +369,7 @@ window.SupplierCampaigns = {
       if (startInput) startInput.value = today;
       if (endInput) endInput.value = nextMonth.toISOString().split('T')[0];
       
-      // Mode "all" par défaut
+      // 🔥 v9.2: Assurer que le mode "all" est sélectionné par défaut
       this.state.targetMode = 'all';
       this.state.selectedProducts = [];
       const allRadio = document.querySelector('input[name="target_mode"][value="all"]');
@@ -433,21 +388,6 @@ window.SupplierCampaigns = {
     console.log('[Campaigns] Modal opened, targetMode:', this.state.targetMode, 'selectedProducts:', this.state.selectedProducts);
   },
 
-  closeModal: function() {
-    const modal = document.getElementById('campaign-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-    this.state.editingCampaignId = null;
-    this.state.uploadedMedia = null;
-    this.state.selectedProducts = [];
-    this.state.targetMode = 'all';
-  },
-
-  // ==========================================
-  // GESTION DU FORMULAIRE
-  // ==========================================
   resetUploadUI: function() {
     const dropzone = document.getElementById('campaign-dropzone');
     const fileInput = document.getElementById('campaign-media');
@@ -469,6 +409,195 @@ window.SupplierCampaigns = {
     }
   },
 
+  // 🔥 v9.2: CORRECTION CRITIQUE - Gestion améliorée des checkbox
+  renderProductChecklist: function() {
+    const container = document.getElementById('products-checklist');
+    if (!container) {
+      console.error('[Campaigns] products-checklist container not found');
+      return;
+    }
+    
+    console.log('[Campaigns] Rendering checklist, products:', this.state.products.length, 'selected:', this.state.selectedProducts);
+    
+    if (this.state.products.length === 0) {
+      container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Aucun produit disponible</p>';
+      return;
+    }
+    
+    let html = '';
+    this.state.products.forEach((product, index) => {
+      const isSelected = this.state.selectedProducts.includes(product.id);
+      const imageUrl = product.main_image_url || product.image_url || (product.images && product.images[0]) || this.FALLBACK_IMAGE;
+      
+      // 🔥 v9.2: Utilisation d'un ID unique et gestion d'événement inline fiable
+      html += `
+        <div class="product-check-item flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-500/10 border border-indigo-500/30' : 'border border-transparent'}" 
+             onclick="SupplierCampaigns.handleProductClick('${product.id}', event)"
+             data-product-id="${product.id}">
+          <input type="checkbox" 
+                 id="prod-check-${index}" 
+                 value="${product.id}" 
+                 ${isSelected ? 'checked' : ''} 
+                 class="w-4 h-4 rounded border-slate-600 text-indigo-500 focus:ring-indigo-500 bg-slate-700 pointer-events-none">
+          <img src="${imageUrl}" class="w-10 h-10 rounded object-cover bg-slate-800 pointer-events-none" onerror="this.src='${this.FALLBACK_IMAGE}'">
+          <div class="flex-1 min-w-0 pointer-events-none">
+            <p class="text-sm text-white truncate">${product.name || 'Sans nom'}</p>
+            <p class="text-xs text-slate-400">${parseFloat(product.price || 0).toFixed(2)} €</p>
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+    this.updateSelectedCount();
+  },
+
+  // 🔥 v9.2: NOUVELLE MÉTHODE - Gestion du clic sur produit
+  handleProductClick: function(productId, event) {
+    console.log('[Campaigns] Product clicked:', productId);
+    
+    // Empêcher la propagation pour éviter les conflits
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // Toggle la sélection
+    this.toggleProductSelection(productId);
+  },
+
+  toggleProductSelection: function(productId) {
+    console.log('[Campaigns] Toggling selection for:', productId);
+    console.log('[Campaigns] Current selected:', this.state.selectedProducts);
+    
+    const index = this.state.selectedProducts.indexOf(productId);
+    if (index > -1) {
+      // Déjà sélectionné -> retirer
+      this.state.selectedProducts.splice(index, 1);
+      console.log('[Campaigns] Removed:', productId);
+    } else {
+      // Non sélectionné -> ajouter
+      this.state.selectedProducts.push(productId);
+      console.log('[Campaigns] Added:', productId);
+    }
+    
+    console.log('[Campaigns] New selected:', this.state.selectedProducts);
+    
+    // Si on sélectionne un produit, passer automatiquement en mode "selected"
+    if (this.state.selectedProducts.length > 0 && this.state.targetMode === 'all') {
+      console.log('[Campaigns] Auto-switching to selected mode');
+      this.state.targetMode = 'selected';
+      const radio = document.querySelector('input[name="target_mode"][value="selected"]');
+      if (radio) radio.checked = true;
+    }
+    
+    this.updateSelectedCount();
+    this.renderProductChecklist();
+    this.updatePreview();
+    this.updateCtaLink();
+  },
+
+  toggleAllProducts: function() {
+    console.log('[Campaigns] Toggle all products');
+    if (this.state.selectedProducts.length === this.state.products.length) {
+      // Tout désélectionner
+      this.state.selectedProducts = [];
+    } else {
+      // Tout sélectionner
+      this.state.selectedProducts = this.state.products.map(p => p.id);
+    }
+    this.renderProductChecklist();
+    this.updatePreview();
+    this.updateCtaLink();
+  },
+
+  updateSelectedCount: function() {
+    const el = document.getElementById('selected-count');
+    if (el) {
+      el.textContent = this.state.selectedProducts.length;
+      console.log('[Campaigns] Updated selected count:', this.state.selectedProducts.length);
+    }
+  },
+
+  // 🔥 v9.2: CORRECTION - Toggle mode ciblage amélioré
+  toggleTargetMode: function(mode) {
+    console.log('[Campaigns] Toggling target mode to:', mode);
+    this.state.targetMode = mode;
+    
+    const panel = document.getElementById('product-selection-panel');
+    if (panel) {
+      if (mode === 'selected') {
+        panel.classList.remove('hidden');
+        console.log('[Campaigns] Showing product panel');
+      } else {
+        panel.classList.add('hidden');
+        console.log('[Campaigns] Hiding product panel');
+        // En mode "all", vider la sélection
+        this.state.selectedProducts = [];
+        this.updateSelectedCount();
+        this.renderProductChecklist();
+      }
+    }
+    
+    this.updatePreview();
+    this.updateCtaLink();
+  },
+
+  updateCtaOptions: function() {
+    const radios = document.getElementsByName('cta_type');
+    for (const radio of radios) {
+      if (radio.checked) {
+        this.state.ctaType = radio.value;
+        break;
+      }
+    }
+    this.updateCtaLink();
+  },
+
+  updateCtaLink: function() {
+    const linkInput = document.getElementById('camp-cta-link');
+    const helpText = document.getElementById('cta-link-help');
+    if (!linkInput) return;
+    
+    let url = '';
+    let help = '';
+    
+    switch(this.state.ctaType) {
+      case 'shop':
+        url = this.SHOP_URLS.base;
+        help = 'Redirige vers votre boutique principale';
+        break;
+      case 'category':
+        if (this.state.selectedProducts.length > 0 && this.state.products.length > 0) {
+          const firstProduct = this.state.products.find(p => p.id === this.state.selectedProducts[0]);
+          if (firstProduct?.category_id) {
+            url = `${this.SHOP_URLS.base}/category.html?id=${firstProduct.category_id}`;
+          } else {
+            url = this.SHOP_URLS.base;
+          }
+        } else {
+          url = this.SHOP_URLS.base;
+        }
+        help = 'Redirige vers la catégorie des produits sélectionnés';
+        break;
+      case 'custom':
+        url = linkInput.value || 'https://';
+        help = 'Saisissez votre propre URL de destination';
+        break;
+    }
+    
+    if (this.state.ctaType !== 'custom') {
+      linkInput.value = url;
+      linkInput.readOnly = true;
+      linkInput.classList.add('bg-slate-900', 'text-slate-400');
+    } else {
+      linkInput.readOnly = false;
+      linkInput.classList.remove('bg-slate-900', 'text-slate-400');
+    }
+    
+    if (helpText) helpText.textContent = help;
+  },
+
   fillFormForEdit: function(campaign) {
     console.log('[Campaigns] Filling form for edit:', campaign);
     
@@ -479,7 +608,6 @@ window.SupplierCampaigns = {
     const startDateField = document.getElementById('camp-start-date');
     const endDateField = document.getElementById('camp-end-date');
     const ctaLinkField = document.getElementById('camp-cta-link');
-    const productSelect = document.getElementById('campaign-product');
     
     if (nameField && campaign.name) nameField.value = campaign.name;
     if (headlineField) headlineField.value = campaign.headline || campaign.ad_creative?.headline || '';
@@ -488,9 +616,8 @@ window.SupplierCampaigns = {
     if (startDateField && campaign.start_date) startDateField.value = campaign.start_date.split('T')[0];
     if (endDateField && campaign.end_date) endDateField.value = campaign.end_date.split('T')[0];
     if (ctaLinkField && campaign.cta_link) ctaLinkField.value = campaign.cta_link;
-    if (productSelect && campaign.product_id) productSelect.value = campaign.product_id;
     
-    // Gestion du mode ciblage
+    // 🔥 v9.2: Gestion correcte du mode ciblage en édition
     if (campaign.target_products && Array.isArray(campaign.target_products) && campaign.target_products.length > 0) {
       console.log('[Campaigns] Edit mode: has target_products', campaign.target_products);
       this.state.targetMode = 'selected';
@@ -528,6 +655,8 @@ window.SupplierCampaigns = {
       };
       this.showMediaPreview(campaign.media_url || campaign.ad_creative?.image_url, this.state.currentMediaType);
     }
+    
+    this.renderProductChecklist();
   },
 
   showModalStats: function(campaign) {
@@ -553,181 +682,53 @@ window.SupplierCampaigns = {
     if (statsContainer) statsContainer.classList.add('hidden');
   },
 
-  // ==========================================
-  // SAUVEGARDE
-  // ==========================================
-  save: async function() {
-    console.log('[Campaigns] ========== SAVE STARTED ==========');
-    
-    if (this.state.isLoading) return;
-    
+  attachPreviewListeners: function() {
+    const fields = ['camp-name', 'camp-headline', 'camp-description', 'camp-cta-text'];
+    fields.forEach(fieldId => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        element.addEventListener('input', () => this.updatePreview());
+      }
+    });
+  },
+
+  updatePreview: function() {
     try {
-      const name = document.getElementById('camp-name')?.value?.trim();
-      const headline = document.getElementById('camp-headline')?.value?.trim();
-      const description = document.getElementById('camp-description')?.value?.trim() || '';
-      const startDate = document.getElementById('camp-start-date')?.value;
-      const endDate = document.getElementById('camp-end-date')?.value;
-      const ctaText = document.getElementById('camp-cta-text')?.value?.trim() || "Voir l'offre";
-      const ctaLink = document.getElementById('camp-cta-link')?.value?.trim();
-      const productId = document.getElementById('campaign-product')?.value;
+      const headline = document.getElementById('camp-headline')?.value || 'Votre titre';
+      const description = document.getElementById('camp-description')?.value || 'Description...';
+      const ctaText = document.getElementById('camp-cta-text')?.value || "Voir l'offre";
       
-      // Validation
-      if (!name) {
-        this.showToast('Le nom de la campagne est requis', 'error');
-        document.getElementById('camp-name')?.focus();
-        return;
-      }
-      if (!headline) {
-        this.showToast('Le titre publicitaire est requis', 'error');
-        document.getElementById('camp-headline')?.focus();
-        return;
-      }
-      if (!productId) {
-        this.showToast('Veuillez sélectionner un produit', 'error');
-        return;
-      }
-      if (!startDate || !endDate) {
-        this.showToast('Les dates de début et fin sont requises', 'error');
-        return;
-      }
-      if (new Date(endDate) <= new Date(startDate)) {
-        this.showToast('La date de fin doit être après la date de début', 'error');
-        return;
+      const headlineEl = document.getElementById('ad-preview-headline');
+      const descEl = document.getElementById('ad-preview-desc');
+      const ctaEl = document.getElementById('ad-preview-cta');
+      const mediaEl = document.getElementById('ad-preview-media');
+      const targetEl = document.getElementById('ad-preview-target');
+      
+      if (headlineEl) headlineEl.textContent = headline;
+      if (descEl) descEl.textContent = description;
+      if (ctaEl) ctaEl.textContent = ctaText;
+      
+      if (targetEl) {
+        targetEl.textContent = this.state.targetMode === 'all' 
+          ? 'Tous les produits' 
+          : `${this.state.selectedProducts.length} produit(s)`;
       }
       
-      // Upload media si nouveau
-      let mediaUrl = null;
-      let mediaType = this.state.currentMediaType;
-      
-      if (this.state.uploadedMedia?.isNew) {
-        try {
-          console.log('[Campaigns] Uploading new media...');
-          this.showLoading(true);
-          
-          const file = this.state.uploadedMedia.file;
-          const formData = new FormData();
-          formData.append('media', file);
-          
-          const uploadResult = mediaType === 'video' 
-            ? await BrandiaAPI.Upload.uploadVideo(formData)
-            : await BrandiaAPI.Upload.uploadImage(formData);
-          
-          if (uploadResult?.success) {
-            mediaUrl = uploadResult.data?.url || uploadResult.data?.secure_url;
-            console.log('[Campaigns] Media uploaded:', mediaUrl);
-          } else {
-            throw new Error(uploadResult?.message || 'Upload failed');
-          }
-        } catch (err) {
-          console.error('[Campaigns] Upload failed:', err);
-          this.showToast('Erreur upload: ' + err.message, 'error');
-          this.showLoading(false);
-          return;
+      if (mediaEl && this.state.uploadedMedia) {
+        const url = this.state.uploadedMedia.localUrl || this.state.uploadedMedia.existingUrl;
+        if (this.state.currentMediaType === 'video') {
+          mediaEl.innerHTML = `<video src="${url}" class="w-full h-full object-cover" muted autoplay loop></video>`;
+        } else {
+          mediaEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
         }
-      } else if (this.state.uploadedMedia?.existingUrl) {
-        mediaUrl = this.state.uploadedMedia.existingUrl;
-        mediaType = this.state.uploadedMedia.existingType;
-        console.log('[Campaigns] Using existing media:', mediaUrl);
+      } else if (mediaEl) {
+        mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-xl"></i>';
       }
-      
-      if (!mediaUrl && !this.state.editingCampaignId) {
-        this.showToast('Une image ou vidéo est requise', 'error');
-        return;
-      }
-      
-      // Construction des données
-      const campaignData = {
-        name: name,
-        product_id: parseInt(productId),
-        headline: headline,
-        description: description,
-        cta_text: ctaText,
-        cta_link: ctaLink || null,
-        start_date: startDate,
-        end_date: endDate,
-        media_url: mediaUrl,
-        media_type: mediaType,
-        status: 'active',
-        targeting: {
-          mode: this.state.targetMode,
-          products: this.state.targetMode === 'selected' ? this.state.selectedProducts : []
-        },
-        ad_creative: {
-          headline: headline,
-          description: description,
-          cta_text: ctaText,
-          image_url: mediaUrl,
-          type: mediaType
-        }
-      };
-      
-      console.log('[Campaigns] Saving data:', campaignData);
-      this.showLoading(true);
-      
-      let response;
-      if (this.state.editingCampaignId) {
-        response = await BrandiaAPI.Supplier.updateCampaign(this.state.editingCampaignId, campaignData);
-      } else {
-        response = await BrandiaAPI.Supplier.createCampaign(campaignData);
-      }
-      
-      this.showLoading(false);
-      
-      if (response?.success) {
-        this.showToast(this.state.editingCampaignId ? 'Campagne mise à jour ✓' : 'Campagne créée avec succès !', 'success');
-        this.closeModal();
-        await this.loadCampaigns();
-      } else {
-        console.error('[Campaigns] Save failed:', response);
-        throw new Error(response?.message || 'Erreur serveur');
-      }
-      
     } catch (error) {
-      console.error('[Campaigns] Save error:', error);
-      this.showLoading(false);
-      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
+      console.error('[Campaigns] updatePreview error:', error);
     }
   },
 
-  // ==========================================
-  // ACTIONS CAMPAGNES
-  // ==========================================
-  editCampaign: function(id) {
-    this.openModal(id);
-  },
-
-  toggleStatus: async function(id, newStatus) {
-    try {
-      const response = await BrandiaAPI.Supplier.updateCampaign(id, { status: newStatus });
-      if (response?.success) {
-        this.showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
-        await this.loadCampaigns();
-      } else {
-        throw new Error(response?.message || 'Erreur inconnue');
-      }
-    } catch (error) {
-      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
-    }
-  },
-
-  deleteCampaign: async function(id) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
-    try {
-      const response = await BrandiaAPI.Supplier.deleteCampaign(id);
-      if (response?.success) {
-        this.showToast('Campagne supprimée', 'success');
-        await this.loadCampaigns();
-      } else {
-        throw new Error(response?.message || 'Erreur inconnue');
-      }
-    } catch (error) {
-      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
-    }
-  },
-
-  // ==========================================
-  // MÉDIA UPLOAD
-  // ==========================================
   handleMediaSelect: function(event) {
     console.log('[Campaigns] File selected:', event);
     const file = event.target.files[0];
@@ -742,7 +743,7 @@ window.SupplierCampaigns = {
       size: file.size
     });
     
-    // Détection auto du type
+    // Détection auto du type si pas déjà défini
     if (file.type.startsWith('video/')) {
       this.state.currentMediaType = 'video';
     } else if (file.type.startsWith('image/')) {
@@ -855,137 +856,266 @@ window.SupplierCampaigns = {
     }
   },
 
-  // ==========================================
-  // CIBLAGE & CTA
-  // ==========================================
-  toggleTargetMode: function(mode) {
-    console.log('[Campaigns] Toggling target mode to:', mode);
-    this.state.targetMode = mode;
-    
-    const panel = document.getElementById('product-selection-panel');
-    if (panel) {
-      if (mode === 'selected') {
-        panel.classList.remove('hidden');
-        console.log('[Campaigns] Showing product panel');
-      } else {
-        panel.classList.add('hidden');
-        console.log('[Campaigns] Hiding product panel');
-        this.state.selectedProducts = [];
+  uploadMediaToCloudinary: async function() {
+    if (!this.state.uploadedMedia || !this.state.uploadedMedia.isNew) {
+      if (this.state.uploadedMedia && this.state.uploadedMedia.existingUrl) {
+        return { 
+          url: this.state.uploadedMedia.existingUrl, 
+          type: this.state.uploadedMedia.existingType 
+        };
       }
+      return null;
     }
     
-    this.updatePreview();
-    this.updateCtaLink();
-  },
-
-  updateCtaOptions: function() {
-    const radios = document.getElementsByName('cta_type');
-    for (const radio of radios) {
-      if (radio.checked) {
-        this.state.ctaType = radio.value;
-        break;
-      }
-    }
-    this.updateCtaLink();
-  },
-
-  updateCtaLink: function() {
-    const linkInput = document.getElementById('camp-cta-link');
-    const helpText = document.getElementById('cta-link-help');
-    if (!linkInput) return;
+    const file = this.state.uploadedMedia.file;
+    const type = this.state.uploadedMedia.type;
     
-    let url = '';
-    let help = '';
+    const formData = new FormData();
+    formData.append('media', file);
     
-    switch(this.state.ctaType) {
-      case 'shop':
-        url = this.SHOP_URLS.base;
-        help = 'Redirige vers votre boutique principale';
-        break;
-      case 'category':
-        if (this.state.selectedProducts.length > 0 && this.state.products.length > 0) {
-          const firstProduct = this.state.products.find(p => p.id === this.state.selectedProducts[0]);
-          if (firstProduct?.category_id) {
-            url = `${this.SHOP_URLS.base}/category.html?id=${firstProduct.category_id}`;
-          } else {
-            url = this.SHOP_URLS.base;
-          }
-        } else {
-          url = this.SHOP_URLS.base;
-        }
-        help = 'Redirige vers la catégorie des produits sélectionnés';
-        break;
-      case 'custom':
-        url = linkInput.value || 'https://';
-        help = 'Saisissez votre propre URL de destination';
-        break;
-    }
-    
-    if (this.state.ctaType !== 'custom') {
-      linkInput.value = url;
-      linkInput.readOnly = true;
-      linkInput.classList.add('bg-slate-900', 'text-slate-400');
-    } else {
-      linkInput.readOnly = false;
-      linkInput.classList.remove('bg-slate-900', 'text-slate-400');
-    }
-    
-    if (helpText) helpText.textContent = help;
-  },
-
-  // ==========================================
-  // PRÉVISUALISATION
-  // ==========================================
-  attachPreviewListeners: function() {
-    const fields = ['camp-name', 'camp-headline', 'camp-description', 'camp-cta-text'];
-    fields.forEach(fieldId => {
-      const element = document.getElementById(fieldId);
-      if (element) {
-        element.addEventListener('input', () => this.updatePreview());
-      }
+    console.log('[Upload] Starting upload:', {
+      filename: file.name,
+      type: type,
+      size: file.size
     });
-  },
-
-  updatePreview: function() {
+    
     try {
-      const headline = document.getElementById('camp-headline')?.value || 'Votre titre';
-      const description = document.getElementById('camp-description')?.value || 'Description...';
-      const ctaText = document.getElementById('camp-cta-text')?.value || "Voir l'offre";
+      this.showLoading(true);
       
-      const headlineEl = document.getElementById('ad-preview-headline');
-      const descEl = document.getElementById('ad-preview-desc');
-      const ctaEl = document.getElementById('ad-preview-cta');
-      const mediaEl = document.getElementById('ad-preview-media');
-      const targetEl = document.getElementById('ad-preview-target');
+      const uploadFn = type === 'video' 
+        ? BrandiaAPI.Upload.uploadVideo 
+        : BrandiaAPI.Upload.uploadImage;
       
-      if (headlineEl) headlineEl.textContent = headline;
-      if (descEl) descEl.textContent = description;
-      if (ctaEl) ctaEl.textContent = ctaText;
+      console.log('[Upload] Calling API:', type === 'video' ? 'uploadVideo' : 'uploadImage');
       
-      if (targetEl) {
-        targetEl.textContent = this.state.targetMode === 'all' 
-          ? 'Tous les produits' 
-          : `${this.state.selectedProducts.length} produit(s)`;
-      }
+      const result = await uploadFn(formData);
       
-      if (mediaEl && this.state.uploadedMedia) {
-        const url = this.state.uploadedMedia.localUrl || this.state.uploadedMedia.existingUrl;
-        if (this.state.currentMediaType === 'video') {
-          mediaEl.innerHTML = `<video src="${url}" class="w-full h-full object-cover" muted autoplay loop></video>`;
-        } else {
-          mediaEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+      console.log('[Upload] API result:', result);
+      
+      if (result?.success) {
+        const mediaUrl = result.data?.url || result.data?.secure_url;
+        if (!mediaUrl) {
+          throw new Error('URL média non trouvée dans la réponse');
         }
-      } else if (mediaEl) {
-        mediaEl.innerHTML = '<i class="fas fa-image text-slate-500 text-xl"></i>';
+        return { url: mediaUrl, type: type };
+      } else {
+        throw new Error(result?.message || 'Erreur upload inconnue');
       }
     } catch (error) {
-      console.error('[Campaigns] updatePreview error:', error);
+      console.error('[Campaigns Upload] Error:', error);
+      throw error;
+    } finally {
+      this.showLoading(false);
     }
   },
 
-  // ==========================================
-  // UTILITAIRES
-  // ==========================================
+  // 🔥 v9.2: CORRECTION - Validation améliorée avant sauvegarde
+  save: async function() {
+    console.log('[Campaigns] ========== SAVE STARTED ==========');
+    console.log('[Campaigns] Current state:', {
+      targetMode: this.state.targetMode,
+      selectedProducts: this.state.selectedProducts,
+      productsAvailable: this.state.products.length
+    });
+    
+    if (this.state.isLoading) return;
+    
+    try {
+      const name = document.getElementById('camp-name')?.value?.trim();
+      const headline = document.getElementById('camp-headline')?.value?.trim();
+      const description = document.getElementById('camp-description')?.value?.trim() || '';
+      const startDate = document.getElementById('camp-start-date')?.value;
+      const endDate = document.getElementById('camp-end-date')?.value;
+      const ctaText = document.getElementById('camp-cta-text')?.value?.trim() || "Voir l'offre";
+      const ctaLink = document.getElementById('camp-cta-link')?.value?.trim();
+      
+      if (!name) {
+        this.showToast('Le nom de la campagne est requis', 'error');
+        document.getElementById('camp-name')?.focus();
+        return;
+      }
+      if (!headline) {
+        this.showToast('Le titre publicitaire est requis', 'error');
+        document.getElementById('camp-headline')?.focus();
+        return;
+      }
+      if (!startDate || !endDate) {
+        this.showToast('Les dates de début et fin sont requises', 'error');
+        return;
+      }
+      if (new Date(endDate) <= new Date(startDate)) {
+        this.showToast('La date de fin doit être après la date de début', 'error');
+        return;
+      }
+      
+      // 🔥 v9.2: Validation stricte du mode "selected"
+      if (this.state.targetMode === 'selected') {
+        if (this.state.selectedProducts.length === 0) {
+          this.showToast('Veuillez sélectionner au moins un produit', 'error');
+          // Ouvrir le panneau de sélection
+          const panel = document.getElementById('product-selection-panel');
+          if (panel) panel.classList.remove('hidden');
+          return;
+        }
+      }
+      
+      let mediaUrl = null;
+      let mediaType = this.state.currentMediaType;
+      
+      if (this.state.uploadedMedia?.isNew) {
+        try {
+          console.log('[Campaigns] Uploading new media...');
+          const uploadResult = await this.uploadMediaToCloudinary();
+          if (uploadResult) {
+            mediaUrl = uploadResult.url;
+            mediaType = uploadResult.type;
+            console.log('[Campaigns] Media uploaded:', mediaUrl);
+          }
+        } catch (err) {
+          console.error('[Campaigns] Upload failed:', err);
+          this.showToast('Erreur upload: ' + err.message, 'error');
+          return;
+        }
+      } else if (this.state.uploadedMedia?.existingUrl) {
+        mediaUrl = this.state.uploadedMedia.existingUrl;
+        mediaType = this.state.uploadedMedia.existingType;
+        console.log('[Campaigns] Using existing media:', mediaUrl);
+      }
+      
+      if (!mediaUrl && !this.state.editingCampaignId) {
+        this.showToast('Une image ou vidéo est requise', 'error');
+        return;
+      }
+      
+      // 🔥 v9.2: Détermination correcte du product_id
+      let productId = null;
+      let targetProducts = [];
+      
+      if (this.state.targetMode === 'selected' && this.state.selectedProducts.length > 0) {
+        productId = this.state.selectedProducts[0]; // Premier produit comme principal
+        targetProducts = [...this.state.selectedProducts]; // Tous les produits cibles
+      }
+      
+      // Validation: si mode selected, doit avoir un productId
+      if (this.state.targetMode === 'selected' && !productId) {
+        this.showToast('Erreur: aucun produit sélectionné', 'error');
+        return;
+      }
+      
+      // Si mode "all", on prend le premier produit disponible comme fallback
+      // ou on peut envoyer null selon la logique métier
+      if (this.state.targetMode === 'all' && this.state.products.length > 0) {
+        productId = this.state.products[0].id; // Fallback sur premier produit
+        targetProducts = this.state.products.map(p => p.id);
+      }
+      
+      if (!productId && !this.state.editingCampaignId) {
+        this.showToast('Veuillez sélectionner un produit cible', 'error');
+        return;
+      }
+      
+      const adCreative = {
+        headline: headline,
+        description: description,
+        cta_text: ctaText,
+        image_url: mediaUrl,
+        type: mediaType,
+        target_products: targetProducts,
+        target_mode: this.state.targetMode
+      };
+      
+      const campaignData = {
+        name: name,
+        product_id: productId,
+        budget: 100,
+        daily_budget: null,
+        start_date: startDate,
+        end_date: endDate,
+        targeting: { 
+          mode: this.state.targetMode, 
+          products: targetProducts 
+        },
+        ad_creative: adCreative,
+        ad_format: 'overlay',
+        cta_link: ctaLink,
+        status: 'active',
+        media_url: mediaUrl,
+        media_type: mediaType
+      };
+      
+      console.log('[Campaigns] Saving data:', JSON.stringify(campaignData, null, 2));
+      this.showLoading(true);
+      
+      let response;
+      if (this.state.editingCampaignId) {
+        response = await BrandiaAPI.Supplier.updateCampaign(this.state.editingCampaignId, campaignData);
+      } else {
+        response = await BrandiaAPI.Supplier.createCampaign(campaignData);
+      }
+      
+      this.showLoading(false);
+      
+      if (response?.success) {
+        this.showToast(this.state.editingCampaignId ? 'Campagne mise à jour ✓' : 'Campagne créée avec succès !', 'success');
+        this.closeModal();
+        await this.loadCampaigns();
+      } else {
+        console.error('[Campaigns] Save failed:', response);
+        throw new Error(response?.message || 'Erreur serveur');
+      }
+      
+    } catch (error) {
+      console.error('[Campaigns] Save error:', error);
+      this.showLoading(false);
+      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
+    }
+  },
+
+  editCampaign: function(id) {
+    this.openModal(id);
+  },
+
+  toggleStatus: async function(id, newStatus) {
+    try {
+      const response = await BrandiaAPI.Supplier.updateCampaign(id, { status: newStatus });
+      if (response?.success) {
+        this.showToast(`Campagne ${newStatus === 'active' ? 'activée' : 'mise en pause'}`, 'success');
+        await this.loadCampaigns();
+      } else {
+        throw new Error(response?.message || 'Erreur inconnue');
+      }
+    } catch (error) {
+      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
+    }
+  },
+
+  deleteCampaign: async function(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
+    try {
+      const response = await BrandiaAPI.Supplier.deleteCampaign(id);
+      if (response?.success) {
+        this.showToast('Campagne supprimée', 'success');
+        await this.loadCampaigns();
+      } else {
+        throw new Error(response?.message || 'Erreur inconnue');
+      }
+    } catch (error) {
+      this.showToast('Erreur: ' + (error.message || 'Inconnue'), 'error');
+    }
+  },
+
+  closeModal: function() {
+    const modal = document.getElementById('campaign-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+    this.state.editingCampaignId = null;
+    this.state.uploadedMedia = null;
+    this.state.selectedProducts = [];
+    this.state.targetMode = 'all';
+  },
+
   showLoading: function(show) {
     this.state.isLoading = show;
     if (window.showLoading) window.showLoading(show);
@@ -1007,15 +1137,18 @@ window.SupplierCampaigns = {
 // ==========================================
 // FONCTIONS GLOBALES
 // ==========================================
-window.openCampaignModal = (id) => SupplierCampaigns.openModal(id);
+window.openCampaignModal = () => SupplierCampaigns.openModal();
 window.closeCampaignModal = () => SupplierCampaigns.closeModal();
 window.saveCampaignForm = () => SupplierCampaigns.save();
 window.handleCampaignMedia = (e) => SupplierCampaigns.handleMediaSelect(e);
 window.toggleMediaType = (type) => SupplierCampaigns.toggleMediaType(type);
 window.toggleTargetMode = (mode) => SupplierCampaigns.toggleTargetMode(mode);
+window.toggleProductSelection = (id) => SupplierCampaigns.toggleProductSelection(id);
+window.toggleAllProducts = () => SupplierCampaigns.toggleAllProducts();
 window.updateCtaOptions = () => SupplierCampaigns.updateCtaOptions();
 window.editCampaign = (id) => SupplierCampaigns.editCampaign(id);
 window.deleteCampaign = (id) => SupplierCampaigns.deleteCampaign(id);
 window.toggleCampaignStatus = (id, status) => SupplierCampaigns.toggleStatus(id, status);
+window.handleProductClick = (id, e) => SupplierCampaigns.handleProductClick(id, e);
 
-console.log('[SupplierCampaigns] Module v10.0 API ROUTES FIX READY');
+console.log('[SupplierCampaigns] Module v9.2 PRODUCT SELECTION FIX READY chargé');

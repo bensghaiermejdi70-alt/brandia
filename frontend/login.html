@@ -508,9 +508,7 @@
           localStorage.setItem('token', token);
           localStorage.setItem('brandia_token', token);
           localStorage.setItem('accessToken', token);
-          if (result.data.refreshToken) {
-            localStorage.setItem('refreshToken', result.data.refreshToken);
-          }
+          if (result.data.refreshToken) { localStorage.setItem('refreshToken', result.data.refreshToken); }
           localStorage.setItem('user', JSON.stringify(user));
           localStorage.setItem('brandia_user', JSON.stringify(user));
         }
@@ -520,26 +518,19 @@
       
       if (result.success) {
         const user = result.data?.user || result.data;
-
-        // FIX: Forcer stockage sous toutes les clés pour compatibilité
         const tk = result.data?.accessToken || result.data?.token;
         if (tk) {
           localStorage.setItem('token', tk);
           localStorage.setItem('brandia_token', tk);
           localStorage.setItem('accessToken', tk);
         }
-        if (result.data?.refreshToken) {
-          localStorage.setItem('refreshToken', result.data.refreshToken);
-        }
+        if (result.data?.refreshToken) localStorage.setItem('refreshToken', result.data.refreshToken);
         if (user) {
           localStorage.setItem('user', JSON.stringify(user));
           localStorage.setItem('brandia_user', JSON.stringify(user));
         }
-
         showSuccess('Connexion réussie ! Redirection...');
-        
         setTimeout(() => {
-          // Respecter le paramètre ?redirect= s'il existe
           const params = new URLSearchParams(window.location.search);
           const redirectTo = params.get('redirect');
           if (redirectTo && !redirectTo.includes('expired') && !redirectTo.includes('session_expired')) {

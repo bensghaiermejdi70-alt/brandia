@@ -119,7 +119,6 @@
       
     } catch (error) {
       console.error('[Token Refresh] Failed:', error);
-      // Ne pas rediriger ici — laisser apiFetch gérer selon le contexte
       storage.clear();
       throw error;
     }
@@ -191,10 +190,8 @@
           }
         }
         
-        // FIX: Ne pas effacer le storage ni rediriger automatiquement sur un 401
-        // Le serveur Render (free tier) peut retourner 401 temporairement au réveil.
-        // On retourne l'erreur — la page décide quoi faire.
-        console.warn('[API] 401 reçu - session invalide ou serveur en réveil');
+        // NE PAS rediriger automatiquement - retourner l'erreur proprement
+        console.warn('[API] 401 recu - serveur peut etre en reveil (Render free tier)');
         return { success: false, message: 'Session invalide', status: 401 };
       }
 
@@ -548,15 +545,9 @@
   const SupplierAPI = {
     init: () => {
       const user = storage.getUser();
-      if (!storage.getToken()) { 
-        window.location.href = '../login.html?redirect=supplier/dashboard'; 
-        return false; 
-      }
-      if (user?.role !== 'supplier') { 
-        alert('Accès réservé aux fournisseurs'); 
-        window.location.href = '../index.html'; 
-        return false; 
-      }
+      const token = storage.getToken();
+      if (!token) { console.warn('[SupplierAPI] init: pas de token'); return false; }
+      if (user?.role !== 'supplier') { console.warn('[SupplierAPI] init: role non supplier'); return false; }
       return true;
     },
 
@@ -683,6 +674,14 @@
         return await apiFetch('/supplier/campaigns');
       } catch (error) {
         return { success: false, data: [], message: error.message };
+      }
+    },
+
+    getCampaignLimit: async () => {
+      try {
+        return await apiFetch('/supplier/campaigns/limit');
+      } catch (error) {
+        return { success: true, data: { current: 0, max: 5, can_create: true } };
       }
     },
     
