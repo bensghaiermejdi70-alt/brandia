@@ -68,7 +68,7 @@ const BrandiaAdEngine = {
     loadCampaigns: async function() {
         try {
             // Récupérer toutes les campagnes actives
-            const response = await fetch(`${this.API_URL}/supplier/campaigns/public`);
+            const response = await fetch(`${this.API_URL}/supplier/public/campaigns`);
             
             if (!response.ok) {
                 console.log('[AdEngine] No public campaigns endpoint, using fallback');
@@ -145,7 +145,7 @@ const BrandiaAdEngine = {
         try {
             // Appel API pour vérifier si une campagne existe
             const response = await fetch(
-                `${this.API_URL}/supplier/campaigns/active?supplier=${supplierId}&product=${productId}`
+                `${this.API_URL}/supplier/public/campaigns/active?supplier=${supplierId}&product=${productId}`
             );
             
             if (!response.ok) return null;
@@ -407,7 +407,7 @@ const BrandiaAdEngine = {
     // ============================================
     trackView: async function(campaignId) {
         try {
-            await fetch(`${this.API_URL}/supplier/campaigns/track-view`, {
+            await fetch(`${this.API_URL}/supplier/public/campaigns/view`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ campaign_id: campaignId })
@@ -420,7 +420,7 @@ const BrandiaAdEngine = {
 
     trackClick: async function(campaignId) {
         try {
-            await fetch(`${this.API_URL}/supplier/campaigns/track-click`, {
+            await fetch(`${this.API_URL}/supplier/public/campaigns/click`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ campaign_id: campaignId })

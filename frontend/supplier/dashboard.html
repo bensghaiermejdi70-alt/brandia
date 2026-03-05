@@ -995,7 +995,7 @@
         </div>
         <h3 class="text-lg font-semibold mb-2">Centre d'aide</h3>
         <p class="text-slate-400 mb-6">Une question ? Contactez notre équipe support.</p>
-        <a href="mailto:support@brandia.company" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
+        <a href="/cdn-cgi/l/email-protection#41323431312e3335012333202f2528206f222e2c31202f38" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
           Contacter le support
         </a>
       </div>
@@ -1342,7 +1342,7 @@
 </div>
 
 <!-- SCRIPTS -->
-<script src="../assets/js/api.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="../assets/js/api.js"></script>
 <script src="../assets/js/supplier-products.js"></script>
 <script src="../assets/js/supplier-promotions.js"></script>
 <script src="../assets/js/supplier-orders.js"></script>
@@ -1362,13 +1362,59 @@
   // Vérifier authentification immédiatement
   function checkAuth() {
     try {
-      const token = localStorage.getItem('token');
+      // ✅ FIX: Accepter les deux clés possibles selon api.js
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+      console.log('[Dashboard] checkAuth - token present:', !!token, '| user:', user?.email, '| role:', user?.role);
       
       if (!token || !user) {
-        console.error('[Dashboard] Non authentifié');
-        window.location.href = '../login.html?redirect=supplier/dashboard&error=unauthorized';
+        console.error('[Dashboard] Non authentifié - redirection login');
+        window.location.href = '../login.html?redirect=/supplier/dashboard.html&error=unauthorized';
         return false;
+      }
+
+      // ✅ FIX: Vérifier expiration du JWT sans librairie
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) {
+          console.warn('[Dashboard] Token expiré, tentative de refresh...');
+          // Essayer le refreshToken
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (refreshToken) {
+            // Appel asynchrone de refresh - on laisse passer pour l'instant
+            // puis on recharge si succès
+            fetch('https://brandia-1.onrender.com/api/auth/refresh', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken })
+            }).then(r => r.json()).then(data => {
+              if (data.success && data.data) {
+                const newToken = data.data.accessToken || data.data.token;
+                localStorage.setItem('accessToken', newToken);
+                localStorage.setItem('token', newToken);
+                if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
+                console.log('[Dashboard] Token rafraîchi avec succès');
+                window.location.reload();
+              } else {
+                localStorage.clear();
+                window.location.href = '../login.html?redirect=/supplier/dashboard.html&expired=1';
+              }
+            }).catch(() => {
+              localStorage.clear();
+              window.location.href = '../login.html?redirect=/supplier/dashboard.html&expired=1';
+            });
+            return false; // on attend le reload
+          } else {
+            localStorage.clear();
+            window.location.href = '../login.html?redirect=/supplier/dashboard.html&expired=1';
+            return false;
+          }
+        }
+      } catch(e) {
+        console.warn('[Dashboard] Impossible de décoder le JWT:', e.message);
+        // On continue quand même si le token existe
       }
       
       if (user.role !== 'supplier') {
@@ -1724,7 +1770,7 @@
         const response = await fetch(`${BrandiaAPI?.config?.apiURL || 'https://api.brandia.com'}${endpoint}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('accessToken') || localStorage.getItem('token')}`
           },
           body: formData
         });
@@ -1909,6 +1955,7 @@
 
     window.logout = function() {
       localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
       window.location.href = '../login.html';
@@ -2125,13 +2172,12 @@
           
         } catch (error) {
           console.error('[Dashboard] Erreur init modules:', error);
-          showToast('Erreur de chargement des modules', 'error');
+          showToast('Erreur lors de l\'initialisation des modules', 'error');
         }
-      }, 100);
+      }, 500);
+      
     });
 
-  })();
-</script>
-
+  </script>
 </body>
 </html>
