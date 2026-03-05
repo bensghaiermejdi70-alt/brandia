@@ -1,7 +1,6 @@
-
 // ============================================
-// BRANDIA API CLIENT - v3.8 FIX
-// Correction: Gestion du token supplier + redirect fix
+// BRANDIA API CLIENT - v3.9 FIX
+// Correction: Gestion du token supplier + redirect fix + race condition fix
 // ============================================
 
 (function() {
@@ -34,22 +33,34 @@
   
   const storage = {
     getToken: () => {
-      return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
+      // Essayer toutes les clés possibles
+      return localStorage.getItem('brandia_token') || 
+             localStorage.getItem('token') || 
+             localStorage.getItem('accessToken') ||
+             null;
     },
     
     setToken: (token) => {
-      localStorage.setItem('token', token);
+      if (!token) {
+        console.warn('[Storage] Tentative de sauvegarder un token vide');
+        return;
+      }
       localStorage.setItem('brandia_token', token);
+      localStorage.setItem('token', token);
+      localStorage.setItem('accessToken', token);
+      console.log('[Storage] Token sauvegardé dans 3 clés');
     },
     
     removeToken: () => {
-      localStorage.removeItem('token');
       localStorage.removeItem('brandia_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
     },
     
     getUser: () => {
       try {
-        const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+        const userStr = localStorage.getItem('brandia_user') || 
+                       localStorage.getItem('user');
         return userStr ? JSON.parse(userStr) : null;
       } catch {
         return null;
@@ -58,16 +69,15 @@
     
     setUser: (user) => {
       const userStr = JSON.stringify(user);
-      localStorage.setItem('user', userStr);
       localStorage.setItem('brandia_user', userStr);
+      localStorage.setItem('user', userStr);
     },
     
     clear: () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('brandia_token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('brandia_user');
-      localStorage.removeItem('refreshToken');
+      const keys = ['brandia_token', 'token', 'accessToken', 
+                   'brandia_user', 'user', 'refreshToken'];
+      keys.forEach(k => localStorage.removeItem(k));
+      console.log('[Storage] Toutes les données auth nettoyées');
     }
   };
 
@@ -111,6 +121,7 @@
         if (data.data.refreshToken) {
           localStorage.setItem('refreshToken', data.data.refreshToken);
         }
+        console.log('[Token Refresh] ✅ Succès');
         return data.data.accessToken;
       }
       
@@ -118,13 +129,13 @@
       
     } catch (error) {
       console.error('[Token Refresh] Failed:', error);
+      // 🔥 FIX CRITIQUE: Ne PAS rediriger ici, juste nettoyer
       storage.clear();
-      // 🔥 FIX: Ne pas rediriger automatiquement pour permettre la gestion d'erreur
       throw error;
     }
   }
 
-  // 🔥 apiFetch avec meilleure gestion des erreurs 401
+  // 🔥 apiFetch avec meilleure gestion des erreurs 401 et race conditions
   async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
@@ -152,19 +163,26 @@
 
       clearTimeout(timeoutId);
 
-      // 🔥 FIX: Gestion améliorée du 401
+      // 🔥 FIX CRITIQUE: Gestion améliorée du 401
       if (response.status === 401) {
         const errorData = await response.json().catch(() => ({}));
+        console.warn(`[API] 401 sur ${endpoint}:`, errorData.message || 'Token invalide');
         
-        // Si c'est une route supplier et qu'on a un token, essayer de refresh
-        if (endpoint.includes('/supplier/') && token) {
-          console.warn('[API] Token expired on supplier route, attempting refresh...');
+        // Si on a un token et que c'est une route protégée, essayer de refresh
+        if (token && (endpoint.includes('/supplier/') || endpoint.includes('/auth/me'))) {
+          console.log('[API] Tentative de refresh token...');
           
+          // Si un refresh est déjà en cours, attendre le résultat
           if (isRefreshing) {
-            return new Promise((resolve) => {
+            console.log('[API] Refresh déjà en cours, attente...');
+            return new Promise((resolve, reject) => {
               subscribeTokenRefresh((newToken) => {
-                headers['Authorization'] = `Bearer ${newToken}`;
-                resolve(fetch(url, { ...options, headers }).then(r => r.json()));
+                if (newToken) {
+                  headers['Authorization'] = `Bearer ${newToken}`;
+                  resolve(fetch(url, { ...options, headers }).then(r => r.json()));
+                } else {
+                  reject(new Error('Refresh failed'));
+                }
               });
             });
           }
@@ -175,6 +193,7 @@
             const newToken = await refreshAccessToken();
             onTokenRefreshed(newToken);
             
+            // Retry avec nouveau token
             headers['Authorization'] = `Bearer ${newToken}`;
             const retryResponse = await fetch(url, { ...options, headers });
             
@@ -185,21 +204,41 @@
             return await retryResponse.json();
             
           } catch (refreshError) {
-            console.error('[API] Refresh failed, redirecting to login');
-            storage.clear();
-            // 🔥 Redirection seulement si on est sur une page protégée
-            if (window.location.pathname.includes('supplier/')) {
-              window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
+            console.error('[API] Refresh échoué:', refreshError);
+            onTokenRefreshed(null); // Notifier les autres appels en attente
+            
+            // 🔥 FIX CRITIQUE: Ne rediriger que si on est sur une page protégée
+            // et éviter les boucles de redirection
+            const isProtectedPage = window.location.pathname.includes('supplier/') || 
+                                   window.location.pathname.includes('dashboard');
+            const alreadyRedirecting = window.location.search.includes('expired=1');
+            
+            if (isProtectedPage && !alreadyRedirecting) {
+              console.log('[API] Redirection vers login (page protégée, token invalide)');
+              // Utiliser replace pour éviter l'historique
+              setTimeout(() => {
+                window.location.replace(`/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`);
+              }, 100);
             }
-            throw refreshError;
+            
+            // Retourner une erreur contrôlée au lieu de throw
+            return { 
+              success: false, 
+              message: 'Session expirée', 
+              code: 'UNAUTHORIZED',
+              needsAuth: true 
+            };
           } finally {
             isRefreshing = false;
           }
         }
         
-        // Pour les autres routes, juste retourner l'erreur
-        storage.clear();
-        return { success: false, message: 'Session invalide', code: 'UNAUTHORIZED' };
+        // Pour les autres cas 401, juste retourner l'erreur
+        return { 
+          success: false, 
+          message: errorData.message || 'Non autorisé', 
+          code: 'UNAUTHORIZED' 
+        };
       }
 
       if (!response.ok) {
@@ -340,11 +379,14 @@
           const token = data.data.accessToken || data.data.token;
           const user = data.data.user || data.data;
           
+          // 🔥 Sauvegarder dans toutes les clés pour compatibilité
           storage.setToken(token);
           if (data.data.refreshToken) {
             localStorage.setItem('refreshToken', data.data.refreshToken);
           }
           storage.setUser(user);
+          
+          console.log('[Auth] Login réussi, token sauvegardé:', token.substring(0, 20) + '...');
         }
         return data;
       } catch (error) {
@@ -376,24 +418,32 @@
     },
 
     logout: () => {
+      // Appel API optionnel
       apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
       storage.clear();
       window.location.href = 'index.html';
     },
 
     isLoggedIn: () => !!storage.getToken(),
+    
+    getToken: () => storage.getToken(),
+    
     getUser: () => storage.getUser(),
+    
     getRole: () => storage.getUser()?.role || null,
+    
     isSupplier: () => {
       const user = storage.getUser();
       return user && user.role === 'supplier';
     },
-    // 🔥 NOUVEAU: Vérifier si token valide
+    
+    // 🔥 NOUVEAU: Vérifier si token valide côté serveur
     validateToken: async () => {
       try {
         const response = await apiFetch('/auth/me', { method: 'GET' });
         return response.success;
-      } catch {
+      } catch (error) {
+        console.error('[Auth] Validation token échouée:', error);
         return false;
       }
     }
@@ -693,7 +743,7 @@
       method: 'DELETE' 
     }),
 
-    // 🔥 CORRECTION: Routes campagnes corrigées
+    // Routes campagnes corrigées
     getCampaigns: async () => {
       try {
         return await apiFetch('/supplier/campaigns');
@@ -913,7 +963,7 @@
       baseURL: API_BASE, 
       isLocal: isLocal, 
       apiURL: API_BASE_URL,
-      version: '3.8-fixed'
+      version: '3.9-fixed'
     }
   };
 
@@ -923,5 +973,5 @@
   window.getUser = () => BrandiaAPI.Auth.getUser();
   window.isSupplier = () => BrandiaAPI.Auth.isSupplier();
 
-  console.log('[Brandia API] ✅ Loaded v3.8 - Supplier auth fixed');
+  console.log('[Brandia API] ✅ Loaded v3.9 - Auth & Race condition fixes');
 })();
