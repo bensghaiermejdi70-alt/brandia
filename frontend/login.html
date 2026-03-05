@@ -385,25 +385,71 @@
   <script src="assets/js/api.js"></script>
 
 <script>
-  // Vérifier si déjà connecté
-  function checkConnected() {
-    let user = null;
-    let token = null;
+  // 🔧 NOUVEAU: Fonction utilitaire pour stocker de manière robuste
+  function saveAuthData(token, user) {
+    try {
+      // Stocker dans tous les formats possibles pour compatibilité
+      const userStr = JSON.stringify(user);
+      
+      // Token
+      localStorage.setItem('token', token);
+      localStorage.setItem('brandia_token', token);
+      localStorage.setItem('accessToken', token);
+      
+      // User
+      localStorage.setItem('user', userStr);
+      localStorage.setItem('brandia_user', userStr);
+      
+      // SessionStorage aussi (pour certains cas de navigation privée)
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', userStr);
+      
+      console.log('[Auth] Données sauvegardées:', { token: token.substring(0,20)+'...', role: user.role });
+      return true;
+    } catch(e) {
+      console.error('[Auth] Erreur stockage:', e);
+      return false;
+    }
+  }
+
+  // 🔧 NOUVEAU: Fonction pour récupérer les données d'auth
+  function getAuthData() {
+    let token = localStorage.getItem('token') || 
+                localStorage.getItem('brandia_token') || 
+                localStorage.getItem('accessToken') ||
+                sessionStorage.getItem('token');
     
-    if (window.BrandiaAPI && BrandiaAPI.Auth) {
-      user = BrandiaAPI.Auth.getUser();
-      token = BrandiaAPI.Auth.isLoggedIn();
-    } else {
-      token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
-      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
-      if (userStr) {
-        try {
-          user = JSON.parse(userStr);
-        } catch(e) {}
+    let userStr = localStorage.getItem('user') || 
+                  localStorage.getItem('brandia_user') ||
+                  sessionStorage.getItem('user');
+    
+    let user = null;
+    if (userStr) {
+      try {
+        user = JSON.parse(userStr);
+      } catch(e) {
+        console.error('[Auth] Erreur parsing user:', e);
       }
     }
     
+    return { token, user };
+  }
+
+  // Vérifier si déjà connecté
+  function checkConnected() {
+    const { token, user } = getAuthData();
+    
     if (!token || !user) return false;
+    
+    // Vérifier si on vient d'une expiration de session
+    const urlParams = new URLSearchParams(window.location.search);
+    const expired = urlParams.get('expired');
+    
+    if (expired) {
+      // Si session expirée, ne pas montrer "déjà connecté"
+      console.log('[Auth] Session expirée détectée, forcer reconnexion');
+      return false;
+    }
     
     document.getElementById('connected-banner').classList.remove('hidden');
     document.getElementById('login-card').classList.add('hidden');
@@ -421,15 +467,18 @@
   }
 
   function logout() {
+    // Nettoyer tous les stockages
+    const keys = ['token', 'brandia_token', 'accessToken', 'user', 'brandia_user'];
+    keys.forEach(k => {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    });
+    
     if (window.BrandiaAPI && BrandiaAPI.Auth) {
       BrandiaAPI.Auth.logout();
-    } else {
-      localStorage.removeItem('token');
-      localStorage.removeItem('brandia_token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('brandia_user');
-      window.location.href = 'index.html';
     }
+    
+    window.location.reload();
   }
 
   function switchTab(type) {
@@ -470,7 +519,7 @@
     
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const expectedRole = document.getElementById('user-type').value; // 'client' ou 'supplier'
+    const expectedRole = document.getElementById('user-type').value;
     const btn = document.getElementById('submit-btn');
     const btnText = document.getElementById('btn-text');
     const btnIcon = document.getElementById('btn-icon');
@@ -488,10 +537,12 @@
       console.log('[Login] Tentative:', email, 'Type attendu:', expectedRole);
       
       let result;
-      if (window.BrandiaAPI && BrandiaAPI.Auth) {
+      
+      // Utiliser BrandiaAPI si disponible, sinon fallback
+      if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.login) {
         result = await BrandiaAPI.Auth.login(email, password);
       } else {
-        // Fallback si api.js pas chargé
+        // Fallback direct
         const base = window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://brandia-1.onrender.com';
         const res = await fetch(`${base}/api/auth/login`, {
           method: 'POST',
@@ -501,51 +552,52 @@
         result = await res.json();
       }
       
-      console.log('[Login] Résultat brut:', result);
+      console.log('[Login] Résultat:', result);
       
       if (result.success) {
         let user = result.data?.user || result.data;
+        let token = result.data?.accessToken || result.data?.token || result.token;
         
-        // 🔧 CORRECTION : Forcer le rôle basé sur l'email si le backend retourne le mauvais rôle
-        // Détection automatique du rôle basée sur l'email pour les comptes de test
+        if (!token) {
+          throw new Error('Token manquant dans la réponse');
+        }
+        
+        // 🔧 CORRECTION RÔLE: Forcer selon l'email si nécessaire
         if (email === 'supplier@brandia.com' || email.includes('supplier')) {
           if (user.role !== 'supplier') {
-            console.warn('[Login] Correction rôle: backend a retourné "' + user.role + '" mais email supplier détecté. Forçage vers "supplier"');
+            console.warn('[Login] Correction rôle: "' + user.role + '" → "supplier"');
             user.role = 'supplier';
           }
-        } else if (email === 'test@brandia.com' || (!email.includes('supplier') && !email.includes('admin'))) {
-          if (user.role !== 'client') {
-            console.warn('[Login] Correction rôle: backend a retourné "' + user.role + '" mais email client détecté. Forçage vers "client"');
-            user.role = 'client';
-          }
         }
         
-        // Vérifier que le rôle correspond à l'onglet sélectionné
+        // Vérifier cohérence avec l'onglet choisi
         if (user.role !== expectedRole) {
-          console.warn(`[Login] Attention: rôle "${user.role}" ne correspond pas à l'onglet "${expectedRole}"`);
-          // Optionnel: afficher un avertissement mais continuer quand même
+          console.warn(`[Login] Attention: rôle "${user.role}" ≠ onglet "${expectedRole}"`);
         }
         
-        // Sauvegarder avec le rôle corrigé
-        const token = result.data?.accessToken || result.data?.token || result.token;
-        if (token) {
-          localStorage.setItem('token', token);
-          localStorage.setItem('brandia_token', token);
+        // 🔧 SAUVEGARDE ROBUSTE: Tous les formats
+        const saved = saveAuthData(token, user);
+        if (!saved) {
+          throw new Error('Impossible de sauvegarder les données de connexion');
         }
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('brandia_user', JSON.stringify(user));
         
-        console.log('[Login] Utilisateur sauvegardé avec rôle:', user.role);
+        // 🔧 VÉRIFICATION: Confirmer que c'est bien sauvegardé
+        const check = getAuthData();
+        console.log('[Login] Vérification stockage:', { 
+          tokenOk: !!check.token, 
+          userOk: !!check.user,
+          role: check.user?.role 
+        });
         
         showSuccess('Connexion réussie ! Redirection...');
         
+        // Redirection après court délai pour afficher le message
         setTimeout(() => {
-          if (user.role === 'supplier') {
-            window.location.href = 'supplier/dashboard.html';
-          } else {
-            window.location.href = 'index.html';
-          }
+          const redirectUrl = user.role === 'supplier' ? 'supplier/dashboard.html' : 'index.html';
+          console.log('[Login] Redirection vers:', redirectUrl);
+          window.location.href = redirectUrl;
         }, 800);
+        
       } else {
         showError(result.message || 'Email ou mot de passe incorrect');
         btn.disabled = false;
@@ -554,21 +606,31 @@
       }
     } catch (err) {
       console.error('[Login] Erreur:', err);
-      showError('Erreur serveur. Vérifiez votre connexion.');
+      showError('Erreur: ' + (err.message || 'Problème de connexion'));
       btn.disabled = false;
       btnText.textContent = 'Se connecter';
       btnIcon.className = 'fas fa-arrow-right';
     }
   }
 
+  // Initialisation
   document.addEventListener('DOMContentLoaded', () => {
-    // Vérifier les paramètres d'URL pour les redirections
     const urlParams = new URLSearchParams(window.location.search);
-    const expired = urlParams.get('expired');
-    const redirect = urlParams.get('redirect');
     
-    if (expired) {
+    // Gérer message d'expiration
+    if (urlParams.get('expired')) {
       showError('Votre session a expiré. Veuillez vous reconnecter.');
+      // Nettoyer les données potentiellement corrompues
+      logout();
+      return;
+    }
+    
+    // Gérer redirection demandée
+    const redirect = urlParams.get('redirect');
+    if (redirect) {
+      console.log('[Login] Redirection demandée après connexion:', redirect);
+      // Stocker pour usage après login réussi
+      sessionStorage.setItem('redirect_after_login', redirect);
     }
     
     if (!checkConnected()) {
