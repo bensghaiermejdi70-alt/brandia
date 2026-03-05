@@ -1,6 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - v3.9 FIX
-// Correction: Gestion du token supplier + redirect fix + race condition fix
+// BRANDIA API CLIENT - v4.0 FIX
+// Correction: Gestion complète refresh token + pas de redirection forcée
 // ============================================
 
 (function() {
@@ -16,7 +16,6 @@
                   window.location.protocol === 'file:' ||
                   window.location.hostname.includes('github.io');
 
-  // URL corrigée - suppression des espaces
   const API_BASE = isLocal 
     ? 'http://localhost:4000' 
     : 'https://brandia-1.onrender.com';
@@ -33,7 +32,6 @@
   
   const storage = {
     getToken: () => {
-      // Essayer toutes les clés possibles
       return localStorage.getItem('brandia_token') || 
              localStorage.getItem('token') || 
              localStorage.getItem('accessToken') ||
@@ -41,14 +39,10 @@
     },
     
     setToken: (token) => {
-      if (!token) {
-        console.warn('[Storage] Tentative de sauvegarder un token vide');
-        return;
-      }
+      if (!token) return;
       localStorage.setItem('brandia_token', token);
       localStorage.setItem('token', token);
       localStorage.setItem('accessToken', token);
-      console.log('[Storage] Token sauvegardé dans 3 clés');
     },
     
     removeToken: () => {
@@ -77,65 +71,13 @@
       const keys = ['brandia_token', 'token', 'accessToken', 
                    'brandia_user', 'user', 'refreshToken'];
       keys.forEach(k => localStorage.removeItem(k));
-      console.log('[Storage] Toutes les données auth nettoyées');
     }
   };
 
   // ============================================
-  // FETCH API CORE
+  // FETCH API CORE - VERSION SIMPLIFIÉE
   // ============================================
 
-  let isRefreshing = false;
-  let refreshSubscribers = [];
-
-  function subscribeTokenRefresh(callback) {
-    refreshSubscribers.push(callback);
-  }
-
-  function onTokenRefreshed(newToken) {
-    refreshSubscribers.forEach(callback => callback(newToken));
-    refreshSubscribers = [];
-  }
-
-  async function refreshAccessToken() {
-    try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        throw new Error('No refresh token');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken })
-      });
-
-      if (!response.ok) {
-        throw new Error('Refresh failed');
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data?.accessToken) {
-        storage.setToken(data.data.accessToken);
-        if (data.data.refreshToken) {
-          localStorage.setItem('refreshToken', data.data.refreshToken);
-        }
-        console.log('[Token Refresh] ✅ Succès');
-        return data.data.accessToken;
-      }
-      
-      throw new Error('Invalid refresh response');
-      
-    } catch (error) {
-      console.error('[Token Refresh] Failed:', error);
-      // 🔥 FIX CRITIQUE: Ne PAS rediriger ici, juste nettoyer
-      storage.clear();
-      throw error;
-    }
-  }
-
-  // 🔥 apiFetch avec meilleure gestion des erreurs 401 et race conditions
   async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
@@ -163,81 +105,18 @@
 
       clearTimeout(timeoutId);
 
-      // 🔥 FIX CRITIQUE: Gestion améliorée du 401
+      // Gestion 401 - mais ne pas rediriger automatiquement
       if (response.status === 401) {
         const errorData = await response.json().catch(() => ({}));
         console.warn(`[API] 401 sur ${endpoint}:`, errorData.message || 'Token invalide');
         
-        // Si on a un token et que c'est une route protégée, essayer de refresh
-        if (token && (endpoint.includes('/supplier/') || endpoint.includes('/auth/me'))) {
-          console.log('[API] Tentative de refresh token...');
-          
-          // Si un refresh est déjà en cours, attendre le résultat
-          if (isRefreshing) {
-            console.log('[API] Refresh déjà en cours, attente...');
-            return new Promise((resolve, reject) => {
-              subscribeTokenRefresh((newToken) => {
-                if (newToken) {
-                  headers['Authorization'] = `Bearer ${newToken}`;
-                  resolve(fetch(url, { ...options, headers }).then(r => r.json()));
-                } else {
-                  reject(new Error('Refresh failed'));
-                }
-              });
-            });
-          }
-          
-          isRefreshing = true;
-          
-          try {
-            const newToken = await refreshAccessToken();
-            onTokenRefreshed(newToken);
-            
-            // Retry avec nouveau token
-            headers['Authorization'] = `Bearer ${newToken}`;
-            const retryResponse = await fetch(url, { ...options, headers });
-            
-            if (!retryResponse.ok) {
-              throw new Error(`Retry failed: ${retryResponse.status}`);
-            }
-            
-            return await retryResponse.json();
-            
-          } catch (refreshError) {
-            console.error('[API] Refresh échoué:', refreshError);
-            onTokenRefreshed(null); // Notifier les autres appels en attente
-            
-            // 🔥 FIX CRITIQUE: Ne rediriger que si on est sur une page protégée
-            // et éviter les boucles de redirection
-            const isProtectedPage = window.location.pathname.includes('supplier/') || 
-                                   window.location.pathname.includes('dashboard');
-            const alreadyRedirecting = window.location.search.includes('expired=1');
-            
-            if (isProtectedPage && !alreadyRedirecting) {
-              console.log('[API] Redirection vers login (page protégée, token invalide)');
-              // Utiliser replace pour éviter l'historique
-              setTimeout(() => {
-                window.location.replace(`/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`);
-              }, 100);
-            }
-            
-            // Retourner une erreur contrôlée au lieu de throw
-            return { 
-              success: false, 
-              message: 'Session expirée', 
-              code: 'UNAUTHORIZED',
-              needsAuth: true 
-            };
-          } finally {
-            isRefreshing = false;
-          }
-        }
-        
-        // Pour les autres cas 401, juste retourner l'erreur
+        // 🔥 FIX: Ne PAS tenter de refresh automatiquement sur 401
+        // Laisser l'appelant décider quoi faire
         return { 
           success: false, 
-          message: errorData.message || 'Non autorisé', 
-          code: 'UNAUTHORIZED' 
+          message: errorData.message || 'Session invalide', 
+          code: 'UNAUTHORIZED',
+          status: 401
         };
       }
 
@@ -260,6 +139,7 @@
     } catch (error) {
       clearTimeout(timeoutId);
       
+      // Retry une fois en cas d'erreur réseau
       if (retryCount === 0 && (error.name === 'TypeError' || error.name === 'AbortError')) {
         console.warn(`[API] Retry ${url}...`);
         await new Promise(r => setTimeout(r, 1500));
@@ -364,7 +244,7 @@
   };
 
   // ============================================
-  // AUTH API
+  // AUTH API - SIMPLIFIÉ
   // ============================================
   
   const AuthAPI = {
@@ -379,14 +259,14 @@
           const token = data.data.accessToken || data.data.token;
           const user = data.data.user || data.data;
           
-          // 🔥 Sauvegarder dans toutes les clés pour compatibilité
           storage.setToken(token);
+          storage.setUser(user);
+          
           if (data.data.refreshToken) {
             localStorage.setItem('refreshToken', data.data.refreshToken);
           }
-          storage.setUser(user);
           
-          console.log('[Auth] Login réussi, token sauvegardé:', token.substring(0, 20) + '...');
+          console.log('[Auth] Login OK, token:', token.substring(0, 20) + '...');
         }
         return data;
       } catch (error) {
@@ -406,10 +286,11 @@
           const user = data.data.user || data.data;
           
           storage.setToken(token);
+          storage.setUser(user);
+          
           if (data.data.refreshToken) {
             localStorage.setItem('refreshToken', data.data.refreshToken);
           }
-          storage.setUser(user);
         }
         return data;
       } catch (error) {
@@ -418,7 +299,6 @@
     },
 
     logout: () => {
-      // Appel API optionnel
       apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
       storage.clear();
       window.location.href = 'index.html';
@@ -437,13 +317,12 @@
       return user && user.role === 'supplier';
     },
     
-    // 🔥 NOUVEAU: Vérifier si token valide côté serveur
+    // Validation simple du token
     validateToken: async () => {
       try {
         const response = await apiFetch('/auth/me', { method: 'GET' });
         return response.success;
       } catch (error) {
-        console.error('[Auth] Validation token échouée:', error);
         return false;
       }
     }
@@ -605,7 +484,7 @@
   };
 
   // ============================================
-  // SUPPLIER API - CORRIGÉ
+  // SUPPLIER API
   // ============================================
   
   const SupplierAPI = {
@@ -743,7 +622,6 @@
       method: 'DELETE' 
     }),
 
-    // Routes campagnes corrigées
     getCampaigns: async () => {
       try {
         return await apiFetch('/supplier/campaigns');
@@ -796,7 +674,6 @@
       }
     },
 
-    // Routes publiques (pas d'auth requise)
     getPublicCampaign: async (supplierId, productId) => {
       try {
         const response = await fetch(`${API_BASE_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`, { 
@@ -947,10 +824,7 @@
   // ============================================
   
   window.BrandiaAPI = {
-    // Méthodes HTTP directes
     ...httpMethods,
-    
-    // Sous-objets
     Auth: AuthAPI,
     Products: ProductsAPI,
     Categories: CategoriesAPI,
@@ -963,15 +837,14 @@
       baseURL: API_BASE, 
       isLocal: isLocal, 
       apiURL: API_BASE_URL,
-      version: '3.9-fixed'
+      version: '4.0-simple'
     }
   };
 
-  // Fonctions globales
   window.logout = () => BrandiaAPI.Auth.logout();
   window.isLoggedIn = () => BrandiaAPI.Auth.isLoggedIn();
   window.getUser = () => BrandiaAPI.Auth.getUser();
   window.isSupplier = () => BrandiaAPI.Auth.isSupplier();
 
-  console.log('[Brandia API] ✅ Loaded v3.9 - Auth & Race condition fixes');
+  console.log('[Brandia API] ✅ Loaded v4.0 - Simplified, no auto-redirect');
 })();
