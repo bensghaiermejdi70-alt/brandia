@@ -1319,7 +1319,10 @@ const CONFIG = {
 // ==========================================
 function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
-  if (!container) return;
+  if (!container) {
+    console.log(`[${type}] ${message}`);
+    return;
+  }
   
   const toast = document.createElement('div');
   toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full ${
@@ -1361,25 +1364,16 @@ function formatPrice(amount) {
 // NAVIGATION
 // ==========================================
 function navigate(section) {
-  // Masquer toutes les sections
-  document.querySelectorAll('.section').forEach(s => {
-    s.classList.remove('active');
-  });
-  
-  // Désactiver tous les liens
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l => {
     l.classList.remove('active');
     l.classList.add('text-slate-400');
     l.classList.remove('text-white');
   });
   
-  // Activer la section cible
   const targetSection = document.getElementById(section);
-  if (targetSection) {
-    targetSection.classList.add('active');
-  }
+  if (targetSection) targetSection.classList.add('active');
   
-  // Activer le lien correspondant
   const targetNav = document.getElementById('nav-' + section);
   if (targetNav) {
     targetNav.classList.add('active');
@@ -1387,7 +1381,6 @@ function navigate(section) {
     targetNav.classList.add('text-white');
   }
   
-  // Mettre à jour le titre
   const titles = {
     'overview': { title: 'Tableau de bord', subtitle: 'Vue d\'ensemble de votre activité' },
     'products': { title: 'Mes produits', subtitle: 'Gérez votre catalogue produits' },
@@ -1408,10 +1401,8 @@ function navigate(section) {
   if (pageTitle) pageTitle.textContent = titleInfo.title;
   if (pageSubtitle) pageSubtitle.textContent = titleInfo.subtitle;
   
-  // Sauvegarder la section active
   localStorage.setItem('dashboard_last_section', section);
   
-  // Charger les données spécifiques
   if (section === 'overview') loadOverviewStats();
 }
 
@@ -1433,6 +1424,12 @@ async function checkAuth() {
     
     const user = JSON.parse(userStr);
     
+    // 🔥 CORRECTION: Normaliser l'ID utilisateur
+    if (!user.id && user._id) {
+      user.id = user._id;
+      localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user));
+    }
+    
     if (user.role !== 'supplier') {
       console.error('[Auth] User is not a supplier:', user.role);
       alert('Accès réservé aux fournisseurs');
@@ -1440,13 +1437,12 @@ async function checkAuth() {
       return false;
     }
     
-    // Afficher le nom de l'utilisateur
     const userNameEl = document.getElementById('user-name');
     if (userNameEl) {
       userNameEl.textContent = user.first_name || user.company_name || user.email || 'Fournisseur';
     }
     
-    console.log('[Auth] Authentication successful');
+    console.log('[Auth] ✅ Authentication successful, user:', user.id);
     return true;
     
   } catch (error) {
@@ -1458,12 +1454,16 @@ async function checkAuth() {
 
 function redirectToLogin(reason) {
   const currentPath = window.location.pathname;
-  const params =   new URLSearchParams({ redirect: currentPath, expired: '1', reason: reason });
+  const params = new URLSearchParams({ 
+    redirect: currentPath, 
+    expired: '1', 
+    reason: reason 
+  });
   window.location.href = `../login.html?${params.toString()}`;
 }
 
 // ==========================================
-// GESTION DES MODALS
+// MODALS
 // ==========================================
 function openProductModal(productId = null) {
   if (window.SupplierProducts && SupplierProducts.openModal) {
@@ -1483,17 +1483,13 @@ function closeProductModal() {
     modal.classList.add('hidden');
     document.body.style.overflow = '';
   }
-  // Reset form
   const form = document.getElementById('product-form');
   if (form) form.reset();
-  // Hide preview
   const previewContainer = document.getElementById('image-preview-container');
   if (previewContainer) previewContainer.classList.add('hidden');
 }
 
 function openCampaignModal(campaignId = null) {
-  console.log('[Dashboard] openCampaignModal called', campaignId);
-  
   if (window.SupplierCampaigns && SupplierCampaigns.openModal) {
     SupplierCampaigns.openModal(campaignId);
   } else {
@@ -1511,25 +1507,14 @@ function closeCampaignModal() {
     modal.classList.add('hidden');
     document.body.style.overflow = '';
   }
-  // Reset state
-  if (window.SupplierCampaigns) {
-    SupplierCampaigns.state.editingCampaignId = null;
-    SupplierCampaigns.state.uploadedMedia = null;
-    SupplierCampaigns.state.selectedProducts = [];
-    SupplierCampaigns.state.targetMode = 'all';
-  }
 }
 
 function closePreviewModal() {
   const modal = document.getElementById('preview-modal');
-  if (modal) {
-    modal.classList.add('hidden');
-  }
+  if (modal) modal.classList.add('hidden');
 }
 
 function saveCampaignForm() {
-  console.log('[Dashboard] saveCampaignForm called');
-  
   if (window.SupplierCampaigns && SupplierCampaigns.save) {
     SupplierCampaigns.save();
   } else {
@@ -1538,16 +1523,13 @@ function saveCampaignForm() {
 }
 
 // ==========================================
-// FONCTIONS DE FILTRE ET ACTION
+// ACTIONS
 // ==========================================
 function filterOrders(filter) {
   if (window.SupplierOrders && SupplierOrders.setFilter) {
     SupplierOrders.setFilter(filter);
-  } else {
-    console.error('[Dashboard] SupplierOrders not available');
   }
   
-  // Update UI
   document.querySelectorAll('.order-tab').forEach(btn => {
     btn.classList.remove('active', 'bg-indigo-600', 'text-white');
     btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
@@ -1592,13 +1574,8 @@ function handleImageSelect(event) {
       preview.src = e.target.result;
       container.classList.remove('hidden');
     }
-    
-    // Store for upload
     if (window.SupplierProducts) {
-      SupplierProducts.state.uploadedImage = {
-        file: file,
-        localUrl: e.target.result
-      };
+      SupplierProducts.state.uploadedImage = { file: file, localUrl: e.target.result };
     }
   };
   reader.readAsDataURL(file);
@@ -1664,9 +1641,6 @@ function openPromotionModal() {
   }
 }
 
-// ==========================================
-// FONCTIONS PAIEMENTS ET PROFIL
-// ==========================================
 function requestPayout() {
   if (window.SupplierPayments && SupplierPayments.requestPayout) {
     SupplierPayments.requestPayout();
@@ -1709,7 +1683,7 @@ function handleLogoUpload(event) {
 }
 
 // ==========================================
-// STATISTIQUES ET CHARTS
+// STATS & CHARTS
 // ==========================================
 async function loadOverviewStats() {
   try {
@@ -1725,24 +1699,25 @@ async function loadOverviewStats() {
       const data = response.data;
       const stats = data.stats || data;
       
-      // Update KPIs
       updateElement('kpi-revenue', formatPrice(stats.totalSales || stats.total_revenue || 0));
       updateElement('kpi-orders', stats.totalOrders || stats.total_orders || 0);
       updateElement('kpi-products', stats.activeProducts || stats.products_count || 0);
       updateElement('kpi-total-products', stats.totalProducts || stats.products_count || 0);
       updateElement('kpi-balance', formatPrice(stats.balance || 0));
       
-      // Update sidebar counters
       const productCountEl = document.getElementById('product-count');
       if (productCountEl) {
         productCountEl.textContent = stats.products_count || 0;
         productCountEl.classList.remove('hidden');
       }
       
-      // Initialize chart if data available
       if (typeof Chart !== 'undefined' && data.salesData) {
         initSalesChart(data.salesData);
       }
+    } else if (response?.code === 'UNAUTHORIZED') {
+      console.error('[Dashboard] Unauthorized - redirecting to login');
+      showToast('Session expirée, reconnexion nécessaire', 'error');
+      setTimeout(() => redirectToLogin('session_expired'), 2000);
     }
   } catch (error) {
     console.error('[Dashboard] Error loading stats:', error);
@@ -1787,33 +1762,14 @@ function initSalesChart(data) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.9)',
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
-          borderColor: 'rgba(148, 163, 184, 0.2)',
-          borderWidth: 1,
-          padding: 12,
-          cornerRadius: 8
-        }
-      },
+      plugins: { legend: { display: false } },
       scales: {
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(148, 163, 184, 0.1)' },
-          ticks: {
-            color: '#94a3b8',
-            callback: function(value) {
-              return value + '€';
-            }
-          }
+        y: { 
+          beginAtZero: true, 
+          grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
+          ticks: { color: '#94a3b8', callback: (value) => value + '€' } 
         },
-        x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
-        }
+        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
       }
     }
   });
@@ -1822,7 +1778,6 @@ function initSalesChart(data) {
 function updateSalesChart() {
   const period = document.getElementById('sales-period')?.value || '7';
   showToast(`Période mise à jour: ${period} jours`, 'info');
-  // Reload stats with new period
   loadOverviewStats();
 }
 
@@ -1842,7 +1797,7 @@ function updateAnalyticsPeriod(period) {
 }
 
 // ==========================================
-// ACTIONS GLOBALES
+// GLOBAL ACTIONS
 // ==========================================
 function quickAction() {
   const actions = ['products', 'orders', 'advertising', 'promotions'];
@@ -1857,14 +1812,11 @@ function showNotifications() {
 }
 
 function logout() {
-  // Clear all auth data
   localStorage.removeItem(CONFIG.TOKEN_KEY);
   localStorage.removeItem(CONFIG.USER_KEY);
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   localStorage.removeItem('refreshToken');
-  
-  // Redirect to login
   window.location.href = '../login.html';
 }
 
@@ -1874,34 +1826,19 @@ function logout() {
 async function initDashboard() {
   console.log('[Dashboard] Initializing...');
   
-  // Check authentication first
   const isAuth = await checkAuth();
   if (!isAuth) return;
   
-  // Restore last section or default to overview
   const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
   navigate(lastSection);
   
-  // Setup event listeners
-  setupEventListeners();
-  
-  // Initialize modules with delay to ensure scripts are loaded
-  setTimeout(() => {
-    initializeModules();
-  }, 500);
-}
-
-function setupEventListeners() {
-  // Close modals on backdrop click
+  // Event listeners
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
     backdrop.addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeProductModal();
-      }
+      if (e.target === this) closeProductModal();
     });
   });
   
-  // Close modals with Escape key
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeCampaignModal();
@@ -1910,15 +1847,10 @@ function setupEventListeners() {
     }
   });
   
-  // Global search
-  const globalSearch = document.getElementById('global-search');
-  if (globalSearch) {
-    globalSearch.addEventListener('input', debounce(function(e) {
-      const query = e.target.value.toLowerCase();
-      // Implement global search logic
-      console.log('[Search] Query:', query);
-    }, 300));
-  }
+  // Initialize modules
+  setTimeout(() => {
+    initializeModules();
+  }, 500);
 }
 
 function initializeModules() {
@@ -1928,39 +1860,24 @@ function initializeModules() {
     if (window.SupplierProducts) {
       console.log('[Dashboard] Init SupplierProducts');
       SupplierProducts.init();
-    } else {
-      console.warn('[Dashboard] SupplierProducts not loaded');
     }
-    
     if (window.SupplierOrders) {
       console.log('[Dashboard] Init SupplierOrders');
       SupplierOrders.init();
-    } else {
-      console.warn('[Dashboard] SupplierOrders not loaded');
     }
-    
     if (window.SupplierCampaigns) {
       console.log('[Dashboard] Init SupplierCampaigns');
       SupplierCampaigns.init();
-    } else {
-      console.warn('[Dashboard] SupplierCampaigns not loaded');
     }
-    
     if (window.SupplierPayments) {
       console.log('[Dashboard] Init SupplierPayments');
       SupplierPayments.init();
-    } else {
-      console.warn('[Dashboard] SupplierPayments not loaded');
     }
-    
     if (window.SupplierPromotions) {
       console.log('[Dashboard] Init SupplierPromotions');
       SupplierPromotions.init();
-    } else {
-      console.warn('[Dashboard] SupplierPromotions not loaded');
     }
     
-    // Load overview stats
     loadOverviewStats();
     
   } catch (error) {
@@ -1969,29 +1886,12 @@ function initializeModules() {
   }
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-// ==========================================
-// DÉMARRAGE
-// ==========================================
-// Attendre que le DOM soit prêt
+// Start
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initDashboard);
 } else {
-  // DOM déjà prêt
   initDashboard();
 }
 </script>
-
 </body>
 </html>

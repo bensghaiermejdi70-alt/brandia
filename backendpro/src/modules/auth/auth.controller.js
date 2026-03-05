@@ -1,5 +1,6 @@
 // ============================================
-// AUTH CONTROLLER - v2.4 CORRIGÉ
+// AUTH CONTROLLER - v2.5 CORRIGÉ
+// Fix: JWT payload structure - 'id' field instead of 'userId'
 // ============================================
 
 const bcrypt = require('bcrypt');
@@ -11,8 +12,9 @@ const db = require('../../config/db');
 
 // Générer les tokens JWT
 const generateTokens = (user) => {
+    // 🔥 CORRECTION: Utiliser 'id' au lieu de 'userId' pour compatibilité
     const payload = {
-        userId: user.id,
+        id: user.id,           // 🔥 Changé de userId à id
         email: user.email,
         role: user.role
     };
@@ -211,7 +213,10 @@ const AuthController = {
 
             const decoded = jwt.verify(refreshToken, env.JWT.REFRESH_SECRET);
             
-            const user = await AuthModel.findById(decoded.userId);
+            // 🔥 CORRECTION: Utiliser decoded.id au lieu de decoded.userId
+            const userId = decoded.id || decoded.userId;
+            
+            const user = await AuthModel.findById(userId);
             if (!user) {
                 return res.status(401).json({
                     success: false,
@@ -244,12 +249,14 @@ const AuthController = {
     // ==========================================
     getMe: async (req, res) => {
         try {
-            const userId = req.user?.userId || req.user?.id;
+            // 🔥 CORRECTION: Accepter les deux formats pour la rétrocompatibilité
+            const userId = req.user?.id || req.user?.userId;
 
             if (!userId) {
                 return res.status(400).json({
                     success: false,
-                    message: 'ID utilisateur manquant'
+                    message: 'ID utilisateur manquant',
+                    debug: req.user ? { availableFields: Object.keys(req.user) } : 'no user in req'
                 });
             }
 
@@ -311,7 +318,8 @@ const AuthController = {
     // ==========================================
     logout: async (req, res) => {
         try {
-            const userId = req.user?.userId || req.user?.id;
+            // 🔥 CORRECTION: Accepter les deux formats
+            const userId = req.user?.id || req.user?.userId;
             logger.info(`✅ Déconnexion: ${userId}`);
             
             res.json({

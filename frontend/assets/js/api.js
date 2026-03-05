@@ -1,6 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - v4.1 FIX
-// Correction: Token storage, 401 handling, request retry
+// BRANDIA API CLIENT - v4.2 FIX
+// Correction: Token storage keys, user data structure
 // ============================================
 
 (function() {
@@ -32,71 +32,74 @@
   console.log(`[Brandia API] URL: ${API_BASE_URL}`);
 
   // ============================================
-  // STORAGE UNIFIÉ - CLÉS CONSISTANTES
+  // STORAGE - CLÉS UNIFIÉES
   // ============================================
   
-  const TOKEN_KEYS = ['brandia_token', 'token', 'accessToken'];
-  const USER_KEYS = ['brandia_user', 'user'];
+  const TOKEN_KEY = 'brandia_token';  // Clé principale
+  const USER_KEY = 'brandia_user';    // Clé principale
   
   const storage = {
     getToken: () => {
-      for (const key of TOKEN_KEYS) {
-        const token = localStorage.getItem(key);
-        if (token) return token;
-      }
-      return null;
+      // Chercher dans plusieurs clés pour compatibilité
+      return localStorage.getItem(TOKEN_KEY) || 
+             localStorage.getItem('token') || 
+             localStorage.getItem('accessToken') ||
+             null;
     },
     
     setToken: (token) => {
       if (!token) return;
-      // Synchroniser toutes les clés pour compatibilité
-      TOKEN_KEYS.forEach(key => localStorage.setItem(key, token));
+      // Stocker dans toutes les clés pour compatibilité maximale
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem('token', token);
+      localStorage.setItem('accessToken', token);
+      console.log('[Storage] Token stored, length:', token.length);
     },
     
     removeToken: () => {
-      TOKEN_KEYS.forEach(key => localStorage.removeItem(key));
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
     },
     
     getUser: () => {
-      for (const key of USER_KEYS) {
-        const userStr = localStorage.getItem(key);
-        if (userStr) {
-          try {
-            return JSON.parse(userStr);
-          } catch (e) {
-            continue;
-          }
-        }
+      try {
+        const userStr = localStorage.getItem(USER_KEY) || localStorage.getItem('user');
+        return userStr ? JSON.parse(userStr) : null;
+      } catch (e) {
+        console.error('[Storage] Error parsing user:', e);
+        return null;
       }
-      return null;
     },
     
     setUser: (user) => {
+      if (!user) return;
       const userStr = JSON.stringify(user);
-      USER_KEYS.forEach(key => localStorage.setItem(key, userStr));
+      localStorage.setItem(USER_KEY, userStr);
+      localStorage.setItem('user', userStr);
+      console.log('[Storage] User stored:', user.email || user.id);
     },
     
     clear: () => {
-      [...TOKEN_KEYS, ...USER_KEYS, 'refreshToken'].forEach(key => {
-        localStorage.removeItem(key);
-      });
+      storage.removeToken();
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
     }
   };
 
   // ============================================
-  // FETCH API CORE - AVEC RETRY ET GESTION 401
+  // FETCH API CORE
   // ============================================
 
   async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    // Préparer les headers
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers
     };
 
-    // Ajouter le token si disponible
     const token = storage.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -107,9 +110,6 @@
 
     try {
       console.log(`[API] ${options.method || 'GET'} ${url}`);
-      if (token) {
-        console.log(`[API] Token present: ${token.substring(0, 20)}...`);
-      }
       
       const response = await fetch(url, {
         ...options,
@@ -119,24 +119,22 @@
 
       clearTimeout(timeoutId);
 
-      // Gestion 401 - Token invalide ou expiré
+      // Gestion 401
       if (response.status === 401) {
         const errorData = await response.json().catch(() => ({}));
         console.warn(`[API] 401 on ${endpoint}:`, errorData);
         
-        // Si c'est la première tentative et qu'on a un token, essayer de rafraîchir
-        if (retryCount === 0 && token && errorData.code === 'TOKEN_EXPIRED') {
-          console.log('[API] Attempting token refresh...');
-          // TODO: Implémenter le refresh token ici
-          // Pour l'instant, on redirige vers login
-        }
-        
-        // Rediriger vers login si pas de retry possible
-        if (retryCount >= MAX_RETRIES) {
-          console.error('[API] Max retries reached, redirecting to login');
-          storage.clear();
-          window.location.href = `../login.html?expired=1&reason=token_invalid`;
-          return { success: false, message: 'Session expirée', code: 'SESSION_EXPIRED' };
+        // Ne pas retry sur 401, c'est une auth invalide
+        if (errorData.code === 'INVALID_TOKEN' || errorData.code === 'TOKEN_EXPIRED') {
+          // Optionnel: rediriger vers login
+          if (endpoint !== '/auth/me') {  // Éviter boucle infinie
+            console.log('[API] Token invalid, clearing auth...');
+            storage.clear();
+            // Redirection douce après un délai
+            setTimeout(() => {
+              window.location.href = '../login.html?expired=1';
+            }, 2000);
+          }
         }
         
         return { 
@@ -147,18 +145,6 @@
         };
       }
 
-      // Gestion 403 - Forbidden
-      if (response.status === 403) {
-        const errorData = await response.json().catch(() => ({}));
-        return {
-          success: false,
-          message: errorData.message || 'Accès refusé',
-          code: 'FORBIDDEN',
-          status: 403
-        };
-      }
-
-      // Erreurs serveur
       if (!response.ok) {
         let errorData;
         try {
@@ -169,26 +155,22 @@
         throw new Error(errorData.message || `Erreur ${response.status}`);
       }
 
-      // Réponse vide (204)
       if (response.status === 204) {
         return { success: true };
       }
 
-      // Parse JSON
-      const data = await response.json();
-      return data;
+      return await response.json();
 
     } catch (error) {
       clearTimeout(timeoutId);
       
-      // Retry en cas d'erreur réseau
+      // Retry sur erreur réseau uniquement
       if (retryCount < MAX_RETRIES && (error.name === 'TypeError' || error.name === 'AbortError')) {
-        console.warn(`[API] Network error, retrying ${retryCount + 1}/${MAX_RETRIES}...`);
+        console.warn(`[API] Network error, retry ${retryCount + 1}/${MAX_RETRIES}...`);
         await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
         return apiFetch(endpoint, options, retryCount + 1);
       }
 
-      // Formater le message d'erreur
       let userMessage = error.message;
       if (error.name === 'AbortError') {
         userMessage = 'Le serveur met trop de temps à répondre.';
@@ -249,8 +231,7 @@
           
           xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
-              const percent = Math.round((e.loaded / e.total) * 100);
-              onProgress(percent);
+              onProgress(Math.round((e.loaded / e.total) * 100));
             }
           });
           
@@ -287,7 +268,7 @@
   };
 
   // ============================================
-  // AUTH API - CORRIGÉ
+  // AUTH API
   // ============================================
   
   const AuthAPI = {
@@ -303,8 +284,13 @@
           const user = data.data.user || data.data;
           
           if (!token) {
-            console.error('[Auth] No token in response:', data);
+            console.error('[Auth] No token in response');
             return { success: false, message: 'Token manquant dans la réponse' };
+          }
+          
+          // 🔥 IMPORTANT: S'assurer que user.id existe
+          if (!user.id && user._id) {
+            user.id = user._id;  // Normaliser MongoDB _id vers id
           }
           
           storage.setToken(token);
@@ -314,7 +300,7 @@
             localStorage.setItem('refreshToken', data.data.refreshToken);
           }
           
-          console.log('[Auth] ✅ Login successful, token stored');
+          console.log('[Auth] ✅ Login successful, user:', user.id);
         }
         return data;
       } catch (error) {
@@ -334,6 +320,8 @@
           const token = data.data.accessToken || data.data.token;
           const user = data.data.user || data.data;
           
+          if (user._id && !user.id) user.id = user._id;
+          
           storage.setToken(token);
           storage.setUser(user);
           
@@ -348,13 +336,8 @@
     },
 
     logout: () => {
-      // Appeler l'API de logout (optionnel)
       apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
-      
-      // Toujours clear le storage local
       storage.clear();
-      
-      // Rediriger
       window.location.href = '../login.html';
     },
 
@@ -376,21 +359,11 @@
     isSupplier: () => {
       const user = storage.getUser();
       return user && user.role === 'supplier';
-    },
-    
-    // Validation du token avec le backend
-    validateToken: async () => {
-      try {
-        const response = await apiFetch('/auth/me', { method: 'GET' });
-        return response.success;
-      } catch (error) {
-        return false;
-      }
     }
   };
 
   // ============================================
-  // SUPPLIER API - CORRIGÉ
+  // SUPPLIER API
   // ============================================
   
   const SupplierAPI = {
@@ -416,12 +389,7 @@
         console.error('[SupplierAPI] getStats error:', e);
         return { 
           success: false, 
-          data: { 
-            totalSales: 0, 
-            totalOrders: 0, 
-            productsCount: 0, 
-            balance: 0 
-          },
+          data: { totalSales: 0, totalOrders: 0, productsCount: 0, balance: 0 },
           message: e.message
         }; 
       } 
@@ -612,7 +580,7 @@
       }
     },
 
-    // Routes publiques (pas besoin de token)
+    // Routes publiques
     getPublicCampaign: async (supplierId, productId) => {
       try {
         const response = await fetch(`${API_BASE_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`, { 
@@ -672,7 +640,7 @@
   };
 
   // ============================================
-  // EXPORT FINAL
+  // EXPORT
   // ============================================
   
   window.BrandiaAPI = {
@@ -684,15 +652,14 @@
       baseURL: API_BASE, 
       isLocal: isLocal, 
       apiURL: API_BASE_URL,
-      version: '4.1'
+      version: '4.2'
     }
   };
 
-  // Exposer les fonctions utilitaires globalement
   window.logout = () => BrandiaAPI.Auth.logout();
   window.isLoggedIn = () => BrandiaAPI.Auth.isLoggedIn();
   window.getUser = () => BrandiaAPI.Auth.getUser();
   window.isSupplier = () => BrandiaAPI.Auth.isSupplier();
 
-  console.log('[Brandia API] ✅ Loaded v4.1');
+  console.log('[Brandia API] ✅ Loaded v4.2');
 })();

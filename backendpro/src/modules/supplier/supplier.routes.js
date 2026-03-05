@@ -1,6 +1,6 @@
 ﻿// ============================================
-// SUPPLIER.ROUTES.JS - v8.1 PRODUCTION
-// Fix: Auth middleware placement, public routes first, better error handling
+// SUPPLIER.ROUTES.JS - v8.2 PRODUCTION
+// Fix: JWT token structure validation, flexible ID field
 // ============================================
 
 const express = require('express');
@@ -9,7 +9,7 @@ const router = express.Router();
 const supplierController = require('./supplier.controller');
 
 // ============================================
-// AUTH MIDDLEWARE LOCAL - ROBUSTE
+// AUTH MIDDLEWARE - VERSION ROBUSTE
 // ============================================
 
 const authenticate = (req, res, next) => {
@@ -17,7 +17,7 @@ const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
     
     if (!authHeader) {
-      console.log('[Auth] No authorization header');
+      console.log('[Auth] ❌ No authorization header');
       return res.status(401).json({ 
         success: false, 
         message: 'Token manquant',
@@ -27,7 +27,7 @@ const authenticate = (req, res, next) => {
 
     const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      console.log('[Auth] Invalid authorization format:', authHeader.substring(0, 20));
+      console.log('[Auth] ❌ Invalid authorization format:', authHeader.substring(0, 30));
       return res.status(401).json({ 
         success: false, 
         message: 'Format de token invalide (Bearer requis)',
@@ -50,23 +50,37 @@ const authenticate = (req, res, next) => {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, jwtSecret);
     
-    // Vérifier que c'est bien un fournisseur
-    if (!decoded.id) {
+    console.log('[Auth] Token decoded:', JSON.stringify(decoded, null, 2));
+    
+    // 🔥 CORRECTION: Accepter plusieurs formats de token
+    // Certains tokens ont 'id', d'autres ont 'userId', d'autres ont '_id'
+    const userId = decoded.id || decoded.userId || decoded._id || decoded.sub;
+    
+    if (!userId) {
+      console.error('[Auth] ❌ No ID found in token. Available fields:', Object.keys(decoded));
       return res.status(401).json({
         success: false,
         message: 'Token invalide: ID manquant',
-        code: 'INVALID_TOKEN'
+        code: 'INVALID_TOKEN',
+        debug: isDev ? { availableFields: Object.keys(decoded) } : undefined
       });
     }
     
-    // Stocker les infos utilisateur pour les contrôleurs
-    req.user = decoded;
-    console.log('[Auth] ✅ Authenticated user:', decoded.id, 'Role:', decoded.role);
+    // Normaliser le token pour les contrôleurs
+    req.user = {
+      id: userId,
+      email: decoded.email,
+      role: decoded.role,
+      // Garder les champs originaux aussi
+      ...decoded
+    };
+    
+    console.log('[Auth] ✅ Authenticated user:', userId, 'Role:', decoded.role);
     
     next();
     
   } catch (error) {
-    console.error('[Auth] Token verification failed:', error.message);
+    console.error('[Auth] ❌ Token verification failed:', error.message);
     
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
@@ -92,25 +106,16 @@ const authenticate = (req, res, next) => {
   }
 };
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // ============================================
 // 🔥 ROUTES PUBLIQUES (Ad Engine - PAS D'AUTH)
 // ============================================
 
-// Ces routes sont accessibles sans authentification pour l'affichage des publicités
-
-// Récupérer toutes les campagnes actives (pour round-robin)
 router.get('/public/campaigns', supplierController.getPublicCampaigns);
-
-// Vérifier campagne active pour un produit spécifique
 router.get('/public/campaigns/active', supplierController.getActiveCampaignForProduct);
-
-// Tracking des vues (appelé après 3s de visionnage)
 router.post('/public/campaigns/view', supplierController.trackCampaignView);
-
-// Tracking des clics
 router.post('/public/campaigns/click', supplierController.trackCampaignClick);
-
-// Paramètres publics d'un fournisseur
 router.get('/public/ad-settings', supplierController.getPublicAdSettings);
 
 console.log('[Supplier Routes] ✅ Public routes registered');
@@ -118,9 +123,6 @@ console.log('[Supplier Routes] ✅ Public routes registered');
 // ============================================
 // 🔥 ROUTES PROTÉGÉES (Dashboard Fournisseur)
 // ============================================
-
-// Toutes les routes suivantes nécessitent authentification
-// Le middleware authenticate est appliqué à toutes les routes suivantes
 
 // --- STATS ---
 router.get('/stats', authenticate, supplierController.getStats);
@@ -136,7 +138,7 @@ router.get('/orders', authenticate, supplierController.getOrders);
 router.get('/orders/:id', authenticate, supplierController.getOrderById);
 router.put('/orders/:id/status', authenticate, supplierController.updateOrderStatus);
 
-// --- CAMPAIGNS (CRUD) ---
+// --- CAMPAIGNS ---
 router.get('/campaigns', authenticate, supplierController.getCampaigns);
 router.get('/campaigns/limit', authenticate, supplierController.getCampaignLimit);
 router.post('/campaigns', authenticate, supplierController.createCampaign);
