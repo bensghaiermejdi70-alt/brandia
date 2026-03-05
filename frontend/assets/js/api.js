@@ -33,17 +33,19 @@
   
   const storage = {
     getToken: () => {
-      return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
+      return localStorage.getItem('token') || localStorage.getItem('brandia_token') || localStorage.getItem('accessToken') || null;
     },
     
     setToken: (token) => {
       localStorage.setItem('token', token);
       localStorage.setItem('brandia_token', token);
+      localStorage.setItem('accessToken', token);
     },
     
     removeToken: () => {
       localStorage.removeItem('token');
       localStorage.removeItem('brandia_token');
+      localStorage.removeItem('accessToken');
     },
     
     getUser: () => {
@@ -64,6 +66,7 @@
     clear: () => {
       localStorage.removeItem('token');
       localStorage.removeItem('brandia_token');
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       localStorage.removeItem('brandia_user');
       localStorage.removeItem('refreshToken');
@@ -118,7 +121,7 @@
     } catch (error) {
       console.error('[Token Refresh] Failed:', error);
       storage.clear();
-      window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
+      window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&msg=session_expired`;
       throw error;
     }
   }
@@ -191,7 +194,7 @@
         
         storage.clear();
         if (!window.location.pathname.includes('login')) {
-          window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
+          window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&msg=session_expired`;
         }
         return { success: false, message: 'Session invalide' };
       }

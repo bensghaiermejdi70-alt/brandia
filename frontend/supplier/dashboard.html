@@ -1359,50 +1359,33 @@
 (function() {
   'use strict';
   
-  // Vérifier authentification immédiatement
+  // Vérifier authentification — aligné sur les clés exactes de api.js
   function checkAuth() {
     try {
-      // ✅ Lire le token sous toutes les clés possibles
-      const token = localStorage.getItem('accessToken') 
-                 || localStorage.getItem('token') 
-                 || localStorage.getItem('brandia_token');
+      // api.js (storage) utilise exactement 'token' et 'brandia_token'
+      const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
       const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
-      const user = userStr ? JSON.parse(userStr) : null;
+      let user = null;
+      try { user = userStr ? JSON.parse(userStr) : null; } catch(e) {}
 
       console.log('[Dashboard] checkAuth — token:', !!token, '| role:', user?.role);
 
       if (!token || !user) {
         console.warn('[Dashboard] Pas de session — redirect login');
-        window.location.href = '../login.html?redirect=/supplier/dashboard.html';
+        window.location.href = '../login.html?redirect=%2Fsupplier%2Fdashboard.html';
         return false;
       }
 
-      // ✅ Vérifier expiration JWT (sans boucle infinie)
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const now = Math.floor(Date.now() / 1000);
-        if (payload.exp && payload.exp < now) {
-          console.warn('[Dashboard] Token JWT expiré — nettoyage session');
-          // Nettoyer TOUT et rediriger SANS expired=1 pour éviter la boucle
-          ['token','accessToken','brandia_token','user','brandia_user','refreshToken'].forEach(k => localStorage.removeItem(k));
-          window.location.href = '../login.html?redirect=/supplier/dashboard.html&msg=session_expired';
-          return false;
-        }
-      } catch(e) {
-        console.warn('[Dashboard] JWT decode warning (ignoré):', e.message);
-        // Token opaque ou non-JWT : on continue sans bloquer
-      }
-
       if (user.role !== 'supplier') {
-        console.error('[Dashboard] Rôle non autorisé:', user.role);
-        alert('Accès réservé aux fournisseurs');
+        console.error('[Dashboard] Role non autorise:', user.role);
+        alert('Acces reserve aux fournisseurs');
         window.location.href = '../index.html';
         return false;
       }
 
       // Afficher nom utilisateur
-      const userNameEl = document.getElementById('user-name');
-      if (userNameEl) userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
+      const el = document.getElementById('user-name');
+      if (el) el.textContent = user.first_name || user.email || 'Fournisseur';
 
       return true;
     } catch (error) {
