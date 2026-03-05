@@ -995,7 +995,7 @@
         </div>
         <h3 class="text-lg font-semibold mb-2">Centre d'aide</h3>
         <p class="text-slate-400 mb-6">Une question ? Contactez notre équipe support.</p>
-        <a href="/cdn-cgi/l/email-protection#41323431312e3335012333202f2528206f222e2c31202f38" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
+        <a href="/cdn-cgi/l/email-protection#6c1f191c1c031e182c0e1e0d0208050d420f03011c0d0215" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
           Contacter le support
         </a>
       </div>
@@ -1359,34 +1359,40 @@
 (function() {
   'use strict';
   
-  // Vérifier authentification — aligné sur les clés exactes de api.js
+  // Vérifier authentification — lit les clés exactes de api.js storage
   function checkAuth() {
     try {
-      // api.js (storage) utilise exactement 'token' et 'brandia_token'
-      const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
-      const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+      // api.js storage écrit sous 'token', 'brandia_token', 'accessToken'
+      const token = localStorage.getItem('token')
+                 || localStorage.getItem('brandia_token')
+                 || localStorage.getItem('accessToken');
+      
       let user = null;
-      try { user = userStr ? JSON.parse(userStr) : null; } catch(e) {}
+      try {
+        const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
+        user = userStr ? JSON.parse(userStr) : null;
+      } catch(e) {}
 
       console.log('[Dashboard] checkAuth — token:', !!token, '| role:', user?.role);
-
+      
       if (!token || !user) {
-        console.warn('[Dashboard] Pas de session — redirect login');
+        console.warn('[Dashboard] Pas de session valide en localStorage');
         window.location.href = '../login.html?redirect=%2Fsupplier%2Fdashboard.html';
         return false;
       }
-
+      
       if (user.role !== 'supplier') {
-        console.error('[Dashboard] Role non autorise:', user.role);
-        alert('Acces reserve aux fournisseurs');
+        console.error('[Dashboard] Accès refusé - rôle:', user.role);
+        alert('Accès réservé aux fournisseurs');
         window.location.href = '../index.html';
         return false;
       }
-
-      // Afficher nom utilisateur
-      const el = document.getElementById('user-name');
-      if (el) el.textContent = user.first_name || user.email || 'Fournisseur';
-
+      
+      const userNameEl = document.getElementById('user-name');
+      if (userNameEl) {
+        userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
+      }
+      
       return true;
     } catch (error) {
       console.error('[Dashboard] Erreur checkAuth:', error);
@@ -1727,7 +1733,7 @@
         const response = await fetch(`${BrandiaAPI?.config?.apiURL || 'https://api.brandia.com'}${endpoint}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken') || localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
           body: formData
         });
@@ -1912,7 +1918,6 @@
 
     window.logout = function() {
       localStorage.removeItem('token');
-      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
       window.location.href = '../login.html';
@@ -2000,6 +2005,13 @@
         
         const response = await BrandiaAPI.Supplier.getStats();
         console.log('[Dashboard] Stats:', response);
+
+        // FIX: Si 401, le serveur Render se réveille — NE PAS rediriger, réessayer dans 5s
+        if (response?.status === 401 || (!response?.success && response?.message === 'Session invalide')) {
+          console.warn('[Dashboard] Stats: 401 reçu — serveur en réveil, retry dans 5s...');
+          setTimeout(loadOverviewStats, 5000);
+          return;
+        }
         
         if (response?.success && response.data) {
           const data = response.data;
@@ -2015,7 +2027,7 @@
           }
         }
       } catch (error) {
-        console.error('[Dashboard] Erreur stats:', error);
+        console.error('[Dashboard] Erreur stats (ignorée):', error);
       }
     }
 
@@ -2132,7 +2144,6 @@
           showToast('Erreur lors de l\'initialisation des modules', 'error');
         }
       }, 500);
-      
     });
 
   </script>

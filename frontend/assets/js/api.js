@@ -45,7 +45,6 @@
     removeToken: () => {
       localStorage.removeItem('token');
       localStorage.removeItem('brandia_token');
-      localStorage.removeItem('accessToken');
     },
     
     getUser: () => {
@@ -120,8 +119,8 @@
       
     } catch (error) {
       console.error('[Token Refresh] Failed:', error);
+      // Ne pas rediriger ici — laisser apiFetch gérer selon le contexte
       storage.clear();
-      window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&msg=session_expired`;
       throw error;
     }
   }
@@ -192,11 +191,11 @@
           }
         }
         
-        storage.clear();
-        if (!window.location.pathname.includes('login')) {
-          window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&msg=session_expired`;
-        }
-        return { success: false, message: 'Session invalide' };
+        // FIX: Ne pas effacer le storage ni rediriger automatiquement sur un 401
+        // Le serveur Render (free tier) peut retourner 401 temporairement au réveil.
+        // On retourne l'erreur — la page décide quoi faire.
+        console.warn('[API] 401 reçu - session invalide ou serveur en réveil');
+        return { success: false, message: 'Session invalide', status: 401 };
       }
 
       if (!response.ok) {
