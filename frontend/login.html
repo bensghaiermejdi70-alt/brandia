@@ -395,7 +395,7 @@
       user = BrandiaAPI.Auth.getUser();
       token = BrandiaAPI.Auth.isLoggedIn();
     } else {
-      token = localStorage.getItem('token') || localStorage.getItem('brandia_token') || localStorage.getItem('accessToken');
+      token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
       const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
       if (userStr) {
         try {
@@ -427,8 +427,6 @@
     } else {
       localStorage.removeItem('token');
       localStorage.removeItem('brandia_token');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       localStorage.removeItem('brandia_user');
       window.location.href = 'index.html';
@@ -507,8 +505,6 @@
           const user = result.data.user || result.data;
           localStorage.setItem('token', token);
           localStorage.setItem('brandia_token', token);
-          localStorage.setItem('accessToken', token);
-          if (result.data.refreshToken) { localStorage.setItem('refreshToken', result.data.refreshToken); }
           localStorage.setItem('user', JSON.stringify(user));
           localStorage.setItem('brandia_user', JSON.stringify(user));
         }
@@ -518,25 +514,9 @@
       
       if (result.success) {
         const user = result.data?.user || result.data;
-        const tk = result.data?.accessToken || result.data?.token;
-        if (tk) {
-          localStorage.setItem('token', tk);
-          localStorage.setItem('brandia_token', tk);
-          localStorage.setItem('accessToken', tk);
-        }
-        if (result.data?.refreshToken) localStorage.setItem('refreshToken', result.data.refreshToken);
-        if (user) {
-          localStorage.setItem('user', JSON.stringify(user));
-          localStorage.setItem('brandia_user', JSON.stringify(user));
-        }
         showSuccess('Connexion réussie ! Redirection...');
+        
         setTimeout(() => {
-          const params = new URLSearchParams(window.location.search);
-          const redirectTo = params.get('redirect');
-          if (redirectTo && !redirectTo.includes('expired') && !redirectTo.includes('session_expired')) {
-            window.location.href = redirectTo;
-            return;
-          }
           if (user?.role === 'supplier') {
             window.location.href = 'supplier/dashboard.html';
           } else {
