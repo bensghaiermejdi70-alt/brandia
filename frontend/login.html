@@ -281,6 +281,17 @@
     }
 
     .hidden { display: none !important; }
+    
+    .debug-info {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: #818cf8;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
@@ -363,6 +374,8 @@
 
       <div id="error-msg" class="alert alert-error hidden"></div>
       <div id="success-msg" class="alert alert-success hidden"></div>
+      
+      <div id="debug-info" class="debug-info hidden"></div>
     </div>
 
     <div class="test-accounts">
@@ -385,72 +398,136 @@
   <script src="assets/js/api.js"></script>
 
 <script>
-  // 🔧 NOUVEAU: Fonction utilitaire pour stocker de manière robuste
+  // ==========================================
+  // CONFIGURATION & UTILITAIRES
+  // ==========================================
+  
+  const CONFIG = {
+    TOKEN_KEY: 'brandia_token',
+    USER_KEY: 'brandia_user',
+    TOKEN_FALLBACK: 'token',
+    USER_FALLBACK: 'user'
+  };
+
+  // 🔧 FONCTION CRITIQUE: Sauvegarde robuste du token
   function saveAuthData(token, user) {
     try {
-      // Stocker dans tous les formats possibles pour compatibilité
+      if (!token) {
+        console.error('[Auth] Tentative de sauvegarde sans token');
+        return false;
+      }
+      
       const userStr = JSON.stringify(user);
       
-      // Token
-      localStorage.setItem('token', token);
-      localStorage.setItem('brandia_token', token);
-      localStorage.setItem('accessToken', token);
+      // Sauvegarder dans TOUTES les clés possibles pour compatibilité maximale
+      const tokenKeys = [CONFIG.TOKEN_KEY, CONFIG.TOKEN_FALLBACK, 'accessToken'];
+      const userKeys = [CONFIG.USER_KEY, CONFIG.USER_FALLBACK];
       
-      // User
-      localStorage.setItem('user', userStr);
-      localStorage.setItem('brandia_user', userStr);
+      tokenKeys.forEach(key => {
+        try {
+          localStorage.setItem(key, token);
+          console.log(`[Auth] Token sauvegardé dans "${key}"`);
+        } catch(e) {
+          console.warn(`[Auth] Impossible de sauvegarder dans "${key}":`, e);
+        }
+      });
       
-      // SessionStorage aussi (pour certains cas de navigation privée)
-      sessionStorage.setItem('token', token);
-      sessionStorage.setItem('user', userStr);
+      userKeys.forEach(key => {
+        try {
+          localStorage.setItem(key, userStr);
+          console.log(`[Auth] User sauvegardé dans "${key}"`);
+        } catch(e) {
+          console.warn(`[Auth] Impossible de sauvegarder user dans "${key}":`, e);
+        }
+      });
       
-      console.log('[Auth] Données sauvegardées:', { token: token.substring(0,20)+'...', role: user.role });
-      return true;
+      // Vérification immédiate
+      const verifyToken = localStorage.getItem(CONFIG.TOKEN_KEY);
+      const verifyUser = localStorage.getItem(CONFIG.USER_KEY);
+      
+      if (verifyToken === token && verifyUser === userStr) {
+        console.log('[Auth] ✅ Vérification OK - Données sauvegardées correctement');
+        return true;
+      } else {
+        console.error('[Auth] ❌ Échec vérification stockage');
+        return false;
+      }
+      
     } catch(e) {
-      console.error('[Auth] Erreur stockage:', e);
+      console.error('[Auth] Erreur critique sauvegarde:', e);
       return false;
     }
   }
 
-  // 🔧 NOUVEAU: Fonction pour récupérer les données d'auth
+  // 🔧 FONCTION CRITIQUE: Récupération robuste
   function getAuthData() {
-    let token = localStorage.getItem('token') || 
-                localStorage.getItem('brandia_token') || 
-                localStorage.getItem('accessToken') ||
-                sessionStorage.getItem('token');
-    
-    let userStr = localStorage.getItem('user') || 
-                  localStorage.getItem('brandia_user') ||
-                  sessionStorage.getItem('user');
-    
-    let user = null;
-    if (userStr) {
-      try {
-        user = JSON.parse(userStr);
-      } catch(e) {
-        console.error('[Auth] Erreur parsing user:', e);
+    try {
+      // Essayer toutes les clés possibles
+      const token = localStorage.getItem(CONFIG.TOKEN_KEY) || 
+                    localStorage.getItem(CONFIG.TOKEN_FALLBACK) ||
+                    localStorage.getItem('accessToken');
+      
+      const userStr = localStorage.getItem(CONFIG.USER_KEY) || 
+                      localStorage.getItem(CONFIG.USER_FALLBACK);
+      
+      let user = null;
+      if (userStr) {
+        try {
+          user = JSON.parse(userStr);
+        } catch(e) {
+          console.error('[Auth] Erreur parsing user:', e);
+        }
       }
+      
+      return { token, user };
+    } catch(e) {
+      console.error('[Auth] Erreur récupération:', e);
+      return { token: null, user: null };
     }
-    
-    return { token, user };
   }
 
-  // Vérifier si déjà connecté
+  // 🔧 FONCTION CRITIQUE: Nettoyage complet
+  function clearAuthData() {
+    const allKeys = [
+      CONFIG.TOKEN_KEY, CONFIG.TOKEN_FALLBACK, 'accessToken',
+      CONFIG.USER_KEY, CONFIG.USER_FALLBACK, 'user',
+      'refreshToken', 'brandia_refreshToken'
+    ];
+    
+    allKeys.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+    
+    console.log('[Auth] Données nettoyées');
+  }
+
+  // ==========================================
+  // GESTION DE L'INTERFACE
+  // ==========================================
+
   function checkConnected() {
     const { token, user } = getAuthData();
-    
-    if (!token || !user) return false;
-    
-    // Vérifier si on vient d'une expiration de session
     const urlParams = new URLSearchParams(window.location.search);
     const expired = urlParams.get('expired');
+    const error = urlParams.get('error');
     
-    if (expired) {
-      // Si session expirée, ne pas montrer "déjà connecté"
-      console.log('[Auth] Session expirée détectée, forcer reconnexion');
+    console.log('[Auth] Check - Token présent:', !!token, 'User:', user?.email, 'Expired:', expired);
+    
+    // Si session expirée ou erreur auth, forcer reconnexion
+    if (expired || error === 'unauthorized') {
+      console.log('[Auth] Session expirée détectée dans URL');
+      clearAuthData();
+      showError('Votre session a expiré. Veuillez vous reconnecter.');
       return false;
     }
     
+    if (!token || !user) {
+      console.log('[Auth] Pas de session active');
+      return false;
+    }
+    
+    // Afficher bannière "déjà connecté"
     document.getElementById('connected-banner').classList.remove('hidden');
     document.getElementById('login-card').classList.add('hidden');
     document.getElementById('connected-email').textContent = user.email;
@@ -463,22 +540,25 @@
       btn.href = 'index.html';
       btn.textContent = 'Continuer';
     }
+    
+    // Auto-redirect après 2 secondes si pas d'erreur dans URL
+    if (!expired && !error) {
+      setTimeout(() => {
+        console.log('[Auth] Auto-redirection...');
+        window.location.href = btn.href;
+      }, 2000);
+    }
+    
     return true;
   }
 
   function logout() {
-    // Nettoyer tous les stockages
-    const keys = ['token', 'brandia_token', 'accessToken', 'user', 'brandia_user'];
-    keys.forEach(k => {
-      localStorage.removeItem(k);
-      sessionStorage.removeItem(k);
-    });
-    
-    if (window.BrandiaAPI && BrandiaAPI.Auth) {
+    clearAuthData();
+    if (window.BrandiaAPI?.Auth?.logout) {
       BrandiaAPI.Auth.logout();
+    } else {
+      window.location.reload();
     }
-    
-    window.location.reload();
   }
 
   function switchTab(type) {
@@ -513,9 +593,18 @@
     document.getElementById('error-msg').classList.add('hidden');
   }
 
+  function showDebug(msg) {
+    const debugEl = document.getElementById('debug-info');
+    debugEl.textContent = msg;
+    debugEl.classList.remove('hidden');
+  }
+
+  // ==========================================
+  // LOGIN PRINCIPAL
+  // ==========================================
+
   async function handleLogin(e) {
     e.preventDefault();
-    document.getElementById('error-msg').classList.add('hidden');
     
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -529,20 +618,24 @@
       return;
     }
     
+    // UI Loading
     btn.disabled = true;
     btnText.textContent = 'Connexion...';
     btnIcon.className = 'fas fa-spinner spinner';
+    document.getElementById('error-msg').classList.add('hidden');
+    
+    console.log('[Login] Tentative:', email, 'Rôle attendu:', expectedRole);
     
     try {
-      console.log('[Login] Tentative:', email, 'Type attendu:', expectedRole);
-      
       let result;
       
-      // Utiliser BrandiaAPI si disponible, sinon fallback
-      if (window.BrandiaAPI && BrandiaAPI.Auth && BrandiaAPI.Auth.login) {
+      // Utiliser BrandiaAPI si disponible
+      if (window.BrandiaAPI?.Auth?.login) {
+        console.log('[Login] Utilisation BrandiaAPI.Auth.login');
         result = await BrandiaAPI.Auth.login(email, password);
       } else {
         // Fallback direct
+        console.log('[Login] Fallback fetch direct');
         const base = window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://brandia-1.onrender.com';
         const res = await fetch(`${base}/api/auth/login`, {
           method: 'POST',
@@ -552,90 +645,103 @@
         result = await res.json();
       }
       
-      console.log('[Login] Résultat:', result);
+      console.log('[Login] Réponse API:', result);
       
-      if (result.success) {
-        let user = result.data?.user || result.data;
-        let token = result.data?.accessToken || result.data?.token || result.token;
-        
-        if (!token) {
-          throw new Error('Token manquant dans la réponse');
-        }
-        
-        // 🔧 CORRECTION RÔLE: Forcer selon l'email si nécessaire
-        if (email === 'supplier@brandia.com' || email.includes('supplier')) {
-          if (user.role !== 'supplier') {
-            console.warn('[Login] Correction rôle: "' + user.role + '" → "supplier"');
-            user.role = 'supplier';
-          }
-        }
-        
-        // Vérifier cohérence avec l'onglet choisi
-        if (user.role !== expectedRole) {
-          console.warn(`[Login] Attention: rôle "${user.role}" ≠ onglet "${expectedRole}"`);
-        }
-        
-        // 🔧 SAUVEGARDE ROBUSTE: Tous les formats
-        const saved = saveAuthData(token, user);
-        if (!saved) {
-          throw new Error('Impossible de sauvegarder les données de connexion');
-        }
-        
-        // 🔧 VÉRIFICATION: Confirmer que c'est bien sauvegardé
-        const check = getAuthData();
-        console.log('[Login] Vérification stockage:', { 
-          tokenOk: !!check.token, 
-          userOk: !!check.user,
-          role: check.user?.role 
-        });
-        
-        showSuccess('Connexion réussie ! Redirection...');
-        
-        // Redirection après court délai pour afficher le message
-        setTimeout(() => {
-          const redirectUrl = user.role === 'supplier' ? 'supplier/dashboard.html' : 'index.html';
-          console.log('[Login] Redirection vers:', redirectUrl);
-          window.location.href = redirectUrl;
-        }, 800);
-        
-      } else {
-        showError(result.message || 'Email ou mot de passe incorrect');
-        btn.disabled = false;
-        btnText.textContent = 'Se connecter';
-        btnIcon.className = 'fas fa-arrow-right';
+      if (!result.success) {
+        throw new Error(result.message || 'Email ou mot de passe incorrect');
       }
+      
+      // Extraire données
+      let user = result.data?.user || result.data;
+      let token = result.data?.accessToken || result.data?.token || result.token;
+      
+      if (!token) {
+        throw new Error('Token manquant dans la réponse serveur');
+      }
+      
+      if (!user) {
+        throw new Error('Données utilisateur manquantes');
+      }
+      
+      console.log('[Login] Token reçu:', token.substring(0, 20) + '...');
+      console.log('[Login] User reçu:', user.email, 'Rôle:', user.role);
+      
+      // 🔧 CORRECTION CRITIQUE: Forcer le rôle supplier si email correspond
+      if (email === 'supplier@brandia.com' || email.includes('supplier')) {
+        if (user.role !== 'supplier') {
+          console.warn(`[Login] Correction rôle: "${user.role}" → "supplier"`);
+          user.role = 'supplier';
+        }
+      }
+      
+      // Vérifier cohérence rôle/onglet
+      if (user.role !== expectedRole) {
+        console.warn(`[Login] Attention: rôle "${user.role}" ≠ onglet "${expectedRole}"`);
+      }
+      
+      // 🔧 SAUVEGARDE CRITIQUE: Sauvegarder AVANT toute redirection
+      console.log('[Login] Sauvegarde des données...');
+      const saved = saveAuthData(token, user);
+      
+      if (!saved) {
+        throw new Error('Échec de la sauvegarde des données de connexion');
+      }
+      
+      // 🔧 VÉRIFICATION: Confirmer que tout est bien stocké
+      const verify = getAuthData();
+      if (!verify.token || !verify.user) {
+        throw new Error('Vérification échouée - données non accessibles');
+      }
+      
+      console.log('[Login] ✅ Succès - Redirection dans 1s...');
+      showSuccess('Connexion réussie ! Redirection...');
+      
+      // Déterminer destination
+      const redirectUrl = user.role === 'supplier' ? 'supplier/dashboard.html' : 'index.html';
+      
+      // Attendre un peu pour que le localStorage soit bien flushé
+      setTimeout(() => {
+        console.log('[Login] Redirection vers:', redirectUrl);
+        window.location.href = redirectUrl;
+      }, 1000);
+      
     } catch (err) {
       console.error('[Login] Erreur:', err);
-      showError('Erreur: ' + (err.message || 'Problème de connexion'));
+      showError(err.message || 'Erreur de connexion');
+      
       btn.disabled = false;
       btnText.textContent = 'Se connecter';
       btnIcon.className = 'fas fa-arrow-right';
     }
   }
 
-  // Initialisation
+  // ==========================================
+  // INITIALISATION
+  // ==========================================
+
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Login] Page chargée');
+    
     const urlParams = new URLSearchParams(window.location.search);
-    
-    // Gérer message d'expiration
-    if (urlParams.get('expired')) {
-      showError('Votre session a expiré. Veuillez vous reconnecter.');
-      // Nettoyer les données potentiellement corrompues
-      logout();
-      return;
-    }
-    
-    // Gérer redirection demandée
     const redirect = urlParams.get('redirect');
+    const expired = urlParams.get('expired');
+    
+    // Stocker la redirection demandée pour après login
     if (redirect) {
-      console.log('[Login] Redirection demandée après connexion:', redirect);
-      // Stocker pour usage après login réussi
       sessionStorage.setItem('redirect_after_login', redirect);
+      console.log('[Login] Redirection après login stockée:', redirect);
     }
     
-    if (!checkConnected()) {
-      document.getElementById('email').focus();
+    // Vérifier si déjà connecté (mais pas si expired=1)
+    if (!expired) {
+      checkConnected();
+    } else {
+      console.log('[Login] Paramètre expired=1, forcer reconnexion');
+      clearAuthData();
     }
+    
+    // Focus sur email
+    document.getElementById('email').focus();
   });
 </script>
 </body>
