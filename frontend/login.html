@@ -395,7 +395,7 @@
       user = BrandiaAPI.Auth.getUser();
       token = BrandiaAPI.Auth.isLoggedIn();
     } else {
-      token = localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('brandia_token');
+      token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
       const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
       if (userStr) {
         try {
@@ -426,7 +426,6 @@
       BrandiaAPI.Auth.logout();
     } else {
       localStorage.removeItem('token');
-      localStorage.removeItem('accessToken');
       localStorage.removeItem('brandia_token');
       localStorage.removeItem('user');
       localStorage.removeItem('brandia_user');
@@ -505,11 +504,7 @@
           const token = result.data.accessToken || result.data.token;
           const user = result.data.user || result.data;
           localStorage.setItem('token', token);
-          localStorage.setItem('accessToken', token);
           localStorage.setItem('brandia_token', token);
-          if (result.data.refreshToken) {
-            localStorage.setItem('refreshToken', result.data.refreshToken);
-          }
           localStorage.setItem('user', JSON.stringify(user));
           localStorage.setItem('brandia_user', JSON.stringify(user));
         }
@@ -519,32 +514,9 @@
       
       if (result.success) {
         const user = result.data?.user || result.data;
-
-        // ✅ FIX: Toujours stocker sous les deux clés, quelle que soit la source
-        const token = result.data?.accessToken || result.data?.token;
-        if (token) {
-          localStorage.setItem('token', token);
-          localStorage.setItem('accessToken', token);
-          localStorage.setItem('brandia_token', token);
-        }
-        if (result.data?.refreshToken) {
-          localStorage.setItem('refreshToken', result.data.refreshToken);
-        }
-        if (user) {
-          localStorage.setItem('user', JSON.stringify(user));
-          localStorage.setItem('brandia_user', JSON.stringify(user));
-        }
-
         showSuccess('Connexion réussie ! Redirection...');
         
         setTimeout(() => {
-          // ✅ FIX: Respecter le paramètre ?redirect= s'il existe, sans expired=1
-          const params = new URLSearchParams(window.location.search);
-          const redirectParam = params.get('redirect');
-          if (redirectParam && !redirectParam.includes('expired')) {
-            window.location.href = redirectParam;
-            return;
-          }
           if (user?.role === 'supplier') {
             window.location.href = 'supplier/dashboard.html';
           } else {
