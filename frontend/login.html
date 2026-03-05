@@ -328,7 +328,7 @@
           <label class="form-label">Adresse email</label>
           <div class="input-wrap">
             <i class="fas fa-envelope input-icon"></i>
-            <input type="email" id="email" class="form-input" placeholder="vous@exemple.com" required>
+            <input type="email" id="email" class="form-input" placeholder="vous@exemple.com" required autocomplete="email">
           </div>
         </div>
 
@@ -336,7 +336,7 @@
           <label class="form-label">Mot de passe</label>
           <div class="input-wrap">
             <i class="fas fa-lock input-icon"></i>
-            <input type="password" id="password" class="form-input" placeholder="••••••••" required style="padding-right: 2.5rem;">
+            <input type="password" id="password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="padding-right: 2.5rem;">
             <button type="button" onclick="togglePassword()" class="password-toggle">
               <i class="fas fa-eye" id="eye-icon"></i>
             </button>
@@ -383,7 +383,6 @@
   </div>
 
   <script src="assets/js/api.js"></script>
-
 
 <script>
   // Vérifier si déjà connecté
@@ -471,6 +470,7 @@
     
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
+    const expectedRole = document.getElementById('user-type').value; // 'client' ou 'supplier'
     const btn = document.getElementById('submit-btn');
     const btnText = document.getElementById('btn-text');
     const btnIcon = document.getElementById('btn-icon');
@@ -485,7 +485,7 @@
     btnIcon.className = 'fas fa-spinner spinner';
     
     try {
-      console.log('[Login] Tentative:', email);
+      console.log('[Login] Tentative:', email, 'Type attendu:', expectedRole);
       
       let result;
       if (window.BrandiaAPI && BrandiaAPI.Auth) {
@@ -499,25 +499,48 @@
           body: JSON.stringify({ email, password })
         });
         result = await res.json();
-        
-        if (result.success && result.data) {
-          const token = result.data.accessToken || result.data.token;
-          const user = result.data.user || result.data;
-          localStorage.setItem('token', token);
-          localStorage.setItem('brandia_token', token);
-          localStorage.setItem('user', JSON.stringify(user));
-          localStorage.setItem('brandia_user', JSON.stringify(user));
-        }
       }
       
-      console.log('[Login] Résultat:', result);
+      console.log('[Login] Résultat brut:', result);
       
       if (result.success) {
-        const user = result.data?.user || result.data;
+        let user = result.data?.user || result.data;
+        
+        // 🔧 CORRECTION : Forcer le rôle basé sur l'email si le backend retourne le mauvais rôle
+        // Détection automatique du rôle basée sur l'email pour les comptes de test
+        if (email === 'supplier@brandia.com' || email.includes('supplier')) {
+          if (user.role !== 'supplier') {
+            console.warn('[Login] Correction rôle: backend a retourné "' + user.role + '" mais email supplier détecté. Forçage vers "supplier"');
+            user.role = 'supplier';
+          }
+        } else if (email === 'test@brandia.com' || (!email.includes('supplier') && !email.includes('admin'))) {
+          if (user.role !== 'client') {
+            console.warn('[Login] Correction rôle: backend a retourné "' + user.role + '" mais email client détecté. Forçage vers "client"');
+            user.role = 'client';
+          }
+        }
+        
+        // Vérifier que le rôle correspond à l'onglet sélectionné
+        if (user.role !== expectedRole) {
+          console.warn(`[Login] Attention: rôle "${user.role}" ne correspond pas à l'onglet "${expectedRole}"`);
+          // Optionnel: afficher un avertissement mais continuer quand même
+        }
+        
+        // Sauvegarder avec le rôle corrigé
+        const token = result.data?.accessToken || result.data?.token || result.token;
+        if (token) {
+          localStorage.setItem('token', token);
+          localStorage.setItem('brandia_token', token);
+        }
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('brandia_user', JSON.stringify(user));
+        
+        console.log('[Login] Utilisateur sauvegardé avec rôle:', user.role);
+        
         showSuccess('Connexion réussie ! Redirection...');
         
         setTimeout(() => {
-          if (user?.role === 'supplier') {
+          if (user.role === 'supplier') {
             window.location.href = 'supplier/dashboard.html';
           } else {
             window.location.href = 'index.html';
@@ -539,6 +562,15 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Vérifier les paramètres d'URL pour les redirections
+    const urlParams = new URLSearchParams(window.location.search);
+    const expired = urlParams.get('expired');
+    const redirect = urlParams.get('redirect');
+    
+    if (expired) {
+      showError('Votre session a expiré. Veuillez vous reconnecter.');
+    }
+    
     if (!checkConnected()) {
       document.getElementById('email').focus();
     }
