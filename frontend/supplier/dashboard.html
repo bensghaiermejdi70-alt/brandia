@@ -1,25 +1,17 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">   
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fournisseur - Brandia</title>
-  <script src="https://cdn.tailwindcss.com "></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js "></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .campaign-actions {
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .campaign-row:hover .campaign-actions {
-      opacity: 1;
-    }
-    @media (max-width: 768px) {
-      .campaign-actions {
-        opacity: 1 !important;
-      }
-    }
+    /* [Tous vos styles CSS restent identiques] */
+    .campaign-actions { opacity: 0; transition: opacity 0.2s; }
+    .campaign-row:hover .campaign-actions { opacity: 1; }
+    @media (max-width: 768px) { .campaign-actions { opacity: 1 !important; } }
     :root {
       --bg-primary: #0f172a;
       --bg-secondary: #1e293b;
@@ -27,17 +19,14 @@
       --accent: #6366f1;
       --accent-hover: #4f46e5;
     }
-    
     body { 
       background-color: var(--bg-primary); 
       color: #f1f5f9; 
       font-family: 'Inter', system-ui, sans-serif;
     }
-    
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-secondary); }
     ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 3px; }
-    
     .nav-link { 
       transition: all 0.2s ease;
       position: relative;
@@ -61,7 +50,6 @@
       background: #818cf8;
       border-radius: 0 2px 2px 0;
     }
-    
     .section { 
       display: none; 
       animation: fadeIn 0.3s ease-out;
@@ -73,7 +61,6 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
     .card {
       background: var(--bg-secondary);
       border: 1px solid rgba(148, 163, 184, 0.1);
@@ -84,7 +71,6 @@
       transform: translateY(-2px);
       box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
     }
-    
     .badge {
       display: inline-flex;
       align-items: center;
@@ -102,7 +88,6 @@
     .badge-active { background: #10b981; color: white; }
     .badge-paused { background: #f59e0b; color: black; }
     .badge-ended { background: #ef4444; color: white; }
-    
     .btn-primary {
       background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       transition: all 0.3s;
@@ -111,21 +96,17 @@
       transform: translateY(-1px);
       box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
     }
-    
     .table-row:hover {
       background-color: rgba(99, 102, 241, 0.05);
     }
-    
     .modal-backdrop {
       background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(4px);
     }
-    
     .chart-container {
       position: relative;
       height: 300px;
     }
-    
     .toggle {
       appearance: none;
       width: 44px;
@@ -153,7 +134,6 @@
     .toggle:checked::after {
       transform: translateX(20px);
     }
-
     .skeleton {
       background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
       background-size: 200% 100%;
@@ -163,12 +143,10 @@
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
-
     .order-tab.active {
       background: #6366f1;
       color: white;
     }
-
     .image-preview {
       width: 100px;
       height: 100px;
@@ -176,7 +154,6 @@
       border-radius: 8px;
       border: 2px solid #334155;
     }
-
     .campaign-preview {
       position: relative;
       overflow: hidden;
@@ -187,13 +164,10 @@
     .campaign-preview.active {
       border-color: #6366f1;
     }
-
     .loading-disabled {
       pointer-events: none;
       opacity: 0.6;
     }
-
-    /* Styles spécifiques pour les campagnes publicitaires */
     .campaign-card {
       background: var(--bg-secondary);
       border: 1px solid rgba(148, 163, 184, 0.1);
@@ -210,7 +184,6 @@
       transform: translateX(4px);
       box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
     }
-
     .campaign-thumbnail {
       width: 120px;
       height: 68px;
@@ -241,7 +214,6 @@
     .campaign-thumbnail .play-icon:hover {
       background: rgba(0,0,0,0.6);
     }
-
     .campaign-stats-mini {
       display: flex;
       gap: 1.5rem;
@@ -260,7 +232,6 @@
       color: #94a3b8;
       text-transform: uppercase;
     }
-
     .upload-zone {
       border: 2px dashed #334155;
       border-radius: 12px;
@@ -286,7 +257,6 @@
       opacity: 0;
       cursor: pointer;
     }
-
     .progress-bar {
       height: 8px;
       background: #334155;
@@ -300,7 +270,6 @@
       width: 0%;
       transition: width 0.3s;
     }
-
     .preview-ad-overlay {
       position: relative;
       background: rgba(0,0,0,0.9);
@@ -366,7 +335,6 @@
       transform: translateY(-2px);
       box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
     }
-
     @media (max-width: 768px) {
       .campaign-card {
         grid-template-columns: 1fr;
@@ -392,7 +360,7 @@
         <div class="brandia-icon-wrap">
           <div class="brandia-pulse"></div>
           <div class="brandia-icon-bg">
-            <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg ">
+            <svg class="brandia-icon-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M14 18C14 18 12 18 12 20V44C12 46 14 48 16 48H40C42 48 44 46 44 44V20C44 18 42 18 42 18" 
                     stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M20 18V14C20 10 24 8 28 8C32 8 36 10 36 14V18" 
@@ -717,7 +685,7 @@
       </div>
     </section>
 
-        <!-- ADVERTISING SECTION - VERSION INTÉGRÉE AVEC STATS -->
+    <!-- ADVERTISING SECTION -->
     <section id="advertising" class="section space-y-6">
       <div class="flex justify-between items-start">
         <div>
@@ -730,7 +698,6 @@
         </button>
       </div>
 
-      <!-- Stats des campagnes -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="campaign-stats">
         <div class="card rounded-xl p-6 text-center">
           <div class="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -762,7 +729,6 @@
         </div>
       </div>
 
-      <!-- Info contextuelle -->
       <div class="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 rounded-xl p-6">
         <div class="flex items-start gap-4">
           <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -788,7 +754,6 @@
         </div>
       </div>
 
-      <!-- Liste des campagnes -->
       <div class="card rounded-xl overflow-hidden">
         <div class="p-6 border-b border-slate-800 flex justify-between items-center">
           <h3 class="font-semibold text-lg">Mes campagnes</h3>
@@ -802,7 +767,6 @@
         </div>
       </div>
 
-      <!-- Graphique de performance -->
       <div class="card rounded-xl p-6">
         <h3 class="font-semibold text-lg mb-6">Performance des campagnes (30 derniers jours)</h3>
         <div class="chart-container">
@@ -1097,7 +1061,7 @@
   </div>
 </div>
 
-<!-- Campaign Modal - Version complète avec upload vidéo -->
+<!-- Campaign Modal -->
 <div id="campaign-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
   <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
     
@@ -1284,7 +1248,7 @@
     <!-- Footer -->
     <div class="flex items-center justify-between p-6 border-t border-slate-800 bg-slate-900 sticky bottom-0">
       <div class="text-xs text-slate-500">
-        <i class="fas fa-info-circle mr-1"></i>
+        i class="fas fa-info-circle mr-1"></i>
         Maximum 5 campagnes actives simultanément
       </div>
       <div class="flex items-center gap-3">
@@ -1301,7 +1265,6 @@
 
   </div>
 </div>
-         
 
 <!-- Preview Modal -->
 <div id="preview-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
@@ -1338,487 +1301,696 @@
 <script src="../assets/js/supplier-payments.js"></script>
 <script src="../assets/js/supplier-dashboard.js"></script>
 
-<!-- INITIALISATION & PROTECTION -->
+<!-- INITIALISATION -->
 <script>
 // ==========================================
-// PROTECTION D'ACCÈS & GESTION D'ERREURS
+// CONFIGURATION GLOBALE
 // ==========================================
+const CONFIG = {
+  API_BASE: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:4000' 
+    : 'https://brandia-1.onrender.com',
+  TOKEN_KEY: 'brandia_token',
+  USER_KEY: 'brandia_user'
+};
 
-(function() {
-  'use strict';
+// ==========================================
+// UTILITAIRES
+// ==========================================
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
   
-  // 🔥 NOUVEAU: Attendre que BrandiaAPI soit chargé
-  function waitForAPI(maxAttempts = 50) {
-    return new Promise((resolve, reject) => {
-      let attempts = 0;
-      const check = () => {
-        attempts++;
-        if (window.BrandiaAPI) {
-          console.log('[Dashboard] API disponible après', attempts, 'tentatives');
-          resolve(window.BrandiaAPI);
-        } else if (attempts >= maxAttempts) {
-          reject(new Error('API non chargée'));
-        } else {
-          setTimeout(check, 100);
-        }
-      };
-      check();
-    });
-  }
+  const toast = document.createElement('div');
+  toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full ${
+    type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' :
+    type === 'error' ? 'bg-red-500/20 border border-red-500/30 text-red-400' :
+    'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+  }`;
+  
+  toast.innerHTML = `
+    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+    <span class="text-sm font-medium">${message}</span>
+  `;
+  
+  container.appendChild(toast);
+  
+  requestAnimationFrame(() => {
+    toast.classList.remove('translate-x-full');
+  });
+  
+  setTimeout(() => {
+    toast.classList.add('translate-x-full', 'opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
 
-  // Vérifier authentification SANS validation backend initiale
-  async function checkAuth() {
-    try {
-      await waitForAPI();
-      
-      const token = localStorage.getItem('brandia_token') || 
-                   localStorage.getItem('token');
-      const userStr = localStorage.getItem('brandia_user') || 
-                     localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
-      
-      console.log('[Dashboard] Auth check:', { 
-        hasToken: !!token, 
-        user: user?.email, 
-        role: user?.role 
-      });
-      
-      if (!token || !user) {
-        console.error('[Dashboard] Pas de session');
-        redirectToLogin('missing_auth');
-        return false;
-      }
-      
-      if (user.role !== 'supplier') {
-        console.error('[Dashboard] Mauvais rôle:', user.role);
-        alert('Accès réservé aux fournisseurs');
-        window.location.href = '../index.html';
-        return false;
-      }
-      
-      // 🔥 FIX: Ne PAS valider le token avec le backend au démarrage
-      // Attendre que tout soit chargé avant de faire des requêtes
-      
-      const userNameEl = document.getElementById('user-name');
-      if (userNameEl) {
-        userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
-      }
-      
-      return true;
-      
-    } catch (error) {
-      console.error('[Dashboard] Erreur auth:', error);
-      redirectToLogin('error');
+function showLoading(show) {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.classList.toggle('hidden', !show);
+}
+
+function formatPrice(amount) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount || 0);
+}
+
+// ==========================================
+// NAVIGATION
+// ==========================================
+function navigate(section) {
+  // Masquer toutes les sections
+  document.querySelectorAll('.section').forEach(s => {
+    s.classList.remove('active');
+  });
+  
+  // Désactiver tous les liens
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.classList.remove('active');
+    l.classList.add('text-slate-400');
+    l.classList.remove('text-white');
+  });
+  
+  // Activer la section cible
+  const targetSection = document.getElementById(section);
+  if (targetSection) {
+    targetSection.classList.add('active');
+  }
+  
+  // Activer le lien correspondant
+  const targetNav = document.getElementById('nav-' + section);
+  if (targetNav) {
+    targetNav.classList.add('active');
+    targetNav.classList.remove('text-slate-400');
+    targetNav.classList.add('text-white');
+  }
+  
+  // Mettre à jour le titre
+  const titles = {
+    'overview': { title: 'Tableau de bord', subtitle: 'Vue d\'ensemble de votre activité' },
+    'products': { title: 'Mes produits', subtitle: 'Gérez votre catalogue produits' },
+    'promotions': { title: 'Promotions', subtitle: 'Créez des offres pour booster vos ventes' },
+    'advertising': { title: 'Campagnes Publicitaires', subtitle: 'Promouvez vos produits avec des publicités vidéo' },
+    'orders': { title: 'Commandes', subtitle: 'Suivez et gérez vos commandes clients' },
+    'payments': { title: 'Paiements & Revenus', subtitle: 'Suivez vos revenus et demandez des virements' },
+    'analytics': { title: 'Statistiques', subtitle: 'Analysez votre performance commerciale' },
+    'profile': { title: 'Profil de la marque', subtitle: 'Gérez votre identité publique' },
+    'support': { title: 'Support & Aide', subtitle: 'Nous sommes là pour vous aider' },
+    'settings': { title: 'Paramètres', subtitle: 'Gérez vos préférences et sécurité' }
+  };
+  
+  const titleInfo = titles[section] || titles['overview'];
+  const pageTitle = document.getElementById('page-title');
+  const pageSubtitle = document.getElementById('page-subtitle');
+  
+  if (pageTitle) pageTitle.textContent = titleInfo.title;
+  if (pageSubtitle) pageSubtitle.textContent = titleInfo.subtitle;
+  
+  // Sauvegarder la section active
+  localStorage.setItem('dashboard_last_section', section);
+  
+  // Charger les données spécifiques
+  if (section === 'overview') loadOverviewStats();
+}
+
+// ==========================================
+// AUTHENTIFICATION
+// ==========================================
+async function checkAuth() {
+  try {
+    const token = localStorage.getItem(CONFIG.TOKEN_KEY) || localStorage.getItem('token');
+    const userStr = localStorage.getItem(CONFIG.USER_KEY) || localStorage.getItem('user');
+    
+    console.log('[Auth] Checking authentication...', { hasToken: !!token, hasUser: !!userStr });
+    
+    if (!token || !userStr) {
+      console.error('[Auth] Missing token or user data');
+      redirectToLogin('missing_auth');
       return false;
     }
+    
+    const user = JSON.parse(userStr);
+    
+    if (user.role !== 'supplier') {
+      console.error('[Auth] User is not a supplier:', user.role);
+      alert('Accès réservé aux fournisseurs');
+      window.location.href = '../index.html';
+      return false;
+    }
+    
+    // Afficher le nom de l'utilisateur
+    const userNameEl = document.getElementById('user-name');
+    if (userNameEl) {
+      userNameEl.textContent = user.first_name || user.company_name || user.email || 'Fournisseur';
+    }
+    
+    console.log('[Auth] Authentication successful');
+    return true;
+    
+  } catch (error) {
+    console.error('[Auth] Error:', error);
+    redirectToLogin('error');
+    return false;
   }
+}
 
-  function redirectToLogin(reason) {
-    const currentPath = window.location.pathname;
-    window.location.href = `../login.html?redirect=${encodeURIComponent(currentPath)}&expired=1&reason=${reason}`;
-  }
+function redirectToLogin(reason) {
+  const currentPath = window.location.pathname;
+  const params =   new URLSearchParams({ redirect: currentPath, expired: '1', reason: reason });
+  window.location.href = `../login.html?${params.toString()}`;
+}
 
-  // ... (reste des fonctions globales inchangé) ...
-
-  // DÉMARRAGE
-  checkAuth().then(isAuth => {
-    if (!isAuth) return;
-    
-    console.log('[Dashboard] Initialisation...');
-    
-    const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
-    navigate(lastSection);
-    
-    // Fermer modals au clic extérieur
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-      backdrop.addEventListener('click', function(e) {
-        if (e.target === this) {
-          closeProductModal();
-        }
-      });
-    });
-    
-    // Fermer modals avec Escape
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        closeCampaignModal();
-        closeProductModal();
-        closePreviewModal();
-      }
-    });
-    
-    // 🔥 FIX: Délai augmenté pour laisser le temps à l'auth de se stabiliser
-    setTimeout(() => {
-      try {
-        if (window.SupplierProducts) SupplierProducts.init();
-        if (window.SupplierOrders) SupplierOrders.init();
-        if (window.SupplierCampaigns) SupplierCampaigns.init();
-        if (window.SupplierPayments) SupplierPayments.init();
-        if (window.SupplierPromotions) SupplierPromotions.init();
-        
-        loadOverviewStats();
-        
-      } catch (error) {
-        console.error('[Dashboard] Erreur init modules:', error);
-        showToast('Erreur de chargement', 'error');
-      }
-    }, 1000); // 🔥 1 seconde pour être sûr que tout est prêt
-  });
-
-})();
-  // ==========================================
-  // FONCTIONS DE MODAL CAMPAGNES AMÉLIORÉES
-  // ==========================================
-
-  // Ouvrir modal campagne
-  window.openCampaignModal = function(campaignId = null) {
-    console.log('[Dashboard] openCampaignModal called', campaignId);
-    
-    if (window.SupplierCampaigns && SupplierCampaigns.openModal) {
-      SupplierCampaigns.openModal(campaignId);
-    } else {
-      console.error('[Dashboard] SupplierCampaigns not available');
-      showToast('Erreur: Module campagnes non chargé', 'error');
-    }
-  };
-
-  // Fermer modal campagne
-  window.closeCampaignModal = function() {
-    if (window.SupplierCampaigns && SupplierCampaigns.closeModal) {
-      SupplierCampaigns.closeModal();
-    } else {
-      const modal = document.getElementById('campaign-modal');
-      if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
-      }
-    }
-  };
-
-  // Fermer modal preview
-  window.closePreviewModal = function() {
-    const modal = document.getElementById('preview-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-    }
-  };
-
-  // Sauvegarder campagne
-  window.saveCampaignForm = async function() {
-    console.log('[Dashboard] saveCampaignForm called');
-    
-    if (window.SupplierCampaigns && SupplierCampaigns.save) {
-      await SupplierCampaigns.save();
-    } else {
-      showToast('Erreur: Module campagnes non chargé', 'error');
-    }
-  };
-
-  // ==========================================
-  // AUTRES FONCTIONS GLOBALES
-  // ==========================================
-
-  window.showLoading = function(show) {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.classList.toggle('hidden', !show);
-  };
-
-  window.openProductModal = function() {
-    if (window.SupplierProducts && SupplierProducts.openModal) {
-      SupplierProducts.openModal();
-    } else {
-      const modal = document.getElementById('product-modal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-      }
-    }
-  };
-
-  window.closeProductModal = function() {
+// ==========================================
+// GESTION DES MODALS
+// ==========================================
+function openProductModal(productId = null) {
+  if (window.SupplierProducts && SupplierProducts.openModal) {
+    SupplierProducts.openModal(productId);
+  } else {
     const modal = document.getElementById('product-modal');
     if (modal) {
-      modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-  };
-
-  window.filterOrders = function(filter) {
-    if (window.SupplierOrders && SupplierOrders.setFilter) {
-      SupplierOrders.setFilter(filter);
-    } else {
-      console.error('[Dashboard] SupplierOrders non disponible');
-      showToast('Erreur: Module commandes non chargé', 'error');
-    }
-  };
-
-  window.requestPayout = function() {
-    if (window.SupplierPayments && SupplierPayments.requestPayout) {
-      SupplierPayments.requestPayout();
-    } else {
-      showToast('Module paiements non chargé', 'error');
-    }
-  };
-
-  window.exportTransactions = function() {
-    showToast('Fonctionnalité en développement', 'info');
-  };
-
-  window.importProducts = function() {
-    if (window.SupplierProducts && SupplierProducts.importCSV) {
-      SupplierProducts.importCSV();
-    } else {
-      showToast('Fonctionnalité en développement', 'info');
-    }
-  };
-
-  window.quickAction = function() {
-    const actions = ['products', 'orders', 'advertising'];
-    const current = localStorage.getItem('dashboard_last_section') || 'overview';
-    const next = actions[(actions.indexOf(current) + 1) % actions.length] || 'products';
-    navigate(next);
-  };
-
-  window.showNotifications = function() {
-    showToast('Pas de nouvelles notifications', 'info');
-  };
-
-  window.logout = function() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    window.location.href = '../login.html';
-  };
-
-  window.editBrand = function() {
-    showToast('Fonctionnalité en développement', 'info');
-  };
-
-  window.viewPublicProfile = function() {
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : {};
-    if (user.id) {
-      window.open(`../brand.html?id=${user.id}`, '_blank');
-    }
-  };
-
-  window.handleLogoUpload = function(event) {
-    showToast('Upload logo en développement', 'info');
-  };
-
-  window.handleImageSelect = function(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const preview = document.getElementById('image-preview');
-        const container = document.getElementById('image-preview-container');
-        if (preview && container) {
-          preview.src = e.target.result;
-          container.classList.remove('hidden');
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  window.updateAnalyticsPeriod = function(period) {
-    document.querySelectorAll('.analytics-period').forEach(btn => {
-      btn.classList.remove('bg-indigo-600', 'text-white');
-      btn.classList.add('bg-slate-800', 'text-slate-300');
-    });
-    const activeBtn = document.querySelector(`[data-period="${period}"]`);
-    if (activeBtn) {
-      activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
-      activeBtn.classList.add('bg-indigo-600', 'text-white');
-    }
-    showToast(`Période: ${period} jours`, 'info');
-  };
-
-  window.updateSalesChart = function() {
-    const period = document.getElementById('sales-period')?.value || '7';
-    showToast(`Mise à jour graphique: ${period} jours`, 'info');
-  };
-
-  window.changeProductPage = function(direction) {
-    if (window.SupplierProducts && SupplierProducts.changePage) {
-      SupplierProducts.changePage(direction);
-    }
-  };
-
-  window.filterProducts = function() {
-    if (window.SupplierProducts && SupplierProducts.filter) {
-      SupplierProducts.filter();
-    }
-  };
-
-  window.openPromotionModal = function() {
-    if (window.SupplierPromotions && SupplierPromotions.openModal) {
-      SupplierPromotions.openModal();
-    } else {
-      showToast('Module promotions non chargé', 'error');
-    }
-  };
-
-  // ==========================================
-  // CHARGEMENT STATS & CHARTS
-  // ==========================================
-
-  async function loadOverviewStats() {
-    try {
-      if (typeof BrandiaAPI === 'undefined') {
-        console.warn('[Dashboard] BrandiaAPI non disponible');
-        return;
-      }
-      
-      const response = await BrandiaAPI.Supplier.getStats();
-      console.log('[Dashboard] Stats:', response);
-      
-      if (response?.success && response.data) {
-        const data = response.data;
-        
-        // Si data.stats existe, l'utiliser, sinon utiliser data directement
-        const stats = data.stats || data;
-        
-        updateElement('kpi-revenue', formatPrice(stats.totalSales || stats.total_revenue || 0));
-        updateElement('kpi-orders', stats.totalOrders || stats.total_orders || 0);
-        updateElement('kpi-products', stats.activeProducts || stats.products_count || 0);
-        updateElement('kpi-total-products', stats.totalProducts || stats.products_count || 0);
-        updateElement('kpi-balance', formatPrice(stats.balance || 0));
-        
-        if (typeof Chart !== 'undefined') {
-          initSalesChart(data.salesData || []);
-        }
-        
-        // Mettre à jour compteurs dans la sidebar
-        const productCountEl = document.getElementById('product-count');
-        if (productCountEl) {
-          productCountEl.textContent = stats.products_count || 0;
-          productCountEl.classList.remove('hidden');
-        }
-      }
-    } catch (error) {
-      console.error('[Dashboard] Erreur stats:', error);
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
     }
   }
+}
 
-  function updateElement(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
+function closeProductModal() {
+  const modal = document.getElementById('product-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
   }
+  // Reset form
+  const form = document.getElementById('product-form');
+  if (form) form.reset();
+  // Hide preview
+  const previewContainer = document.getElementById('image-preview-container');
+  if (previewContainer) previewContainer.classList.add('hidden');
+}
 
-  function formatPrice(amount) {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
-  }
-
-  function initSalesChart(data) {
-    const ctx = document.getElementById('salesChart');
-    if (!ctx) return;
-
-    if (window.salesChartInstance) {
-      window.salesChartInstance.destroy();
-    }
-
-    window.salesChartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: (data && data.length) ? data.map(d => d.date) : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-        datasets: [{
-          label: 'Ventes (€)',
-          data: (data && data.length) ? data.map(d => d.amount) : [0, 0, 0, 0, 0, 0, 0],
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { 
-            beginAtZero: true, 
-            grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
-            ticks: { color: '#94a3b8' } 
-          },
-          x: { 
-            grid: { display: false }, 
-            ticks: { color: '#94a3b8' } 
-          }
-        }
-      }
-    });
-  }
-
-  // ==========================================
-  // DÉMARRAGE
-  // ==========================================
-
-  if (!checkAuth()) return;
-
-  const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
+function openCampaignModal(campaignId = null) {
+  console.log('[Dashboard] openCampaignModal called', campaignId);
   
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('[Dashboard] Initialisation...');
-    
-    navigate(lastSection);
-    
-    // Fermer modals au clic extérieur
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-      backdrop.addEventListener('click', function(e) {
-        if (e.target === this) {
-          closeProductModal();
-        }
-      });
-    });
-    
-    // Fermer modals avec Escape
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        closeCampaignModal();
-        closeProductModal();
-        closePreviewModal();
-      }
-    });
-    
-    // Initialisation des modules avec délai pour s'assurer que les scripts sont chargés
-    setTimeout(() => {
-      try {
-        if (window.SupplierProducts) {
-          console.log('[Dashboard] Init SupplierProducts');
-          SupplierProducts.init();
-        }
-        if (window.SupplierOrders) {
-          console.log('[Dashboard] Init SupplierOrders');
-          SupplierOrders.init();
-        }
-        if (window.SupplierCampaigns) {
-          console.log('[Dashboard] Init SupplierCampaigns');
-          SupplierCampaigns.init();
-        }
-        if (window.SupplierPayments) {
-          console.log('[Dashboard] Init SupplierPayments');
-          SupplierPayments.init();
-        }
-        if (window.SupplierPromotions) {
-          console.log('[Dashboard] Init SupplierPromotions');
-          SupplierPromotions.init();
-        }
-        
-        loadOverviewStats();
-        
-      } catch (error) {
-        console.error('[Dashboard] Erreur init modules:', error);
-        showToast('Erreur de chargement des modules', 'error');
-      }
-    }, 100);
-  });
+  if (window.SupplierCampaigns && SupplierCampaigns.openModal) {
+    SupplierCampaigns.openModal(campaignId);
+  } else {
+    const modal = document.getElementById('campaign-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+}
 
-})();
+function closeCampaignModal() {
+  const modal = document.getElementById('campaign-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  // Reset state
+  if (window.SupplierCampaigns) {
+    SupplierCampaigns.state.editingCampaignId = null;
+    SupplierCampaigns.state.uploadedMedia = null;
+    SupplierCampaigns.state.selectedProducts = [];
+    SupplierCampaigns.state.targetMode = 'all';
+  }
+}
+
+function closePreviewModal() {
+  const modal = document.getElementById('preview-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+function saveCampaignForm() {
+  console.log('[Dashboard] saveCampaignForm called');
+  
+  if (window.SupplierCampaigns && SupplierCampaigns.save) {
+    SupplierCampaigns.save();
+  } else {
+    showToast('Erreur: Module campagnes non chargé', 'error');
+  }
+}
+
+// ==========================================
+// FONCTIONS DE FILTRE ET ACTION
+// ==========================================
+function filterOrders(filter) {
+  if (window.SupplierOrders && SupplierOrders.setFilter) {
+    SupplierOrders.setFilter(filter);
+  } else {
+    console.error('[Dashboard] SupplierOrders not available');
+  }
+  
+  // Update UI
+  document.querySelectorAll('.order-tab').forEach(btn => {
+    btn.classList.remove('active', 'bg-indigo-600', 'text-white');
+    btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+  });
+  
+  const activeBtn = document.querySelector(`[data-filter="${filter}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'bg-indigo-600', 'text-white');
+    activeBtn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+  }
+}
+
+function changeProductPage(direction) {
+  if (window.SupplierProducts && SupplierProducts.changePage) {
+    SupplierProducts.changePage(direction);
+  }
+}
+
+function filterProducts() {
+  if (window.SupplierProducts && SupplierProducts.filter) {
+    SupplierProducts.filter();
+  }
+}
+
+function importProducts() {
+  if (window.SupplierProducts && SupplierProducts.importProducts) {
+    SupplierProducts.importProducts();
+  } else {
+    showToast('Import en cours de chargement...', 'info');
+  }
+}
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('image-preview');
+    const container = document.getElementById('image-preview-container');
+    if (preview && container) {
+      preview.src = e.target.result;
+      container.classList.remove('hidden');
+    }
+    
+    // Store for upload
+    if (window.SupplierProducts) {
+      SupplierProducts.state.uploadedImage = {
+        file: file,
+        localUrl: e.target.result
+      };
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleCampaignMedia(event) {
+  if (window.SupplierCampaigns && SupplierCampaigns.handleMediaSelect) {
+    SupplierCampaigns.handleMediaSelect(event);
+  }
+}
+
+function toggleMediaType(type) {
+  if (window.SupplierCampaigns && SupplierCampaigns.toggleMediaType) {
+    SupplierCampaigns.toggleMediaType(type);
+  }
+}
+
+function toggleTargetMode(mode) {
+  if (window.SupplierCampaigns && SupplierCampaigns.toggleTargetMode) {
+    SupplierCampaigns.toggleTargetMode(mode);
+  }
+}
+
+function toggleProductSelection(productId) {
+  if (window.SupplierCampaigns && SupplierCampaigns.toggleProductSelection) {
+    SupplierCampaigns.toggleProductSelection(productId);
+  }
+}
+
+function toggleAllProducts() {
+  if (window.SupplierCampaigns && SupplierCampaigns.toggleAllProducts) {
+    SupplierCampaigns.toggleAllProducts();
+  }
+}
+
+function updateCtaOptions() {
+  if (window.SupplierCampaigns && SupplierCampaigns.updateCtaOptions) {
+    SupplierCampaigns.updateCtaOptions();
+  }
+}
+
+function editCampaign(id) {
+  openCampaignModal(id);
+}
+
+function deleteCampaign(id) {
+  if (window.SupplierCampaigns && SupplierCampaigns.deleteCampaign) {
+    SupplierCampaigns.deleteCampaign(id);
+  }
+}
+
+function toggleCampaignStatus(id, status) {
+  if (window.SupplierCampaigns && SupplierCampaigns.toggleStatus) {
+    SupplierCampaigns.toggleStatus(id, status);
+  }
+}
+
+function openPromotionModal() {
+  if (window.SupplierPromotions && SupplierPromotions.openModal) {
+    SupplierPromotions.openModal();
+  } else {
+    showToast('Module promotions en chargement...', 'info');
+  }
+}
+
+// ==========================================
+// FONCTIONS PAIEMENTS ET PROFIL
+// ==========================================
+function requestPayout() {
+  if (window.SupplierPayments && SupplierPayments.requestPayout) {
+    SupplierPayments.requestPayout();
+  } else {
+    showToast('Module paiements en chargement...', 'info');
+  }
+}
+
+function exportTransactions() {
+  showToast('Export en développement', 'info');
+}
+
+function editBrand() {
+  showToast('Modification du profil en développement', 'info');
+}
+
+function viewPublicProfile() {
+  const userStr = localStorage.getItem(CONFIG.USER_KEY) || localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : {};
+  if (user.id) {
+    window.open(`../brand.html?id=${user.id}`, '_blank');
+  }
+}
+
+function handleLogoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = document.getElementById('brand-logo-img');
+    const icon = document.getElementById('brand-logo-icon');
+    if (img && icon) {
+      img.src = e.target.result;
+      img.classList.remove('hidden');
+      icon.classList.add('hidden');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==========================================
+// STATISTIQUES ET CHARTS
+// ==========================================
+async function loadOverviewStats() {
+  try {
+    if (typeof BrandiaAPI === 'undefined' || !BrandiaAPI.Supplier) {
+      console.warn('[Dashboard] BrandiaAPI not available');
+      return;
+    }
+    
+    const response = await BrandiaAPI.Supplier.getStats();
+    console.log('[Dashboard] Stats loaded:', response);
+    
+    if (response?.success && response.data) {
+      const data = response.data;
+      const stats = data.stats || data;
+      
+      // Update KPIs
+      updateElement('kpi-revenue', formatPrice(stats.totalSales || stats.total_revenue || 0));
+      updateElement('kpi-orders', stats.totalOrders || stats.total_orders || 0);
+      updateElement('kpi-products', stats.activeProducts || stats.products_count || 0);
+      updateElement('kpi-total-products', stats.totalProducts || stats.products_count || 0);
+      updateElement('kpi-balance', formatPrice(stats.balance || 0));
+      
+      // Update sidebar counters
+      const productCountEl = document.getElementById('product-count');
+      if (productCountEl) {
+        productCountEl.textContent = stats.products_count || 0;
+        productCountEl.classList.remove('hidden');
+      }
+      
+      // Initialize chart if data available
+      if (typeof Chart !== 'undefined' && data.salesData) {
+        initSalesChart(data.salesData);
+      }
+    }
+  } catch (error) {
+    console.error('[Dashboard] Error loading stats:', error);
+  }
+}
+
+function updateElement(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function initSalesChart(data) {
+  const ctx = document.getElementById('salesChart');
+  if (!ctx) return;
+  
+  if (window.salesChartInstance) {
+    window.salesChartInstance.destroy();
+  }
+  
+  const labels = data && data.length ? data.map(d => d.date) : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const values = data && data.length ? data.map(d => d.amount) : [0, 0, 0, 0, 0, 0, 0];
+  
+  window.salesChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Ventes (€)',
+        data: values,
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointBackgroundColor: '#6366f1',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleColor: '#94a3b8',
+          bodyColor: '#f1f5f9',
+          borderColor: 'rgba(148, 163, 184, 0.2)',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: {
+            color: '#94a3b8',
+            callback: function(value) {
+              return value + '€';
+            }
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        }
+      }
+    }
+  });
+}
+
+function updateSalesChart() {
+  const period = document.getElementById('sales-period')?.value || '7';
+  showToast(`Période mise à jour: ${period} jours`, 'info');
+  // Reload stats with new period
+  loadOverviewStats();
+}
+
+function updateAnalyticsPeriod(period) {
+  document.querySelectorAll('.analytics-period').forEach(btn => {
+    btn.classList.remove('bg-indigo-600', 'text-white');
+    btn.classList.add('bg-slate-800', 'text-slate-300');
+  });
+  
+  const activeBtn = document.querySelector(`[data-period="${period}"]`);
+  if (activeBtn) {
+    activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+    activeBtn.classList.add('bg-indigo-600', 'text-white');
+  }
+  
+  showToast(`Période: ${period} jours`, 'info');
+}
+
+// ==========================================
+// ACTIONS GLOBALES
+// ==========================================
+function quickAction() {
+  const actions = ['products', 'orders', 'advertising', 'promotions'];
+  const current = localStorage.getItem('dashboard_last_section') || 'overview';
+  const currentIndex = actions.indexOf(current);
+  const nextIndex = (currentIndex + 1) % actions.length;
+  navigate(actions[nextIndex]);
+}
+
+function showNotifications() {
+  showToast('Pas de nouvelles notifications', 'info');
+}
+
+function logout() {
+  // Clear all auth data
+  localStorage.removeItem(CONFIG.TOKEN_KEY);
+  localStorage.removeItem(CONFIG.USER_KEY);
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('refreshToken');
+  
+  // Redirect to login
+  window.location.href = '../login.html';
+}
+
+// ==========================================
+// INITIALISATION
+// ==========================================
+async function initDashboard() {
+  console.log('[Dashboard] Initializing...');
+  
+  // Check authentication first
+  const isAuth = await checkAuth();
+  if (!isAuth) return;
+  
+  // Restore last section or default to overview
+  const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
+  navigate(lastSection);
+  
+  // Setup event listeners
+  setupEventListeners();
+  
+  // Initialize modules with delay to ensure scripts are loaded
+  setTimeout(() => {
+    initializeModules();
+  }, 500);
+}
+
+function setupEventListeners() {
+  // Close modals on backdrop click
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeProductModal();
+      }
+    });
+  });
+  
+  // Close modals with Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeCampaignModal();
+      closeProductModal();
+      closePreviewModal();
+    }
+  });
+  
+  // Global search
+  const globalSearch = document.getElementById('global-search');
+  if (globalSearch) {
+    globalSearch.addEventListener('input', debounce(function(e) {
+      const query = e.target.value.toLowerCase();
+      // Implement global search logic
+      console.log('[Search] Query:', query);
+    }, 300));
+  }
+}
+
+function initializeModules() {
+  console.log('[Dashboard] Initializing modules...');
+  
+  try {
+    if (window.SupplierProducts) {
+      console.log('[Dashboard] Init SupplierProducts');
+      SupplierProducts.init();
+    } else {
+      console.warn('[Dashboard] SupplierProducts not loaded');
+    }
+    
+    if (window.SupplierOrders) {
+      console.log('[Dashboard] Init SupplierOrders');
+      SupplierOrders.init();
+    } else {
+      console.warn('[Dashboard] SupplierOrders not loaded');
+    }
+    
+    if (window.SupplierCampaigns) {
+      console.log('[Dashboard] Init SupplierCampaigns');
+      SupplierCampaigns.init();
+    } else {
+      console.warn('[Dashboard] SupplierCampaigns not loaded');
+    }
+    
+    if (window.SupplierPayments) {
+      console.log('[Dashboard] Init SupplierPayments');
+      SupplierPayments.init();
+    } else {
+      console.warn('[Dashboard] SupplierPayments not loaded');
+    }
+    
+    if (window.SupplierPromotions) {
+      console.log('[Dashboard] Init SupplierPromotions');
+      SupplierPromotions.init();
+    } else {
+      console.warn('[Dashboard] SupplierPromotions not loaded');
+    }
+    
+    // Load overview stats
+    loadOverviewStats();
+    
+  } catch (error) {
+    console.error('[Dashboard] Error initializing modules:', error);
+    showToast('Erreur de chargement des modules', 'error');
+  }
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// ==========================================
+// DÉMARRAGE
+// ==========================================
+// Attendre que le DOM soit prêt
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+  // DOM déjà prêt
+  initDashboard();
+}
 </script>
 
 </body>

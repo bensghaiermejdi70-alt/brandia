@@ -1,6 +1,6 @@
 // ============================================
-// BRANDIA API CLIENT - v4.0 FIX
-// Correction: Gestion complète refresh token + pas de redirection forcée
+// BRANDIA API CLIENT - v4.1 FIX
+// Correction: Token storage, 401 handling, request retry
 // ============================================
 
 (function() {
@@ -11,6 +11,10 @@
     return;
   }
 
+  // ============================================
+  // CONFIGURATION
+  // ============================================
+  
   const isLocal = window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1' ||
                   window.location.protocol === 'file:' ||
@@ -22,70 +26,77 @@
 
   const API_BASE_URL = `${API_BASE}/api`;
   const REQUEST_TIMEOUT = 15000;
+  const MAX_RETRIES = 2;
 
   console.log(`[Brandia API] Mode: ${isLocal ? 'LOCAL' : 'PRODUCTION'}`);
   console.log(`[Brandia API] URL: ${API_BASE_URL}`);
 
   // ============================================
-  // STORAGE UNIFIÉ
+  // STORAGE UNIFIÉ - CLÉS CONSISTANTES
   // ============================================
+  
+  const TOKEN_KEYS = ['brandia_token', 'token', 'accessToken'];
+  const USER_KEYS = ['brandia_user', 'user'];
   
   const storage = {
     getToken: () => {
-      return localStorage.getItem('brandia_token') || 
-             localStorage.getItem('token') || 
-             localStorage.getItem('accessToken') ||
-             null;
+      for (const key of TOKEN_KEYS) {
+        const token = localStorage.getItem(key);
+        if (token) return token;
+      }
+      return null;
     },
     
     setToken: (token) => {
       if (!token) return;
-      localStorage.setItem('brandia_token', token);
-      localStorage.setItem('token', token);
-      localStorage.setItem('accessToken', token);
+      // Synchroniser toutes les clés pour compatibilité
+      TOKEN_KEYS.forEach(key => localStorage.setItem(key, token));
     },
     
     removeToken: () => {
-      localStorage.removeItem('brandia_token');
-      localStorage.removeItem('token');
-      localStorage.removeItem('accessToken');
+      TOKEN_KEYS.forEach(key => localStorage.removeItem(key));
     },
     
     getUser: () => {
-      try {
-        const userStr = localStorage.getItem('brandia_user') || 
-                       localStorage.getItem('user');
-        return userStr ? JSON.parse(userStr) : null;
-      } catch {
-        return null;
+      for (const key of USER_KEYS) {
+        const userStr = localStorage.getItem(key);
+        if (userStr) {
+          try {
+            return JSON.parse(userStr);
+          } catch (e) {
+            continue;
+          }
+        }
       }
+      return null;
     },
     
     setUser: (user) => {
       const userStr = JSON.stringify(user);
-      localStorage.setItem('brandia_user', userStr);
-      localStorage.setItem('user', userStr);
+      USER_KEYS.forEach(key => localStorage.setItem(key, userStr));
     },
     
     clear: () => {
-      const keys = ['brandia_token', 'token', 'accessToken', 
-                   'brandia_user', 'user', 'refreshToken'];
-      keys.forEach(k => localStorage.removeItem(k));
+      [...TOKEN_KEYS, ...USER_KEYS, 'refreshToken'].forEach(key => {
+        localStorage.removeItem(key);
+      });
     }
   };
 
   // ============================================
-  // FETCH API CORE - VERSION SIMPLIFIÉE
+  // FETCH API CORE - AVEC RETRY ET GESTION 401
   // ============================================
 
   async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    // Préparer les headers
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers
     };
 
+    // Ajouter le token si disponible
     const token = storage.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -96,6 +107,9 @@
 
     try {
       console.log(`[API] ${options.method || 'GET'} ${url}`);
+      if (token) {
+        console.log(`[API] Token present: ${token.substring(0, 20)}...`);
+      }
       
       const response = await fetch(url, {
         ...options,
@@ -105,21 +119,46 @@
 
       clearTimeout(timeoutId);
 
-      // Gestion 401 - mais ne pas rediriger automatiquement
+      // Gestion 401 - Token invalide ou expiré
       if (response.status === 401) {
         const errorData = await response.json().catch(() => ({}));
-        console.warn(`[API] 401 sur ${endpoint}:`, errorData.message || 'Token invalide');
+        console.warn(`[API] 401 on ${endpoint}:`, errorData);
         
-        // 🔥 FIX: Ne PAS tenter de refresh automatiquement sur 401
-        // Laisser l'appelant décider quoi faire
+        // Si c'est la première tentative et qu'on a un token, essayer de rafraîchir
+        if (retryCount === 0 && token && errorData.code === 'TOKEN_EXPIRED') {
+          console.log('[API] Attempting token refresh...');
+          // TODO: Implémenter le refresh token ici
+          // Pour l'instant, on redirige vers login
+        }
+        
+        // Rediriger vers login si pas de retry possible
+        if (retryCount >= MAX_RETRIES) {
+          console.error('[API] Max retries reached, redirecting to login');
+          storage.clear();
+          window.location.href = `../login.html?expired=1&reason=token_invalid`;
+          return { success: false, message: 'Session expirée', code: 'SESSION_EXPIRED' };
+        }
+        
         return { 
           success: false, 
-          message: errorData.message || 'Session invalide', 
-          code: 'UNAUTHORIZED',
+          message: errorData.message || 'Non authentifié', 
+          code: errorData.code || 'UNAUTHORIZED',
           status: 401
         };
       }
 
+      // Gestion 403 - Forbidden
+      if (response.status === 403) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          message: errorData.message || 'Accès refusé',
+          code: 'FORBIDDEN',
+          status: 403
+        };
+      }
+
+      // Erreurs serveur
       if (!response.ok) {
         let errorData;
         try {
@@ -130,27 +169,31 @@
         throw new Error(errorData.message || `Erreur ${response.status}`);
       }
 
+      // Réponse vide (204)
       if (response.status === 204) {
         return { success: true };
       }
 
-      return await response.json();
+      // Parse JSON
+      const data = await response.json();
+      return data;
 
     } catch (error) {
       clearTimeout(timeoutId);
       
-      // Retry une fois en cas d'erreur réseau
-      if (retryCount === 0 && (error.name === 'TypeError' || error.name === 'AbortError')) {
-        console.warn(`[API] Retry ${url}...`);
-        await new Promise(r => setTimeout(r, 1500));
+      // Retry en cas d'erreur réseau
+      if (retryCount < MAX_RETRIES && (error.name === 'TypeError' || error.name === 'AbortError')) {
+        console.warn(`[API] Network error, retrying ${retryCount + 1}/${MAX_RETRIES}...`);
+        await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
         return apiFetch(endpoint, options, retryCount + 1);
       }
 
+      // Formater le message d'erreur
       let userMessage = error.message;
       if (error.name === 'AbortError') {
         userMessage = 'Le serveur met trop de temps à répondre.';
       } else if (error.message === 'Failed to fetch') {
-        userMessage = 'Connexion impossible. Vérifiez votre internet.';
+        userMessage = 'Connexion impossible. Vérifiez votre connexion internet.';
       }
       
       console.error('[API Error]', error);
@@ -244,7 +287,7 @@
   };
 
   // ============================================
-  // AUTH API - SIMPLIFIÉ
+  // AUTH API - CORRIGÉ
   // ============================================
   
   const AuthAPI = {
@@ -259,6 +302,11 @@
           const token = data.data.accessToken || data.data.token;
           const user = data.data.user || data.data;
           
+          if (!token) {
+            console.error('[Auth] No token in response:', data);
+            return { success: false, message: 'Token manquant dans la réponse' };
+          }
+          
           storage.setToken(token);
           storage.setUser(user);
           
@@ -266,10 +314,11 @@
             localStorage.setItem('refreshToken', data.data.refreshToken);
           }
           
-          console.log('[Auth] Login OK, token:', token.substring(0, 20) + '...');
+          console.log('[Auth] ✅ Login successful, token stored');
         }
         return data;
       } catch (error) {
+        console.error('[Auth] Login error:', error);
         return { success: false, message: error.message };
       }
     },
@@ -299,25 +348,37 @@
     },
 
     logout: () => {
+      // Appeler l'API de logout (optionnel)
       apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
+      
+      // Toujours clear le storage local
       storage.clear();
-      window.location.href = 'index.html';
+      
+      // Rediriger
+      window.location.href = '../login.html';
     },
 
-    isLoggedIn: () => !!storage.getToken(),
+    isLoggedIn: () => {
+      const token = storage.getToken();
+      const user = storage.getUser();
+      return !!(token && user);
+    },
     
     getToken: () => storage.getToken(),
     
     getUser: () => storage.getUser(),
     
-    getRole: () => storage.getUser()?.role || null,
+    getRole: () => {
+      const user = storage.getUser();
+      return user?.role || null;
+    },
     
     isSupplier: () => {
       const user = storage.getUser();
       return user && user.role === 'supplier';
     },
     
-    // Validation simple du token
+    // Validation du token avec le backend
     validateToken: async () => {
       try {
         const response = await apiFetch('/auth/me', { method: 'GET' });
@@ -329,168 +390,15 @@
   };
 
   // ============================================
-  // PRODUCTS API
-  // ============================================
-  
-  const ProductsAPI = {
-    getAll: async (params = {}) => {
-      const queryString = new URLSearchParams(params).toString();
-      return await apiFetch(`/products${queryString ? '?' + queryString : ''}`);
-    },
-
-    getFeatured: async () => await apiFetch('/products/featured'),
-
-    getById: async (id) => await apiFetch(`/products/${id}`),
-
-    search: async (query) => await apiFetch(`/products?search=${encodeURIComponent(query)}`),
-
-    getAllWithPromotions: async (params = {}) => {
-      const queryString = new URLSearchParams();
-      if (params.category) queryString.append('category', params.category);
-      if (params.search) queryString.append('search', params.search);
-      if (params.limit) queryString.append('limit', params.limit);
-      
-      const url = `/products/with-promotions${queryString.toString() ? '?' + queryString.toString() : ''}`;
-      return await apiFetch(url);
-    },
-
-    getFeaturedWithPromotions: async () => await apiFetch('/products/featured'),
-
-    getByIdWithPromotion: async (id) => {
-      if (!id || id === 'null' || id === 'undefined') {
-        return { success: false, message: 'ID produit invalide' };
-      }
-      try {
-        return await apiFetch(`/products/${id}/with-promotion`);
-      } catch (error) {
-        try {
-          const standard = await apiFetch(`/products/${id}`);
-          return {
-            success: true,
-            data: { product: standard.data || standard }
-          };
-        } catch {
-          return { success: false, message: error.message };
-        }
-      }
-    },
-
-    calculateFinalPrice: (product, promotion) => {
-      if (!promotion || !promotion.type) return parseFloat(product.price);
-      const basePrice = parseFloat(product.price);
-      if (promotion.type === 'percentage') return basePrice * (1 - promotion.value / 100);
-      if (promotion.type === 'fixed') return Math.max(0, basePrice - promotion.value);
-      return basePrice;
-    }
-  };
-
-  // ============================================
-  // CATEGORIES API
-  // ============================================
-  
-  const CategoriesAPI = {
-    getAll: async () => {
-      try {
-        return await apiFetch('/categories');
-      } catch {
-        return { success: true, data: [] };
-      }
-    }
-  };
-
-  // ============================================
-  // ORDERS API
-  // ============================================
-  
-  const OrdersAPI = {
-    create: async (orderData) => await apiFetch('/orders', { 
-      method: 'POST', 
-      body: JSON.stringify(orderData) 
-    }),
-    
-    getMyOrders: async () => await apiFetch('/orders'),
-    
-    getById: async (id) => await apiFetch(`/orders/${id}`)
-  };
-
-  // ============================================
-  // UPLOAD API
-  // ============================================
-  
-  const UploadAPI = {
-    uploadImage: async (fileOrFormData) => {
-      try {
-        const token = storage.getToken();
-        let formData;
-        
-        if (fileOrFormData instanceof FormData) {
-          formData = fileOrFormData;
-        } else {
-          formData = new FormData();
-          formData.append('media', fileOrFormData);
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/supplier/upload/image`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-        
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
-          throw new Error(error.message || `Erreur ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('[Upload] Error:', error);
-        return { success: false, message: error.message };
-      }
-    },
-    
-    uploadVideo: async (fileOrFormData) => {
-      try {
-        const token = storage.getToken();
-        let formData;
-        
-        if (fileOrFormData instanceof FormData) {
-          formData = fileOrFormData;
-        } else {
-          formData = new FormData();
-          formData.append('media', fileOrFormData);
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/supplier/upload/video`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-        
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
-          throw new Error(error.message || `Erreur ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('[Upload Video] Error:', error);
-        return { success: false, message: error.message };
-      }
-    }
-  };
-
-  // ============================================
-  // SUPPLIER API
+  // SUPPLIER API - CORRIGÉ
   // ============================================
   
   const SupplierAPI = {
     init: () => {
       const user = storage.getUser();
-      if (!storage.getToken()) { 
+      const token = storage.getToken();
+      
+      if (!token) { 
         console.warn('[SupplierAPI] No token found');
         return false; 
       }
@@ -509,9 +417,10 @@
         return { 
           success: false, 
           data: { 
-            stats: { totalSales: 0, totalOrders: 0, productsCount: 0, balance: 0 }, 
-            recentOrders: [], 
-            topProducts: [] 
+            totalSales: 0, 
+            totalOrders: 0, 
+            productsCount: 0, 
+            balance: 0 
           },
           message: e.message
         }; 
@@ -528,32 +437,37 @@
       } 
     },
     
-    createProduct: async (data) => await apiFetch('/supplier/products', { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
-    }),
-    
-    updateProduct: async (id, data) => {
-      const allowedFields = ['name', 'description', 'price', 'stock_quantity', 'main_image_url', 'is_active', 'category_id'];
-      const cleanData = {};
-      
-      for (const key of allowedFields) {
-        if (data[key] !== undefined) cleanData[key] = data[key];
+    createProduct: async (data) => {
+      try {
+        return await apiFetch('/supplier/products', { 
+          method: 'POST', 
+          body: JSON.stringify(data) 
+        });
+      } catch (e) {
+        return { success: false, message: e.message };
       }
-      
-      if (data.stock !== undefined && cleanData.stock_quantity === undefined) {
-        cleanData.stock_quantity = data.stock;
-      }
-      
-      return await apiFetch(`/supplier/products/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(cleanData)
-      });
     },
     
-    deleteProduct: async (id) => await apiFetch(`/supplier/products/${id}`, { 
-      method: 'DELETE' 
-    }),
+    updateProduct: async (id, data) => {
+      try {
+        return await apiFetch(`/supplier/products/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+      } catch (e) {
+        return { success: false, message: e.message };
+      }
+    },
+    
+    deleteProduct: async (id) => {
+      try {
+        return await apiFetch(`/supplier/products/${id}`, { 
+          method: 'DELETE' 
+        });
+      } catch (e) {
+        return { success: false, message: e.message };
+      }
+    },
 
     getOrders: async (status = null) => { 
       const query = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''; 
@@ -568,10 +482,16 @@
       }
     },
     
-    updateOrderStatus: async (orderId, status) => await apiFetch(`/supplier/orders/${orderId}/status`, { 
-      method: 'PUT', 
-      body: JSON.stringify({ status }) 
-    }),
+    updateOrderStatus: async (orderId, status) => {
+      try {
+        return await apiFetch(`/supplier/orders/${orderId}/status`, { 
+          method: 'PUT', 
+          body: JSON.stringify({ status }) 
+        });
+      } catch (e) {
+        return { success: false, message: e.message };
+      }
+    },
 
     getPayments: async () => {
       try {
@@ -586,7 +506,7 @@
     },
     
     requestPayout: async (amount) => {
-      return await apiFetch('/supplier/payouts', {
+      return await apiFetch('/supplier/payments/payouts', {
         method: 'POST',
         body: JSON.stringify({ amount })
       });
@@ -608,19 +528,37 @@
       }
     },
     
-    createPromotion: async (data) => await apiFetch('/supplier/promotions', { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
-    }),
+    createPromotion: async (data) => {
+      try {
+        return await apiFetch('/supplier/promotions', { 
+          method: 'POST', 
+          body: JSON.stringify(data) 
+        });
+      } catch (e) {
+        return { success: false, message: e.message };
+      }
+    },
     
-    updatePromotion: async (id, data) => await apiFetch(`/supplier/promotions/${id}`, { 
-      method: 'PUT', 
-      body: JSON.stringify(data) 
-    }),
+    updatePromotion: async (id, data) => {
+      try {
+        return await apiFetch(`/supplier/promotions/${id}`, { 
+          method: 'PUT', 
+          body: JSON.stringify(data) 
+        });
+      } catch (e) {
+        return { success: false, message: e.message };
+      }
+    },
     
-    deletePromotion: async (id) => await apiFetch(`/supplier/promotions/${id}`, { 
-      method: 'DELETE' 
-    }),
+    deletePromotion: async (id) => {
+      try {
+        return await apiFetch(`/supplier/promotions/${id}`, { 
+          method: 'DELETE' 
+        });
+      } catch (e) {
+        return { success: false, message: e.message };
+      }
+    },
 
     getCampaigns: async () => {
       try {
@@ -674,6 +612,7 @@
       }
     },
 
+    // Routes publiques (pas besoin de token)
     getPublicCampaign: async (supplierId, productId) => {
       try {
         const response = await fetch(`${API_BASE_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`, { 
@@ -733,118 +672,27 @@
   };
 
   // ============================================
-  // CART API
-  // ============================================
-  
-  const CartAPI = {
-    get: () => { 
-      try { 
-        return JSON.parse(localStorage.getItem('brandia_cart') || '[]'); 
-      } catch { 
-        return []; 
-      } 
-    },
-    
-    add: (product, quantity = 1) => {
-      if (!product) return;
-      const cart = CartAPI.get();
-      const productId = product.id || product.product_id;
-      const existing = cart.find(item => (item.product_id || item.id) == productId);
-      const finalPrice = product.final_price || product.price;
-      
-      if (existing) { 
-        existing.quantity += quantity; 
-      } else { 
-        cart.push({ 
-          product_id: productId, 
-          name: product.name, 
-          price: parseFloat(finalPrice) || 0, 
-          original_price: product.base_price || product.price, 
-          has_promotion: product.has_promotion || false, 
-          promo_code: product.promo_code || null, 
-          image: product.main_image_url || product.image || 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400', 
-          quantity: quantity 
-        }); 
-      }
-      
-      localStorage.setItem('brandia_cart', JSON.stringify(cart));
-      CartAPI.updateBadge();
-    },
-    
-    remove: (productId) => { 
-      const cart = CartAPI.get().filter(item => (item.product_id || item.id) != productId); 
-      localStorage.setItem('brandia_cart', JSON.stringify(cart)); 
-      CartAPI.updateBadge(); 
-    },
-    
-    updateQuantity: (productId, quantity) => { 
-      if (quantity < 1) { 
-        CartAPI.remove(productId); 
-        return; 
-      } 
-      const cart = CartAPI.get(); 
-      const item = cart.find(i => (i.product_id || i.id) == productId); 
-      if (item) { 
-        item.quantity = parseInt(quantity); 
-        localStorage.setItem('brandia_cart', JSON.stringify(cart)); 
-        CartAPI.updateBadge(); 
-      } 
-    },
-    
-    clear: () => { 
-      localStorage.removeItem('brandia_cart'); 
-      CartAPI.updateBadge(); 
-    },
-    
-    getCount: () => CartAPI.get().reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0),
-    
-    getTotal: () => CartAPI.get().reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0),
-    
-    getSavings: () => CartAPI.get().reduce((sum, item) => { 
-      if (item.original_price && item.price < item.original_price) {
-        return sum + ((item.original_price - item.price) * item.quantity); 
-      }
-      return sum; 
-    }, 0),
-    
-    updateBadge: () => { 
-      const badges = document.querySelectorAll('#cart-count, .cart-badge'); 
-      const count = CartAPI.getCount(); 
-      badges.forEach(b => { 
-        if (b) { 
-          b.textContent = count; 
-          b.style.display = count === 0 ? 'none' : 'flex'; 
-        } 
-      }); 
-    }
-  };
-
-  // ============================================
   // EXPORT FINAL
   // ============================================
   
   window.BrandiaAPI = {
     ...httpMethods,
     Auth: AuthAPI,
-    Products: ProductsAPI,
-    Categories: CategoriesAPI,
-    Orders: OrdersAPI,
-    Upload: UploadAPI,
-    Cart: CartAPI,
     Supplier: SupplierAPI,
     storage: storage,
     config: { 
       baseURL: API_BASE, 
       isLocal: isLocal, 
       apiURL: API_BASE_URL,
-      version: '4.0-simple'
+      version: '4.1'
     }
   };
 
+  // Exposer les fonctions utilitaires globalement
   window.logout = () => BrandiaAPI.Auth.logout();
   window.isLoggedIn = () => BrandiaAPI.Auth.isLoggedIn();
   window.getUser = () => BrandiaAPI.Auth.getUser();
   window.isSupplier = () => BrandiaAPI.Auth.isSupplier();
 
-  console.log('[Brandia API] ✅ Loaded v4.0 - Simplified, no auto-redirect');
+  console.log('[Brandia API] ✅ Loaded v4.1');
 })();
