@@ -1,6 +1,7 @@
+
 // ============================================
-// BRANDIA API CLIENT - v3.7 FIX
-// Correction: Ordre des fonctions - apiFetch défini avant utilisation
+// BRANDIA API CLIENT - v3.8 FIX
+// Correction: Gestion du token supplier + redirect fix
 // ============================================
 
 (function() {
@@ -16,7 +17,7 @@
                   window.location.protocol === 'file:' ||
                   window.location.hostname.includes('github.io');
 
-  // URL sans espace
+  // URL corrigée - suppression des espaces
   const API_BASE = isLocal 
     ? 'http://localhost:4000' 
     : 'https://brandia-1.onrender.com';
@@ -28,18 +29,17 @@
   console.log(`[Brandia API] URL: ${API_BASE_URL}`);
 
   // ============================================
-  // STORAGE UNIFIÉ (défini en premier)
+  // STORAGE UNIFIÉ
   // ============================================
   
   const storage = {
     getToken: () => {
-      return localStorage.getItem('token') || localStorage.getItem('brandia_token') || localStorage.getItem('accessToken') || null;
+      return localStorage.getItem('token') || localStorage.getItem('brandia_token') || null;
     },
     
     setToken: (token) => {
       localStorage.setItem('token', token);
       localStorage.setItem('brandia_token', token);
-      localStorage.setItem('accessToken', token);
     },
     
     removeToken: () => {
@@ -65,7 +65,6 @@
     clear: () => {
       localStorage.removeItem('token');
       localStorage.removeItem('brandia_token');
-      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       localStorage.removeItem('brandia_user');
       localStorage.removeItem('refreshToken');
@@ -73,7 +72,7 @@
   };
 
   // ============================================
-  // FETCH API CORE - DÉFINI AVANT LES API
+  // FETCH API CORE
   // ============================================
 
   let isRefreshing = false;
@@ -120,11 +119,12 @@
     } catch (error) {
       console.error('[Token Refresh] Failed:', error);
       storage.clear();
+      // 🔥 FIX: Ne pas rediriger automatiquement pour permettre la gestion d'erreur
       throw error;
     }
   }
 
-  // 🔥 DÉFINITION DE apiFetch AVANT TOUTE UTILISATION
+  // 🔥 apiFetch avec meilleure gestion des erreurs 401
   async function apiFetch(endpoint, options = {}, retryCount = 0) {
     const url = `${API_BASE_URL}${endpoint}`;
     
@@ -152,12 +152,13 @@
 
       clearTimeout(timeoutId);
 
-      // Gestion token expiré (401)
+      // 🔥 FIX: Gestion améliorée du 401
       if (response.status === 401) {
         const errorData = await response.json().catch(() => ({}));
         
-        if (errorData.message?.includes('expired') || errorData.code === 'TOKEN_EXPIRED') {
-          console.warn('[API] Token expired, attempting refresh...');
+        // Si c'est une route supplier et qu'on a un token, essayer de refresh
+        if (endpoint.includes('/supplier/') && token) {
+          console.warn('[API] Token expired on supplier route, attempting refresh...');
           
           if (isRefreshing) {
             return new Promise((resolve) => {
@@ -184,15 +185,21 @@
             return await retryResponse.json();
             
           } catch (refreshError) {
+            console.error('[API] Refresh failed, redirecting to login');
+            storage.clear();
+            // 🔥 Redirection seulement si on est sur une page protégée
+            if (window.location.pathname.includes('supplier/')) {
+              window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&expired=1`;
+            }
             throw refreshError;
           } finally {
             isRefreshing = false;
           }
         }
         
-        // NE PAS rediriger automatiquement - retourner l'erreur proprement
-        console.warn('[API] 401 recu - serveur peut etre en reveil (Render free tier)');
-        return { success: false, message: 'Session invalide', status: 401 };
+        // Pour les autres routes, juste retourner l'erreur
+        storage.clear();
+        return { success: false, message: 'Session invalide', code: 'UNAUTHORIZED' };
       }
 
       if (!response.ok) {
@@ -233,7 +240,7 @@
   }
 
   // ============================================
-  // MÉTHODES HTTP DIRECTES (utilisent apiFetch)
+  // MÉTHODES HTTP
   // ============================================
   
   const httpMethods = {
@@ -380,6 +387,15 @@
     isSupplier: () => {
       const user = storage.getUser();
       return user && user.role === 'supplier';
+    },
+    // 🔥 NOUVEAU: Vérifier si token valide
+    validateToken: async () => {
+      try {
+        const response = await apiFetch('/auth/me', { method: 'GET' });
+        return response.success;
+      } catch {
+        return false;
+      }
     }
   };
 
@@ -485,7 +501,7 @@
           formData.append('media', fileOrFormData);
         }
         
-        const response = await fetch(`${API_BASE_URL}/supplier/upload-image`, {
+        const response = await fetch(`${API_BASE_URL}/supplier/upload/image`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -517,7 +533,7 @@
           formData.append('media', fileOrFormData);
         }
         
-        const response = await fetch(`${API_BASE_URL}/supplier/upload-video`, {
+        const response = await fetch(`${API_BASE_URL}/supplier/upload/video`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -539,15 +555,20 @@
   };
 
   // ============================================
-  // SUPPLIER API
+  // SUPPLIER API - CORRIGÉ
   // ============================================
   
   const SupplierAPI = {
     init: () => {
       const user = storage.getUser();
-      const token = storage.getToken();
-      if (!token) { console.warn('[SupplierAPI] init: pas de token'); return false; }
-      if (user?.role !== 'supplier') { console.warn('[SupplierAPI] init: role non supplier'); return false; }
+      if (!storage.getToken()) { 
+        console.warn('[SupplierAPI] No token found');
+        return false; 
+      }
+      if (user?.role !== 'supplier') { 
+        console.warn('[SupplierAPI] User is not supplier:', user?.role);
+        return false; 
+      }
       return true;
     },
 
@@ -555,13 +576,15 @@
       try { 
         return await apiFetch('/supplier/stats'); 
       } catch (e) { 
+        console.error('[SupplierAPI] getStats error:', e);
         return { 
-          success: true, 
+          success: false, 
           data: { 
             stats: { totalSales: 0, totalOrders: 0, productsCount: 0, balance: 0 }, 
             recentOrders: [], 
             topProducts: [] 
-          } 
+          },
+          message: e.message
         }; 
       } 
     },
@@ -571,6 +594,7 @@
         const queryString = new URLSearchParams(params).toString(); 
         return await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`); 
       } catch (e) { 
+        console.error('[SupplierAPI] getProducts error:', e);
         return { success: false, data: { products: [] }, message: e.message }; 
       } 
     },
@@ -641,7 +665,7 @@
     
     getPayouts: async () => {
       try {
-        return await apiFetch('/supplier/payouts');
+        return await apiFetch('/supplier/payments/payouts');
       } catch (error) {
         return { success: false, data: [], message: error.message };
       }
@@ -669,14 +693,16 @@
       method: 'DELETE' 
     }),
 
+    // 🔥 CORRECTION: Routes campagnes corrigées
     getCampaigns: async () => {
       try {
         return await apiFetch('/supplier/campaigns');
       } catch (error) {
+        console.error('[SupplierAPI] getCampaigns error:', error);
         return { success: false, data: [], message: error.message };
       }
     },
-
+    
     getCampaignLimit: async () => {
       try {
         return await apiFetch('/supplier/campaigns/limit');
@@ -685,20 +711,42 @@
       }
     },
     
-    createCampaign: async (data) => await apiFetch('/supplier/campaigns', { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
-    }),
+    createCampaign: async (data) => {
+      try {
+        return await apiFetch('/supplier/campaigns', { 
+          method: 'POST', 
+          body: JSON.stringify(data) 
+        });
+      } catch (error) {
+        console.error('[SupplierAPI] createCampaign error:', error);
+        return { success: false, message: error.message };
+      }
+    },
     
-    updateCampaign: async (id, data) => await apiFetch(`/supplier/campaigns/${id}`, { 
-      method: 'PUT', 
-      body: JSON.stringify(data) 
-    }),
+    updateCampaign: async (id, data) => {
+      try {
+        return await apiFetch(`/supplier/campaigns/${id}`, { 
+          method: 'PUT', 
+          body: JSON.stringify(data) 
+        });
+      } catch (error) {
+        console.error('[SupplierAPI] updateCampaign error:', error);
+        return { success: false, message: error.message };
+      }
+    },
     
-    deleteCampaign: async (id) => await apiFetch(`/supplier/campaigns/${id}`, { 
-      method: 'DELETE' 
-    }),
+    deleteCampaign: async (id) => {
+      try {
+        return await apiFetch(`/supplier/campaigns/${id}`, { 
+          method: 'DELETE' 
+        });
+      } catch (error) {
+        console.error('[SupplierAPI] deleteCampaign error:', error);
+        return { success: false, message: error.message };
+      }
+    },
 
+    // Routes publiques (pas d'auth requise)
     getPublicCampaign: async (supplierId, productId) => {
       try {
         const response = await fetch(`${API_BASE_URL}/supplier/public/campaigns?supplier=${supplierId}&product=${productId}`, { 
@@ -865,7 +913,7 @@
       baseURL: API_BASE, 
       isLocal: isLocal, 
       apiURL: API_BASE_URL,
-      version: '3.7-fixed'
+      version: '3.8-fixed'
     }
   };
 
@@ -875,5 +923,5 @@
   window.getUser = () => BrandiaAPI.Auth.getUser();
   window.isSupplier = () => BrandiaAPI.Auth.isSupplier();
 
-  console.log('[Brandia API] ✅ Loaded v3.7 - apiFetch fixed');
+  console.log('[Brandia API] ✅ Loaded v3.8 - Supplier auth fixed');
 })();
