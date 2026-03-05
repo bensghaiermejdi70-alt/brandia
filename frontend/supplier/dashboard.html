@@ -717,7 +717,7 @@
       </div>
     </section>
 
-    <!-- ADVERTISING SECTION - VERSION INTÉGRÉE AVEC STATS -->
+        <!-- ADVERTISING SECTION - VERSION INTÉGRÉE AVEC STATS -->
     <section id="advertising" class="section space-y-6">
       <div class="flex justify-between items-start">
         <div>
@@ -995,7 +995,7 @@
         </div>
         <h3 class="text-lg font-semibold mb-2">Centre d'aide</h3>
         <p class="text-slate-400 mb-6">Une question ? Contactez notre équipe support.</p>
-        <a href="/cdn-cgi/l/email-protection#26555356564954526644544748424f470845494b5647485f" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
+        <a href="mailto:support@brandia.company" class="btn-primary px-6 py-3 rounded-lg text-sm font-medium inline-block">
           Contacter le support
         </a>
       </div>
@@ -1125,7 +1125,7 @@
         <!-- Nom campagne -->
         <div>
           <label class="block text-sm font-medium text-slate-400 mb-2">Nom de la campagne *</label>
-          <input type="text" id="campaign-name" required
+          <input type="text" id="camp-name" required
                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none" 
                  placeholder="Soldes été 2026">
         </div>
@@ -1142,7 +1142,7 @@
         <!-- Headline -->
         <div>
           <label class="block text-sm font-medium text-slate-400 mb-2">Titre publicitaire *</label>
-          <input type="text" id="campaign-headline" required
+          <input type="text" id="camp-headline" required
                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none" 
                  placeholder="-20% sur tous nos produits">
         </div>
@@ -1150,37 +1150,21 @@
         <!-- Description -->
         <div>
           <label class="block text-sm font-medium text-slate-400 mb-2">Description</label>
-          <textarea id="campaign-description" rows="3" 
+          <textarea id="camp-description" rows="3" 
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none resize-none" 
                     placeholder="Profitez de nos offres exclusives..."></textarea>
         </div>
 
-        <!-- Upload Vidéo -->
+        <!-- Upload Média -->
         <div>
-          <label class="block text-sm font-medium text-slate-400 mb-2">Vidéo publicitaire (15s max) *</label>
-          <div class="upload-zone" id="video-upload-zone">
-            <input type="file" id="campaign-video" accept="video/mp4,video/webm" onchange="handleVideoUpload(this)">
-            <div id="video-preview-content">
-              <i class="fas fa-video text-3xl text-slate-500 mb-2"></i>
-              <p class="text-slate-300 font-medium">Glissez une vidéo ou cliquez pour parcourir</p>
-              <p class="text-slate-500 text-sm mt-1">MP4/WebM, max 20Mo, 15 secondes</p>
-            </div>
-          </div>
-          <div class="progress-bar hidden" id="video-progress">
-            <div class="progress-fill" id="video-progress-fill"></div>
-          </div>
-          <p class="text-xs text-slate-500 mt-1 text-center hidden" id="video-progress-text">0%</p>
-        </div>
-
-        <!-- Upload Image fallback -->
-        <div>
-          <label class="block text-sm font-medium text-slate-400 mb-2">Image de fallback</label>
-          <div class="upload-zone" id="image-upload-zone">
-            <input type="file" id="campaign-image" accept="image/*" onchange="handleImageUpload(this)">
-            <div id="image-preview-content">
-              <i class="fas fa-image text-3xl text-slate-500 mb-2"></i>
-              <p class="text-slate-300 font-medium">Image si vidéo bloquée</p>
-              <p class="text-slate-500 text-sm mt-1">JPG/PNG, 800x450px recommandé</p>
+          <label class="block text-sm font-medium text-slate-400 mb-2">Média publicitaire *</label>
+          <div class="upload-zone" id="campaign-dropzone">
+            <input type="file" id="campaign-media" class="hidden" accept="image/*,video/mp4,video/webm,video/quicktime" onchange="handleCampaignMedia(event)">
+            <div id="campaign-media-placeholder" class="text-center p-4">
+              <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 mb-2"></i>
+              <p class="text-slate-400 text-xs">Cliquez ou glissez votre fichier ici</p>
+              <p class="text-slate-600 text-xs mt-1">Max 5MB (image) ou 50MB (vidéo)</p>
+              <p class="text-slate-600 text-xs">Formats: JPG, PNG, GIF, MP4, WEBM</p>
             </div>
           </div>
         </div>
@@ -1189,31 +1173,31 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-slate-400 mb-2">Date de début *</label>
-            <input type="datetime-local" id="campaign-start" required
+            <input type="date" id="camp-start-date" required
                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none">
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-400 mb-2">Date de fin *</label>
-            <input type="datetime-local" id="campaign-end" required
+            <input type="date" id="camp-end-date" required
                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none">
           </div>
         </div>
 
-        <!-- Lien CTA -->
+        <!-- CTA Text -->
         <div>
-          <label class="block text-sm font-medium text-slate-400 mb-2">Lien bouton "Voir l'offre"</label>
-          <input type="url" id="campaign-cta-link" 
+          <label class="block text-sm font-medium text-slate-400 mb-2">Texte bouton CTA</label>
+          <input type="text" id="camp-cta-text" value="Voir l'offre"
                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none"
-                 placeholder="https://votresite.com/promo">
+                 placeholder="Voir l'offre">
         </div>
 
-        <!-- Statut actif -->
-        <div class="flex items-center gap-3 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-          <input type="checkbox" id="campaign-active" checked class="toggle">
-          <div>
-            <p class="text-sm font-medium text-white">Campagne active immédiatement</p>
-            <p class="text-xs text-slate-400">Désactivez pour planifier plus tard</p>
-          </div>
+        <!-- Lien CTA -->
+        <div>
+          <label class="block text-sm font-medium text-slate-400 mb-2">Lien bouton</label>
+          <input type="url" id="camp-cta-link" 
+                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:outline-none"
+                 placeholder="https://...">
+          <p class="text-xs text-slate-500 mt-1" id="cta-link-help">Laissez vide pour rediriger vers le produit</p>
         </div>
 
       </div>
@@ -1243,9 +1227,12 @@
               <div class="brandia-ad-content">
                 <h4 class="brandia-ad-title" id="ad-preview-headline">Votre titre ici</h4>
                 <p class="brandia-ad-desc" id="ad-preview-desc">Description de votre offre...</p>
-                <a href="#" class="brandia-ad-cta" id="ad-preview-cta">
-                  Voir l'offre <i class="fas fa-arrow-right"></i>
-                </a>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-slate-500" id="ad-preview-target">Tous les produits</span>
+                  <a href="#" class="brandia-ad-cta" id="ad-preview-cta">
+                    Voir l'offre <i class="fas fa-arrow-right"></i>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -1298,7 +1285,7 @@
     <div class="flex items-center justify-between p-6 border-t border-slate-800 bg-slate-900 sticky bottom-0">
       <div class="text-xs text-slate-500">
         <i class="fas fa-info-circle mr-1"></i>
-        Les campagnes sont facturées au CPC (coût par clic)
+        Maximum 5 campagnes actives simultanément
       </div>
       <div class="flex items-center gap-3">
         <button type="button" onclick="closeCampaignModal()" class="px-6 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
@@ -1314,6 +1301,7 @@
 
   </div>
 </div>
+         
 
 <!-- Preview Modal -->
 <div id="preview-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
@@ -1342,7 +1330,7 @@
 </div>
 
 <!-- SCRIPTS -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="../assets/js/api.js"></script>
+<script src="../assets/js/api.js"></script>
 <script src="../assets/js/supplier-products.js"></script>
 <script src="../assets/js/supplier-promotions.js"></script>
 <script src="../assets/js/supplier-orders.js"></script>
@@ -1359,41 +1347,38 @@
 (function() {
   'use strict';
   
-  // Vérifier authentification - utilise les mêmes clés que api.js storage
+  // Vérifier authentification immédiatement
   function checkAuth() {
     try {
-      // Lire token avec toutes les clés possibles (api.js écrit sous token + brandia_token + accessToken)
-      const token = localStorage.getItem('token')
-                 || localStorage.getItem('brandia_token')
-                 || localStorage.getItem('accessToken');
-      let user = null;
-      try {
-        const userStr = localStorage.getItem('user') || localStorage.getItem('brandia_user');
-        user = userStr ? JSON.parse(userStr) : null;
-      } catch(e) {}
-
-      console.log('[Dashboard] checkAuth — token:', !!token, '| role:', user?.role);
-
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      
+      console.log('[Dashboard] Auth check - Token:', token ? 'present' : 'missing', 'User:', user ? user.role : 'none');
+      
       if (!token || !user) {
-        console.warn('[Dashboard] Pas de session — redirection login');
-        window.location.href = '../login.html?redirect=%2Fsupplier%2Fdashboard.html';
+        console.error('[Dashboard] Non authentifié');
+        window.location.href = '../login.html?redirect=supplier/dashboard&error=unauthorized';
         return false;
       }
-
+      
       if (user.role !== 'supplier') {
         console.error('[Dashboard] Accès refusé - rôle:', user.role);
         alert('Accès réservé aux fournisseurs');
         window.location.href = '../index.html';
         return false;
       }
-
+      
+      // Afficher nom utilisateur
       const userNameEl = document.getElementById('user-name');
-      if (userNameEl) userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
-
+      if (userNameEl) {
+        userNameEl.textContent = user.first_name || user.email || 'Fournisseur';
+      }
+      
       return true;
     } catch (error) {
-      console.error('[Dashboard] Erreur checkAuth:', error);
-      window.location.href = '../login.html';
+      console.error('[Dashboard] Erreur auth:', error);
+      window.location.href = '../login.html?error=session';
       return false;
     }
   }
@@ -1472,678 +1457,373 @@
     
     const [title, subtitle] = titles[section] || ['Dashboard', ''];
     const titleEl = document.getElementById('page-title');
-    const subtitleEl = document.getElementById('page
-    // ==========================================
-    // FONCTIONS DE MODAL CAMPAGNES AMÉLIORÉES
-    // ==========================================
+    const subtitleEl = document.getElementById('page-subtitle');
+    if (titleEl) titleEl.textContent = title;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
+    
+    // Sauvegarder section
+    localStorage.setItem('dashboard_last_section', section);
+    
+    // Initialiser section spécifique
+    if (section === 'advertising' && window.SupplierCampaigns) {
+      SupplierCampaigns.loadCampaigns();
+    }
+  };
 
-    // Ouvrir modal campagne (fonction globale sécurisée)
-    window.openCampaignModal = function(campaignId = null) {
-      console.log('[Dashboard] openCampaignModal called', campaignId);
-      
-      const modal = document.getElementById('campaign-modal');
-      const form = document.getElementById('campaign-form');
-      const title = document.getElementById('campaign-modal-title');
-      const counter = document.getElementById('modal-campaign-counter');
-      const quickStats = document.getElementById('campaign-quick-stats');
-      
-      // Reset form
-      form.reset();
-      document.getElementById('video-upload-zone').classList.remove('has-file');
-      document.getElementById('image-upload-zone').classList.remove('has-file');
-      document.getElementById('video-preview-content').innerHTML = `
-        <i class="fas fa-video text-3xl text-slate-500 mb-2"></i>
-        <p class="text-slate-300 font-medium">Glissez une vidéo ou cliquez pour parcourir</p>
-        <p class="text-slate-500 text-sm mt-1">MP4/WebM, max 20Mo, 15 secondes</p>
-      `;
-      document.getElementById('image-preview-content').innerHTML = `
-        <i class="fas fa-image text-3xl text-slate-500 mb-2"></i>
-        <p class="text-slate-300 font-medium">Image si vidéo bloquée</p>
-        <p class="text-slate-500 text-sm mt-1">JPG/PNG, 800x450px recommandé</p>
-      `;
-      
-      // Cacher la barre de progression
-      document.getElementById('video-progress').classList.add('hidden');
-      document.getElementById('video-progress-text').classList.add('hidden');
-      
-      if (campaignId && window.SupplierCampaigns) {
-        // Mode édition
-        const campaign = SupplierCampaigns.state.campaigns.find(c => c.id === campaignId);
-        if (campaign) {
-          title.textContent = 'Modifier la campagne';
-          document.getElementById('campaign-name').value = campaign.name;
-          document.getElementById('campaign-headline').value = campaign.headline;
-          document.getElementById('campaign-description').value = campaign.description || '';
-          document.getElementById('campaign-product').value = campaign.product_id;
-          document.getElementById('campaign-cta-link').value = campaign.cta_link || '';
-          document.getElementById('campaign-start').value = campaign.start_date.slice(0, 16);
-          document.getElementById('campaign-end').value = campaign.end_date.slice(0, 16);
-          document.getElementById('campaign-active').checked = campaign.status === 'active';
-          
-          // Afficher stats
-          quickStats.classList.remove('hidden');
-          document.getElementById('modal-ad-views').textContent = campaign.views_count || 0;
-          document.getElementById('modal-ad-clicks').textContent = campaign.clicks_count || 0;
-          const ctr = campaign.views_count > 0 ? ((campaign.clicks_count / campaign.views_count) * 100).toFixed(2) : 0;
-          document.getElementById('modal-ad-ctr').textContent = ctr + '%';
-          
-          // Prévisualisation média existant
-          if (campaign.media_url) {
-            if (campaign.media_type === 'video') {
-              document.getElementById('video-upload-zone').classList.add('has-file');
-              document.getElementById('video-preview-content').innerHTML = `
-                <video src="${campaign.media_url}" class="max-h-32 rounded-lg" controls></video>
-                <p class="text-emerald-400 text-sm mt-2">Vidéo existante</p>
-              `;
-            } else {
-              document.getElementById('image-upload-zone').classList.add('has-file');
-              document.getElementById('image-preview-content').innerHTML = `
-                <img src="${campaign.media_url}" class="max-h-32 rounded-lg">
-                <p class="text-emerald-400 text-sm mt-2">Image existante</p>
-              `;
-            }
-            document.getElementById('ad-preview-media').innerHTML = `
-              ${campaign.media_type === 'video' 
-                ? `<video src="${campaign.media_url}" class="w-full h-full object-cover" controls></video>`
-                : `<img src="${campaign.media_url}" class="w-full h-full object-cover">`
-              }
-            `;
-          }
-          
-          // Stocker l'ID en édition
-          if (window.SupplierCampaigns) {
-            SupplierCampaigns.state.editingId = campaignId;
-          }
-        }
-      } else {
-        // Mode création
-        title.textContent = 'Nouvelle campagne';
-        quickStats.classList.add('hidden');
-        
-        // Dates par défaut
-        const now = new Date();
-        const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        document.getElementById('campaign-start').value = now.toISOString().slice(0, 16);
-        document.getElementById('campaign-end').value = nextWeek.toISOString().slice(0, 16);
-        
-        if (window.SupplierCampaigns) {
-          SupplierCampaigns.state.editingId = null;
-        }
-      }
-      
-      // Mettre à jour le compteur
-      const campaignCount = window.SupplierCampaigns ? SupplierCampaigns.state.campaigns.length : 0;
-      counter.innerHTML = `<span class="${campaignCount >= 5 ? 'text-red-400' : 'text-emerald-400'}">${campaignCount}/5</span> campagnes`;
-      
-      // Mettre à jour la prévisualisation en temps réel
-      updatePreview();
-      
-      // Afficher modal
-      modal.classList.remove('hidden');
-      document.body.style.overflow = 'hidden';
-      
-      // Charger les produits si pas déjà fait
-      if (window.SupplierCampaigns && SupplierCampaigns.state.products.length === 0) {
-        SupplierCampaigns.loadProducts();
-      }
-    };
+  // ==========================================
+  // FONCTIONS DE MODAL CAMPAGNES AMÉLIORÉES
+  // ==========================================
 
-    // Fermer modal campagne
-    window.closeCampaignModal = function() {
+  // Ouvrir modal campagne
+  window.openCampaignModal = function(campaignId = null) {
+    console.log('[Dashboard] openCampaignModal called', campaignId);
+    
+    if (window.SupplierCampaigns && SupplierCampaigns.openModal) {
+      SupplierCampaigns.openModal(campaignId);
+    } else {
+      console.error('[Dashboard] SupplierCampaigns not available');
+      showToast('Erreur: Module campagnes non chargé', 'error');
+    }
+  };
+
+  // Fermer modal campagne
+  window.closeCampaignModal = function() {
+    if (window.SupplierCampaigns && SupplierCampaigns.closeModal) {
+      SupplierCampaigns.closeModal();
+    } else {
       const modal = document.getElementById('campaign-modal');
       if (modal) {
         modal.classList.add('hidden');
         document.body.style.overflow = '';
       }
-      if (window.SupplierCampaigns) {
-        SupplierCampaigns.state.editingId = null;
-        SupplierCampaigns.state.videoUrl = null;
-        SupplierCampaigns.state.imageUrl = null;
-      }
-    };
-
-    // Fermer modal preview
-    window.closePreviewModal = function() {
-      const modal = document.getElementById('preview-modal');
-      if (modal) {
-        modal.classList.add('hidden');
-      }
-    };
-
-    // Mettre à jour la prévisualisation
-    function updatePreview() {
-      const headline = document.getElementById('campaign-headline')?.value || 'Votre titre ici';
-      const description = document.getElementById('campaign-description')?.value || 'Description de votre offre...';
-      const ctaText = document.getElementById('campaign-cta-link')?.value ? 'Voir l\'offre' : 'Découvrir';
-      
-      const previewHeadline = document.getElementById('ad-preview-headline');
-      const previewDesc = document.getElementById('ad-preview-desc');
-      const previewCta = document.getElementById('ad-preview-cta');
-      
-      if (previewHeadline) previewHeadline.textContent = headline;
-      if (previewDesc) previewDesc.textContent = description;
-      if (previewCta) previewCta.innerHTML = `${ctaText} <i class="fas fa-arrow-right"></i>`;
     }
+  };
 
-    // Écouteurs pour mise à jour preview
-    document.getElementById('campaign-headline')?.addEventListener('input', updatePreview);
-    document.getElementById('campaign-description')?.addEventListener('input', updatePreview);
-
-    // Gestion upload vidéo
-    window.handleVideoUpload = function(input) {
-      const file = input.files[0];
-      if (!file) return;
-
-      // Validation
-      if (file.size > 20 * 1024 * 1024) {
-        showToast('Vidéo trop lourde (max 20Mo)', 'error');
-        input.value = '';
-        return;
-      }
-
-      // Vérifier durée (approximation)
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.onloadedmetadata = function() {
-        window.URL.revokeObjectURL(video.src);
-        if (video.duration > 15) {
-          showToast('Vidéo trop longue (max 15s)', 'error');
-          input.value = '';
-          return;
-        }
-        
-        // Afficher preview
-        const zone = document.getElementById('video-upload-zone');
-        zone.classList.add('has-file');
-        
-        const url = URL.createObjectURL(file);
-        document.getElementById('video-preview-content').innerHTML = `
-          <video src="${url}" class="max-h-32 rounded-lg" controls></video>
-          <p class="text-emerald-400 text-sm mt-2">${file.name}</p>
-          <p class="text-slate-500 text-xs">${(file.size / 1024 / 1024).toFixed(2)} Mo</p>
-        `;
-        
-        // Mettre à jour preview
-        document.getElementById('ad-preview-media').innerHTML = `
-          <video src="${url}" class="w-full h-full object-cover" muted loop></video>
-        `;
-        
-        // Upload avec progression
-        uploadMedia(file, 'video');
-      };
-      video.src = URL.createObjectURL(file);
-    };
-
-    // Gestion upload image
-    window.handleImageUpload = function(input) {
-      const file = input.files[0];
-      if (!file) return;
-
-      const zone = document.getElementById('image-upload-zone');
-      zone.classList.add('has-file');
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        document.getElementById('image-preview-content').innerHTML = `
-          <img src="${e.target.result}" class="max-h-32 rounded-lg">
-          <p class="text-emerald-400 text-sm mt-2">${file.name}</p>
-        `;
-        
-        // Si pas de vidéo, utiliser l'image pour la preview
-        const videoZone = document.getElementById('video-upload-zone');
-        if (!videoZone.classList.contains('has-file')) {
-          document.getElementById('ad-preview-media').innerHTML = `
-            <img src="${e.target.result}" class="w-full h-full object-cover">
-          `;
-        }
-        
-        uploadMedia(file, 'image');
-      };
-      reader.readAsDataURL(file);
-    };
-
-    // Upload média avec progression
-    async function uploadMedia(file, type) {
-      const progressBar = document.getElementById('video-progress');
-      const progressFill = document.getElementById('video-progress-fill');
-      const progressText = document.getElementById('video-progress-text');
-      
-      if (type === 'video') {
-        progressBar.classList.remove('hidden');
-        progressText.classList.remove('hidden');
-      }
-
-      try {
-        const formData = new FormData();
-        formData.append('media', file);
-
-        // Simulation progression
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += Math.random() * 15;
-          if (progress > 90) progress = 90;
-          if (progressFill) progressFill.style.width = progress + '%';
-          if (progressText) progressText.textContent = Math.round(progress) + '%';
-        }, 300);
-
-        const endpoint = type === 'video' ? '/supplier/upload-video' : '/supplier/upload-image';
-        const response = await fetch(`${BrandiaAPI?.config?.apiURL || 'https://api.brandia.com'}${endpoint}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formData
-        });
-
-        clearInterval(interval);
-
-        if (!response.ok) throw new Error('Upload failed');
-
-        const result = await response.json();
-        
-        if (result.success) {
-          if (progressFill) progressFill.style.width = '100%';
-          if (progressText) progressText.textContent = '100%';
-          
-          // Stocker l'URL
-          if (window.SupplierCampaigns) {
-            SupplierCampaigns.state[`${type}Url`] = result.data.url;
-          }
-          
-          setTimeout(() => {
-            progressBar.classList.add('hidden');
-            progressText.classList.add('hidden');
-          }, 1000);
-          
-          showToast(`${type === 'video' ? 'Vidéo' : 'Image'} uploadée avec succès`, 'success');
-        } else {
-          throw new Error(result.message);
-        }
-
-      } catch (error) {
-        console.error('[Dashboard] Upload error:', error);
-        showToast('Erreur upload: ' + error.message, 'error');
-        progressBar.classList.add('hidden');
-        progressText.classList.add('hidden');
-      }
+  // Fermer modal preview
+  window.closePreviewModal = function() {
+    const modal = document.getElementById('preview-modal');
+    if (modal) {
+      modal.classList.add('hidden');
     }
+  };
 
-    // Sauvegarder campagne
-    window.saveCampaignForm = async function() {
-      console.log('[Dashboard] saveCampaignForm called');
-      
-      const btn = document.getElementById('btn-save-campaign');
-      const originalContent = btn.innerHTML;
-      
-      try {
-        // Validation
-        const name = document.getElementById('campaign-name').value;
-        const headline = document.getElementById('campaign-headline').value;
-        const productId = document.getElementById('campaign-product').value;
-        const startDate = document.getElementById('campaign-start').value;
-        const endDate = document.getElementById('campaign-end').value;
-        
-        if (!name || !headline || !productId || !startDate || !endDate) {
-          showToast('Veuillez remplir tous les champs obligatoires', 'error');
-          return;
-        }
+  // Sauvegarder campagne
+  window.saveCampaignForm = async function() {
+    console.log('[Dashboard] saveCampaignForm called');
+    
+    if (window.SupplierCampaigns && SupplierCampaigns.save) {
+      await SupplierCampaigns.save();
+    } else {
+      showToast('Erreur: Module campagnes non chargé', 'error');
+    }
+  };
 
-        // Vérifier dates
-        if (new Date(endDate) <= new Date(startDate)) {
-          showToast('La date de fin doit être après la date de début', 'error');
-          return;
-        }
+  // ==========================================
+  // AUTRES FONCTIONS GLOBALES
+  // ==========================================
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+  window.showLoading = function(show) {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.toggle('hidden', !show);
+  };
 
-        const formData = {
-          name: name,
-          headline: headline,
-          description: document.getElementById('campaign-description').value,
-          product_id: parseInt(productId),
-          media_url: window.SupplierCampaigns?.state?.videoUrl || null,
-          media_type: 'video',
-          fallback_image_url: window.SupplierCampaigns?.state?.imageUrl || null,
-          cta_link: document.getElementById('campaign-cta-link').value,
-          start_date: startDate,
-          end_date: endDate,
-          status: document.getElementById('campaign-active').checked ? 'active' : 'paused'
-        };
-
-        let response;
-        if (window.SupplierCampaigns?.state?.editingId) {
-          response = await BrandiaAPI.Supplier.updateCampaign(SupplierCampaigns.state.editingId, formData);
-        } else {
-          // Vérifier limite de 5 campagnes
-          if (window.SupplierCampaigns?.state?.campaigns?.length >= 5) {
-            showToast('Limite de 5 campagnes atteinte', 'error');
-            btn.disabled = false;
-            btn.innerHTML = originalContent;
-            return;
-          }
-          response = await BrandiaAPI.Supplier.createCampaign(formData);
-        }
-
-        if (response.success) {
-          closeCampaignModal();
-          if (window.SupplierCampaigns) {
-            await SupplierCampaigns.loadCampaigns();
-          }
-          showToast(window.SupplierCampaigns?.state?.editingId ? 'Campagne mise à jour' : 'Campagne créée', 'success');
-        } else {
-          throw new Error(response.message);
-        }
-
-      } catch (error) {
-        console.error('[Dashboard] Save error:', error);
-        showToast('Erreur: ' + error.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalContent;
-      }
-    };
-
-    // ==========================================
-    // AUTRES FONCTIONS GLOBALES
-    // ==========================================
-
-    window.showLoading = function(show) {
-      const overlay = document.getElementById('loading-overlay');
-      if (overlay) overlay.classList.toggle('hidden', !show);
-    };
-
-    window.openProductModal = function() {
-      if (window.SupplierProducts && SupplierProducts.openModal) {
-        SupplierProducts.openModal();
-      } else {
-        const modal = document.getElementById('product-modal');
-        if (modal) {
-          modal.classList.remove('hidden');
-          document.body.style.overflow = 'hidden';
-        }
-      }
-    };
-
-    window.closeProductModal = function() {
+  window.openProductModal = function() {
+    if (window.SupplierProducts && SupplierProducts.openModal) {
+      SupplierProducts.openModal();
+    } else {
       const modal = document.getElementById('product-modal');
       if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
       }
-    };
+    }
+  };
 
-    window.filterOrders = function(filter) {
-      if (window.SupplierOrders && SupplierOrders.setFilter) {
-        SupplierOrders.setFilter(filter);
-      } else {
-        console.error('[Dashboard] SupplierOrders non disponible');
-        showToast('Erreur: Module commandes non chargé', 'error');
-      }
-    };
+  window.closeProductModal = function() {
+    const modal = document.getElementById('product-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  };
 
-    window.requestPayout = function() {
-      if (window.SupplierPayments && SupplierPayments.requestPayout) {
-        SupplierPayments.requestPayout();
-      } else {
-        showToast('Module paiements non chargé', 'error');
-      }
-    };
+  window.filterOrders = function(filter) {
+    if (window.SupplierOrders && SupplierOrders.setFilter) {
+      SupplierOrders.setFilter(filter);
+    } else {
+      console.error('[Dashboard] SupplierOrders non disponible');
+      showToast('Erreur: Module commandes non chargé', 'error');
+    }
+  };
 
-    window.exportTransactions = function() {
+  window.requestPayout = function() {
+    if (window.SupplierPayments && SupplierPayments.requestPayout) {
+      SupplierPayments.requestPayout();
+    } else {
+      showToast('Module paiements non chargé', 'error');
+    }
+  };
+
+  window.exportTransactions = function() {
+    showToast('Fonctionnalité en développement', 'info');
+  };
+
+  window.importProducts = function() {
+    if (window.SupplierProducts && SupplierProducts.importCSV) {
+      SupplierProducts.importCSV();
+    } else {
       showToast('Fonctionnalité en développement', 'info');
-    };
-
-    window.importProducts = function() {
-      if (window.SupplierProducts && SupplierProducts.importCSV) {
-        SupplierProducts.importCSV();
-      } else {
-        showToast('Fonctionnalité en développement', 'info');
-      }
-    };
-
-    window.quickAction = function() {
-      const actions = ['products', 'orders', 'advertising'];
-      const current = localStorage.getItem('dashboard_last_section') || 'overview';
-      const next = actions[(actions.indexOf(current) + 1) % actions.length] || 'products';
-      navigate(next);
-    };
-
-    window.showNotifications = function() {
-      showToast('Pas de nouvelles notifications', 'info');
-    };
-
-    window.logout = function() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('brandia_token');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('brandia_user');
-      localStorage.removeItem('refreshToken');
-      window.location.href = '../login.html';
-    };
-
-    window.editBrand = function() {
-      showToast('Fonctionnalité en développement', 'info');
-    };
-
-    window.viewPublicProfile = function() {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.id) {
-        window.open(`../brand.html?id=${user.id}`, '_blank');
-      }
-    };
-
-    window.handleLogoUpload = function(event) {
-      showToast('Upload logo en développement', 'info');
-    };
-
-    window.handleImageSelect = function(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const preview = document.getElementById('image-preview');
-          const container = document.getElementById('image-preview-container');
-          if (preview && container) {
-            preview.src = e.target.result;
-            container.classList.remove('hidden');
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-
-    window.updateAnalyticsPeriod = function(period) {
-      document.querySelectorAll('.analytics-period').forEach(btn => {
-        btn.classList.remove('bg-indigo-600', 'text-white');
-        btn.classList.add('bg-slate-800', 'text-slate-300');
-      });
-      const activeBtn = document.querySelector(`[data-period="${period}"]`);
-      if (activeBtn) {
-        activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
-        activeBtn.classList.add('bg-indigo-600', 'text-white');
-      }
-      showToast(`Période: ${period} jours`, 'info');
-    };
-
-    window.updateSalesChart = function() {
-      const period = document.getElementById('sales-period')?.value || '7';
-      showToast(`Mise à jour graphique: ${period} jours`, 'info');
-    };
-
-    window.changeProductPage = function(direction) {
-      if (window.SupplierProducts && SupplierProducts.changePage) {
-        SupplierProducts.changePage(direction);
-      }
-    };
-
-    window.filterProducts = function() {
-      if (window.SupplierProducts && SupplierProducts.filter) {
-        SupplierProducts.filter();
-      }
-    };
-
-    window.openPromotionModal = function() {
-      if (window.SupplierPromotions && SupplierPromotions.openModal) {
-        SupplierPromotions.openModal();
-      } else {
-        showToast('Module promotions non chargé', 'error');
-      }
-    };
-
-    // ==========================================
-    // CHARGEMENT STATS & CHARTS
-    // ==========================================
-
-    async function loadOverviewStats() {
-      try {
-        if (typeof BrandiaAPI === 'undefined') {
-          console.warn('[Dashboard] BrandiaAPI non disponible');
-          return;
-        }
-
-        const response = await BrandiaAPI.Supplier.getStats();
-        console.log('[Dashboard] Stats response:', response);
-
-        // Si 401 = serveur Render en réveil, retry dans 5s SANS rediriger
-        if (response?.status === 401 || (!response?.success && response?.message === 'Session invalide')) {
-          console.warn('[Dashboard] Stats 401 — Render en réveil, retry dans 5s...');
-          setTimeout(loadOverviewStats, 5000);
-          return;
-        }
-
-        if (response?.success && response.data) {
-          const data = response.data;
-          updateElement('kpi-revenue', formatPrice(data.totalSales || 0));
-          updateElement('kpi-orders', data.totalOrders || 0);
-          updateElement('kpi-products', data.activeProducts || 0);
-          updateElement('kpi-total-products', data.totalProducts || 0);
-          updateElement('kpi-balance', formatPrice(data.balance || 0));
-          if (typeof Chart !== 'undefined') {
-            initSalesChart(data.salesData || []);
-          }
-        }
-      } catch (error) {
-        console.error('[Dashboard] Erreur stats (ignorée):', error.message);
-      }
     }
+  };
 
-    function updateElement(id, value) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value;
+  window.quickAction = function() {
+    const actions = ['products', 'orders', 'advertising'];
+    const current = localStorage.getItem('dashboard_last_section') || 'overview';
+    const next = actions[(actions.indexOf(current) + 1) % actions.length] || 'products';
+    navigate(next);
+  };
+
+  window.showNotifications = function() {
+    showToast('Pas de nouvelles notifications', 'info');
+  };
+
+  window.logout = function() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    window.location.href = '../login.html';
+  };
+
+  window.editBrand = function() {
+    showToast('Fonctionnalité en développement', 'info');
+  };
+
+  window.viewPublicProfile = function() {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : {};
+    if (user.id) {
+      window.open(`../brand.html?id=${user.id}`, '_blank');
     }
+  };
 
-    function formatPrice(amount) {
-      return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(amount || 0);
+  window.handleLogoUpload = function(event) {
+    showToast('Upload logo en développement', 'info');
+  };
+
+  window.handleImageSelect = function(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById('image-preview');
+        const container = document.getElementById('image-preview-container');
+        if (preview && container) {
+          preview.src = e.target.result;
+          container.classList.remove('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
     }
+  };
 
-    function initSalesChart(data) {
-      const ctx = document.getElementById('salesChart');
-      if (!ctx) return;
-
-      if (window.salesChartInstance) {
-        window.salesChartInstance.destroy();
-      }
-
-      window.salesChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: (data && data.length) ? data.map(d => d.date) : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-          datasets: [{
-            label: 'Ventes (€)',
-            data: (data && data.length) ? data.map(d => d.amount) : [0, 0, 0, 0, 0, 0, 0],
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { 
-              beginAtZero: true, 
-              grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
-              ticks: { color: '#94a3b8' } 
-            },
-            x: { 
-              grid: { display: false }, 
-              ticks: { color: '#94a3b8' } 
-            }
-          }
-        }
-      });
-    }
-
-    // ==========================================
-    // DÉMARRAGE
-    // ==========================================
-
-    if (!checkAuth()) return;
-
-    const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('[Dashboard] Initialisation...');
-      
-      navigate(lastSection);
-      
-      // Fermer modals au clic extérieur
-      document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-        backdrop.addEventListener('click', function(e) {
-          if (e.target === this) {
-            closeProductModal();
-          }
-        });
-      });
-      
-      // Fermer modals avec Escape
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-          closeCampaignModal();
-          closeProductModal();
-          closePreviewModal();
-        }
-      });
-      
-      setTimeout(() => {
-        try {
-          if (window.SupplierProducts) {
-            console.log('[Dashboard] Init SupplierProducts');
-            SupplierProducts.init();
-          }
-          if (window.SupplierOrders) {
-            console.log('[Dashboard] Init SupplierOrders');
-            SupplierOrders.init();
-          }
-          if (window.SupplierCampaigns) {
-            console.log('[Dashboard] Init SupplierCampaigns');
-            SupplierCampaigns.init();
-          }
-          if (window.SupplierPayments) {
-            console.log('[Dashboard] Init SupplierPayments');
-            SupplierPayments.init();
-          }
-          if (window.SupplierPromotions) {
-            console.log('[Dashboard] Init SupplierPromotions');
-            SupplierPromotions.init();
-          }
-          
-          loadOverviewStats();
-          
-        } catch (error) {
-          console.error('[Dashboard] Erreur init modules:'
-          showToast('Erreur lors de l\'initialisation des modules', 'error');
-        }
-      }, 500);
+  window.updateAnalyticsPeriod = function(period) {
+    document.querySelectorAll('.analytics-period').forEach(btn => {
+      btn.classList.remove('bg-indigo-600', 'text-white');
+      btn.classList.add('bg-slate-800', 'text-slate-300');
     });
+    const activeBtn = document.querySelector(`[data-period="${period}"]`);
+    if (activeBtn) {
+      activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+      activeBtn.classList.add('bg-indigo-600', 'text-white');
+    }
+    showToast(`Période: ${period} jours`, 'info');
+  };
 
-  </script>
+  window.updateSalesChart = function() {
+    const period = document.getElementById('sales-period')?.value || '7';
+    showToast(`Mise à jour graphique: ${period} jours`, 'info');
+  };
+
+  window.changeProductPage = function(direction) {
+    if (window.SupplierProducts && SupplierProducts.changePage) {
+      SupplierProducts.changePage(direction);
+    }
+  };
+
+  window.filterProducts = function() {
+    if (window.SupplierProducts && SupplierProducts.filter) {
+      SupplierProducts.filter();
+    }
+  };
+
+  window.openPromotionModal = function() {
+    if (window.SupplierPromotions && SupplierPromotions.openModal) {
+      SupplierPromotions.openModal();
+    } else {
+      showToast('Module promotions non chargé', 'error');
+    }
+  };
+
+  // ==========================================
+  // CHARGEMENT STATS & CHARTS
+  // ==========================================
+
+  async function loadOverviewStats() {
+    try {
+      if (typeof BrandiaAPI === 'undefined') {
+        console.warn('[Dashboard] BrandiaAPI non disponible');
+        return;
+      }
+      
+      const response = await BrandiaAPI.Supplier.getStats();
+      console.log('[Dashboard] Stats:', response);
+      
+      if (response?.success && response.data) {
+        const data = response.data;
+        
+        // Si data.stats existe, l'utiliser, sinon utiliser data directement
+        const stats = data.stats || data;
+        
+        updateElement('kpi-revenue', formatPrice(stats.totalSales || stats.total_revenue || 0));
+        updateElement('kpi-orders', stats.totalOrders || stats.total_orders || 0);
+        updateElement('kpi-products', stats.activeProducts || stats.products_count || 0);
+        updateElement('kpi-total-products', stats.totalProducts || stats.products_count || 0);
+        updateElement('kpi-balance', formatPrice(stats.balance || 0));
+        
+        if (typeof Chart !== 'undefined') {
+          initSalesChart(data.salesData || []);
+        }
+        
+        // Mettre à jour compteurs dans la sidebar
+        const productCountEl = document.getElementById('product-count');
+        if (productCountEl) {
+          productCountEl.textContent = stats.products_count || 0;
+          productCountEl.classList.remove('hidden');
+        }
+      }
+    } catch (error) {
+      console.error('[Dashboard] Erreur stats:', error);
+    }
+  }
+
+  function updateElement(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function formatPrice(amount) {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount || 0);
+  }
+
+  function initSalesChart(data) {
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) return;
+
+    if (window.salesChartInstance) {
+      window.salesChartInstance.destroy();
+    }
+
+    window.salesChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: (data && data.length) ? data.map(d => d.date) : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+        datasets: [{
+          label: 'Ventes (€)',
+          data: (data && data.length) ? data.map(d => d.amount) : [0, 0, 0, 0, 0, 0, 0],
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
+            ticks: { color: '#94a3b8' } 
+          },
+          x: { 
+            grid: { display: false }, 
+            ticks: { color: '#94a3b8' } 
+          }
+        }
+      }
+    });
+  }
+
+  // ==========================================
+  // DÉMARRAGE
+  // ==========================================
+
+  if (!checkAuth()) return;
+
+  const lastSection = localStorage.getItem('dashboard_last_section') || 'overview';
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Dashboard] Initialisation...');
+    
+    navigate(lastSection);
+    
+    // Fermer modals au clic extérieur
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+      backdrop.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeProductModal();
+        }
+      });
+    });
+    
+    // Fermer modals avec Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeCampaignModal();
+        closeProductModal();
+        closePreviewModal();
+      }
+    });
+    
+    // Initialisation des modules avec délai pour s'assurer que les scripts sont chargés
+    setTimeout(() => {
+      try {
+        if (window.SupplierProducts) {
+          console.log('[Dashboard] Init SupplierProducts');
+          SupplierProducts.init();
+        }
+        if (window.SupplierOrders) {
+          console.log('[Dashboard] Init SupplierOrders');
+          SupplierOrders.init();
+        }
+        if (window.SupplierCampaigns) {
+          console.log('[Dashboard] Init SupplierCampaigns');
+          SupplierCampaigns.init();
+        }
+        if (window.SupplierPayments) {
+          console.log('[Dashboard] Init SupplierPayments');
+          SupplierPayments.init();
+        }
+        if (window.SupplierPromotions) {
+          console.log('[Dashboard] Init SupplierPromotions');
+          SupplierPromotions.init();
+        }
+        
+        loadOverviewStats();
+        
+      } catch (error) {
+        console.error('[Dashboard] Erreur init modules:', error);
+        showToast('Erreur de chargement des modules', 'error');
+      }
+    }, 100);
+  });
+
+})();
+</script>
+
 </body>
 </html>
