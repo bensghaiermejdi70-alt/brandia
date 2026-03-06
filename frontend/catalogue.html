@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catalogue - Brandia</title>
 <meta name="description" content="Découvrez tous les produits des marques sur Brandia">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg ' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300 ;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+<script src="https://cdn.tailwindcss.com "></script>
 <script>
 tailwind.config = {
 darkMode: 'class',
@@ -1474,7 +1474,7 @@ const COUNTRIES = {
       'CG': { name: 'Congo', currency: 'XAF' },
       'CD': { name: 'Congo (RDC)', currency: 'CDF' },
       'CR': { name: 'Costa Rica', currency: 'CRC' },
-      'CI': { name: 'Côte d’Ivoire', currency: 'XOF' },
+      'CI': { name: 'Côte d'Ivoire', currency: 'XOF' },
       'HR': { name: 'Croatie', currency: 'EUR' },
       'CU': { name: 'Cuba', currency: 'CUP' },
       'CY': { name: 'Chypre', currency: 'EUR' },
@@ -1669,8 +1669,6 @@ localStorage.setItem('country', e.target.value);
 localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
 showToast('Pays changé: ' + COUNTRIES[e.target.value].name, 'success');
 });
-}
-
 function getAuthToken() {
 if (window.BrandiaAPI && BrandiaAPI.storage && BrandiaAPI.storage.getToken) {
 const apiToken = BrandiaAPI.storage.getToken();
@@ -1756,16 +1754,43 @@ filteredProducts: [],
 filters: { category: null, search: '', minPrice: null, maxPrice: null, promoOnly: false },
 sortBy: 'newest',
 },
+apiAvailable: false,
 init: function() {
 console.log('[CatalogueApp] Initialisation...');
+// Vérifier si l'API est disponible
+this.checkApiAvailability();
 initCountries();
 initFilters();
 initSearch();
 initAuth();
-this.loadProducts();
 updateCartBadge();
 },
+checkApiAvailability: function() {
+// Attendre que BrandiaAPI soit chargé
+if (typeof BrandiaAPI === 'undefined' || !BrandiaAPI) {
+console.log('[CatalogueApp] API non encore chargée, attente...');
+setTimeout(() => this.checkApiAvailability(), 100);
+return;
+}
+// Vérifier que Products existe
+if (!BrandiaAPI.get || !BrandiaAPI.post) {
+console.error('[CatalogueApp] BrandiaAPI incomplet');
+this.showApiError();
+return;
+}
+this.apiAvailable = true;
+console.log('[CatalogueApp] API disponible');
+this.loadProducts();
+},
+showApiError: function() {
+const container = document.getElementById('products-container');
+container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur de chargement</h3><p>L\'API n\'est pas disponible. Vérifiez votre connexion.</p><button onclick="location.reload()" class="btn-primary" style="margin-top: 1rem;"><i class="fas fa-redo mr-2"></i>Recharger la page</button></div>';
+},
 loadProducts: function() {
+if (!this.apiAvailable) {
+this.checkApiAvailability();
+return;
+}
 const container = document.getElementById('products-container');
 container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
 let category = this.state.filters.category;
@@ -1773,28 +1798,38 @@ if (!category || category === 'null' || category === 'undefined' || category ===
 const params = {};
 if (category) { params.category = category; }
 params.limit = 100;
-if (!window.BrandiaAPI || !BrandiaAPI.Products) {
-console.error('[CatalogueApp] API non disponible');
-container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur de chargement</h3><p>L\'API n\'est pas disponible. Vérifiez que api.js est chargé.</p></div>';
-return;
-}
-BrandiaAPI.Products.getAllWithPromotions(params).then(function(response) {
+// Utiliser l'API fetch directement si BrandiaAPI.Products n'existe pas
+const apiUrl = (BrandiaAPI.config && BrandiaAPI.config.apiURL) ? BrandiaAPI.config.apiURL : 'https://brandia-1.onrender.com/api';
+const queryString = new URLSearchParams(params).toString();
+const url = `${apiUrl}/products${queryString ? '?' + queryString : ''}`;
+fetch(url, {
+method: 'GET',
+headers: { 'Content-Type': 'application/json' }
+})
+.then(response => response.json())
+.then(data => {
+if (data.success) {
+const products = data.data && data.data.products ? data.data.products : (Array.isArray(data.data) ? data.data : []);
+CatalogueApp.state.allProducts = products;
+CatalogueApp.applyFilters();
+} else { throw new Error(data.message || 'Erreur de chargement'); }
+})
+.catch(error => {
+console.error('[CatalogueApp] Erreur:', error);
+// Fallback: essayer avec getAllWithPromotions si disponible
+if (BrandiaAPI.Products && BrandiaAPI.Products.getAllWithPromotions) {
+BrandiaAPI.Products.getAllWithPromotions(params).then(response => {
 if (response.success) {
 const products = response.data && response.data.products ? response.data.products : (Array.isArray(response.data) ? response.data : []);
 CatalogueApp.state.allProducts = products;
 CatalogueApp.applyFilters();
-} else { throw new Error(response.message || 'Erreur de chargement'); }
-}).catch(function(error) {
-console.error('[CatalogueApp] Erreur:', error);
-BrandiaAPI.Products.getAll({ limit: 100 }).then(function(fallback) {
-if (fallback.success) {
-const products = fallback.data && fallback.data.products ? fallback.data.products : (Array.isArray(fallback.data) ? fallback.data : []);
-CatalogueApp.state.allProducts = products;
-CatalogueApp.applyFilters();
 }
-}).catch(function() {
+}).catch(() => {
 container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur de connexion</h3><p>Impossible de charger les produits</p><button onclick="CatalogueApp.loadProducts()" class="btn-primary" style="margin-top: 1rem;"><i class="fas fa-redo mr-2"></i>Réessayer</button></div>';
 });
+} else {
+container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur de connexion</h3><p>Impossible de charger les produits</p><button onclick="CatalogueApp.loadProducts()" class="btn-primary" style="margin-top: 1rem;"><i class="fas fa-redo mr-2"></i>Réessayer</button></div>';
+}
 });
 },
 applyFilters: function() {
@@ -1868,12 +1903,26 @@ return '<div class="product-card fade-in" style="animation-delay: ' + (index * 0
 },
 addToCart: function(productId) {
 event.stopPropagation();
-if (!window.BrandiaAPI || !BrandiaAPI.Products) { showToast('Erreur: API non disponible', 'error'); return; }
-BrandiaAPI.Products.getByIdWithPromotion(productId).then(function(response) {
-if (!response.success || !response.data.product) { throw new Error('Produit non trouvé'); }
-const product = response.data.product;
-const cartItem = { id: product.id, name: product.name, price: product.final_price || product.price, original_price: product.base_price || product.price, has_promotion: product.has_promotion, promo_code: product.promo_code, main_image_url: getProductImageUrl(product), quantity: 1 };
-if (window.BrandiaAPI && BrandiaAPI.Cart) { BrandiaAPI.Cart.add(cartItem); } else {
+// Récupérer le produit depuis la liste
+const product = this.state.allProducts.find(p => p.id === productId);
+if (!product) {
+showToast('Produit non trouvé', 'error');
+return;
+}
+const cartItem = { 
+id: product.id, 
+name: product.name, 
+price: product.final_price || product.price, 
+original_price: product.base_price || product.price, 
+has_promotion: product.has_promotion, 
+promo_code: product.promo_code, 
+main_image_url: getProductImageUrl(product), 
+quantity: 1 
+};
+// Utiliser BrandiaAPI.Cart si disponible
+if (window.BrandiaAPI && BrandiaAPI.Cart && BrandiaAPI.Cart.add) { 
+BrandiaAPI.Cart.add(cartItem); 
+} else {
 let cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
 const existing = cart.find(function(x) { return x.id === product.id; });
 if (existing) { existing.quantity++; } else { cart.push(cartItem); }
@@ -1881,7 +1930,6 @@ localStorage.setItem('brandia_cart', JSON.stringify(cart));
 }
 showToast('Produit ajouté au panier !', 'success');
 updateCartBadge();
-}).catch(function(error) { console.error('[CatalogueApp] Erreur ajout panier:', error); showToast('Erreur lors de l\'ajout', 'error'); });
 },
 togglePromoOnly: function() {
 const checkbox = document.getElementById('promo-only');
@@ -1894,7 +1942,15 @@ const container = document.getElementById('products-container');
 container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
 const params = { promo_only: true, limit: 100 };
 if (this.state.filters.category) { params.category = this.state.filters.category; }
-BrandiaAPI.Products.getAllWithPromotions(params).then(function(response) {
+// Utiliser fetch directement
+const apiUrl = (BrandiaAPI.config && BrandiaAPI.config.apiURL) ? BrandiaAPI.config.apiURL : 'https://brandia-1.onrender.com/api';
+const queryString = new URLSearchParams(params).toString();
+fetch(`${apiUrl}/products/promotions?${queryString}`, {
+method: 'GET',
+headers: { 'Content-Type': 'application/json' }
+})
+.then(response => response.json())
+.then(response => {
 if (response.success) {
 const products = response.data && response.data.products ? response.data.products : [];
 CatalogueApp.state.allProducts = products;
@@ -1911,7 +1967,8 @@ const resultsCount = document.getElementById('results-count');
 const promoCount = filtered.filter(function(p) { return p.has_promotion; }).length;
 resultsCount.textContent = filtered.length + ' produit(s) trouvé(s) dont ' + promoCount + ' en promotion';
 } else { throw new Error(response.message); }
-}).catch(function(error) {
+})
+.catch(function(error) {
 console.error('[CatalogueApp] Erreur chargement promos:', error);
 container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur lors du chargement des promotions</h3><button onclick="CatalogueApp.togglePromoOnly()" class="btn-primary" style="margin-top: 1rem;">Réessayer</button></div>';
 });
@@ -2041,7 +2098,7 @@ CatalogueApp.loadProducts();
 function updateCartBadge() {
 try {
 let count = 0;
-if (window.BrandiaAPI && BrandiaAPI.Cart) { count = BrandiaAPI.Cart.getCount(); } else {
+if (window.BrandiaAPI && BrandiaAPI.Cart && BrandiaAPI.Cart.getCount) { count = BrandiaAPI.Cart.getCount(); } else {
 const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
 count = cart.reduce(function(sum, item) { return sum + (item.quantity || 0); }, 0);
 }
@@ -2059,134 +2116,4 @@ CatalogueApp.init();
 });
 </script>
 </body>
-<!-- ============================================
-// 🔥 BRANDIA AD INTEGRATION pour Catalogue
-// Déclenchement publicité sur clic produit fournisseur
-// ============================================ -->
-<script>
-(function() {
-    'use strict';
-
-    // Attendre que le DOM et l'API soient prêts
-    const initAdIntegration = () => {
-        if (typeof BrandiaAPI === 'undefined' || typeof BrandiaAdEngine === 'undefined') {
-            setTimeout(initAdIntegration, 500);
-            return;
-        }
-
-        console.log('[Catalogue Ad] Intégration démarrée');
-
-        // Intercepter les clics sur les cartes produit
-        const setupProductClicks = () => {
-            const productsGrid = document.getElementById('products-container');
-            if (!productsGrid) return;
-
-            // Détection dynamique des cartes produit
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1 && node.classList.contains('product-card')) {
-                            attachAdHandler(node);
-                        }
-                    });
-                });
-            });
-
-            observer.observe(productsGrid, { childList: true, subtree: true });
-
-            // Attacher aux cartes existantes
-            productsGrid.querySelectorAll('.product-card').forEach(card => {
-                attachAdHandler(card);
-            });
-        };
-
-        const attachAdHandler = (card) => {
-            // Éviter double attachement
-            if (card.dataset.adHandlerAttached) return;
-            card.dataset.adHandlerAttached = 'true';
-
-            // Extraire l'ID produit du onclick ou du href
-            const onclickAttr = card.getAttribute('onclick') || '';
-            const href = card.getAttribute('href') || '';
-            
-            let productId = null;
-            let supplierId = card.dataset.supplierId || null;
-
-            // Parser l'ID depuis onclick="location.href='product.html?id=123'"
-            const idMatch = onclickAttr.match(/id=(\d+)/) || href.match(/id=(\d+)/);
-            if (idMatch) {
-                productId = idMatch[1];
-            }
-
-            if (!productId) return;
-
-            // Récupérer les données produit pour vérifier le fournisseur
-            card.addEventListener('click', async (e) => {
-                // Ne pas intercepter si clic sur bouton panier
-                if (e.target.closest('.btn-add-cart') || e.target.closest('.btn-view')) {
-                    return;
-                }
-
-                e.preventDefault();
-                e.stopPropagation();
-
-                console.log(`[Catalogue Ad] Clic produit ${productId}`);
-
-                try {
-                    // Récupérer détails produit
-                    const response = await BrandiaAPI.Products.getById(productId);
-                    
-                    if (!response.success || !response.data) {
-                        // Fallback: redirection directe
-                        window.location.href = `product.html?id=${productId}`;
-                        return;
-                    }
-
-                    const product = response.data.product || response.data;
-                    
-                    // Vérifier si c'est un produit fournisseur avec campagnes
-                    if (product.supplier_id) {
-                        // Vérifier s'il y a des campagnes actives
-                        const campaignCheck = await fetch(
-                            `${BrandiaAPI.config.apiURL}/supplier/public/campaigns?supplier=${product.supplier_id}&product=${product.id}`,
-                            { headers: { 'Accept': 'application/json' } }
-                        ).then(r => r.json()).catch(() => ({ success: false }));
-
-                        if (campaignCheck.success && campaignCheck.data && 
-                            (Array.isArray(campaignCheck.data) ? campaignCheck.data.length > 0 : true)) {
-                            
-                            console.log('[Catalogue Ad] Campagnes trouvées, déclenchement pub');
-                            
-                            // Initialiser AdEngine avec ce produit
-                            BrandiaAdEngine.init(product);
-                            
-                            // Déclencher la publicité
-                            BrandiaAdEngine.checkAndTrigger(product);
-                            
-                            return;
-                        }
-                    }
-
-                    // Pas de pub, redirection normale
-                    window.location.href = `product.html?id=${productId}`;
-
-                } catch (error) {
-                    console.error('[Catalogue Ad] Erreur:', error);
-                    window.location.href = `product.html?id=${productId}`;
-                }
-            }, true); // Use capture pour intercepter avant
-        };
-
-        // Démarrer
-        setupProductClicks();
-    };
-
-    // Lancer quand DOM prêt
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initAdIntegration);
-    } else {
-        initAdIntegration();
-    }
-})();
-</script>
 </html>
