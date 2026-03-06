@@ -1,6 +1,6 @@
 // ============================================
-// SUPPLIER PRODUCTS MODULE - v4.3 PRODUCTION READY
-// Corrections: Placeholder SVG inline, Validation robuste, Upload retry, CSV UTF-8
+// SUPPLIER PRODUCTS MODULE - v4.4 CORRIGÉ
+// Corrections: PapaParse SRI retiré, fallback amélioré
 // ============================================
 window.SupplierProducts = {
   state: {
@@ -15,7 +15,6 @@ window.SupplierProducts = {
     importResults: { success: [], errors: [] }
   },
 
-  // ✅ Placeholder SVG encodé en base64 - PAS DE DÉPENDANCE EXTERNE
   PLACEHOLDER_IMAGE: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWUyOTNiIi8+PHN2ZyB4PSI1MCUiIHk9IjUwJSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiM2NDc0OGIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00MCwgLTQwKSI+PHBhdGggZD0iTTIxIDE5VjVjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2MTRjMCAxLjEuOSAyIDIgMmgxNGMxLjEgMCAyLS45IDItMnpNOC41IDEzLjVsMi41IDMuMDFMMTQuNSAxMmw0LjUgNmg1bC02LTgtNC41IDZ6Ii8+PC9zdmc+PC9zdmc+',
 
   BRANDIA_CATEGORIES: [
@@ -42,42 +41,53 @@ window.SupplierProducts = {
     { id: 21, slug: 'sport-loisirs', name: 'Sport & loisirs', icon: 'fa-bicycle' }
   ],
 
-  // ==========================================
-  // INITIALISATION
-  // ==========================================
   init: async function() {
-    console.log('[Products] Initialisation v4.3...');
+    console.log('[Products] Initialisation v4.4...');
     this.loadCategories();
     await this.loadProducts();
     this.setupEventListeners();
     this.setupPapaParse();
   },
 
-    setupPapaParse: function() {
+  // 🔥 CORRECTION: PapaParse sans SRI (integrity) pour éviter le blocage
+  setupPapaParse: function() {
     if (typeof Papa === 'undefined') {
       console.log('[Products] Chargement de PapaParse...');
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js';
-      script.crossOrigin = 'anonymous';
-      // Hash SRI correct pour PapaParse 5.4.1
-      script.integrity = 'sha384-v1mkLkA8x8GO5Qm3w9lT/qw3s9v-3EOPgWm1l4x8x8GO5Qm3w9lT/qw3s9v';
-      script.onload = () => {
-        console.log('[Products] PapaParse chargé avec succès');
-        // Déclencher un événement personnalisé pour notifier que Papa est prêt
-        window.dispatchEvent(new Event('papaparse-loaded'));
+      
+      // Fonction pour charger le script
+      const loadScript = (src, callback, errorCallback) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = callback;
+        script.onerror = errorCallback;
+        document.head.appendChild(script);
       };
-      script.onerror = () => {
-        console.error('[Products] Échec chargement PapaParse');
-        // Charger sans SRI en fallback
-        const fallbackScript = document.createElement('script');
-        fallbackScript.src = 'https://unpkg.com/papaparse@5.4.1/papaparse.min.js';
-        fallbackScript.onload = () => {
-          console.log('[Products] PapaParse chargé (fallback)');
+
+      // Essayer CDNjs sans SRI (comme avant mais sans integrity)
+      loadScript(
+        'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',
+        () => {
+          console.log('[Products] PapaParse chargé avec succès (CDNjs)');
           window.dispatchEvent(new Event('papaparse-loaded'));
-        };
-        document.head.appendChild(fallbackScript);
-      };
-      document.head.appendChild(script);
+        },
+        () => {
+          console.warn('[Products] Échec CDNjs, essai unpkg...');
+          // Fallback sur unpkg sans SRI
+          loadScript(
+            'https://unpkg.com/papaparse@5.4.1/papaparse.min.js',
+            () => {
+              console.log('[Products] PapaParse chargé (unpkg fallback)');
+              window.dispatchEvent(new Event('papaparse-loaded'));
+            },
+            () => {
+              console.error('[Products] Impossible de charger PapaParse');
+              this.showToast('Erreur chargement CSV parser', 'error');
+            }
+          );
+        }
+      );
+    } else {
+      console.log('[Products] PapaParse déjà disponible');
     }
   },
 
@@ -122,9 +132,6 @@ window.SupplierProducts = {
     };
   },
 
-  // ==========================================
-  // CHARGEMENT DES DONNÉES
-  // ==========================================
   loadProducts: async function() {
     try {
       console.log('[Products] Chargement...');
@@ -243,9 +250,6 @@ window.SupplierProducts = {
     }
   },
 
-  // ==========================================
-  // RENDU DES PRODUITS
-  // ==========================================
   renderProducts: function() {
     const container = document.getElementById('products-grid');
     if (!container) {
@@ -340,7 +344,6 @@ window.SupplierProducts = {
        <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">-${Math.round((1 - p.final_price/p.original_price) * 100)}%</span>` :
       `<span class="text-xl font-bold text-white">${parseFloat(p.price || 0).toFixed(2)} €</span>`;
 
-    // ✅ Utilisation du placeholder inline
     const imageUrl = p.main_image_url || this.PLACEHOLDER_IMAGE;
 
     return `
@@ -424,9 +427,6 @@ window.SupplierProducts = {
     }
   },
 
-  // ==========================================
-  // ACTIONS PRODUITS
-  // ==========================================
   filterProducts: function() {
     this.state.filters.category = document.getElementById('product-category-filter')?.value || '';
     this.state.filters.status = document.getElementById('product-status-filter')?.value || '';
@@ -565,9 +565,6 @@ window.SupplierProducts = {
     });
   },
 
-  // ==========================================
-  // MODAL (CREATE / EDIT)
-  // ==========================================
   openModal: function(productId = null) {
     this.state.editingId = productId;
     this.state.uploadedImage = null;
@@ -625,15 +622,11 @@ window.SupplierProducts = {
   },
 
   openModalUI: function(modalId) {
-    if (window.DashboardApp && typeof DashboardApp.openModal === 'function') {
-      DashboardApp.openModal(modalId);
-    } else {
-      const modal = document.getElementById(modalId);
-      if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.style.overflow = 'hidden';
-      }
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
     }
   },
 
@@ -651,9 +644,6 @@ window.SupplierProducts = {
     }
   },
 
-  // ==========================================
-  // SAUVEGARDE PRODUIT - VALIDATION COMPLÈTE
-  // ==========================================
   save: async function() {
     console.log('[Products] ========== SAUVEGARDE DÉMARRÉE ==========');
 
@@ -725,7 +715,6 @@ window.SupplierProducts = {
     const categoryId = parseInt(categoryInput?.value) || null;
     const stock = parseInt(stockInput?.value) || 0;
 
-    // ✅ Validation complète
     if (!name || name.length < 2) {
       this.showToast('Le nom doit contenir au moins 2 caractères', 'error');
       nameInput?.focus();
@@ -760,7 +749,6 @@ window.SupplierProducts = {
       sku: document.getElementById('product-sku')?.value?.trim() || null
     };
 
-    // ✅ Gestion image uploadée ou existante
     if (this.state.uploadedImage?.url) {
       fields.main_image_url = this.state.uploadedImage.url;
     } else if (this.state.editingId) {
@@ -795,19 +783,12 @@ window.SupplierProducts = {
     this.showToast(message, 'error');
   },
 
-  // ==========================================
-  // FERMETURE MODAL
-  // ==========================================
   closeProductModal: function() {
-    if (window.DashboardApp?.closeModal) {
-      DashboardApp.closeModal('product-modal');
-    } else {
-      const modal = document.getElementById('product-modal');
-      if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.body.style.overflow = '';
-      }
+    const modal = document.getElementById('product-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
     }
 
     const form = document.getElementById('product-form');
@@ -820,9 +801,6 @@ window.SupplierProducts = {
     if (previewContainer) previewContainer.classList.add('hidden');
   },
 
-  // ==========================================
-  // UPLOAD IMAGE - AVEC RETRY ET COMPRESSION
-  // ==========================================
   handleImageSelect: async function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -837,14 +815,12 @@ window.SupplierProducts = {
     try {
       this.showLoading(true);
 
-      // ✅ Compression si nécessaire
       const compressedFile = await this.compressImage(file);
       console.log('[Products Upload] Original:', file.size, 'Compressed:', compressedFile.size);
 
       const formData = new FormData();
       formData.append('media', compressedFile);
 
-      // ✅ Upload avec retry
       const result = await this.uploadWithRetry(formData);
 
       if (result?.success) {
@@ -873,7 +849,7 @@ window.SupplierProducts = {
   },
 
   validateImageFile: function(file) {
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
     if (file.size > maxSize) {
@@ -887,7 +863,6 @@ window.SupplierProducts = {
 
   compressImage: function(file) {
     return new Promise((resolve) => {
-      // Pas de compression si déjà petit
       if (file.size < 500 * 1024) {
         resolve(file);
         return;
@@ -903,7 +878,6 @@ window.SupplierProducts = {
         let width = img.width;
         let height = img.height;
 
-        // Redimensionnement proportionnel
         if (width > maxWidth || height > maxHeight) {
           if (width > height) {
             height = (height * maxWidth) / width;
@@ -937,8 +911,10 @@ window.SupplierProducts = {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${BrandiaAPI.config.apiURL}/supplier/upload-image`, {
+        const token = localStorage.getItem('token') || localStorage.getItem('brandia_token');
+        const apiUrl = window.BrandiaAPI?.config?.apiURL || 'https://brandia-1.onrender.com/api';
+        
+        const response = await fetch(`${apiUrl}/supplier/upload-image`, {
           method: 'POST',
           headers: {
             'Authorization': token ? `Bearer ${token}` : ''
@@ -957,7 +933,6 @@ window.SupplierProducts = {
         console.warn(`[Upload] Tentative ${attempt}/${maxRetries} échouée:`, error.message);
 
         if (attempt < maxRetries) {
-          // Exponential backoff
           await new Promise(r => setTimeout(r, 1000 * attempt));
         }
       }
@@ -986,9 +961,6 @@ window.SupplierProducts = {
     if (fileInput) fileInput.value = '';
   },
 
-  // ==========================================
-  // IMPORT CSV - ROBUSTE UTF-8
-  // ==========================================
   importProducts: function() {
     if (typeof Papa === 'undefined') {
       this.showToast('Chargement du parser CSV...', 'info');
@@ -1055,14 +1027,13 @@ window.SupplierProducts = {
     return new Promise((resolve) => {
       Papa.parse(file, {
         header: true,
-        delimiter: '', // Auto-détection
-        encoding: 'UTF-8', // ✅ Forcé UTF-8
+        delimiter: '',
+        encoding: 'UTF-8',
         skipEmptyLines: true,
         transformHeader: (header) => {
           return header.toLowerCase().trim().replace(/\s+/g, '_');
         },
         transform: (value, field) => {
-          // Nettoyage des valeurs
           if (typeof value === 'string') {
             return value.trim().replace(/^["']|["']$/g, '');
           }
@@ -1175,7 +1146,6 @@ window.SupplierProducts = {
       const progress = Math.round(((i + batch.length) / total) * 100);
       this.showToast(`Import: ${progress}%`, 'info');
 
-      // Pause entre les batches pour éviter le rate limiting
       if (i + batchSize < total) {
         await new Promise(r => setTimeout(r, 500));
       }
@@ -1241,26 +1211,16 @@ window.SupplierProducts = {
     this.showToast('Template téléchargé ✓', 'success');
   },
 
-  // ==========================================
-  // UTILITAIRES UI
-  // ==========================================
   showLoading: function(show) {
-    if (window.DashboardApp?.showLoading) {
-      DashboardApp.showLoading(show);
-    } else {
-      const overlay = document.getElementById('loading-overlay');
-      if (overlay) overlay.classList.toggle('hidden', !show);
-    }
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.toggle('hidden', !show);
   },
 
   showToast: function(message, type = 'success') {
-    if (window.DashboardApp?.showToast) {
-      DashboardApp.showToast(message, type);
-    } else if (window.showToast) {
-      window.showToast(message, type);
+    if (window.showToast) {
+      showToast(message, type);
     } else {
       console.log(`[${type}] ${message}`);
-      if (type === 'error') alert(message);
     }
   },
 
@@ -1269,9 +1229,7 @@ window.SupplierProducts = {
   }
 };
 
-// ==========================================
-// EXPOSITION GLOBALE
-// ==========================================
+// Exposition globale
 window.openProductModal = (id) => window.SupplierProducts.openModal(id);
 window.saveProduct = () => window.SupplierProducts.save();
 window.filterProducts = () => window.SupplierProducts.filterProducts();
@@ -1285,4 +1243,4 @@ window.duplicateProduct = (id) => window.SupplierProducts.duplicateProduct(id);
 window.removeUploadedImage = () => window.SupplierProducts.removeUploadedImage();
 window.closeProductModal = () => window.SupplierProducts.closeProductModal();
 
-console.log('[SupplierProducts] Module v4.3 PRODUCTION READY chargé');
+console.log('[SupplierProducts] Module v4.4 chargé - PapaParse SRI retiré');

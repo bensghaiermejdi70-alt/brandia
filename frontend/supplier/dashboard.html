@@ -1697,127 +1697,128 @@ async function loadOverviewStats() {
     
     if (response?.success && response.data) {
       const data = response.data;
-      const stats = data.stats || data;
       
-      updateElement('kpi-revenue', formatPrice(stats.totalSales || stats.total_revenue || 0));
-      updateElement('kpi-orders', stats.totalOrders || stats.total_orders || 0);
-      updateElement('kpi-products', stats.activeProducts || stats.products_count || 0);
-      updateElement('kpi-total-products', stats.totalProducts || stats.products_count || 0);
-      updateElement('kpi-balance', formatPrice(stats.balance || 0));
+      // 🔥 CORRECTION: Gestion flexible des noms de champs
+      const stats = {
+        total_revenue: data.total_revenue || data.totalSales || data.revenue || 0,
+        total_orders: data.total_orders || data.totalOrders || data.orders || 0,
+        products_count: data.products_count || data.activeProducts || data.products || 0,
+        total_products: data.total_products || data.totalProducts || data.products_count || 0,
+        balance: data.balance || data.pending_payout || data.to_receive || 0,
+        pending_orders: data.pending_orders || data.pendingOrders || 0
+      };
+
+      // Mise à jour des KPIs avec animation
+      animateValue('kpi-revenue', stats.total_revenue, '€');
+      animateValue('kpi-orders', stats.total_orders, '');
+      animateValue('kpi-products', stats.products_count, '');
+      updateElement('kpi-total-products', stats.total_products);
+      animateValue('kpi-balance', stats.balance, '€');
       
-      const productCountEl = document.getElementById('product-count');
-      if (productCountEl) {
-        productCountEl.textContent = stats.products_count || 0;
-        productCountEl.classList.remove('hidden');
+      // Badge commandes en attente
+      const orderBadge = document.getElementById('order-badge');
+      if (orderBadge && stats.pending_orders > 0) {
+        orderBadge.textContent = stats.pending_orders;
+        orderBadge.classList.remove('hidden');
+      }
+
+      // Badge produits
+      const productCount = document.getElementById('product-count');
+      if (productCount) {
+        productCount.textContent = stats.total_products;
+        productCount.classList.remove('hidden');
       }
       
-      if (typeof Chart !== 'undefined' && data.salesData) {
-        initSalesChart(data.salesData);
-      }
-    } else if (response?.code === 'UNAUTHORIZED') {
-      console.error('[Dashboard] Unauthorized - redirecting to login');
-      showToast('Session expirée, reconnexion nécessaire', 'error');
-      setTimeout(() => redirectToLogin('session_expired'), 2000);
+      // Charger les commandes récentes
+      loadRecentOrders();
     }
   } catch (error) {
     console.error('[Dashboard] Error loading stats:', error);
   }
 }
 
-function updateElement(id, value) {
+// Fonction d'animation des nombres
+function animateValue(id, value, suffix = '') {
   const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
-
-function initSalesChart(data) {
-  const ctx = document.getElementById('salesChart');
-  if (!ctx) return;
+  if (!el) return;
   
-  if (window.salesChartInstance) {
-    window.salesChartInstance.destroy();
-  }
+  const start = parseFloat(el.textContent.replace(/[^\d.-]/g, '')) || 0;
+  const end = parseFloat(value) || 0;
+  const duration = 1000;
+  const startTime = performance.now();
   
-  const labels = data && data.length ? data.map(d => d.date) : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-  const values = data && data.length ? data.map(d => d.amount) : [0, 0, 0, 0, 0, 0, 0];
-  
-  window.salesChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Ventes (€)',
-        data: values,
-        borderColor: '#6366f1',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        fill: true,
-        tension: 0.4,
-        borderWidth: 2,
-        pointBackgroundColor: '#6366f1',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { 
-          beginAtZero: true, 
-          grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
-          ticks: { color: '#94a3b8', callback: (value) => value + '€' } 
-        },
-        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-      }
+  const format = (val) => {
+    if (suffix === '€') {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
     }
-  });
-}
-
-function updateSalesChart() {
-  const period = document.getElementById('sales-period')?.value || '7';
-  showToast(`Période mise à jour: ${period} jours`, 'info');
-  loadOverviewStats();
-}
-
-function updateAnalyticsPeriod(period) {
-  document.querySelectorAll('.analytics-period').forEach(btn => {
-    btn.classList.remove('bg-indigo-600', 'text-white');
-    btn.classList.add('bg-slate-800', 'text-slate-300');
-  });
+    return Math.round(val).toLocaleString('fr-FR') + suffix;
+  };
   
-  const activeBtn = document.querySelector(`[data-period="${period}"]`);
-  if (activeBtn) {
-    activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
-    activeBtn.classList.add('bg-indigo-600', 'text-white');
+  const update = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    const current = start + (end - start) * easeProgress;
+    
+    el.textContent = format(current);
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  };
+  
+  requestAnimationFrame(update);
+}
+
+// 🔥 CORRECTION: Chargement des commandes récentes pour l'overview
+async function loadRecentOrders() {
+  try {
+    if (!BrandiaAPI.Supplier?.getOrders) return;
+    
+    const response = await BrandiaAPI.Supplier.getOrders({ limit: 5 });
+    if (!response?.success) return;
+    
+    let orders = [];
+    if (Array.isArray(response.data)) {
+      orders = response.data;
+    } else if (response.data?.orders) {
+      orders = response.data.orders;
+    }
+    
+    const container = document.getElementById('recent-orders-list');
+    if (!container || orders.length === 0) return;
+    
+    container.innerHTML = orders.slice(0, 5).map(order => {
+      const statusConfig = {
+        'pending': { class: 'bg-amber-500/20 text-amber-400', label: 'À préparer' },
+        'paid': { class: 'bg-blue-500/20 text-blue-400', label: 'Payée' },
+        'processing': { class: 'bg-purple-500/20 text-purple-400', label: 'En traitement' },
+        'shipped': { class: 'bg-indigo-500/20 text-indigo-400', label: 'Expédiée' },
+        'delivered': { class: 'bg-emerald-500/20 text-emerald-400', label: 'Livrée' },
+        'cancelled': { class: 'bg-red-500/20 text-red-400', label: 'Annulée' }
+      }[order.status] || { class: 'bg-slate-500/20 text-slate-400', label: order.status };
+      
+      const date = order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR') : '-';
+      const amount = parseFloat(order.total_amount) || 0;
+      
+      return `
+        <tr class="table-row border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
+          <td class="py-4 px-6 text-white font-medium">#${order.order_number || order.id}</td>
+          <td class="py-4 px-6 text-slate-400 text-sm">${date}</td>
+          <td class="py-4 px-6 text-slate-300">${order.customer_first_name || ''} ${order.customer_last_name || ''}</td>
+          <td class="py-4 px-6 text-right text-white font-medium">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)}</td>
+          <td class="py-4 px-6 text-center">
+            <span class="px-2 py-1 rounded-full text-xs font-medium ${statusConfig.class}">
+              ${statusConfig.label}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('[Dashboard] Error loading recent orders:', error);
   }
-  
-  showToast(`Période: ${period} jours`, 'info');
-}
-
-// ==========================================
-// GLOBAL ACTIONS
-// ==========================================
-function quickAction() {
-  const actions = ['products', 'orders', 'advertising', 'promotions'];
-  const current = localStorage.getItem('dashboard_last_section') || 'overview';
-  const currentIndex = actions.indexOf(current);
-  const nextIndex = (currentIndex + 1) % actions.length;
-  navigate(actions[nextIndex]);
-}
-
-function showNotifications() {
-  showToast('Pas de nouvelles notifications', 'info');
-}
-
-function logout() {
-  localStorage.removeItem(CONFIG.TOKEN_KEY);
-  localStorage.removeItem(CONFIG.USER_KEY);
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  localStorage.removeItem('refreshToken');
-  window.location.href = '../login.html';
 }
 
 // ==========================================
@@ -1857,23 +1858,34 @@ function initializeModules() {
   console.log('[Dashboard] Initializing modules...');
   
   try {
-    if (window.SupplierProducts) {
+    // 🔥 CORRECTION: Vérifier que les modules existent avant d'initialiser
+    if (window.SupplierProducts && typeof SupplierProducts.init === 'function') {
       console.log('[Dashboard] Init SupplierProducts');
       SupplierProducts.init();
     }
-    if (window.SupplierOrders) {
+    
+    if (window.SupplierOrders && typeof SupplierOrders.init === 'function') {
       console.log('[Dashboard] Init SupplierOrders');
       SupplierOrders.init();
+    } else {
+      // Si le module n'est pas chargé, essayer de le recharger
+      console.warn('[Dashboard] SupplierOrders not loaded, retrying...');
+      setTimeout(() => {
+        if (window.SupplierOrders) SupplierOrders.init();
+      }, 1000);
     }
-    if (window.SupplierCampaigns) {
+    
+    if (window.SupplierCampaigns && typeof SupplierCampaigns.init === 'function') {
       console.log('[Dashboard] Init SupplierCampaigns');
       SupplierCampaigns.init();
     }
-    if (window.SupplierPayments) {
+    
+    if (window.SupplierPayments && typeof SupplierPayments.init === 'function') {
       console.log('[Dashboard] Init SupplierPayments');
       SupplierPayments.init();
     }
-    if (window.SupplierPromotions) {
+    
+    if (window.SupplierPromotions && typeof SupplierPromotions.init === 'function') {
       console.log('[Dashboard] Init SupplierPromotions');
       SupplierPromotions.init();
     }
@@ -1884,13 +1896,6 @@ function initializeModules() {
     console.error('[Dashboard] Error initializing modules:', error);
     showToast('Erreur de chargement des modules', 'error');
   }
-}
-
-// Start
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initDashboard);
-} else {
-  initDashboard();
 }
 </script>
 </body>

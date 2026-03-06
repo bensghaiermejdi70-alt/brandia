@@ -1,8 +1,8 @@
 // ============================================
-// SUPPLIER ORDERS MODULE - v3.4 CORRIGÉ & AMÉLIORÉ
+// SUPPLIER ORDERS MODULE - v3.5 CORRIGÉ
 // - Correction parsing JSON robuste
-// - Gestion des différents formats de données
-// - Logs améliorés pour debugging
+// - Gestion des différents formats de données  
+// - Fix: Affichage correct des commandes dans le dashboard
 // ============================================
 
 window.SupplierOrders = {
@@ -11,37 +11,24 @@ window.SupplierOrders = {
     counts: { all: 0, pending: 0, shipped: 0, delivered: 0, cancelled: 0 },
     currentFilter: 'all',
     selectedOrders: new Set(),
-    isLoading: false
+    isLoading: false,
+    searchTerm: ''
   },
 
   init: async () => {
-    console.log('[SupplierOrders] Initializing v3.4...');
+    console.log('[SupplierOrders] Initializing v3.5...');
     SupplierOrders.setupEventListeners();
     await SupplierOrders.loadOrders();
   },
 
   setupEventListeners: () => {
-    // Filtres par onglet
-    document.querySelectorAll('[data-order-filter]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const filter = e.target.closest('[data-order-filter]').dataset.orderFilter;
-        SupplierOrders.setFilter(filter);
-      });
-    });
-
-    // Sélection multiple
-    const selectAll = document.getElementById('select-all-orders');
-    if (selectAll) {
-      selectAll.addEventListener('change', SupplierOrders.toggleSelectAll);
-    }
-
     // Recherche
     const searchInput = document.getElementById('order-search');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         clearTimeout(SupplierOrders.searchTimeout);
         SupplierOrders.searchTimeout = setTimeout(() => {
-          SupplierOrders.searchTerm = e.target.value.toLowerCase();
+          SupplierOrders.state.searchTerm = e.target.value.toLowerCase();
           SupplierOrders.render();
         }, 300);
       });
@@ -51,33 +38,19 @@ window.SupplierOrders = {
   setFilter: (filter) => {
     SupplierOrders.state.currentFilter = filter;
     
-    // Animation de transition
-    const container = document.getElementById('orders-list');
-    if (container) {
-      container.style.opacity = '0.5';
-      setTimeout(() => {
-        SupplierOrders.render();
-        container.style.opacity = '1';
-      }, 150);
-    }
-
     // Mise à jour UI onglets
-    document.querySelectorAll('[data-order-filter]').forEach(btn => {
-      const isActive = btn.dataset.orderFilter === filter;
-      btn.classList.toggle('border-indigo-500', isActive);
-      btn.classList.toggle('text-indigo-400', isActive);
-      btn.classList.toggle('border-transparent', !isActive);
-      btn.classList.toggle('text-slate-400', !isActive);
-      
-      // Animation badge
-      const badge = btn.querySelector('.tab-badge');
-      if (badge) {
-        badge.classList.toggle('bg-indigo-500', isActive);
-        badge.classList.toggle('text-white', isActive);
-        badge.classList.toggle('bg-slate-700', !isActive);
-        badge.classList.toggle('text-slate-300', !isActive);
+    document.querySelectorAll('.order-tab').forEach(btn => {
+      const isActive = btn.dataset.filter === filter;
+      if (isActive) {
+        btn.classList.add('active', 'bg-indigo-600', 'text-white');
+        btn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+      } else {
+        btn.classList.remove('active', 'bg-indigo-600', 'text-white');
+        btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
       }
     });
+
+    SupplierOrders.render();
   },
 
   loadOrders: async () => {
@@ -87,32 +60,82 @@ window.SupplierOrders = {
 
       console.log('[SupplierOrders] Loading orders...');
       
-      const response = await window.BrandiaAPI.Supplier.getOrders(
-        SupplierOrders.state.currentFilter === 'all' ? null : SupplierOrders.state.currentFilter
-      );
-
-      console.log('[SupplierOrders] API Response:', response);
-
-      if (!response.success) {
-        throw new Error(response.message || 'Erreur de chargement');
+      // 🔥 CORRECTION: Utiliser l'API BrandiaAPI correctement
+      if (!window.BrandiaAPI || !BrandiaAPI.Supplier) {
+        throw new Error('API non disponible');
       }
 
-      const data = response.data || {};
-      
-      // ✅ CORRECTION : Normalisation des statuts
-      SupplierOrders.state.orders = (data.orders || []).map(order => ({
-        ...order,
-        status: order.status || 'pending' // Défaut à 'pending' si null
-      }));
-      
-      // ✅ CORRECTION : Recalcul correct des compteurs
+      const response = await BrandiaAPI.Supplier.getOrders();
+      console.log('[SupplierOrders] API Response:', response);
+
+      if (!response || !response.success) {
+        throw new Error(response?.message || 'Erreur de chargement');
+      }
+
+      // 🔥 CORRECTION: Gestion robuste des données reçues
+      let ordersData = [];
+      if (Array.isArray(response.data)) {
+        ordersData = response.data;
+      } else if (response.data?.orders && Array.isArray(response.data.orders)) {
+        ordersData = response.data.orders;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        ordersData = response.data.data;
+      }
+
+      console.log(`[SupplierOrders] Raw orders received:`, ordersData.length);
+
+      // 🔥 CORRECTION: Parsing JSON robuste pour chaque commande
+      SupplierOrders.state.orders = ordersData.map(order => {
+        // Parser les items si c'est une chaîne JSON
+        let parsedItems = [];
+        if (order.items) {
+          if (typeof order.items === 'string') {
+            try {
+              parsedItems = JSON.parse(order.items);
+            } catch (e) {
+              console.warn('[SupplierOrders] Failed to parse items for order', order.id, e);
+              parsedItems = [];
+            }
+          } else if (Array.isArray(order.items)) {
+            parsedItems = order.items;
+          } else if (typeof order.items === 'object') {
+            parsedItems = [order.items];
+          }
+        }
+
+        // Parser l'adresse si c'est une chaîne JSON
+        let parsedAddress = {};
+        if (order.shipping_address) {
+          if (typeof order.shipping_address === 'string') {
+            try {
+              parsedAddress = JSON.parse(order.shipping_address);
+            } catch (e) {
+              parsedAddress = { raw: order.shipping_address };
+            }
+          } else if (typeof order.shipping_address === 'object') {
+            parsedAddress = order.shipping_address;
+          }
+        }
+
+        return {
+          ...order,
+          items: parsedItems,
+          shipping_address: parsedAddress,
+          status: order.status || 'pending',
+          total_amount: parseFloat(order.total_amount) || 0,
+          customer_first_name: order.customer_first_name || order.customer_name?.split(' ')[0] || '',
+          customer_last_name: order.customer_last_name || order.customer_name?.split(' ').slice(1).join(' ') || ''
+        };
+      });
+
+      // 🔥 CORRECTION: Recalcul correct des compteurs avec tous les statuts possibles
       const orders = SupplierOrders.state.orders;
       SupplierOrders.state.counts = {
         all: orders.length,
-        pending: orders.filter(o => ['pending', 'paid', 'processing', null].includes(o.status)).length,
-        shipped: orders.filter(o => o.status === 'shipped').length,
-        delivered: orders.filter(o => o.status === 'delivered').length,
-        cancelled: orders.filter(o => ['cancelled', 'refunded'].includes(o.status)).length
+        pending: orders.filter(o => ['pending', 'paid', 'processing', 'confirmed', null, undefined].includes(o.status)).length,
+        shipped: orders.filter(o => o.status === 'shipped' || o.status === 'in_transit').length,
+        delivered: orders.filter(o => o.status === 'delivered' || o.status === 'completed').length,
+        cancelled: orders.filter(o => ['cancelled', 'refunded', 'failed'].includes(o.status)).length
       };
 
       console.log(`[SupplierOrders] Loaded ${orders.length} orders`, SupplierOrders.state.counts);
@@ -122,9 +145,7 @@ window.SupplierOrders = {
 
     } catch (error) {
       console.error('[SupplierOrders] Error:', error);
-      if (typeof DashboardApp !== 'undefined') {
-        DashboardApp.showToast('Erreur chargement commandes: ' + error.message, 'error');
-      }
+      SupplierOrders.showToast('Erreur chargement commandes: ' + error.message, 'error');
       SupplierOrders.renderEmpty();
     } finally {
       SupplierOrders.state.isLoading = false;
@@ -134,68 +155,28 @@ window.SupplierOrders = {
 
   updateCounts: () => {
     const counts = SupplierOrders.state.counts;
-    const total = counts.all;
     
-    // Animation des compteurs
-    const animateValue = (id, value) => {
+    // Mise à jour des badges avec animation
+    const updateBadge = (id, value) => {
       const el = document.getElementById(id);
-      if (!el) return;
-      
-      const start = parseInt(el.textContent) || 0;
-      const end = value;
-      const duration = 300;
-      const startTime = performance.now();
-      
-      const update = (currentTime) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
-        const current = Math.round(start + (end - start) * easeProgress);
-        
-        el.textContent = current;
-        
-        if (progress < 1) {
-          requestAnimationFrame(update);
-        }
-      };
-      
-      requestAnimationFrame(update);
+      if (el) {
+        el.textContent = value;
+        el.classList.toggle('hidden', value === 0);
+      }
     };
 
-    animateValue('count-all', counts.all);
-    animateValue('count-pending', counts.pending);
-    animateValue('count-shipped', counts.shipped);
-    animateValue('count-delivered', counts.delivered);
-  },
+    updateBadge('count-all', counts.all);
+    updateBadge('count-pending', counts.pending);
+    updateBadge('count-shipped', counts.shipped);
+    updateBadge('count-delivered', counts.delivered);
 
-  // ✅ CORRECTION : Fonction utilitaire pour parser les items de manière robuste
-  parseItems: (rawItems) => {
-    let items = [];
-    try {
-      if (!rawItems) {
-        items = [];
-      } else if (typeof rawItems === 'string') {
-        // C'est une chaîne JSON, la parser
-        items = JSON.parse(rawItems);
-      } else if (Array.isArray(rawItems)) {
-        // C'est déjà un tableau
-        items = rawItems;
-      } else if (typeof rawItems === 'object') {
-        // C'est un objet (cas jsonb_agg), convertir en tableau si nécessaire
-        items = Object.values(rawItems);
-      }
-    } catch (e) {
-      console.warn('[SupplierOrders] Erreur parsing items:', e, 'Raw:', rawItems);
-      items = [];
+    // Badge dans la sidebar
+    const orderBadge = document.getElementById('order-badge');
+    if (orderBadge) {
+      const totalPending = counts.pending;
+      orderBadge.textContent = totalPending;
+      orderBadge.classList.toggle('hidden', totalPending === 0);
     }
-
-    // ✅ Vérification finale : s'assurer que c'est un tableau
-    if (!Array.isArray(items)) {
-      console.warn('[SupplierOrders] Items n\'est pas un tableau, conversion forcée');
-      items = [];
-    }
-
-    return items;
   },
 
   render: () => {
@@ -208,10 +189,11 @@ window.SupplierOrders = {
     let filteredOrders = SupplierOrders.getFilteredOrders();
     
     // Filtre recherche
-    if (SupplierOrders.searchTerm) {
+    if (SupplierOrders.state.searchTerm) {
       filteredOrders = filteredOrders.filter(o => 
-        (o.order_number || '').toLowerCase().includes(SupplierOrders.searchTerm) ||
-        (o.customer_name || '').toLowerCase().includes(SupplierOrders.searchTerm)
+        (o.order_number || '').toLowerCase().includes(SupplierOrders.state.searchTerm) ||
+        (o.customer_first_name + ' ' + o.customer_last_name).toLowerCase().includes(SupplierOrders.state.searchTerm) ||
+        (o.customer_email || '').toLowerCase().includes(SupplierOrders.state.searchTerm)
       );
     }
 
@@ -237,64 +219,33 @@ window.SupplierOrders = {
           })
         : '';
 
-      // ✅ UTILISATION de la fonction parseItems corrigée
-      const items = SupplierOrders.parseItems(order.items);
+      const items = order.items || [];
       const firstItem = items[0] || {};
       const itemsCount = items.length;
-      const totalItems = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-
-      // Progression visuelle du statut
-      const statusProgress = {
-        'pending': 25,
-        'paid': 50,
-        'processing': 50,
-        'shipped': 75,
-        'delivered': 100,
-        'cancelled': 0
-      }[order.status] || 25;
+      const totalItems = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
 
       return `
-        <div class="order-card group bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 border border-slate-700 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1" 
-             style="animation: slideIn 0.3s ease ${index * 0.05}s both;"
+        <div class="order-card bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-indigo-500/50 transition-all duration-300 mb-4" 
              data-order-id="${order.id}">
           
-          <!-- Header -->
           <div class="flex items-start justify-between mb-4">
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${statusConfig.gradient} flex items-center justify-center shadow-lg">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${statusConfig.gradient} flex items-center justify-center">
                 <i class="fas ${statusConfig.icon} text-white text-lg"></i>
               </div>
               <div>
                 <h3 class="text-white font-bold text-lg">#${order.order_number || order.id}</h3>
                 <p class="text-slate-400 text-sm">
-                  <i class="far fa-calendar-alt mr-1"></i>${date}
-                  <span class="mx-2">•</span>
-                  <i class="far fa-clock mr-1"></i>${time}
+                  <i class="far fa-calendar-alt mr-1"></i>${date} ${time}
                 </p>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="px-3 py-1.5 rounded-full text-xs font-semibold border ${statusConfig.class} flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full ${statusConfig.dot}"></span>
-                ${statusConfig.label}
-              </span>
-            </div>
+            <span class="px-3 py-1.5 rounded-full text-xs font-semibold border ${statusConfig.class}">
+              ${statusConfig.label}
+            </span>
           </div>
 
-          <!-- Progress bar -->
-          <div class="mb-4">
-            <div class="flex justify-between text-xs text-slate-400 mb-1.5">
-              <span>Commande reçue</span>
-              <span>${statusConfig.label}</span>
-            </div>
-            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
-              <div class="h-full bg-gradient-to-r ${statusConfig.gradient} rounded-full transition-all duration-1000" 
-                   style="width: ${statusProgress}%"></div>
-            </div>
-          </div>
-
-          <!-- Items preview -->
-          <div class="flex items-center gap-4 mb-4 p-3 bg-slate-800/50 rounded-xl">
+          <div class="flex items-center gap-4 mb-4 p-3 bg-slate-700/30 rounded-xl">
             ${firstItem.product_image_url ? `
               <img src="${firstItem.product_image_url}" alt="" class="w-16 h-16 rounded-lg object-cover border border-slate-600">
             ` : `
@@ -306,9 +257,7 @@ window.SupplierOrders = {
               <p class="text-white font-medium truncate">${firstItem.product_name || 'Produit'}</p>
               <p class="text-slate-400 text-sm">${firstItem.quantity || 1} × ${SupplierOrders.formatPrice(firstItem.unit_price)}</p>
               ${itemsCount > 1 ? `
-                <p class="text-indigo-400 text-xs mt-1">
-                  <i class="fas fa-plus-circle mr-1"></i>+${itemsCount - 1} article(s)
-                </p>
+                <p class="text-indigo-400 text-xs mt-1">+${itemsCount - 1} article(s)</p>
               ` : ''}
             </div>
             <div class="text-right">
@@ -317,29 +266,25 @@ window.SupplierOrders = {
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="flex items-center justify-between pt-3 border-t border-slate-700/50">
+          <div class="flex items-center justify-between pt-3 border-t border-slate-700">
             <div class="flex items-center gap-2 text-sm text-slate-400">
               <i class="fas fa-user-circle"></i>
               <span>${order.customer_first_name || ''} ${order.customer_last_name || 'Client'}</span>
             </div>
             <div class="flex gap-2">
               <button onclick="SupplierOrders.viewOrder(${order.id})" 
-                      class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center gap-2 text-sm">
-                <i class="fas fa-eye"></i>
-                Détails
+                      class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
+                <i class="fas fa-eye mr-1"></i> Détails
               </button>
-              ${['pending', 'paid', 'processing'].includes(order.status) ? `
+              ${['pending', 'paid', 'processing', 'confirmed'].includes(order.status) ? `
                 <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped')" 
-                        class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-sm font-medium">
-                  <i class="fas fa-shipping-fast"></i>
-                  Expédier
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors">
+                  <i class="fas fa-shipping-fast mr-1"></i> Expédier
                 </button>
               ` : order.status === 'shipped' ? `
                 <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered')" 
-                        class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2 text-sm font-medium">
-                  <i class="fas fa-check-circle"></i>
-                  Livrer
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors">
+                  <i class="fas fa-check-circle mr-1"></i> Livrer
                 </button>
               ` : ''}
             </div>
@@ -347,20 +292,6 @@ window.SupplierOrders = {
         </div>
       `;
     }).join('');
-
-    // Ajouter styles d'animation si pas présents
-    if (!document.getElementById('order-animations')) {
-      const style = document.createElement('style');
-      style.id = 'order-animations';
-      style.textContent = `
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .order-card { animation: slideIn 0.3s ease both; }
-      `;
-      document.head.appendChild(style);
-    }
   },
 
   getFilteredOrders: () => {
@@ -368,10 +299,10 @@ window.SupplierOrders = {
     if (filter === 'all') return SupplierOrders.state.orders;
     
     const statusMap = {
-      'pending': ['pending', 'paid', 'processing'],
-      'shipped': ['shipped'],
-      'delivered': ['delivered'],
-      'cancelled': ['cancelled', 'refunded']
+      'pending': ['pending', 'paid', 'processing', 'confirmed'],
+      'shipped': ['shipped', 'in_transit'],
+      'delivered': ['delivered', 'completed'],
+      'cancelled': ['cancelled', 'refunded', 'failed']
     };
     
     const allowedStatuses = statusMap[filter] || [filter];
@@ -384,50 +315,61 @@ window.SupplierOrders = {
         label: 'À préparer', 
         class: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
         gradient: 'from-amber-500 to-orange-500',
-        icon: 'fa-clock',
-        dot: 'bg-amber-400'
+        icon: 'fa-clock'
       },
       'paid': { 
         label: 'Payée', 
         class: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
         gradient: 'from-blue-500 to-cyan-500',
-        icon: 'fa-credit-card',
-        dot: 'bg-blue-400'
+        icon: 'fa-credit-card'
       },
       'processing': { 
         label: 'En traitement', 
         class: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
         gradient: 'from-purple-500 to-pink-500',
-        icon: 'fa-cog fa-spin',
-        dot: 'bg-purple-400'
+        icon: 'fa-cog fa-spin'
+      },
+      'confirmed': { 
+        label: 'Confirmée', 
+        class: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+        gradient: 'from-indigo-500 to-purple-500',
+        icon: 'fa-check'
       },
       'shipped': { 
         label: 'Expédiée', 
         class: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
         gradient: 'from-indigo-500 to-purple-500',
-        icon: 'fa-shipping-fast',
-        dot: 'bg-indigo-400'
+        icon: 'fa-shipping-fast'
+      },
+      'in_transit': { 
+        label: 'En transit', 
+        class: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        gradient: 'from-blue-500 to-indigo-500',
+        icon: 'fa-truck'
       },
       'delivered': { 
         label: 'Livrée', 
         class: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
         gradient: 'from-emerald-500 to-teal-500',
-        icon: 'fa-check-circle',
-        dot: 'bg-emerald-400'
+        icon: 'fa-check-circle'
+      },
+      'completed': { 
+        label: 'Terminée', 
+        class: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        gradient: 'from-emerald-500 to-teal-500',
+        icon: 'fa-check-double'
       },
       'cancelled': { 
         label: 'Annulée', 
         class: 'bg-red-500/20 text-red-400 border-red-500/30',
         gradient: 'from-red-500 to-pink-500',
-        icon: 'fa-times-circle',
-        dot: 'bg-red-400'
+        icon: 'fa-times-circle'
       },
       'refunded': { 
         label: 'Remboursée', 
         class: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
         gradient: 'from-slate-500 to-gray-500',
-        icon: 'fa-undo',
-        dot: 'bg-slate-400'
+        icon: 'fa-undo'
       }
     };
     return configs[status] || configs['pending'];
@@ -435,7 +377,7 @@ window.SupplierOrders = {
 
   renderEmptyState: () => `
     <div class="text-center py-16">
-      <div class="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+      <div class="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
         <i class="fas fa-inbox text-4xl text-slate-600"></i>
       </div>
       <h3 class="text-xl font-semibold text-white mb-2">Aucune commande ${SupplierOrders.getFilterLabel()}</h3>
@@ -476,27 +418,18 @@ window.SupplierOrders = {
   },
 
   showLoading: (show) => {
-    const loader = document.getElementById('orders-loader');
-    if (loader) {
-      loader.style.display = show ? 'flex' : 'none';
+    // Utiliser le loading global du dashboard
+    if (window.showLoading) {
+      showLoading(show);
     }
   },
 
-  toggleSelectAll: (e) => {
-    const checked = e.target.checked;
-    const checkboxes = document.querySelectorAll('.order-checkbox');
-    
-    checkboxes.forEach(cb => {
-      cb.checked = checked;
-      const orderId = parseInt(cb.closest('.order-card')?.dataset.orderId);
-      if (orderId) {
-        if (checked) {
-          SupplierOrders.state.selectedOrders.add(orderId);
-        } else {
-          SupplierOrders.state.selectedOrders.delete(orderId);
-        }
-      }
-    });
+  showToast: (message, type = 'success') => {
+    if (window.showToast) {
+      showToast(message, type);
+    } else {
+      console.log(`[${type}] ${message}`);
+    }
   },
 
   viewOrder: async (orderId) => {
@@ -513,9 +446,7 @@ window.SupplierOrders = {
       
     } catch (error) {
       console.error('[SupplierOrders] View error:', error);
-      if (typeof DashboardApp !== 'undefined') {
-        DashboardApp.showToast('Erreur: ' + error.message, 'error');
-      }
+      SupplierOrders.showToast('Erreur: ' + error.message, 'error');
     } finally {
       SupplierOrders.showLoading(false);
     }
@@ -530,12 +461,10 @@ window.SupplierOrders = {
       document.body.appendChild(modal);
     }
 
-    // ✅ UTILISATION de la fonction parseItems corrigée
-    const items = SupplierOrders.parseItems(order.items);
-
+    const items = order.items || [];
     const statusConfig = SupplierOrders.getStatusConfig(order.status);
-    const canShip = ['pending', 'paid', 'processing'].includes(order.status);
-    const canDeliver = order.status === 'shipped';
+    const canShip = ['pending', 'paid', 'processing', 'confirmed'].includes(order.status);
+    const canDeliver = order.status === 'shipped' || order.status === 'in_transit';
 
     const itemsHtml = items.map(item => `
       <div class="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
@@ -551,16 +480,15 @@ window.SupplierOrders = {
           <p class="text-slate-400 text-sm">Réf: ${item.product_sku || 'N/A'}</p>
           <div class="flex items-center gap-4 mt-2 text-sm">
             <span class="text-slate-300">${item.quantity} × ${SupplierOrders.formatPrice(item.unit_price)}</span>
-            <span class="text-white font-semibold">${SupplierOrders.formatPrice(item.total_price)}</span>
+            <span class="text-white font-semibold">${SupplierOrders.formatPrice(item.total_price || (item.quantity * item.unit_price))}</span>
           </div>
         </div>
       </div>
     `).join('');
 
     modal.innerHTML = `
-      <div class="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-scaleIn">
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
         
-        <!-- Header -->
         <div class="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50">
           <div>
             <div class="flex items-center gap-3 mb-2">
@@ -571,7 +499,7 @@ window.SupplierOrders = {
             </div>
             <p class="text-slate-400">
               <i class="far fa-calendar-alt mr-2"></i>
-              ${new Date(order.created_at).toLocaleString('fr-FR')}
+              ${order.created_at ? new Date(order.created_at).toLocaleString('fr-FR') : '-'}
             </p>
           </div>
           <button onclick="document.getElementById('order-detail-modal').classList.add('hidden')" 
@@ -580,30 +508,10 @@ window.SupplierOrders = {
           </button>
         </div>
         
-        <!-- Content -->
         <div class="p-6 overflow-y-auto max-h-[60vh] space-y-6">
           
-          <!-- Timeline -->
-          <div class="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl">
-            <div class="flex items-center gap-2 ${order.status !== 'cancelled' ? 'text-emerald-400' : 'text-slate-500'}">
-              <i class="fas fa-check-circle text-xl"></i>
-              <span class="text-sm font-medium">Commande reçue</span>
-            </div>
-            <div class="h-0.5 flex-1 mx-4 bg-slate-700 ${['shipped', 'delivered'].includes(order.status) ? 'bg-emerald-500/50' : ''}"></div>
-            <div class="flex items-center gap-2 ${order.status === 'shipped' || order.status === 'delivered' ? 'text-emerald-400' : 'text-slate-500'}">
-              <i class="fas fa-box text-xl"></i>
-              <span class="text-sm font-medium">Expédiée</span>
-            </div>
-            <div class="h-0.5 flex-1 mx-4 bg-slate-700 ${order.status === 'delivered' ? 'bg-emerald-500/50' : ''}"></div>
-            <div class="flex items-center gap-2 ${order.status === 'delivered' ? 'text-emerald-400' : 'text-slate-500'}">
-              <i class="fas fa-home text-xl"></i>
-              <span class="text-sm font-medium">Livrée</span>
-            </div>
-          </div>
-
-          <!-- Items -->
-          <div>
-            <h4 class="text-white font-semibold mb-3 flex items-center gap-2">
+          <div class="space-y-3">
+            <h4 class="text-white font-semibold flex items-center gap-2">
               <i class="fas fa-shopping-bag text-indigo-400"></i>
               Articles (${items.length})
             </h4>
@@ -612,19 +520,14 @@ window.SupplierOrders = {
             </div>
           </div>
 
-          <!-- Totaux -->
           <div class="bg-slate-800/50 rounded-xl p-4 space-y-2 border border-slate-700">
             <div class="flex justify-between text-slate-400">
               <span>Sous-total</span>
-              <span>${SupplierOrders.formatPrice(order.subtotal)}</span>
+              <span>${SupplierOrders.formatPrice(order.subtotal || order.total_amount)}</span>
             </div>
             <div class="flex justify-between text-slate-400">
               <span>Livraison</span>
               <span>${order.shipping_cost > 0 ? SupplierOrders.formatPrice(order.shipping_cost) : 'Gratuit'}</span>
-            </div>
-            <div class="flex justify-between text-slate-400">
-              <span>TVA</span>
-              <span>${SupplierOrders.formatPrice(order.vat_amount)}</span>
             </div>
             ${order.discount_amount > 0 ? `
               <div class="flex justify-between text-emerald-400">
@@ -638,7 +541,6 @@ window.SupplierOrders = {
             </div>
           </div>
 
-          <!-- Client -->
           <div class="grid grid-cols-2 gap-4">
             <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
               <h4 class="text-white font-semibold mb-3 flex items-center gap-2">
@@ -655,25 +557,24 @@ window.SupplierOrders = {
                 <i class="fas fa-map-marker-alt text-indigo-400"></i>
                 Livraison
               </h4>
-              <p class="text-white">${order.shipping_address || ''}</p>
-              <p class="text-slate-400 text-sm">${order.shipping_postal_code || ''} ${order.shipping_city || ''}</p>
-              <p class="text-slate-400 text-sm">${order.shipping_country_code || ''}</p>
+              <p class="text-white">${order.shipping_address?.street || order.shipping_address || ''}</p>
+              <p class="text-slate-400 text-sm">${order.shipping_address?.postal_code || order.shipping_postal_code || ''} ${order.shipping_address?.city || order.shipping_city || ''}</p>
+              <p class="text-slate-400 text-sm">${order.shipping_address?.country || order.shipping_country_code || ''}</p>
             </div>
           </div>
         </div>
 
-        <!-- Actions -->
         <div class="p-6 border-t border-slate-700 bg-slate-800/30 flex gap-3">
           ${canShip ? `
             <button onclick="SupplierOrders.updateStatus(${order.id}, 'shipped'); document.getElementById('order-detail-modal').classList.add('hidden')" 
-                    class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-3 rounded-xl font-semibold shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
+                    class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
               <i class="fas fa-shipping-fast"></i>
               Marquer comme expédiée
             </button>
           ` : ''}
           ${canDeliver ? `
             <button onclick="SupplierOrders.updateStatus(${order.id}, 'delivered'); document.getElementById('order-detail-modal').classList.add('hidden')" 
-                    class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3 rounded-xl font-semibold shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2">
+                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
               <i class="fas fa-check-circle"></i>
               Marquer comme livrée
             </button>
@@ -685,17 +586,6 @@ window.SupplierOrders = {
         </div>
       </div>
     `;
-
-    // Animation d'entrée
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes scaleIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-      }
-      .animate-scaleIn { animation: scaleIn 0.2s ease-out; }
-    `;
-    modal.appendChild(style);
     
     modal.classList.remove('hidden');
   },
@@ -710,18 +600,12 @@ window.SupplierOrders = {
         throw new Error(response.message);
       }
 
-      if (typeof DashboardApp !== 'undefined') {
-        DashboardApp.showToast(`Statut mis à jour: ${newStatus}`, 'success');
-      }
-
-      // Recharger avec animation
+      SupplierOrders.showToast(`Statut mis à jour: ${newStatus}`, 'success');
       await SupplierOrders.loadOrders();
       
     } catch (error) {
       console.error('[SupplierOrders] Update status error:', error);
-      if (typeof DashboardApp !== 'undefined') {
-        DashboardApp.showToast('Erreur: ' + error.message, 'error');
-      }
+      SupplierOrders.showToast('Erreur: ' + error.message, 'error');
     } finally {
       SupplierOrders.showLoading(false);
     }
@@ -736,8 +620,7 @@ window.SupplierOrders = {
   }
 };
 
-console.log('[SupplierOrders] Module v3.4 chargé - Parsing JSON corrigé');
+console.log('[SupplierOrders] Module v3.5 chargé - JSON Parsing corrigé');
 
 // Exposer globalement
-window.viewOrder = (id) => SupplierOrders.viewOrder(id);
-window.updateOrderStatus = (id, status) => SupplierOrders.updateStatus(id, status);
+window.filterOrders = (filter) => SupplierOrders.setFilter(filter);
