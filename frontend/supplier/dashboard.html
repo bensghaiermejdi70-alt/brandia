@@ -604,87 +604,89 @@
     </section>
 
     <!-- PRODUCTS SECTION -->
-    <section id="products" class="section space-y-6">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Mes produits</h2>
-          <p class="text-slate-400 text-sm mt-1">Gérez votre catalogue produits</p>
-        </div>
-        <div class="flex gap-3">
-          <button onclick="openProductModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
-            <i class="fas fa-plus"></i>
-            Ajouter un produit
-          </button>
-          <button onclick="importProducts()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-upload"></i>
-            Importer
-          </button>
-        </div>
-      </div>
+    <!-- Section Produits -->
+<section id="products" class="section space-y-6">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-white">Mes produits</h2>
+      <p class="text-slate-400 text-sm mt-1">Gérez votre catalogue produits</p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="SupplierProducts.openModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+        <i class="fas fa-plus"></i>
+        Ajouter un produit
+      </button>
+      <button onclick="importProducts()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+        <i class="fas fa-upload"></i>
+        Importer
+      </button>
+    </div>
+  </div>
 
-      <div class="card rounded-xl p-4">
-        <div class="flex flex-col md:flex-row gap-4">
-          <div class="relative flex-1">
-            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-            <input type="text" id="product-search" placeholder="Rechercher un produit..." 
-                   class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:border-indigo-500 outline-none"
-                   oninput="filterProducts()">
-          </div>
-          <select id="product-status-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:border-indigo-500 outline-none" onchange="filterProducts()">
-            <option value="">Tous les statuts</option>
-            <option value="published">Publié</option>
-            <option value="draft">Brouillon</option>
-            <option value="archived">Archivé</option>
-          </select>
-          <select id="product-category-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:border-indigo-500 outline-none" onchange="filterProducts()">
-            <option value="">Toutes les catégories</option>
-          </select>
-        </div>
+  <div class="card rounded-xl p-4">
+    <div class="flex flex-col md:flex-row gap-4">
+      <div class="relative flex-1">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+        <input type="text" id="product-search" placeholder="Rechercher un produit..." 
+               class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:border-indigo-500 outline-none"
+               oninput="filterProducts()">
       </div>
+      <select id="product-status-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:border-indigo-500 outline-none" onchange="filterProducts()">
+        <option value="">Tous les statuts</option>
+        <option value="published">Publié</option>
+        <option value="draft">Brouillon</option>
+        <option value="archived">Archivé</option>
+      </select>
+      <select id="product-category-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:border-indigo-500 outline-none" onchange="filterProducts()">
+        <option value="">Toutes les catégories</option>
+      </select>
+    </div>
+  </div>
 
-      <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div class="col-span-full text-center py-12">
-          <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
-        </div>
+  <!-- 🔥 IMPORTANT: Ce conteneur doit exister -->
+  <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div class="col-span-full text-center py-12">
+      <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
+    </div>
+  </div>
+
+  <div id="products-pagination" class="flex justify-center gap-2 mt-6 hidden">
+    <button onclick="changeProductPage(-1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm disabled:opacity-50" id="prev-page">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span id="page-info" class="px-4 py-2 text-sm text-slate-400">Page 1 sur 1</span>
+    <button onclick="changeProductPage(1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm disabled:opacity-50" id="next-page">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</section>
+
+<!-- Section Promotions -->
+<section id="promotions" class="section space-y-6">
+  <div class="flex justify-between items-center">
+    <div>
+      <h2 class="text-2xl font-bold text-white">Promotions</h2>
+      <p class="="text-slate-400 text-sm mt-1">Créez des offres pour booster vos ventes</p>
+    </div>
+    <button onclick="openPromotionModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+      <i class="fas fa-plus"></i>
+      Nouvelle promotion
+    </button>
+  </div>
+
+  <div class="card rounded-xl overflow-hidden">
+    <div class="p-6 border-b border-slate-800">
+      <h3 class="font-semibold text-lg">Promotions actives</h3>
+    </div>
+    <!-- 🔥 IMPORTANT: Ce conteneur doit exister -->
+    <div id="active-promotions" class="divide-y divide-slate-800">
+      <div class="p-8 text-center text-slate-500">
+        <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+        <p>Chargement...</p>
       </div>
-
-      <div id="products-pagination" class="flex justify-center gap-2 mt-6 hidden">
-        <button onclick="changeProductPage(-1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm disabled:opacity-50" id="prev-page">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <span id="page-info" class="px-4 py-2 text-sm text-slate-400">Page 1 sur 1</span>
-        <button onclick="changeProductPage(1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm disabled:opacity-50" id="next-page">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-    </section>
-
-    <!-- PROMOTIONS SECTION -->
-    <section id="promotions" class="section space-y-6">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Promotions</h2>
-          <p class="text-slate-400 text-sm mt-1">Créez des offres pour booster vos ventes</p>
-        </div>
-        <button onclick="openPromotionModal()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
-          <i class="fas fa-plus"></i>
-          Nouvelle promotion
-        </button>
-      </div>
-
-      <div class="card rounded-xl overflow-hidden">
-        <div class="p-6 border-b border-slate-800">
-          <h3 class="font-semibold text-lg">Promotions actives</h3>
-        </div>
-        <div id="active-promotions" class="divide-y divide-slate-800">
-          <div class="p-8 text-center text-slate-500">
-            <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
-            <p>Chargement...</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
+    </div>
+  </div>
+</section>
     <!-- ADVERTISING SECTION -->
     <section id="advertising" class="section space-y-6">
       <div class="flex justify-between items-start">
@@ -1858,38 +1860,60 @@ function initializeModules() {
   console.log('[Dashboard] Initializing modules...');
   
   try {
-    // 🔥 CORRECTION: Vérifier que les modules existent avant d'initialiser
+    // 🔥 CORRECTION: Initialiser Products en premier et forcer le chargement
     if (window.SupplierProducts && typeof SupplierProducts.init === 'function') {
       console.log('[Dashboard] Init SupplierProducts');
-      SupplierProducts.init();
-    }
-    
-    if (window.SupplierOrders && typeof SupplierOrders.init === 'function') {
-      console.log('[Dashboard] Init SupplierOrders');
-      SupplierOrders.init();
+      SupplierProducts.init().then(() => {
+        console.log('[Dashboard] SupplierProducts loaded');
+      }).catch(err => {
+        console.error('[Dashboard] SupplierProducts error:', err);
+      });
     } else {
-      // Si le module n'est pas chargé, essayer de le recharger
-      console.warn('[Dashboard] SupplierOrders not loaded, retrying...');
-      setTimeout(() => {
-        if (window.SupplierOrders) SupplierOrders.init();
-      }, 1000);
+      console.warn('[Dashboard] SupplierProducts not available');
     }
     
-    if (window.SupplierCampaigns && typeof SupplierCampaigns.init === 'function') {
-      console.log('[Dashboard] Init SupplierCampaigns');
-      SupplierCampaigns.init();
-    }
-    
-    if (window.SupplierPayments && typeof SupplierPayments.init === 'function') {
-      console.log('[Dashboard] Init SupplierPayments');
-      SupplierPayments.init();
-    }
-    
-    if (window.SupplierPromotions && typeof SupplierPromotions.init === 'function') {
-      console.log('[Dashboard] Init SupplierPromotions');
-      SupplierPromotions.init();
-    }
-    
+    // 🔥 CORRECTION: Initialiser Orders avec délai pour éviter les conflits
+    setTimeout(() => {
+      if (window.SupplierOrders && typeof SupplierOrders.init === 'function') {
+        console.log('[Dashboard] Init SupplierOrders');
+        SupplierOrders.init().then(() => {
+          console.log('[Dashboard] SupplierOrders loaded');
+        }).catch(err => {
+          console.error('[Dashboard] SupplierOrders error:', err);
+        });
+      }
+    }, 100);
+
+    // 🔥 CORRECTION: Initialiser Promotions
+    setTimeout(() => {
+      if (window.SupplierPromotions && typeof SupplierPromotions.init === 'function') {
+        console.log('[Dashboard] Init SupplierPromotions');
+        SupplierPromotions.init().then(() => {
+          console.log('[Dashboard] SupplierPromotions loaded');
+        }).catch(err => {
+          console.error('[Dashboard] SupplierPromotions error:', err);
+        });
+      } else {
+        console.warn('[Dashboard] SupplierPromotions not available');
+      }
+    }, 200);
+
+    // Campaigns
+    setTimeout(() => {
+      if (window.SupplierCampaigns && typeof SupplierCampaigns.init === 'function') {
+        console.log('[Dashboard] Init SupplierCampaigns');
+        SupplierCampaigns.init();
+      }
+    }, 300);
+
+    // Payments
+    setTimeout(() => {
+      if (window.SupplierPayments && typeof SupplierPayments.init === 'function') {
+        console.log('[Dashboard] Init SupplierPayments');
+        SupplierPayments.init();
+      }
+    }, 400);
+
     loadOverviewStats();
     
   } catch (error) {

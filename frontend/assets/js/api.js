@@ -397,10 +397,13 @@
 
     getProducts: async (params = {}) => { 
       try { 
+        console.log('[API] getProducts called with params:', params);
         const queryString = new URLSearchParams(params).toString(); 
-        return await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`); 
+        const result = await apiFetch(`/supplier/products${queryString ? '?' + queryString : ''}`);
+        console.log('[API] getProducts result:', result);
+        return result;
       } catch (e) { 
-        console.error('[SupplierAPI] getProducts error:', e);
+        console.error('[API] getProducts error:', e);
         return { success: false, data: { products: [] }, message: e.message }; 
       } 
     },
@@ -490,8 +493,12 @@
 
     getPromotions: async () => {
       try {
-        return await apiFetch('/supplier/promotions');
+        console.log('[API] getPromotions called');
+        const result = await apiFetch('/supplier/promotions');
+        console.log('[API] getPromotions result:', result);
+        return result;
       } catch (error) {
+        console.error('[API] getPromotions error:', error);
         return { success: false, data: [], message: error.message };
       }
     },
@@ -522,8 +529,15 @@ deletePromotion: async (id) => {
 },
 
 getPromotions: async () => {
-  console.log('[API] getPromotions');
-  return apiFetch('/supplier/promotions');
+  try {
+    console.log('[API] getPromotions called');
+    const result = await apiFetch('/supplier/promotions');
+    console.log('[API] getPromotions result:', result);
+    return result;
+  } catch (error) {
+    console.error('[API] getPromotions error:', error);
+    return { success: false, data: [], message: error.message };
+  }
 },
 
     getCampaigns: async () => {

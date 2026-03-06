@@ -42,12 +42,12 @@ window.SupplierProducts = {
   ],
 
   init: async function() {
-    console.log('[Products] Initialisation v4.4...');
-    this.loadCategories();
-    await this.loadProducts();
-    this.setupEventListeners();
-    this.setupPapaParse();
-  },
+  console.log('[Products] Initialisation v4.4...');
+  this.loadCategories();
+  await this.loadProducts(); // 🔥 Attendre le chargement
+  this.setupEventListeners();
+  this.setupPapaParse();
+},
 
   // 🔥 CORRECTION: PapaParse sans SRI (integrity) pour éviter le blocage
   setupPapaParse: function() {

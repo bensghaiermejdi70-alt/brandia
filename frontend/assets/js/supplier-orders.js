@@ -16,10 +16,10 @@ window.SupplierOrders = {
   },
 
   init: async () => {
-    console.log('[SupplierOrders] Initializing v3.5...');
-    SupplierOrders.setupEventListeners();
-    await SupplierOrders.loadOrders();
-  },
+  console.log('[SupplierOrders] Initializing v3.5...');
+  SupplierOrders.setupEventListeners();
+  await SupplierOrders.loadOrders(); // 🔥 Attendre le chargement
+},
 
   setupEventListeners: () => {
     // Recherche

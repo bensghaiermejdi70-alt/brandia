@@ -11,10 +11,10 @@ window.SupplierPromotions = {
   },
 
   init: async function() {
-    console.log('[Promotions] Initialisation v2.0...');
-    await this.loadPromotions();
-    this.setupEventListeners();
-  },
+  console.log('[Promotions] Initialisation v2.0...');
+  await this.loadPromotions(); // 🔥 Attendre le chargement
+  this.setupEventListeners();
+},
 
   setupEventListeners: function() {
     // Fermeture modal avec Escape
