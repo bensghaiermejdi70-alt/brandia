@@ -1545,7 +1545,7 @@
       `).join('');
     }
 
-    // ==========================================
+       // ==========================================
     // CHARGEMENT DES OFFRES
     // ==========================================
     async function loadOffers() {
@@ -1560,100 +1560,110 @@
       gridEl.classList.add('hidden');
 
       try {
-        // Essayer d'abord l'API avec promotions
-        let response;
+        // Vérifier si BrandiaAPI est disponible
+        const apiAvailable = typeof BrandiaAPI !== 'undefined' && BrandiaAPI.config && BrandiaAPI.config.apiURL;
+        const apiUrl = apiAvailable ? BrandiaAPI.config.apiURL : 'https://brandia-1.onrender.com/api';
+
+        // Essayer de charger les promotions via l'API
+        let promotions = [];
+        
         try {
-          response = await BrandiaAPI.Promotions.getActive();
+          // Tentative 1: API promotions si disponible
+          const promoResponse = await fetch(`${apiUrl}/promotions/active`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          });
           
-          if (response.success && response.data && response.data.length > 0) {
-            renderPromotions(response.data);
-            loadingEl.classList.add('hidden');
-            gridEl.classList.remove('hidden');
-            return;
+          if (promoResponse.ok) {
+            const data = await promoResponse.json();
+            if (data.success && data.data && Array.isArray(data.data)) {
+              promotions = data.data;
+            }
           }
         } catch (e) {
-          console.log('[Offers] API promotions indisponible, fallback sur produits');
+          console.log('[Offers] Endpoint promotions non disponible:', e.message);
         }
 
-        // Fallback: charger tous les produits et filtrer ceux avec promo
-        const productsRes = await BrandiaAPI.Products.getFeatured();
-        
-        if (productsRes.success && productsRes.data && productsRes.data.products) {
-          const productsWithPromo = productsRes.data.products.filter(p => 
-            p.has_promotion || p.final_price < p.price || p.promo_id
-          );
+        // Si pas de promotions, essayer les produits avec promo
+        if (promotions.length === 0) {
+          console.log('[Offers] Fallback sur produits avec promotions');
           
-          if (productsWithPromo.length > 0) {
-            renderProducts(productsWithPromo);
-            loadingEl.classList.add('hidden');
-            gridEl.classList.remove('hidden');
-          } else {
-            loadingEl.classList.add('hidden');
-            emptyEl.classList.remove('hidden');
+          try {
+            const productsResponse = await fetch(`${apiUrl}/products?has_promotion=true&limit=20`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (productsResponse.ok) {
+              const data = await productsResponse.json();
+              const products = data.data && data.data.products ? data.data.products : (Array.isArray(data.data) ? data.data : []);
+              
+              // Convertir les produits en format promotion
+              promotions = products.filter(p => p.has_promotion || p.final_price < p.price).map(p => ({
+                id: p.promo_id || p.id,
+                name: p.promo_name || `Offre ${p.name}`,
+                description: p.promo_description || p.description,
+                value: p.discount_percentage || Math.round(((p.price - p.final_price) / p.price) * 100),
+                type: 'percentage',
+                code: p.promo_code,
+                end_date: p.promo_end_date,
+                supplier_company: p.supplier_company,
+                category_slug: p.category_slug,
+                image_url: p.main_image_url,
+                product_id: p.id
+              }));
+            }
+          } catch (e) {
+            console.log('[Offers] Erreur chargement produits:', e.message);
           }
+        }
+
+        // Si toujours rien, essayer tous les produits
+        if (promotions.length === 0) {
+          try {
+            const allProductsResponse = await fetch(`${apiUrl}/products?limit=50`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (allProductsResponse.ok) {
+              const data = await allProductsResponse.json();
+              const products = data.data && data.data.products ? data.data.products : (Array.isArray(data.data) ? data.data : []);
+              
+              // Filtrer ceux avec réduction
+              const discountedProducts = products.filter(p => {
+                const finalPrice = parseFloat(p.final_price || p.price);
+                const basePrice = parseFloat(p.price);
+                return finalPrice < basePrice || p.has_promotion;
+              });
+              
+              if (discountedProducts.length > 0) {
+                renderProducts(discountedProducts);
+                loadingEl.classList.add('hidden');
+                gridEl.classList.remove('hidden');
+                return;
+              }
+            }
+          } catch (e) {
+            console.log('[Offers] Erreur fallback produits:', e.message);
+          }
+        }
+
+        // Afficher résultat
+        if (promotions.length > 0) {
+          renderPromotions(promotions);
+          loadingEl.classList.add('hidden');
+          gridEl.classList.remove('hidden');
         } else {
-          throw new Error('Aucune donnée reçue');
+          loadingEl.classList.add('hidden');
+          emptyEl.classList.remove('hidden');
         }
 
       } catch (error) {
-        console.error('[Offers] Erreur:', error);
+        console.error('[Offers] Erreur globale:', error);
         loadingEl.classList.add('hidden');
         errorEl.classList.remove('hidden');
       }
-    }
-
-    // ==========================================
-    // RENDU PROMOTIONS
-    // ==========================================
-    function renderPromotions(promotions) {
-      const grid = document.getElementById('offers-grid');
-      
-      grid.innerHTML = promotions.map((promo, index) => {
-        const discountLabel = promo.type === 'percentage' 
-          ? `-${promo.value}%` 
-          : `-${promo.value}€`;
-        
-        const endDate = promo.end_date 
-          ? new Date(promo.end_date).toLocaleDateString('fr-FR')
-          : 'Date limitée';
-        
-        const imageUrl = promo.image_url || CATEGORY_IMAGES[promo.category_slug] || DEFAULT_IMAGE;
-
-        return `
-          <div class="promo-card fade-in" style="animation-delay: ${index * 0.1}s">
-            <div class="promo-image">
-              <img src="${imageUrl}" alt="${promo.name}" onerror="this.src='${DEFAULT_IMAGE}'">
-              <span class="promo-badge">${discountLabel}</span>
-              <div class="promo-timer">
-                <i class="fas fa-clock"></i>
-                <span>Jusqu'au ${endDate}</span>
-              </div>
-            </div>
-            <div class="promo-content">
-              <div class="promo-brand">${promo.supplier_company || 'Brandia'}</div>
-              <h3 class="promo-title">${promo.name}</h3>
-              <p class="promo-description">${promo.description || 'Profitez de cette offre exclusive sur une sélection de produits.'}</p>
-              
-              ${promo.code ? `
-                <div class="promo-code-box">
-                  <div class="promo-code-label">Code promo à utiliser</div>
-                  <div class="promo-code-value">${promo.code}</div>
-                </div>
-              ` : ''}
-              
-              <div class="promo-footer">
-                <a href="catalogue.html?promo=${promo.id}" class="btn-promo-primary">
-                  <span>Voir les produits</span>
-                  <i class="fas fa-arrow-right"></i>
-                </a>
-                <button onclick="sharePromo('${promo.name}')" class="btn-promo-secondary" title="Partager">
-                  <i class="fas fa-share-alt"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
     }
 
     // ==========================================
@@ -1708,31 +1718,42 @@
       }
     }
 
-    // ==========================================
+       // ==========================================
     // PANIER
     // ==========================================
     async function addToCart(productId) {
       try {
-        const response = await BrandiaAPI.Products.getById(productId);
+        const apiAvailable = typeof BrandiaAPI !== 'undefined' && BrandiaAPI.config && BrandiaAPI.config.apiURL;
+        const apiUrl = apiAvailable ? BrandiaAPI.config.apiURL : 'https://brandia-1.onrender.com/api';
+
+        // Récupérer le produit via API
+        const response = await fetch(`${apiUrl}/products/${productId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
         
-        if (!response.success) throw new Error('Produit non trouvé');
+        if (!response.ok) throw new Error('Produit non trouvé');
         
-        const product = response.data.product || response.data;
+        const data = await response.json();
+        const product = data.data && data.data.product ? data.data.product : data.data;
         
         if (!product) throw new Error('Données produit manquantes');
-        
-        // 🔥 Vérifier si produit fournisseur avec campagne
-        if (product.supplier_id) {
-          const campaignCheck = await fetch(
-            `${BrandiaAPI.config.apiURL}/supplier/public/campaigns?supplier=${product.supplier_id}&product=${product.id}`,
-            { headers: { 'Accept': 'application/json' } }
-          ).then(r => r.json()).catch(() => ({ success: false }));
 
-          if (campaignCheck.success && campaignCheck.data) {
-            // Initialiser AdEngine et déclencher
-            BrandiaAdEngine.init(product);
-            BrandiaAdEngine.checkAndTrigger(product);
-            return;
+        // Vérifier si produit fournisseur avec campagne (optionnel)
+        if (product.supplier_id && typeof BrandiaAdEngine !== 'undefined') {
+          try {
+            const campaignCheck = await fetch(
+              `${apiUrl}/supplier/public/campaigns?supplier=${product.supplier_id}&product=${product.id}`,
+              { headers: { 'Accept': 'application/json' } }
+            ).then(r => r.json()).catch(() => ({ success: false }));
+
+            if (campaignCheck.success && campaignCheck.data) {
+              BrandiaAdEngine.init(product);
+              BrandiaAdEngine.checkAndTrigger(product);
+              return;
+            }
+          } catch (e) {
+            console.log('[Offers] Pas de campagne publicitaire');
           }
         }
 
@@ -1763,17 +1784,6 @@
         showToast(error.message || 'Erreur lors de l\'ajout', 'error');
       }
     }
-
-    function updateCartBadge() {
-      const cart = JSON.parse(localStorage.getItem('brandia_cart') || '[]');
-      const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-      const badge = document.getElementById('cart-count');
-      if (badge) {
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.classList.toggle('hidden', count === 0);
-      }
-    }
-
     // ==========================================
     // INIT
     // ==========================================
