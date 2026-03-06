@@ -496,37 +496,35 @@
       }
     },
     
-    createPromotion: async (data) => {
-      try {
-        return await apiFetch('/supplier/promotions', { 
-          method: 'POST', 
-          body: JSON.stringify(data) 
-        });
-      } catch (e) {
-        return { success: false, message: e.message };
-      }
-    },
-    
-    updatePromotion: async (id, data) => {
-      try {
-        return await apiFetch(`/supplier/promotions/${id}`, { 
-          method: 'PUT', 
-          body: JSON.stringify(data) 
-        });
-      } catch (e) {
-        return { success: false, message: e.message };
-      }
-    },
-    
-    deletePromotion: async (id) => {
-      try {
-        return await apiFetch(`/supplier/promotions/${id}`, { 
-          method: 'DELETE' 
-        });
-      } catch (e) {
-        return { success: false, message: e.message };
-      }
-    },
+    // Dans api.js, remplacez ou ajoutez ces fonctions dans BrandiaAPI.Supplier:
+
+createPromotion: async (data) => {
+  console.log('[API] createPromotion:', data);
+  return apiFetch('/supplier/promotions', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+},
+
+updatePromotion: async (id, data) => {
+  console.log('[API] updatePromotion:', id, data);
+  return apiFetch(`/supplier/promotions/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+},
+
+deletePromotion: async (id) => {
+  console.log('[API] deletePromotion:', id);
+  return apiFetch(`/supplier/promotions/${id}`, {
+    method: 'DELETE'
+  });
+},
+
+getPromotions: async () => {
+  console.log('[API] getPromotions');
+  return apiFetch('/supplier/promotions');
+},
 
     getCampaigns: async () => {
       try {
