@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catalogue - Brandia</title>
 <meta name="description" content="Découvrez tous les produits des marques sur Brandia">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg ' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300 ;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
-<script src="https://cdn.tailwindcss.com "></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
 darkMode: 'class',
@@ -51,10 +51,9 @@ sans: ['Inter', 'system-ui', 'sans-serif'],
 --brandia-text: #f8fafc;
 --brandia-text-muted: #94a3b8;
 --brandia-success: #10b981;
---brandia-warning: #f59e0b;
+--brandia-warning: '#f59e0b';
 --brandia-danger: #ef4444;
 --brandia-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
---brandia-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -1669,6 +1668,8 @@ localStorage.setItem('country', e.target.value);
 localStorage.setItem('currency', COUNTRIES[e.target.value].currency);
 showToast('Pays changé: ' + COUNTRIES[e.target.value].name, 'success');
 });
+}
+
 function getAuthToken() {
 if (window.BrandiaAPI && BrandiaAPI.storage && BrandiaAPI.storage.getToken) {
 const apiToken = BrandiaAPI.storage.getToken();
@@ -1704,7 +1705,6 @@ localStorage.removeItem('brandia_user');
 localStorage.removeItem('refreshToken');
 window.location.href = 'index.html';
 }
-
 function initAuth() {
 console.log('[Auth] Initialisation...');
 const token = getAuthToken();
@@ -1757,7 +1757,6 @@ sortBy: 'newest',
 apiAvailable: false,
 init: function() {
 console.log('[CatalogueApp] Initialisation...');
-// Vérifier si l'API est disponible
 this.checkApiAvailability();
 initCountries();
 initFilters();
@@ -1766,14 +1765,12 @@ initAuth();
 updateCartBadge();
 },
 checkApiAvailability: function() {
-// Attendre que BrandiaAPI soit chargé
 if (typeof BrandiaAPI === 'undefined' || !BrandiaAPI) {
 console.log('[CatalogueApp] API non encore chargée, attente...');
 setTimeout(() => this.checkApiAvailability(), 100);
 return;
 }
-// Vérifier que Products existe
-if (!BrandiaAPI.get || !BrandiaAPI.post) {
+if (!BrandiaAPI.get && !BrandiaAPI.post) {
 console.error('[CatalogueApp] BrandiaAPI incomplet');
 this.showApiError();
 return;
@@ -1798,38 +1795,24 @@ if (!category || category === 'null' || category === 'undefined' || category ===
 const params = {};
 if (category) { params.category = category; }
 params.limit = 100;
-// Utiliser l'API fetch directement si BrandiaAPI.Products n'existe pas
 const apiUrl = (BrandiaAPI.config && BrandiaAPI.config.apiURL) ? BrandiaAPI.config.apiURL : 'https://brandia-1.onrender.com/api';
 const queryString = new URLSearchParams(params).toString();
-const url = `${apiUrl}/products${queryString ? '?' + queryString : ''}`;
+const url = apiUrl + '/products' + (queryString ? '?' + queryString : '');
 fetch(url, {
 method: 'GET',
 headers: { 'Content-Type': 'application/json' }
 })
-.then(response => response.json())
-.then(data => {
+.then(function(response) { return response.json(); })
+.then(function(data) {
 if (data.success) {
 const products = data.data && data.data.products ? data.data.products : (Array.isArray(data.data) ? data.data : []);
 CatalogueApp.state.allProducts = products;
 CatalogueApp.applyFilters();
 } else { throw new Error(data.message || 'Erreur de chargement'); }
 })
-.catch(error => {
+.catch(function(error) {
 console.error('[CatalogueApp] Erreur:', error);
-// Fallback: essayer avec getAllWithPromotions si disponible
-if (BrandiaAPI.Products && BrandiaAPI.Products.getAllWithPromotions) {
-BrandiaAPI.Products.getAllWithPromotions(params).then(response => {
-if (response.success) {
-const products = response.data && response.data.products ? response.data.products : (Array.isArray(response.data) ? response.data : []);
-CatalogueApp.state.allProducts = products;
-CatalogueApp.applyFilters();
-}
-}).catch(() => {
 container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur de connexion</h3><p>Impossible de charger les produits</p><button onclick="CatalogueApp.loadProducts()" class="btn-primary" style="margin-top: 1rem;"><i class="fas fa-redo mr-2"></i>Réessayer</button></div>';
-});
-} else {
-container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle empty-state-icon" style="color: var(--brandia-danger);"></i><h3>Erreur de connexion</h3><p>Impossible de charger les produits</p><button onclick="CatalogueApp.loadProducts()" class="btn-primary" style="margin-top: 1rem;"><i class="fas fa-redo mr-2"></i>Réessayer</button></div>';
-}
 });
 },
 applyFilters: function() {
@@ -1903,8 +1886,7 @@ return '<div class="product-card fade-in" style="animation-delay: ' + (index * 0
 },
 addToCart: function(productId) {
 event.stopPropagation();
-// Récupérer le produit depuis la liste
-const product = this.state.allProducts.find(p => p.id === productId);
+const product = this.state.allProducts.find(function(p) { return p.id === productId; });
 if (!product) {
 showToast('Produit non trouvé', 'error');
 return;
@@ -1919,7 +1901,6 @@ promo_code: product.promo_code,
 main_image_url: getProductImageUrl(product), 
 quantity: 1 
 };
-// Utiliser BrandiaAPI.Cart si disponible
 if (window.BrandiaAPI && BrandiaAPI.Cart && BrandiaAPI.Cart.add) { 
 BrandiaAPI.Cart.add(cartItem); 
 } else {
@@ -1942,15 +1923,14 @@ const container = document.getElementById('products-container');
 container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
 const params = { promo_only: true, limit: 100 };
 if (this.state.filters.category) { params.category = this.state.filters.category; }
-// Utiliser fetch directement
 const apiUrl = (BrandiaAPI.config && BrandiaAPI.config.apiURL) ? BrandiaAPI.config.apiURL : 'https://brandia-1.onrender.com/api';
 const queryString = new URLSearchParams(params).toString();
-fetch(`${apiUrl}/products/promotions?${queryString}`, {
+fetch(apiUrl + '/products/promotions?' + queryString, {
 method: 'GET',
 headers: { 'Content-Type': 'application/json' }
 })
-.then(response => response.json())
-.then(response => {
+.then(function(response) { return response.json(); })
+.then(function(response) {
 if (response.success) {
 const products = response.data && response.data.products ? response.data.products : [];
 CatalogueApp.state.allProducts = products;
@@ -1979,7 +1959,6 @@ this.state.sortBy = select.value;
 this.applyFilters();
 }
 };
-
 
 // ============================================
 // FONCTIONS DE FILTRAGE
